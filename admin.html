@@ -70,6 +70,7 @@
     });
 
     const usersList = document.getElementById('pending-users');
+    usersList.innerHTML = '';  // Vyčistíme zoznam pred pridaním nových používateľov
     pendingUsers.forEach(username => {
       const li = document.createElement('li');
       li.textContent = username;
@@ -88,7 +89,9 @@
     const userRef = doc(db, "users", username);
     await setDoc(userRef, { approved: true }, { merge: true });
     alert(`${username} bol schválený.`);
-    loadPendingUsers();  // Obnovíme zoznam používateľov
+
+    // Obnovíme stránku po schválení používateľa
+    location.reload();  // Znova načítame stránku, aby sme zobrazili aktuálny zoznam používateľov
   }
 
   loadPendingUsers();
