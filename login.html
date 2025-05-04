@@ -10,7 +10,7 @@
       const password = document.getElementById("password").value;
 
       // Jednoduché overenie – uprav podľa potreby
-      if (username === "admin" && password === "tajneheslo") {
+      if (username === "admin" && password === "admin") {
         localStorage.setItem("username", username);
         window.location.href = "admin.html";
       } else {
