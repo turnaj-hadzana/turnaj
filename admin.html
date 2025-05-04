@@ -10,111 +10,112 @@
   <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js"></script>
 
   <script>
-    // Firebase konfigurácia
-    const firebaseConfig = {
-      apiKey: "AIzaSyDNWRlWmBtQPIR49KViBpWf16hDUjU7Npw",
-      authDomain: "turnaj-skusobne.firebaseapp.com",
-      projectId: "turnaj-skusobne",
-      storageBucket: "turnaj-skusobne.firebasestorage.app",
-      messagingSenderId: "755998492681",
-      appId: "1:755998492681:web:f3242ae0f54b61903290d8",
-      measurementId: "G-B8DVMX2KVV"
+  // Firebase konfigurácia
+  const firebaseConfig = {
+    apiKey: "AIzaSyDNWRlWmBtQPIR49KViBpWf16hDUjU7Npw",
+    authDomain: "turnaj-skusobne.firebaseapp.com",
+    projectId: "turnaj-skusobne",
+    storageBucket: "turnaj-skusobne.firebasestorage.app",
+    messagingSenderId: "755998492681",
+    appId: "1:755998492681:web:f3242ae0f54b61903290d8",
+    measurementId: "G-B8DVMX2KVV"
+  };
+
+  // Inicializuj Firebase a Firestore
+  const app = firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  // Referencia na kolekciu "teams"
+  const teamsRef = db.collection("teams");
+
+  // Funkcia na kontrolu, či je používateľ prihlásený
+  function checkLogin() {
+    const username = localStorage.getItem("username");
+    const loginButton = document.getElementById("loginButton");
+
+    if (username) {
+      loginButton.textContent = 'Odhlásiť sa';
+      loginButton.onclick = logout;
+      // Zobraziť sekciu pre editáciu tímov
+      document.getElementById("editableTeams").classList.remove("hidden");
+      document.getElementById("usernameDisplay").textContent = username;
+      document.getElementById("viewTeams").classList.add("hidden"); // Skrytí čítanie tímov pre prihláseného
+    } else {
+      loginButton.textContent = 'Prihlásiť sa';
+      loginButton.onclick = login;
+      // Zobraziť iba čítacie údaje (pre neprihlásených)
+      document.getElementById("viewTeams").classList.remove("hidden");
+      document.getElementById("editableTeams").classList.add("hidden"); // Skrytí sekcie pre editáciu tímov
+    }
+  }
+
+  // Funkcia na prihlásenie
+  function login() {
+    window.location.href = 'login.html'; // Presmerovanie na prihlasovaciu stránku
+  }
+
+  // Funkcia na odhlásenie
+  function logout() {
+    localStorage.removeItem("username");
+    location.reload(); // Prečítanie stránky a skrytí editácie
+  }
+
+  // Funkcia na ukladanie tímov do Firestore (len pre prihláseného používateľa)
+  async function saveTeams() {
+    const teams = {
+      groupA: [
+        document.getElementById("teamA1").value,
+        document.getElementById("teamA2").value,
+        document.getElementById("teamA3").value,
+        document.getElementById("teamA4").value,
+        document.getElementById("teamA5").value
+      ]
     };
 
-    // Inicializuj Firebase a Firestore
-    const app = firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
+    try {
+      // Ukladáme tímové údaje do Firestore
+      await teamsRef.doc("u12ch").set(teams);
+      console.log("Tímy uložené do Firestore:", teams);
 
-    // Referencia na kolekciu "teams"
-    const teamsRef = db.collection("teams");
+      // Po úspešnom uložení, aktualizujeme zobrazenie
+      displayTeams();
+    } catch (err) {
+      console.error("Chyba pri ukladaní do Firestore:", err);
+      alert("Nastala chyba pri ukladaní tímov.");
+    }
+  }
 
-    // Funkcia na kontrolu, či je používateľ prihlásený
-    function checkLogin() {
-      const username = localStorage.getItem("username");
-      const loginButton = document.getElementById("loginButton");
-
-      if (username) {
-        loginButton.textContent = 'Odhlásiť sa';
-        loginButton.onclick = logout;
-        // Zobraziť sekciu pre editáciu tímov
-        document.getElementById("editableTeams").classList.remove("hidden");
-        document.getElementById("usernameDisplay").textContent = username;
-        document.getElementById("viewTeams").classList.add("hidden"); // Skrytí čítanie tímov pre prihláseného
-      } else {
-        loginButton.textContent = 'Prihlásiť sa';
-        loginButton.onclick = login;
-        // Zobraziť iba čítacie údaje (pre neprihlásených)
-        document.getElementById("viewTeams").classList.remove("hidden");
-        document.getElementById("editableTeams").classList.add("hidden"); // Skrytí sekcie pre editáciu tímov
+  // Funkcia na zobrazenie tímov (pre všetkých)
+  async function displayTeams() {
+    try {
+      // Načítame tímové údaje z Firestore
+      const doc = await teamsRef.doc("u12ch").get();
+      if (doc.exists) {
+        const teams = doc.data().groupA;
+        document.getElementById("teamA1Display").innerText = teams[0] || "";
+        document.getElementById("teamA2Display").innerText = teams[1] || "";
+        document.getElementById("teamA3Display").innerText = teams[2] || "";
+        document.getElementById("teamA4Display").innerText = teams[3] || "";
+        document.getElementById("teamA5Display").innerText = teams[4] || "";
       }
+    } catch (err) {
+      console.error("Chyba pri načítaní tímov z Firestore:", err);
     }
+  }
 
-    // Funkcia na prihlásenie
-    function login() {
-      window.location.href = 'login.html'; // Presmerovanie na prihlasovaciu stránku
+  // Funkcia volaná pri načítaní stránky
+  window.onload = function() {
+    const username = localStorage.getItem("username");
+
+    // Ak používateľ nie je prihlásený, presmerujeme ho na login stránku
+    if (!username) {
+      window.location.href = "login.html";
+    } else {
+      checkLogin(); // Skontroluje prihlásenie
+      displayTeams(); // Načíta a zobrazí tímov aj pre neprihlásených
     }
-
-    // Funkcia na odhlásenie
-    function logout() {
-      localStorage.removeItem("username");
-      location.reload(); // Prečítanie stránky a skrytí editácie
-    }
-
-    // Funkcia na ukladanie tímov do Firestore (len pre prihláseného používateľa)
-    async function saveTeams() {
-      const teams = {
-        groupA: [
-          document.getElementById("teamA1").value,
-          document.getElementById("teamA2").value,
-          document.getElementById("teamA3").value,
-          document.getElementById("teamA4").value,
-          document.getElementById("teamA5").value
-        ]
-      };
-
-      try {
-        // Ukladáme tímové údaje do Firestore
-        await teamsRef.doc("u12ch").set(teams);
-        console.log("Tímy uložené do Firestore:", teams);
-
-        // Po úspešnom uložení, aktualizujeme zobrazenie
-        displayTeams();
-      } catch (err) {
-        console.error("Chyba pri ukladaní do Firestore:", err);
-      }
-    }
-
-    // Funkcia na zobrazenie tímov (pre všetkých)
-    async function displayTeams() {
-      try {
-        // Načítame tímové údaje z Firestore
-        const doc = await teamsRef.doc("u12ch").get();
-        if (doc.exists) {
-          const teams = doc.data().groupA;
-          document.getElementById("teamA1Display").innerText = teams[0] || "";
-          document.getElementById("teamA2Display").innerText = teams[1] || "";
-          document.getElementById("teamA3Display").innerText = teams[2] || "";
-          document.getElementById("teamA4Display").innerText = teams[3] || "";
-          document.getElementById("teamA5Display").innerText = teams[4] || "";
-        }
-      } catch (err) {
-        console.error("Chyba pri načítaní tímov z Firestore:", err);
-      }
-    }
-
-    // Funkcia volaná pri načítaní stránky
-    window.onload = function() {
-      const username = localStorage.getItem("username");
-
-      // Ak používateľ nie je prihlásený, presmerujeme ho na login stránku
-      if (!username) {
-        window.location.href = "login.html";
-      } else {
-        checkLogin(); // Skontroluje prihlásenie
-        displayTeams(); // Načíta a zobrazí tímov aj pre neprihlásených
-      }
-    };
-  </script>
+  };
+</script>
 </head>
 <body>
   <!-- Hlavička pre prihlásenie/odhlásenie -->
