@@ -13,13 +13,36 @@
 <button onclick="logout()">Odhlásiť sa</button>
 
 <script>
-  // Zobraziť používateľské meno z sessionStorage
+  // Dynamické načítanie hlavičky
+  fetch("header.html")  // uprav cestu podľa umiestnenia
+    .then(res => res.text())
+    .then(html => {
+      document.getElementById("header-placeholder").innerHTML = html;
+
+      // Logika tlačidla na prihlasenie/odhlásenie
+      const authButton = document.getElementById("auth-button");
+      const username = sessionStorage.getItem("username");
+
+      if (username) {
+        authButton.textContent = "Odhlásiť sa";
+        authButton.onclick = () => {
+          sessionStorage.removeItem("username");
+          window.location.reload();
+        };
+      } else {
+        authButton.textContent = "Prihlásiť sa";
+        authButton.onclick = () => {
+          window.location.href = "login.html";
+        };
+      }
+    });
+
+  // Zobraziť meno prihláseného používateľa
   document.getElementById('username').textContent = sessionStorage.getItem("username");
 
-  // Funkcia na odhlásenie
   function logout() {
     sessionStorage.removeItem("username");
-    window.location.href = "index.html";  // Presmerujeme na stránku prihlásenia
+    window.location.href = "index.html";
   }
 </script>
 
