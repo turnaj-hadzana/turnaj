@@ -80,3 +80,16 @@ function generateMatches(teams, group) {
   let matchesDiv = document.getElementById("matches" + group);
   matchesDiv.innerHTML = "<h3>Zápasy:</h3>" + matches.join("<br>");
 }
+// Funkcia na ukladanie údajov o tímoch do localStorage
+function saveTeamsToLocalStorage() {
+    let teams = {
+        groupA: [
+            document.getElementById("teamA1").value,
+            document.getElementById("teamA2").value,
+            document.getElementById("teamA3").value,
+            document.getElementById("teamA4").value,
+            document.getElementById("teamA5").value
+        ]
+    };
+    localStorage.setItem("teams", JSON.stringify(teams));
+}
