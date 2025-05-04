@@ -103,13 +103,17 @@
     }
 
     // Funkcia volaná pri načítaní stránky
-      window.onload = function() {
+    window.onload = function() {
       const username = localStorage.getItem("username");
 
+      // Ak používateľ nie je prihlásený, presmerujeme ho na login stránku
       if (!username) {
-        // Ak nie je prihlásený, presmeruj na login stránku
         window.location.href = "login.html";
+      } else {
+        checkLogin(); // Skontroluje prihlásenie
+        displayTeams(); // Načíta a zobrazí tímov aj pre neprihlásených
       }
+    };
   </script>
 </head>
 <body>
@@ -145,6 +149,5 @@
       <li id="teamA5Display"></li>
     </ul>
   </div>
-};
 </body>
 </html>
