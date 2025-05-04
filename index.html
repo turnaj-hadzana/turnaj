@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <title>Prihlásenie a registrácia</title>
   <style>
-    /* Úprava vzhľadu */
+    /* Vzhľad formulárov */
     body {
       font-family: Arial, sans-serif;
       display: flex;
@@ -80,7 +80,9 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
     import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+    import bcrypt from "https://cdn.jsdelivr.net/npm/bcryptjs@2.4.3/dist/bcrypt.min.mjs";
 
+    // Konfigurácia Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyDNWRlWmBtQPIR49KViBpWf16hDUjU7Npw",
       authDomain: "turnaj-skusobne.firebaseapp.com",
@@ -121,8 +123,9 @@
       if (userSnap.exists()) {
         alert("Používateľ už existuje!");
       } else {
-        // Uloženie hesla v čistom texte (NEODPORÚČA SA PRE PRODUKCIONÉ APLIKÁCIE)
-        await setDoc(userRef, { password: password });
+        // Hashovanie hesla pred uložením
+        const hashedPassword = await bcrypt.hash(password, 10);
+        await setDoc(userRef, { password: hashedPassword });
         alert("Registrácia úspešná!");
         document.getElementById('register-form').style.display = 'none';
         document.getElementById('login-form').style.display = 'block';
@@ -144,7 +147,10 @@
 
       const storedPassword = userSnap.data().password;
 
-      if (password === storedPassword) {
+      // Porovnanie hashovaných hesiel
+      const match = await bcrypt.compare(password, storedPassword);
+
+      if (match) {
         sessionStorage.setItem("username", username); // uložíme prihlásenie
         window.location.href = "dashboard.html"; // presmerovanie
       } else {
