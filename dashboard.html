@@ -23,7 +23,7 @@
           authButton.textContent = "Odhlásiť sa";
           authButton.onclick = () => {
             sessionStorage.removeItem("username");
-            window.location.reload();
+            window.location.href = "index.html";
           };
         } else {
           authButton.textContent = "Prihlásiť sa";
