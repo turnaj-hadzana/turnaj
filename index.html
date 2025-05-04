@@ -11,17 +11,31 @@
     <!-- Zobraziť prihláseného používateľa -->
     <div id="userInfo"></div>
 
-    <!-- Formuláre pre zadávanie tímov -->
+    <!-- Zobrazenie tímov -->
     <div id="teams">
-        <form id="groupAForm">
+        <!-- Pre prihláseného používateľa sa zobrazí formulár na úpravu tímov -->
+        <div id="editableTeams" style="display:none;">
             <h3>Skupina A</h3>
-            <input type="text" id="teamA1" placeholder="Tím 1" required><br>
-            <input type="text" id="teamA2" placeholder="Tím 2" required><br>
-            <input type="text" id="teamA3" placeholder="Tím 3" required><br>
-            <input type="text" id="teamA4" placeholder="Tím 4" required><br>
-            <input type="text" id="teamA5" placeholder="Tím 5" required><br>
-            <button type="submit">Uložiť tímy</button>
-        </form>
+            <form id="groupAForm">
+                <input type="text" id="teamA1" placeholder="Tím 1" required><br>
+                <input type="text" id="teamA2" placeholder="Tím 2" required><br>
+                <input type="text" id="teamA3" placeholder="Tím 3" required><br>
+                <input type="text" id="teamA4" placeholder="Tím 4" required><br>
+                <input type="text" id="teamA5" placeholder="Tím 5" required><br>
+                <button type="submit">Uložiť tímy</button>
+            </form>
+        </div>
+
+        <!-- Pre neprihláseného používateľa sa zobrazí len text -->
+        <div id="readOnlyTeams" style="display:none;">
+            <h3>Skupina A</h3>
+            <p id="teamA1Display">Tím 1</p>
+            <p id="teamA2Display">Tím 2</p>
+            <p id="teamA3Display">Tím 3</p>
+            <p id="teamA4Display">Tím 4</p>
+            <p id="teamA5Display">Tím 5</p>
+        </div>
+
         <div id="matchesA"></div>
     </div>
 
@@ -31,31 +45,46 @@
     </div>
 
     <script>
-        // Funkcia pre prihláseného používateľa
+        // Funkcia na zobrazenie správneho obsahu podľa toho, či je používateľ prihlásený
         if(localStorage.getItem("username")) {
             document.getElementById("userInfo").innerHTML = "Prihlásený ako: " + localStorage.getItem("username");
             document.getElementById("logoutDiv").style.display = "block";
+            showEditableTeams(); // Pre prihláseného používateľa zobrazíme inputy
+        } else {
+            showReadOnlyTeams(); // Pre neprihláseného používateľa zobrazíme len text
         }
 
-        // Funkcia na odhlásenie
-        function logout() {
-            localStorage.removeItem("username");
-            localStorage.removeItem("password");
-            window.location.href = "login.html";
+        // Funkcia pre prihláseného používateľa (môže upravovať tímy)
+        function showEditableTeams() {
+            document.getElementById("editableTeams").style.display = "block"; // Zobraziť formulár pre úpravy
+            document.getElementById("readOnlyTeams").style.display = "none"; // Skryť textové zobrazenie
+
+            // Pridanie zápasov do skupiny
+            document.getElementById("groupAForm").addEventListener("submit", function(event) {
+                event.preventDefault();
+                let teams = [
+                    document.getElementById("teamA1").value,
+                    document.getElementById("teamA2").value,
+                    document.getElementById("teamA3").value,
+                    document.getElementById("teamA4").value,
+                    document.getElementById("teamA5").value
+                ];
+                generateMatches(teams, "A");
+            });
         }
 
-        // Pridanie zápasov do skupiny
-        document.getElementById("groupAForm").addEventListener("submit", function(event) {
-            event.preventDefault();
-            let teams = [
-                document.getElementById("teamA1").value,
-                document.getElementById("teamA2").value,
-                document.getElementById("teamA3").value,
-                document.getElementById("teamA4").value,
-                document.getElementById("teamA5").value
-            ];
-            generateMatches(teams, "A");
-        });
+        // Funkcia pre neprihláseného používateľa (len na zobrazenie)
+        function showReadOnlyTeams() {
+            document.getElementById("readOnlyTeams").style.display = "block"; // Zobraziť textové zobrazenie
+            document.getElementById("editableTeams").style.display = "none"; // Skryť inputy
+
+            // Zobrazíme predvolené názvy tímov
+            document.getElementById("teamA1Display").innerText = "Tím 1";
+            document.getElementById("teamA2Display").innerText = "Tím 2";
+            document.getElementById("teamA3Display").innerText = "Tím 3";
+            document.getElementById("teamA4Display").innerText = "Tím 4";
+            document.getElementById("teamA5Display").innerText = "Tím 5";
+        }
 
         // Funkcia na generovanie zápasov
         function generateMatches(teams, group) {
@@ -65,8 +94,15 @@
                     matches.push(teams[i] + " vs " + teams[j]);
                 }
             }
-            let matchesDiv = document.getElementById("matches" + group);
+            let matchesDiv = document.getElementById("matchesA");
             matchesDiv.innerHTML = "<h3>Zápasy:</h3>" + matches.join("<br>");
+        }
+
+        // Funkcia na odhlásenie
+        function logout() {
+            localStorage.removeItem("username");
+            localStorage.removeItem("password");
+            window.location.href = "login.html"; // Presmerovanie na prihlasovaciu stránku
         }
     </script>
 </body>
