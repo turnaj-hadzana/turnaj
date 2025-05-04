@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <title>Administračné rozhranie</title>
   <style>
-    /* Štýly pre administračné rozhranie */
     body {
       font-family: Arial, sans-serif;
       margin: 0;
@@ -38,7 +37,6 @@
 <div class="container">
   <h2>Čakajúci používatelia</h2>
   <ul id="pending-users">
-    <!-- Tu sa zobrazia čakajúci používatelia -->
   </ul>
 </div>
 
@@ -70,7 +68,7 @@
     });
 
     const usersList = document.getElementById('pending-users');
-    usersList.innerHTML = '';  // Vyčistíme zoznam pred pridaním nových používateľov
+    usersList.innerHTML = '';
     pendingUsers.forEach(username => {
       const li = document.createElement('li');
       li.textContent = username;
@@ -90,8 +88,7 @@
     await setDoc(userRef, { approved: true }, { merge: true });
     alert(`${username} bol schválený.`);
 
-    // Obnovíme stránku po schválení používateľa
-    location.reload();  // Znova načítame stránku, aby sme zobrazili aktuálny zoznam používateľov
+    location.reload();
   }
 
   loadPendingUsers();
