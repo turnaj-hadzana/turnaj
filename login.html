@@ -1,42 +1,32 @@
 <!DOCTYPE html>
 <html lang="sk">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prihlásenie</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Prihlásenie</title>
+  <script src="login.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+      text-align: center;
+    }
+    input {
+      display: block;
+      margin: 10px auto;
+      padding: 8px;
+      font-size: 1em;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 1em;
+    }
+  </style>
 </head>
 <body>
-    <h2>Prihlásenie</h2>
-    <form id="loginForm">
-        <label for="loginUsername">Používateľské meno:</label>
-        <input type="text" id="loginUsername" required><br><br>
-
-        <label for="loginPassword">Heslo:</label>
-        <input type="password" id="loginPassword" required><br><br>
-
-        <button type="submit">Prihlásiť sa</button>
-    </form>
-
-    <p>Nemáte účet? <a href="register.html">Zaregistrujte sa</a></p>
-
-    <script>
-        // Funkcia na prihlásenie používateľa
-        document.getElementById("loginForm").addEventListener("submit", function(event) {
-            event.preventDefault();
-
-            const username = document.getElementById("loginUsername").value;
-            const password = document.getElementById("loginPassword").value;
-
-            const storedUsername = localStorage.getItem("username");
-            const storedPassword = localStorage.getItem("password");
-
-            if (username === storedUsername && password === storedPassword) {
-                alert("Prihlásenie bolo úspešné!");
-                window.location.href = "index.html"; // Presmerovanie na hlavnú stránku
-            } else {
-                alert("Nesprávne používateľské meno alebo heslo.");
-            }
-        });
-    </script>
+  <h1>Prihlásenie</h1>
+  <input type="text" id="usernameInput" placeholder="Používateľské meno" />
+  <input type="password" id="passwordInput" placeholder="Heslo" />
+  <button onclick="login()">Prihlásiť sa</button>
 </body>
 </html>
