@@ -5,18 +5,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin – Úprava tímov</title>
   
-  <!-- Zahrneme header pre prihlásenie/odhlásenie -->
+  <!-- Zahrneme hlavičku pre prihlásenie/odhlásenie -->
   <div id="header-container"></div>
 
   <script>
-    // Nahradíme obsah hlavičky
     window.onload = function() {
+      // Nahradíme obsah hlavičky
       document.getElementById('header-container').innerHTML = `
         <div style="position: absolute; top: 10px; right: 10px;">
-          <button id="loginButton" onclick="toggleLogin()">Prihlásiť sa</button>
+          <button id="loginButton">Prihlásiť sa</button>
         </div>
-
+        
         <script>
+          // Skontroluje, či je používateľ prihlásený
           function checkLogin() {
             const username = localStorage.getItem("username");
             const loginButton = document.getElementById("loginButton");
@@ -30,10 +31,12 @@
             }
           }
 
+          // Funkcia pre prihlásenie
           function login() {
             window.location.href = 'login.html'; // Presmerovanie na prihlasovaciu stránku
           }
 
+          // Funkcia pre odhlásenie
           function logout() {
             localStorage.removeItem("username");
             window.location.href = '/'; // Presmerovanie na hlavnú stránku
@@ -45,24 +48,7 @@
     };
   </script>
   
-  <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js"></script>
-  
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
-    }
-    .hidden {
-      display: none;
-    }
-    .team-list {
-      margin-top: 20px;
-    }
-    input {
-      margin: 5px;
-    }
-  </style>
+  <!-- Zvyšok kódu pre admin stránku -->
 </head>
 <body>
   <h1>Admin – Úprava tímov pre turnaj U12 CH</h1>
@@ -111,8 +97,3 @@
         document.getElementById("viewTeams").classList.remove("hidden");
         loadTeams(); // Načítanie tímov pre neprihlásených používateľov
       }
-    }
-
-    function logout() {
-      localStorage.removeItem("username");
-      window.location.href
