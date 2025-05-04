@@ -1,77 +1,73 @@
 <!DOCTYPE html>
 <html lang="sk">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Turnaj U12 CH</title>
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Turnaj</title>
 </head>
 <body>
-  <h1>Turnaj U12 CH</h1>
+    <h2>Turnaj</h2>
 
-  <!-- Sekcia pre prihlásenie -->
-  <div id="loginForm">
-    <h3>Prihlásenie</h3>
-    <input type="text" id="username" placeholder="Používateľské meno" required>
-    <input type="password" id="password" placeholder="Heslo" required>
-    <button id="loginButton">Prihlásiť sa</button>
-    <button id="showRegisterFormButton">Zaregistrovať sa</button>
-  </div>
+    <!-- Zobraziť prihláseného používateľa -->
+    <div id="userInfo"></div>
 
-  <!-- Sekcia pre registráciu -->
-  <div id="registerForm" style="display: none;">
-    <h3>Registrácia</h3>
-    <input type="text" id="newUsername" placeholder="Nové používateľské meno" required>
-    <input type="password" id="newPassword" placeholder="Nové heslo" required>
-    <input type="password" id="confirmPassword" placeholder="Potvrďte heslo" required>
-    <button id="registerButton">Registrovať sa</button>
-    <button id="cancelRegisterButton">Zrušiť</button>
-  </div>
+    <!-- Formuláre pre zadávanie tímov -->
+    <div id="teams">
+        <form id="groupAForm">
+            <h3>Skupina A</h3>
+            <input type="text" id="teamA1" placeholder="Tím 1" required><br>
+            <input type="text" id="teamA2" placeholder="Tím 2" required><br>
+            <input type="text" id="teamA3" placeholder="Tím 3" required><br>
+            <input type="text" id="teamA4" placeholder="Tím 4" required><br>
+            <input type="text" id="teamA5" placeholder="Tím 5" required><br>
+            <button type="submit">Uložiť tímy</button>
+        </form>
+        <div id="matchesA"></div>
+    </div>
 
-  <!-- Zobrazí sa, ak je používateľ prihlásený -->
-  <div id="logoutDiv" style="display:none;">
-    <button id="logoutButton">Odhlásiť sa</button>
-  </div>
+    <!-- Prihlásenie a odhlásenie -->
+    <div id="logoutDiv" style="display:none;">
+        <button onclick="logout()">Odhlásiť sa</button>
+    </div>
 
-  <!-- Skupiny -->
-  <div id="groupA">
-    <h2>Skupina A</h2>
-    <form id="groupAForm">
-      <input type="text" placeholder="Tím A1" id="teamA1" required>
-      <input type="text" placeholder="Tím A2" id="teamA2" required>
-      <input type="text" placeholder="Tím A3" id="teamA3" required>
-      <input type="text" placeholder="Tím A4" id="teamA4" required>
-      <input type="text" placeholder="Tím A5" id="teamA5" required>
-      <button type="submit">Uložiť tímov</button>
-    </form>
-    <div id="matchesA"></div>
-  </div>
+    <script>
+        // Funkcia pre prihláseného používateľa
+        if(localStorage.getItem("username")) {
+            document.getElementById("userInfo").innerHTML = "Prihlásený ako: " + localStorage.getItem("username");
+            document.getElementById("logoutDiv").style.display = "block";
+        }
 
-  <div id="groupB">
-    <h2>Skupina B</h2>
-    <form id="groupBForm">
-      <input type="text" placeholder="Tím B1" id="teamB1" required>
-      <input type="text" placeholder="Tím B2" id="teamB2" required>
-      <input type="text" placeholder="Tím B3" id="teamB3" required>
-      <input type="text" placeholder="Tím B4" id="teamB4" required>
-      <input type="text" placeholder="Tím B5" id="teamB5" required>
-      <button type="submit">Uložiť tímov</button>
-    </form>
-    <div id="matchesB"></div>
-  </div>
+        // Funkcia na odhlásenie
+        function logout() {
+            localStorage.removeItem("username");
+            localStorage.removeItem("password");
+            window.location.href = "login.html";
+        }
 
-  <div id="groupC">
-    <h2>Skupina C</h2>
-    <form id="groupCForm">
-      <input type="text" placeholder="Tím C1" id="teamC1" required>
-      <input type="text" placeholder="Tím C2" id="teamC2" required>
-      <input type="text" placeholder="Tím C3" id="teamC3" required>
-      <input type="text" placeholder="Tím C4" id="teamC4" required>
-      <button type="submit">Uložiť tímov</button>
-    </form>
-    <div id="matchesC"></div>
-  </div>
+        // Pridanie zápasov do skupiny
+        document.getElementById("groupAForm").addEventListener("submit", function(event) {
+            event.preventDefault();
+            let teams = [
+                document.getElementById("teamA1").value,
+                document.getElementById("teamA2").value,
+                document.getElementById("teamA3").value,
+                document.getElementById("teamA4").value,
+                document.getElementById("teamA5").value
+            ];
+            generateMatches(teams, "A");
+        });
 
-  <script src="main.js"></script>
+        // Funkcia na generovanie zápasov
+        function generateMatches(teams, group) {
+            let matches = [];
+            for (let i = 0; i < teams.length; i++) {
+                for (let j = i + 1; j < teams.length; j++) {
+                    matches.push(teams[i] + " vs " + teams[j]);
+                }
+            }
+            let matchesDiv = document.getElementById("matches" + group);
+            matchesDiv.innerHTML = "<h3>Zápasy:</h3>" + matches.join("<br>");
+        }
+    </script>
 </body>
 </html>
