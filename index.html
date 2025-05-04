@@ -4,17 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Turnaj U12 CH</title>
-  
   <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js"></script>
-  
   <style>
     body {
       font-family: Arial, sans-serif;
       margin: 20px;
-    }
-    .hidden {
-      display: none;
     }
     .team-list {
       margin-top: 20px;
@@ -22,37 +17,10 @@
   </style>
 </head>
 <body>
-  <h1>Turnaj U12 CH</h1>
+  <h1>Turnaj U12 CH – verejný výpis tímov</h1>
 
-  <!-- Prihlásenie -->
-<div id="loginDiv">
-  <h2>Prihlásenie</h2>
-  <input type="text" id="usernameInput" placeholder="Používateľské meno" />
-  <input type="password" id="passwordInput" placeholder="Heslo" />
-  <button onclick="login()">Prihlásiť sa</button>
-</div>
-
-
-  <!-- Info o prihlásenom používateľovi -->
-  <div id="userPanel" class="hidden">
-    <p>Prihlásený ako: <span id="usernameDisplay"></span></p>
-    <button onclick="logout()">Odhlásiť sa</button>
-  </div>
-
-  <!-- Úprava tímov (len pre prihláseného) -->
-  <div id="editableTeams" class="hidden">
-    <h2>Úprava tímov – Skupina A</h2>
-    <input type="text" id="teamA1" placeholder="Tím 1" />
-    <input type="text" id="teamA2" placeholder="Tím 2" />
-    <input type="text" id="teamA3" placeholder="Tím 3" />
-    <input type="text" id="teamA4" placeholder="Tím 4" />
-    <input type="text" id="teamA5" placeholder="Tím 5" />
-    <button onclick="saveTeams()">Uložiť tímy</button>
-  </div>
-
-  <!-- Zobrazenie tímov (pre všetkých) -->
   <div id="readOnlyTeams">
-    <h2>Skupina A – tímy</h2>
+    <h2>Skupina A</h2>
     <ul class="team-list">
       <li id="teamA1Display"></li>
       <li id="teamA2Display"></li>
@@ -63,136 +31,37 @@
   </div>
 
   <script>
-
     const firebaseConfig = {
-    apiKey: "AIzaSyDNWRlWmBtQPIR49KViBpWf16hDUjU7Npw",
-    authDomain: "turnaj-skusobne.firebaseapp.com",
-    projectId: "turnaj-skusobne",
-    storageBucket: "turnaj-skusobne.firebasestorage.app",
-    messagingSenderId: "755998492681",
-    appId: "1:755998492681:web:f3242ae0f54b61903290d8",
-    measurementId: "G-B8DVMX2KVV"
-  };
+      apiKey: "AIzaSyDNWRlWmBtQPIR49KViBpWf16hDUjU7Npw",
+      authDomain: "turnaj-skusobne.firebaseapp.com",
+      projectId: "turnaj-skusobne",
+      storageBucket: "turnaj-skusobne.appspot.com",
+      messagingSenderId: "755998492681",
+      appId: "1:755998492681:web:f3242ae0f54b61903290d8",
+      measurementId: "G-B8DVMX2KVV"
+    };
 
-  // Inicializuj Firebase a Firestore
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
 
-    const teamsRef = db.collection("teams");
-
-  // Uloženie tímov (volané len ak je prihlásený admin)
-  async function saveTeams(teams) {
-    try {
-      await teamsRef.doc("u12ch").set({ teams });
-      console.log("Tímy uložené!");
-    } catch (err) {
-      console.error("Chyba pri ukladaní:", err);
-    }
-  }
-
-  // Načítanie tímov (pre všetkých)
-  async function loadTeams() {
-    try {
-      const doc = await teamsRef.doc("u12ch").get();
-      if (doc.exists) {
-        const data = doc.data().teams;
-        updateUIWithTeams(data);
-      }
-    } catch (err) {
-      console.error("Chyba pri načítaní:", err);
-    }
-  }
-
-  // Funkcia na zobrazenie tímov
-  function updateUIWithTeams(teams) {
-    // Implementuj aktualizáciu UI na stránke
-    // Napr. document.getElementById("team1").textContent = teams[0];
-  }
-
-  // Zavolaj na začiatku (aby všetci videli údaje)
-  loadTeams();
-    
-
-    
-    async function saveTeams() {
-  const teams = {
-    groupA: [
-      document.getElementById("teamA1").value,
-      document.getElementById("teamA2").value,
-      document.getElementById("teamA3").value,
-      document.getElementById("teamA4").value,
-      document.getElementById("teamA5").value
-    ]
-  };
-  try {
-    await teamsRef.doc("u12ch").set({ teams });
-    alert("Tímy boli uložené.");
-    loadTeams(); // obnov zobrazenie pre všetkých
-  } catch (error) {
-    console.error("Chyba pri ukladaní tímov:", error);
-  }
-    }
-
-    function updateUIWithTeams(teamsData) {
-  const names = teamsData.groupA || [];
-  document.getElementById("teamA1Display").innerText = names[0] || "";
-  document.getElementById("teamA2Display").innerText = names[1] || "";
-  document.getElementById("teamA3Display").innerText = names[2] || "";
-  document.getElementById("teamA4Display").innerText = names[3] || "";
-  document.getElementById("teamA5Display").innerText = names[4] || "";
-
-  // Ak je používateľ prihlásený, predvyplní inputy
-  const username = localStorage.getItem("username");
-  if (username) {
-    document.getElementById("teamA1").value = names[0] || "";
-    document.getElementById("teamA2").value = names[1] || "";
-    document.getElementById("teamA3").value = names[2] || "";
-    document.getElementById("teamA4").value = names[3] || "";
-    document.getElementById("teamA5").value = names[4] || "";
-  }
-}
-
-    
-
-    function login() {
-      const username = document.getElementById("usernameInput").value.trim();
-      if (username) {
-        localStorage.setItem("username", username);
-        location.reload(); // Reload na zmenu zobrazenia
-      }
-    }
-
-    function logout() {
-      localStorage.removeItem("username");
-      location.reload();
-    }
-
-    function checkLogin() {
-      const username = localStorage.getItem("username");
-      if (username) {
-        document.getElementById("loginDiv").classList.add("hidden");
-        document.getElementById("userPanel").classList.remove("hidden");
-        document.getElementById("editableTeams").classList.remove("hidden");
-        document.getElementById("usernameDisplay").innerText = username;
-
-        // Predvyplní inputy s aktuálnymi údajmi
-        const stored = localStorage.getItem("teams");
-        if (stored) {
-          const teams = JSON.parse(stored).groupA;
-          document.getElementById("teamA1").value = teams[0] || "";
-          document.getElementById("teamA2").value = teams[1] || "";
-          document.getElementById("teamA3").value = teams[2] || "";
-          document.getElementById("teamA4").value = teams[3] || "";
-          document.getElementById("teamA5").value = teams[4] || "";
+    async function loadTeams() {
+      try {
+        const doc = await db.collection("teams").doc("u12ch").get();
+        if (doc.exists) {
+          const teams = doc.data().groupA;
+          document.getElementById("teamA1Display").innerText = teams[0] || "";
+          document.getElementById("teamA2Display").innerText = teams[1] || "";
+          document.getElementById("teamA3Display").innerText = teams[2] || "";
+          document.getElementById("teamA4Display").innerText = teams[3] || "";
+          document.getElementById("teamA5Display").innerText = teams[4] || "";
         }
+      } catch (err) {
+        console.error("Chyba pri načítaní tímov:", err);
       }
     }
 
-    // Inicializácia
-    window.onload = function () {
-  checkLogin();
-  loadTeams();
-};
+    loadTeams();
   </script>
+  <script src="login.js"></script>
 </body>
 </html>
