@@ -10,7 +10,6 @@
   <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore-compat.js"></script>
 
   <script>
-    // Firebase konfigurácia
     const firebaseConfig = {
       apiKey: "AIzaSyDNWRlWmBtQPIR49KViBpWf16hDUjU7Npw",
       authDomain: "turnaj-skusobne.firebaseapp.com",
@@ -28,26 +27,18 @@
     function checkLogin() {
       const username = localStorage.getItem("username");
       const loginButton = document.getElementById("loginButton");
-      const userPanel = document.getElementById("userPanel");
 
-      if (username) {
+      if (username === "admin") {
         loginButton.textContent = 'Odhlásiť sa';
         loginButton.onclick = logout;
-        userPanel.classList.remove("hidden");
+        document.getElementById("userPanel").classList.remove("hidden");
         document.getElementById("usernameDisplay").textContent = username;
         document.getElementById("editableTeams").classList.remove("hidden");
         document.getElementById("viewTeams").classList.add("hidden");
       } else {
-        loginButton.textContent = 'Prihlásiť sa';
-        loginButton.onclick = login;
-        userPanel.classList.add("hidden");
-        document.getElementById("editableTeams").classList.add("hidden");
-        document.getElementById("viewTeams").classList.remove("hidden");
+        alert("Nemáš oprávnenie. Budeš presmerovaný.");
+        window.location.href = "login.html";
       }
-    }
-
-    function login() {
-      window.location.href = 'login.html';
     }
 
     function logout() {
@@ -118,6 +109,7 @@
     <input type="text" id="teamA3" placeholder="Tím 3" />
     <input type="text" id="teamA4" placeholder="Tím 4" />
     <input type="text" id="teamA5" placeholder="Tím 5" />
+    <br><br>
     <button onclick="saveTeams()">Uložiť tímy</button>
   </div>
 
