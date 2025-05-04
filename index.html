@@ -4,6 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Turnaj U12 CH</title>
+  
+  <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js"></script>
+  
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -57,6 +61,57 @@
   </div>
 
   <script>
+
+    const firebaseConfig = {
+    apiKey: "AIzaSyDNWRlWmBtQPIR49KViBpWf16hDUjU7Npw",
+    authDomain: "turnaj-skusobne.firebaseapp.com",
+    projectId: "turnaj-skusobne",
+    storageBucket: "turnaj-skusobne.firebasestorage.app",
+    messagingSenderId: "755998492681",
+    appId: "1:755998492681:web:f3242ae0f54b61903290d8",
+    measurementId: "G-B8DVMX2KVV"
+  };
+
+  // Inicializuj Firebase a Firestore
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+    const teamsRef = db.collection("teams");
+
+  // Uloženie tímov (volané len ak je prihlásený admin)
+  async function saveTeams(teams) {
+    try {
+      await teamsRef.doc("u12ch").set({ teams });
+      console.log("Tímy uložené!");
+    } catch (err) {
+      console.error("Chyba pri ukladaní:", err);
+    }
+  }
+
+  // Načítanie tímov (pre všetkých)
+  async function loadTeams() {
+    try {
+      const doc = await teamsRef.doc("u12ch").get();
+      if (doc.exists) {
+        const data = doc.data().teams;
+        updateUIWithTeams(data);
+      }
+    } catch (err) {
+      console.error("Chyba pri načítaní:", err);
+    }
+  }
+
+  // Funkcia na zobrazenie tímov
+  function updateUIWithTeams(teams) {
+    // Implementuj aktualizáciu UI na stránke
+    // Napr. document.getElementById("team1").textContent = teams[0];
+  }
+
+  // Zavolaj na začiatku (aby všetci videli údaje)
+  loadTeams();
+    
+
+    
     function saveTeams() {
       const teams = {
         groupA: [
