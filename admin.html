@@ -20,11 +20,13 @@
         // Zobraziť sekciu pre editáciu tímov
         document.getElementById("editableTeams").classList.remove("hidden");
         document.getElementById("usernameDisplay").textContent = username;
+        document.getElementById("viewTeams").classList.add("hidden"); // Skrytí čítanie tímov pre prihláseného
       } else {
         loginButton.textContent = 'Prihlásiť sa';
         loginButton.onclick = login;
-        // Zobraziť iba čítacie údaje
+        // Zobraziť iba čítacie údaje (pre neprihlásených)
         document.getElementById("viewTeams").classList.remove("hidden");
+        document.getElementById("editableTeams").classList.add("hidden"); // Skrytí sekcie pre editáciu tímov
       }
     }
 
@@ -78,13 +80,15 @@
     // Funkcia volaná pri načítaní stránky
     window.onload = function() {
       checkLogin(); // Skontroluje, či je používateľ prihlásený
-      displayTeams(); // Načíta a zobrazí tímy
+      displayTeams(); // Načíta a zobrazí tímov aj pre neprihlásených
     };
   </script>
 </head>
 <body>
   <!-- Hlavička pre prihlásenie/odhlásenie -->
-  <div id="header-container"></div>
+  <div id="header-container">
+    <button id="loginButton">Prihlásiť sa</button>
+  </div>
 
   <!-- Zobrazenie prihláseného používateľa -->
   <div id="userPanel" class="hidden">
