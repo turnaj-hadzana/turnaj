@@ -6,7 +6,6 @@
   <title>Prihlásenie a Registrácia</title>
   <link rel="icon" href="data:,">
   <style>
-    /* Globálne štýly */
     body {
       font-family: Arial, sans-serif;
       background-color: #f4f4f9;
@@ -65,7 +64,6 @@
       text-align: center;
     }
 
-    /* Container pre sekcie prihlásenie a registrácia */
     .auth-container {
       display: flex;
       flex-direction: column;
@@ -76,7 +74,6 @@
       margin-bottom: 20px;
     }
 
-    /* Skrytý form pre registráciu */
     #register-form {
       display: none;
     }
@@ -91,7 +88,6 @@
 <body>
 
   <div class="auth-container">
-    <!-- Prihlásenie -->
     <div class="form-container" id="login-form">
       <h2>Prihlásenie</h2>
       <input type="text" id="login-username" placeholder="Používateľské meno" required>
@@ -101,7 +97,6 @@
       <p class="toggle-link" id="show-register">Vytvoriť nový účet</p>
     </div>
 
-    <!-- Registrácia (skrytá) -->
     <div class="form-container" id="register-form">
       <h2>Registrácia</h2>
       <input type="text" id="register-username" placeholder="Používateľské meno" required>
@@ -129,19 +124,16 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // Zobraziť registráciu po kliknutí na "Vytvoriť nový účet"
     document.getElementById('show-register').addEventListener('click', () => {
       document.getElementById('login-form').style.display = 'none';
       document.getElementById('register-form').style.display = 'block';
     });
 
-    // Zobraziť prihlásenie po kliknutí na "Späť na prihlásenie"
     document.getElementById('show-login').addEventListener('click', () => {
       document.getElementById('register-form').style.display = 'none';
       document.getElementById('login-form').style.display = 'block';
     });
 
-    // Registrácia
     document.getElementById('register-btn').addEventListener('click', async () => {
       const username = document.getElementById('register-username').value.trim();
       const password = document.getElementById('register-password').value;
@@ -164,7 +156,6 @@
       }
     });
 
-    // Prihlásenie
     document.getElementById('login-btn').addEventListener('click', async () => {
       const username = document.getElementById('login-username').value.trim();
       const password = document.getElementById('login-password').value;
