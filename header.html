@@ -1,10 +1,22 @@
 <header style="width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background-color: #ffffff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); position: fixed; top: 0; left: 0; z-index: 1000;">
-  <div style="font-size: 18px; font-weight: bold;"></div>
-  <button id="auth-button" style="padding: 8px 16px; border: none; border-radius: 5px; background-color: #3a8d41; color: white; cursor: pointer;">Prihlásiť sa</button>
+  <div style="font-size: 18px; font-weight: bold;">Turnaj</div>
+  <button id="auth-button" style="padding: 8px 16px; border: none; border-radius: 5px; background-color: #3a8d41; color: white; cursor: pointer;"></button>
 </header>
 
 <script>
-  document.getElementById("auth-button").addEventListener("click", function() {
-    window.location.href = "login.html";
-  });
+  const authButton = document.getElementById("auth-button");
+  const username = sessionStorage.getItem("username");
+
+  if (username) {
+    authButton.textContent = "Odhlásiť sa";
+    authButton.onclick = function () {
+      sessionStorage.removeItem("username");
+      window.location.href = "index.html"; // alebo iná verejná stránka
+    };
+  } else {
+    authButton.textContent = "Prihlásiť sa";
+    authButton.onclick = function () {
+      window.location.href = "login.html";
+    };
+  }
 </script>
