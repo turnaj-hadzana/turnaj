@@ -2,28 +2,25 @@
 <html lang="sk">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Prihlásenie &</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1-crypto-js.js"></script>
+  <title>Prihlásenie a registrácia</title>
   <style>
+    /* Úprava vzhľadu */
     body {
-      font-family: 'Arial', sans-serif;
-      background-color: #f5f5f5;
-      margin: 0;
-      padding: 0;
+      font-family: Arial, sans-serif;
       display: flex;
       justify-content: center;
       align-items: center;
       height: 100vh;
-      color: #333;
+      margin: 0;
+      background-color: #f0f0f0;
     }
 
-    .container {
-      background: white;
-      padding: 30px;
+    .form-container {
+      background-color: #fff;
+      padding: 20px;
       border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      width: 350px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      width: 300px;
     }
 
     h2 {
@@ -31,79 +28,53 @@
       color: #333;
     }
 
-    input[type="text"], input[type="password"] {
+    input {
       width: 100%;
-      padding: 12px;
+      padding: 10px;
       margin: 10px 0;
-      border: 1px solid #ddd;
+      border: 1px solid #ccc;
       border-radius: 4px;
-      font-size: 16px;
     }
 
     button {
       width: 100%;
-      padding: 12px;
-      background-color: #007BFF;
+      padding: 10px;
+      background-color: #4CAF50;
       color: white;
       border: none;
       border-radius: 4px;
-      font-size: 16px;
       cursor: pointer;
-      transition: background-color 0.3s;
     }
 
     button:hover {
-      background-color: #0056b3;
+      background-color: #45a049;
     }
 
     .link {
+      display: block;
       text-align: center;
       margin-top: 10px;
-    }
-
-    .link a {
-      color: #007BFF;
-      text-decoration: none;
-    }
-
-    .link a:hover {
-      text-decoration: underline;
-    }
-
-    #register-form {
-      display: none;
-      margin-top: 20px;
-    }
-
-    #create-account {
       cursor: pointer;
       color: #007BFF;
-    }
-
-    #create-account:hover {
-      text-decoration: underline;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div id="login-form">
-      <h2>Prihlásenie</h2>
-      <input type="text" id="login-username" placeholder="Používateľské meno"><br>
-      <input type="password" id="login-password" placeholder="Heslo"><br>
-      <button id="login-btn">Prihlásiť sa</button>
 
-      <p class="link">Nemáte účet? <span id="create-account">Vytvoriť nový účet</span></p>
-    </div>
+  <div class="form-container" id="login-form">
+    <h2>Prihlásenie</h2>
+    <input type="text" id="login-username" placeholder="Používateľské meno"><br>
+    <input type="password" id="login-password" placeholder="Heslo"><br>
+    <button id="login-btn">Prihlásiť sa</button>
+    <div class="link" id="show-register">Vytvoriť nový účet</div>
+  </div>
 
-    <div id="register-form">
-      <h2>Registrácia</h2>
-      <input type="text" id="register-username" placeholder="Používateľské meno"><br>
-      <input type="password" id="register-password" placeholder="Heslo"><br>
-      <button id="register-btn">Registrovať sa</button>
-
-      <p class="link">Máte už účet? <span id="go-to-login">Prihlásiť sa</span></p>
-    </div>
+  <div class="form-container" id="register-form" style="display: none;">
+    <h2>Registrácia</h2>
+    <input type="text" id="register-username" placeholder="Používateľské meno"><br>
+    <input type="password" id="register-password" placeholder="Heslo"><br>
+    <button id="register-btn">Registrovať sa</button>
+    <div class="link" id="show-login">Máte už účet? Prihláste sa</div>
   </div>
 
   <script type="module">
@@ -122,43 +93,43 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // Zobrazí registračný formulár
-    document.getElementById('create-account').addEventListener('click', () => {
+    // Zobrazenie registračného formulára
+    document.getElementById('show-register').addEventListener('click', () => {
       document.getElementById('login-form').style.display = 'none';
       document.getElementById('register-form').style.display = 'block';
     });
 
-    // Prejdite späť na prihlásenie
-    document.getElementById('go-to-login').addEventListener('click', () => {
-      document.getElementById('register-form').style.display = 'none';
+    // Zobrazenie prihlasovacieho formulára
+    document.getElementById('show-login').addEventListener('click', () => {
       document.getElementById('login-form').style.display = 'block';
+      document.getElementById('register-form').style.display = 'none';
     });
 
-    // Registrácia nového používateľa
+    // Registrácia
     document.getElementById('register-btn').addEventListener('click', async () => {
       const username = document.getElementById('register-username').value.trim();
       const password = document.getElementById('register-password').value;
 
       if (!username || !password) {
-        alert("Zadaj meno aj heslo.");
+        alert("Zadajte meno a heslo.");
         return;
       }
 
-      const hashedPassword = CryptoJS.SHA256(password).toString(CryptoJS.enc.Base64);
-
-      // Uložíme heslo do Firestore ako hash
       const userRef = doc(db, "users", username);
       const userSnap = await getDoc(userRef);
 
       if (userSnap.exists()) {
         alert("Používateľ už existuje!");
       } else {
-        await setDoc(userRef, { password: hashedPassword });
+        // Uloženie hesla v čistom texte (NEODPORÚČA SA PRE PRODUKCIONÉ APLIKÁCIE)
+        await setDoc(userRef, { password: password });
         alert("Registrácia úspešná!");
+        document.getElementById('register-form').style.display = 'none';
+        document.getElementById('login-form').style.display = 'block';
       }
     });
 
-    // Prihlásenie používateľa
+    // Prihlásenie
     document.getElementById('login-btn').addEventListener('click', async () => {
       const username = document.getElementById('login-username').value.trim();
       const password = document.getElementById('login-password').value;
@@ -171,17 +142,16 @@
         return;
       }
 
-      const storedHashedPassword = userSnap.data().password;
-      const inputHashedPassword = CryptoJS.SHA256(password).toString(CryptoJS.enc.Base64);
+      const storedPassword = userSnap.data().password;
 
-      // Porovnáme zadané heslo so zahashovaným heslom v databáze
-      if (inputHashedPassword === storedHashedPassword) {
+      if (password === storedPassword) {
         sessionStorage.setItem("username", username); // uložíme prihlásenie
-        window.location.href = "dashboard.html"; // presmerovanie po prihlásení
+        window.location.href = "dashboard.html"; // presmerovanie
       } else {
         alert("Nesprávne heslo.");
       }
     });
   </script>
+
 </body>
 </html>
