@@ -52,11 +52,9 @@
     messagingSenderId: "755998492681",
     appId: "1:755998492681:web:f3242ae0f54b61903290d8"
   };
-
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-  // Funkcia na načítanie používateľov čakajúcich na schválenie
   async function loadPendingUsers() {
     const querySnapshot = await getDocs(collection(db, "users"));
     const pendingUsers = [];
@@ -66,7 +64,6 @@
         pendingUsers.push(doc.id);
       }
     });
-
     const usersList = document.getElementById('pending-users');
     usersList.innerHTML = '';
     pendingUsers.forEach(username => {
@@ -81,8 +78,6 @@
       usersList.appendChild(li);
     });
   }
-
-  // Funkcia na schválenie používateľa
   async function approveUser(username) {
     const userRef = doc(db, "users", username);
     await setDoc(userRef, { approved: true }, { merge: true });
