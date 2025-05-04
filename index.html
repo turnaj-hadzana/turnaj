@@ -25,5 +25,22 @@
 
   <div id="header-placeholder"></div>
 
+  <script>
+  // Načítanie súboru header.html do #header-placeholder
+  fetch("header.html")
+    .then(response => {
+      if (!response.ok) {
+        throw new Error("Nepodarilo sa načítať header.html");
+      }
+      return response.text();
+    })
+    .then(data => {
+      document.getElementById("header-placeholder").innerHTML = data;
+    })
+    .catch(error => {
+      console.error("Chyba pri načítaní hlavičky:", error);
+    });
+</script>
+
 </body>
 </html>
