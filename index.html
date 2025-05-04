@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Prihlásenie a Registrácia</title>
-  <link rel="icon" href="data:,"> <!-- Tento tag odstráni problém s favicon -->
+  <link rel="icon" href="data:,">
   <style>
     /* Globálne štýly */
     body {
@@ -115,7 +115,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
     import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
-    import bcrypt from "https://cdn.jsdelivr.net/npm/bcryptjs@2.4.3/dist/bcrypt.min.js"; <!-- Opravená URL pre bcrypt -->
+    import bcrypt from "https://cdn.jsdelivr.net/npm/bcryptjs@2.4.3/dist/bcrypt.min.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDNWRlWmBtQPIR49KViBpWf16hDUjU7Npw",
@@ -181,8 +181,8 @@
       const match = await bcrypt.compare(password, hashedPassword);
 
       if (match) {
-        sessionStorage.setItem("username", username); // uložíme prihlásenie
-        window.location.href = "dashboard.html"; // presmerovanie
+        sessionStorage.setItem("username", username);
+        window.location.href = "dashboard.html";
       } else {
         document.getElementById('login-error').textContent = "Nesprávne heslo.";
       }
