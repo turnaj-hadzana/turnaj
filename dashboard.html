@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard</title>
+</head>
+<body>
+  <h1>Vitaj, <span id="user"></span>!</h1>
+  <button id="logout">Odhlásiť sa</button>
+
+  <script>
+    const username = sessionStorage.getItem("username");
+    if (!username) {
+      window.location.href = "index.html"; // nie je prihlásený
+    } else {
+      document.getElementById("user").textContent = username;
+    }
+
+    document.getElementById("logout").addEventListener("click", () => {
+      sessionStorage.removeItem("username");
+      window.location.href = "index.html";
+    });
+  </script>
+</body>
+</html>
