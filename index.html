@@ -2,115 +2,27 @@
 <html lang="sk">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Prihlásenie &</title>
-  <link rel="icon" href="data:,">
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f4f4f9;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      flex-direction: column;
-    }
-
-    h2 {
-      text-align: center;
-      color: #333;
-      font-size: 24px;
-    }
-
-    .form-container {
-      background-color: #fff;
-      border-radius: 8px;
-      padding: 20px;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-      width: 300px;
-      margin-bottom: 20px;
-    }
-
-    .form-container input {
-      width: 100%;
-      padding: 10px;
-      margin: 10px 0;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      box-sizing: border-box;
-      font-size: 16px;
-    }
-
-    .form-container button {
-      width: 100%;
-      padding: 10px;
-      background-color: #4CAF50;
-      border: none;
-      color: white;
-      font-size: 16px;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-
-    .form-container button:hover {
-      background-color: #45a049;
-    }
-
-    .error-message {
-      color: red;
-      font-size: 14px;
-      text-align: center;
-    }
-
-    .auth-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
-    .auth-container div {
-      margin-bottom: 20px;
-    }
-
-    #register-form {
-      display: none;
-    }
-
-    .toggle-link {
-      color: #4CAF50;
-      cursor: pointer;
-      text-decoration: underline;
-    }
-  </style>
+  <title>Prihlásenie a Registrácia</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.9-1-crypto-js.js"></script>
 </head>
 <body>
+  <h2>Prihlásenie</h2>
+  <input type="text" id="login-username" placeholder="Používateľské meno"><br>
+  <input type="password" id="login-password" placeholder="Heslo"><br>
+  <button id="login-btn">Prihlásiť sa</button>
 
-  <div class="auth-container">
-    <div class="form-container" id="login-form">
-      <h2>Prihlásenie</h2>
-      <input type="text" id="login-username" placeholder="Používateľské meno" required>
-      <input type="password" id="login-password" placeholder="Heslo" required>
-      <button id="login-btn">Prihlásiť sa</button>
-      <div class="error-message" id="login-error"></div>
-      <p class="toggle-link" id="show-register">Vytvoriť nový účet</p>
-    </div>
+  <p>Nemáte účet? <span id="create-account">Vytvoriť nový účet</span></p>
 
-    <div class="form-container" id="register-form">
-      <h2>Registrácia</h2>
-      <input type="text" id="register-username" placeholder="Používateľské meno" required>
-      <input type="password" id="register-password" placeholder="Heslo" required>
-      <button id="register-btn">Registrovať sa</button>
-      <div class="error-message" id="register-error"></div>
-      <p class="toggle-link" id="show-login">Späť na prihlásenie</p>
-    </div>
+  <div id="register-form" style="display: none;">
+    <h2>Registrácia</h2>
+    <input type="text" id="register-username" placeholder="Používateľské meno"><br>
+    <input type="password" id="register-password" placeholder="Heslo"><br>
+    <button id="register-btn">Registrovať sa</button>
   </div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
     import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
-    import * as bcrypt from "https://cdn.jsdelivr.net/npm/bcryptjs@2.4.3/dist/bcrypt.min.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDNWRlWmBtQPIR49KViBpWf16hDUjU7Npw",
@@ -124,38 +36,36 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    document.getElementById('show-register').addEventListener('click', () => {
-      document.getElementById('login-form').style.display = 'none';
+    // Zobrazí registračný formulár
+    document.getElementById('create-account').addEventListener('click', () => {
       document.getElementById('register-form').style.display = 'block';
     });
 
-    document.getElementById('show-login').addEventListener('click', () => {
-      document.getElementById('register-form').style.display = 'none';
-      document.getElementById('login-form').style.display = 'block';
-    });
-
+    // Registrácia nového používateľa
     document.getElementById('register-btn').addEventListener('click', async () => {
       const username = document.getElementById('register-username').value.trim();
       const password = document.getElementById('register-password').value;
 
       if (!username || !password) {
-        document.getElementById('register-error').textContent = "Zadaj meno aj heslo.";
+        alert("Zadaj meno aj heslo.");
         return;
       }
 
+      const hashedPassword = CryptoJS.SHA256(password).toString(CryptoJS.enc.Base64);
+
+      // Uložíme heslo do Firestore ako hash
       const userRef = doc(db, "users", username);
       const userSnap = await getDoc(userRef);
 
       if (userSnap.exists()) {
-        document.getElementById('register-error').textContent = "Používateľ už existuje!";
+        alert("Používateľ už existuje!");
       } else {
-        const hashedPassword = await bcrypt.hash(password, 10);
         await setDoc(userRef, { password: hashedPassword });
-        document.getElementById('register-error').textContent = "";
         alert("Registrácia úspešná!");
       }
     });
 
+    // Prihlásenie používateľa
     document.getElementById('login-btn').addEventListener('click', async () => {
       const username = document.getElementById('login-username').value.trim();
       const password = document.getElementById('login-password').value;
@@ -164,21 +74,21 @@
       const userSnap = await getDoc(userRef);
 
       if (!userSnap.exists()) {
-        document.getElementById('login-error').textContent = "Používateľ neexistuje.";
+        alert("Používateľ neexistuje.");
         return;
       }
 
-      const hashedPassword = userSnap.data().password;
-      const match = await bcrypt.compare(password, hashedPassword);
+      const storedHashedPassword = userSnap.data().password;
+      const inputHashedPassword = CryptoJS.SHA256(password).toString(CryptoJS.enc.Base64);
 
-      if (match) {
-        sessionStorage.setItem("username", username);
-        window.location.href = "dashboard.html";
+      // Porovnáme zadané heslo so zahashovaným heslom v databáze
+      if (inputHashedPassword === storedHashedPassword) {
+        sessionStorage.setItem("username", username); // uložíme prihlásenie
+        window.location.href = "dashboard.html"; // presmerovanie po prihlásení
       } else {
-        document.getElementById('login-error').textContent = "Nesprávne heslo.";
+        alert("Nesprávne heslo.");
       }
     });
   </script>
-
 </body>
 </html>
