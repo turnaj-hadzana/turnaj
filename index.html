@@ -52,7 +52,8 @@
 </head>
 <body>
 
-<div class="container">
+<!-- Prihlasovací formulár -->
+<div class="container" id="login-container">
   <h2>Prihlásenie</h2>
   <input type="text" id="login-username" placeholder="Používateľské meno" required><br>
   <input type="password" id="login-password" placeholder="Heslo" required><br>
@@ -60,6 +61,7 @@
   <a href="#" class="link" id="register-link">Vytvoriť nový účet</a>
 </div>
 
+<!-- Registračný formulár -->
 <div class="container" id="register-container" style="display:none;">
   <h2>Registrácia</h2>
   <input type="text" id="register-username" placeholder="Používateľské meno" required><br>
@@ -71,7 +73,6 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
   import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
-  import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
   
   const firebaseConfig = {
     apiKey: "AIzaSyDNWRlWmBtQPIR49KViBpWf16hDUjU7Npw",
@@ -139,14 +140,14 @@
 
   // Zobrazenie registračného formulára
   document.getElementById('register-link').addEventListener('click', () => {
-    document.getElementById('register-container').style.display = 'block';
-    document.getElementById('register-link').style.display = 'none';
+    document.getElementById('login-container').style.display = 'none';  // Skryť prihlásenie
+    document.getElementById('register-container').style.display = 'block';  // Zobraziť registráciu
   });
 
   // Zobrazenie prihlasovacieho formulára
   document.getElementById('login-link').addEventListener('click', () => {
-    document.getElementById('register-container').style.display = 'none';
-    document.getElementById('register-link').style.display = 'block';
+    document.getElementById('register-container').style.display = 'none';  // Skryť registráciu
+    document.getElementById('login-container').style.display = 'block';  // Zobraziť prihlásenie
   });
 </script>
 
