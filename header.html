@@ -1,24 +1,92 @@
-<header style="width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 10px 40px 10px 20px; background-color: #ffffff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); position: fixed; top: 0; left: 0; z-index: 1000;">
-  <div style="font-size: 18px; font-weight: bold;">Turnaj</div>
-  <button id="auth-button" style="padding: 8px 16px; border: none; border-radius: 5px; background-color: #3a8d41; color: white; cursor: pointer;">...</button>
-</header>
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Turnaj</title>
+  <style>
+    header {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 20px;
+      background-color: #ffffff;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 1000;
+    }
 
-<div style="height: 60px;"></div>
+    .logo {
+      font-size: 20px;
+      font-weight: bold;
+    }
 
-<script>
-  const authButton = document.getElementById("auth-button");
-  const username = sessionStorage.getItem("username");
+    .auth-button {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 5px;
+      background-color: #3a8d41;
+      color: white;
+      cursor: pointer;
+      font-size: 16px;
+    }
 
-  if (username) {
-    authButton.textContent = "Odhlásiť sa";
-    authButton.onclick = function () {
-      sessionStorage.removeItem("username");
-      window.location.href = "index.html";
-    };
-  } else {
-    authButton.textContent = "Prihlásiť sa";
-    authButton.onclick = function () {
-      window.location.href = "login.html";
-    };
-  }
-</script>
+    .auth-button:hover {
+      background-color: #2e7033;
+    }
+
+    /* Rezerva pod hlavičku */
+    .content-offset {
+      height: 64px;
+    }
+
+    /* Responzívny štýl pre mobil */
+    @media (max-width: 480px) {
+      header {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 10px 15px;
+      }
+
+      .auth-button {
+        margin-top: 8px;
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="logo">Turnaj</div>
+    <button id="auth-button" class="auth-button">Načítava sa...</button>
+  </header>
+
+  <div class="content-offset"></div>
+
+  <h1>Vitaj!</h1>
+  <p>Obsah stránky pod hlavičkou...</p>
+
+  <script>
+    const authButton = document.getElementById("auth-button");
+    const username = sessionStorage.getItem("username");
+
+    if (username) {
+      authButton.textContent = "Odhlásiť sa";
+      authButton.onclick = function () {
+        sessionStorage.removeItem("username");
+        window.location.href = "index.html";
+      };
+    } else {
+      authButton.textContent = "Prihlásiť sa";
+      authButton.onclick = function () {
+        window.location.href = "login.html";
+      };
+    }
+  </script>
+
+</body>
+</html>
