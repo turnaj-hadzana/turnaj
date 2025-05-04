@@ -62,15 +62,15 @@ const firebaseConfig = {
 
   // Funkcia na ukladanie tímov do Firestore (len pre prihláseného používateľa)
   async function saveTeams() {
-    const teams = {
-      groupA: [
-        document.getElementById("teamA1").value,
-        document.getElementById("teamA2").value,
-        document.getElementById("teamA3").value,
-        document.getElementById("teamA4").value,
-        document.getElementById("teamA5").value
-      ]
-    };
+const teams = {
+  groupA: [
+    document.getElementById("teamA1").value,
+    document.getElementById("teamA2").value,
+    document.getElementById("teamA3").value,
+    document.getElementById("teamA4").value,
+    document.getElementById("teamA5").value
+  ]
+};
 
     try {
       // Ukladáme tímové údaje do Firestore
