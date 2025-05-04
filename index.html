@@ -26,22 +26,49 @@
   <div id="header-placeholder"></div>
 
   <p>Vitaj na stránke.</p>
-    
+
   <script>
-  fetch("header.html")
-    .then(response => {
-      if (!response.ok) {
-        throw new Error("Nepodarilo sa načítať header.html");
-      }
-      return response.text();
-    })
-    .then(data => {
-      document.getElementById("header-placeholder").innerHTML = data;
-    })
-    .catch(error => {
-      console.error("Chyba pri načítaní hlavičky:", error);
-    });
-</script>
+    fetch("header.html")
+      .then(response => {
+        if (!response.ok) {
+          throw new Error("Nepodarilo sa načítať header.html");
+        }
+        return response.text();
+      })
+      .then(data => {
+        document.getElementById("header-placeholder").innerHTML = data;
+
+        // Logika tlačidla na prihlasenie/odhlásenie - PRESUNUTÉ SEM
+        const authButton = document.getElementById("auth-button");
+        console.log("authButton po načítaní hlavičky:", authButton); // Pre kontrolu
+
+        if (authButton) {
+          const username = sessionStorage.getItem("username");
+          console.log("username po načítaní hlavičky:", username); // Pre kontrolu
+
+          if (username) {
+            authButton.textContent = "Odhlásiť sa";
+            authButton.onclick = () => {
+              console.log("Kliknuté na odhlásiť sa");
+              sessionStorage.removeItem("username");
+              window.location.href = "index.html";
+            };
+          } else {
+            authButton.textContent = "Prihlásiť sa";
+            authButton.onclick = () => {
+              console.log("Kliknuté na prihlásiť sa");
+              window.location.href = "login.html";
+            };
+          }
+        } else {
+          console.error("Element s ID 'auth-button' nebol nájdený v načítanej hlavičke.");
+        }
+      })
+      .catch(error => {
+        console.error("Chyba pri načítaní hlavičky:", error);
+        document.getElementById("header-placeholder").innerHTML = "<p>Chyba pri načítaní hlavičky.</p>";
+      });
+  </script>
 
 </body>
 </html>
