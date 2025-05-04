@@ -2,20 +2,22 @@
 <html lang="sk">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prihlásenie do aplikácie</title>
+    <title>Prihlásenie do turnaja</title>
 </head>
 <body>
-    <h1>Vitajte na stránke Turnaj</h1>
-    <button id="login-btn">Prihlásiť sa cez Google</button>
+    <h1>Prihlásenie</h1>
 
-    <!-- Načítanie Firebase SDK cez ES6 moduly -->
+    <input type="email" id="email" placeholder="Email"><br><br>
+    <input type="password" id="password" placeholder="Heslo"><br><br>
+
+    <button id="register-btn">Registrovať sa</button>
+    <button id="login-btn">Prihlásiť sa</button>
+
     <script type="module">
-        // Importy Firebase modulov
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-        import { getAuth, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
 
-        // Firebase konfigurácia
+        // Tvoja Firebase konfigurácia
         const firebaseConfig = {
             apiKey: "AIzaSyDNWRlWmBtQPIR49KViBpWf16hDUjU7Npw",
             authDomain: "turnaj-skusobne.firebaseapp.com",
@@ -26,24 +28,36 @@
             measurementId: "G-B8DVMX2KVV"
         };
 
-        // Inicializácia Firebase aplikácie
         const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);  // Autentifikácia
+        const auth = getAuth(app);
 
-        // Pripojenie event listenera na tlačidlo prihlásenia
-        document.getElementById('login-btn').addEventListener('click', function() {
-            const provider = new GoogleAuthProvider();  // Definícia poskytovateľa Google prihlásenia
-            signInWithPopup(auth, provider)  // Prihlásenie cez Google
-                .then((result) => {
-                    // Používateľské údaje po úspešnom prihlásení
-                    const user = result.user;
-                    console.log(user);  // Zobrazí informácie o prihlásenom používateľovi
-                    alert('Prihlásenie úspešné!');
+        // Registrácia používateľa
+        document.getElementById('register-btn').addEventListener('click', () => {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            createUserWithEmailAndPassword(auth, email, password)
+                .then((userCredential) => {
+                    alert("Registrácia úspešná!");
+                    console.log(userCredential.user);
                 })
                 .catch((error) => {
-                    // Ak nastane chyba
-                    console.error(error);  // Zobrazí chybu v konzole
-                    alert('Prihlásenie zlyhalo!');
+                    alert("Chyba pri registrácii: " + error.message);
+                });
+        });
+
+        // Prihlásenie používateľa
+        document.getElementById('login-btn').addEventListener('click', () => {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            signInWithEmailAndPassword(auth, email, password)
+                .then((userCredential) => {
+                    alert("Prihlásenie úspešné!");
+                    console.log(userCredential.user);
+                })
+                .catch((error) => {
+                    alert("Chyba pri prihlásení: " + error.message);
                 });
         });
     </script>
