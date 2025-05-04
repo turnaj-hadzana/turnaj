@@ -5,25 +5,21 @@
   <title>Dashboard</title>
 </head>
 <body>
-  <h1>Vitaj, <span id="user"></span>!</h1>
-  <button id="logout">Odhlásiť sa</button>
 
-  <script>
-    // Skontroluj, či je používateľ prihlásený
-    const username = sessionStorage.getItem("username");
-    if (!username) {
-      // Ak nie, presmeruj späť na prihlasovaciu stránku
-      window.location.href = "index.html";
-    } else {
-      // Inak zobraz meno používateľa
-      document.getElementById("user").textContent = username;
-    }
+<h1>Vitaj, <span id="username"></span>!</h1>
+<p>Si prihlásený do systému.</p>
+<button onclick="logout()">Odhlásiť sa</button>
 
-    // Odhlásenie
-    document.getElementById("logout").addEventListener("click", () => {
-      sessionStorage.removeItem("username");
-      window.location.href = "index.html";
-    });
-  </script>
+<script>
+  // Zobraziť používateľské meno z sessionStorage
+  document.getElementById('username').textContent = sessionStorage.getItem("username");
+
+  // Funkcia na odhlásenie
+  function logout() {
+    sessionStorage.removeItem("username");
+    window.location.href = "index.html";  // Presmerujeme na stránku prihlásenia
+  }
+</script>
+
 </body>
 </html>
