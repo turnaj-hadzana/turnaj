@@ -1,5 +1,128 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Turnaj U12 CH</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    .hidden {
+      display: none;
+    }
+    .team-list {
+      margin-top: 20px;
+    }
+  </style>
+</head>
 <body>
   <h1>Turnaj U12 CH</h1>
-  <div id="readOnlyTeams">...</div>
-  <div id="editableTeams">...</div>
+
+  <!-- Prihlásenie -->
+  <div id="loginDiv">
+    <h2>Prihlásenie</h2>
+    <input type="text" id="usernameInput" placeholder="Zadaj meno" />
+    <button onclick="login()">Prihlásiť sa</button>
+  </div>
+
+  <!-- Info o prihlásenom používateľovi -->
+  <div id="userPanel" class="hidden">
+    <p>Prihlásený ako: <span id="usernameDisplay"></span></p>
+    <button onclick="logout()">Odhlásiť sa</button>
+  </div>
+
+  <!-- Úprava tímov (len pre prihláseného) -->
+  <div id="editableTeams" class="hidden">
+    <h2>Úprava tímov – Skupina A</h2>
+    <input type="text" id="teamA1" placeholder="Tím 1" />
+    <input type="text" id="teamA2" placeholder="Tím 2" />
+    <input type="text" id="teamA3" placeholder="Tím 3" />
+    <input type="text" id="teamA4" placeholder="Tím 4" />
+    <input type="text" id="teamA5" placeholder="Tím 5" />
+    <button onclick="saveTeams()">Uložiť tímy</button>
+  </div>
+
+  <!-- Zobrazenie tímov (pre všetkých) -->
+  <div id="readOnlyTeams">
+    <h2>Skupina A – tímy</h2>
+    <ul class="team-list">
+      <li id="teamA1Display"></li>
+      <li id="teamA2Display"></li>
+      <li id="teamA3Display"></li>
+      <li id="teamA4Display"></li>
+      <li id="teamA5Display"></li>
+    </ul>
+  </div>
+
+  <script>
+    function saveTeams() {
+      const teams = {
+        groupA: [
+          document.getElementById("teamA1").value,
+          document.getElementById("teamA2").value,
+          document.getElementById("teamA3").value,
+          document.getElementById("teamA4").value,
+          document.getElementById("teamA5").value
+        ]
+      };
+      localStorage.setItem("teams", JSON.stringify(teams));
+      displayTeams();
+    }
+
+    function displayTeams() {
+      const stored = localStorage.getItem("teams");
+      if (stored) {
+        const teams = JSON.parse(stored);
+        const names = teams.groupA;
+        document.getElementById("teamA1Display").innerText = names[0] || "";
+        document.getElementById("teamA2Display").innerText = names[1] || "";
+        document.getElementById("teamA3Display").innerText = names[2] || "";
+        document.getElementById("teamA4Display").innerText = names[3] || "";
+        document.getElementById("teamA5Display").innerText = names[4] || "";
+      }
+    }
+
+    function login() {
+      const username = document.getElementById("usernameInput").value.trim();
+      if (username) {
+        localStorage.setItem("username", username);
+        location.reload(); // Reload na zmenu zobrazenia
+      }
+    }
+
+    function logout() {
+      localStorage.removeItem("username");
+      location.reload();
+    }
+
+    function checkLogin() {
+      const username = localStorage.getItem("username");
+      if (username) {
+        document.getElementById("loginDiv").classList.add("hidden");
+        document.getElementById("userPanel").classList.remove("hidden");
+        document.getElementById("editableTeams").classList.remove("hidden");
+        document.getElementById("usernameDisplay").innerText = username;
+
+        // Predvyplní inputy s aktuálnymi údajmi
+        const stored = localStorage.getItem("teams");
+        if (stored) {
+          const teams = JSON.parse(stored).groupA;
+          document.getElementById("teamA1").value = teams[0] || "";
+          document.getElementById("teamA2").value = teams[1] || "";
+          document.getElementById("teamA3").value = teams[2] || "";
+          document.getElementById("teamA4").value = teams[3] || "";
+          document.getElementById("teamA5").value = teams[4] || "";
+        }
+      }
+    }
+
+    // Inicializácia
+    window.onload = function () {
+      checkLogin();
+      displayTeams();
+    };
+  </script>
 </body>
+</html>
