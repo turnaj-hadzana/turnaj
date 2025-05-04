@@ -6,10 +6,11 @@
 </head>
 <body>
   <h2>Prihlásenie</h2>
-  <form action="login.php" method="post">
+  <form method="POST" action="login.php">
     <input type="text" name="username" placeholder="Používateľské meno" required><br><br>
     <input type="password" name="password" placeholder="Heslo" required><br><br>
     <button type="submit">Prihlásiť sa</button>
   </form>
+  <?php if (isset($_GET['error'])) echo "<p style='color:red;'>Nesprávne meno alebo heslo.</p>"; ?>
 </body>
 </html>
