@@ -9,11 +9,23 @@
 <body>
   <h1>Turnaj U12 CH</h1>
 
-  <!-- Prihlasovací formulár -->
+  <!-- Sekcia pre prihlásenie -->
   <div id="loginForm">
     <h3>Prihlásenie</h3>
     <input type="text" id="username" placeholder="Používateľské meno" required>
+    <input type="password" id="password" placeholder="Heslo" required>
     <button id="loginButton">Prihlásiť sa</button>
+    <button id="showRegisterFormButton">Zaregistrovať sa</button>
+  </div>
+
+  <!-- Sekcia pre registráciu -->
+  <div id="registerForm" style="display: none;">
+    <h3>Registrácia</h3>
+    <input type="text" id="newUsername" placeholder="Nové používateľské meno" required>
+    <input type="password" id="newPassword" placeholder="Nové heslo" required>
+    <input type="password" id="confirmPassword" placeholder="Potvrďte heslo" required>
+    <button id="registerButton">Registrovať sa</button>
+    <button id="cancelRegisterButton">Zrušiť</button>
   </div>
 
   <!-- Zobrazí sa, ak je používateľ prihlásený -->
