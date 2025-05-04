@@ -5,10 +5,29 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin – Úprava tímov</title>
 
-  <!-- Zahrneme hlavičku pre prihlásenie/odhlásenie -->
-  <div id="header-container"></div>
+  <!-- Firebase import -->
+  <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js"></script>
 
   <script>
+    // Firebase konfigurácia
+    const firebaseConfig = {
+      apiKey: "AIzaSyDNWRlWmBtQPIR49KViBpWf16hDUjU7Npw",
+      authDomain: "turnaj-skusobne.firebaseapp.com",
+      projectId: "turnaj-skusobne",
+      storageBucket: "turnaj-skusobne.firebasestorage.app",
+      messagingSenderId: "755998492681",
+      appId: "1:755998492681:web:f3242ae0f54b61903290d8",
+      measurementId: "G-B8DVMX2KVV"
+    };
+
+    // Inicializuj Firebase a Firestore
+    const app = firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // Referencia na kolekciu "teams"
+    const teamsRef = db.collection("teams");
+
     // Funkcia na kontrolu, či je používateľ prihlásený
     function checkLogin() {
       const username = localStorage.getItem("username");
@@ -41,9 +60,8 @@
       location.reload(); // Prečítanie stránky a skrytí editácie
     }
 
-    // Funkcia na ukladanie tímov (len pre prihláseného používateľa)
-    function saveTeams() {
-      // Získaj hodnoty z inputov
+    // Funkcia na ukladanie tímov do Firestore (len pre prihláseného používateľa)
+    async function saveTeams() {
       const teams = {
         groupA: [
           document.getElementById("teamA1").value,
@@ -54,26 +72,33 @@
         ]
       };
 
-      // Uložíme do localStorage
-      localStorage.setItem("teams", JSON.stringify(teams));
+      try {
+        // Ukladáme tímové údaje do Firestore
+        await teamsRef.doc("u12ch").set(teams);
+        console.log("Tímy uložené do Firestore:", teams);
 
-      // Skontrolujeme, či sa uloženie podarilo
-      console.log("Tímy uložené do localStorage:", teams);
-
-      // Aktualizuj zobrazenie tímov
-      displayTeams();
+        // Po úspešnom uložení, aktualizujeme zobrazenie
+        displayTeams();
+      } catch (err) {
+        console.error("Chyba pri ukladaní do Firestore:", err);
+      }
     }
 
     // Funkcia na zobrazenie tímov (pre všetkých)
-    function displayTeams() {
-      const stored = localStorage.getItem("teams");
-      if (stored) {
-        const teams = JSON.parse(stored).groupA;
-        document.getElementById("teamA1Display").innerText = teams[0] || "";
-        document.getElementById("teamA2Display").innerText = teams[1] || "";
-        document.getElementById("teamA3Display").innerText = teams[2] || "";
-        document.getElementById("teamA4Display").innerText = teams[3] || "";
-        document.getElementById("teamA5Display").innerText = teams[4] || "";
+    async function displayTeams() {
+      try {
+        // Načítame tímové údaje z Firestore
+        const doc = await teamsRef.doc("u12ch").get();
+        if (doc.exists) {
+          const teams = doc.data().groupA;
+          document.getElementById("teamA1Display").innerText = teams[0] || "";
+          document.getElementById("teamA2Display").innerText = teams[1] || "";
+          document.getElementById("teamA3Display").innerText = teams[2] || "";
+          document.getElementById("teamA4Display").innerText = teams[3] || "";
+          document.getElementById("teamA5Display").innerText = teams[4] || "";
+        }
+      } catch (err) {
+        console.error("Chyba pri načítaní tímov z Firestore:", err);
       }
     }
 
