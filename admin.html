@@ -9,7 +9,7 @@
   <div id="header-container"></div>
 
   <script>
-    // Kontrola, či je používateľ prihlásený
+    // Funkcia na kontrolu, či je používateľ prihlásený
     function checkLogin() {
       const username = localStorage.getItem("username");
       const loginButton = document.getElementById("loginButton");
@@ -41,6 +41,7 @@
 
     // Funkcia na ukladanie tímov (len pre prihláseného používateľa)
     function saveTeams() {
+      // Získaj hodnoty z inputov
       const teams = {
         groupA: [
           document.getElementById("teamA1").value,
@@ -50,11 +51,18 @@
           document.getElementById("teamA5").value
         ]
       };
-      localStorage.setItem("teams", JSON.stringify(teams)); // Uložíme do localStorage
-      displayTeams(); // Aktualizujeme zobrazenie tímov
+
+      // Uložíme do localStorage
+      localStorage.setItem("teams", JSON.stringify(teams));
+
+      // Skontrolujeme, či sa uloženie podarilo
+      console.log("Tímy uložené do localStorage:", teams);
+
+      // Aktualizuj zobrazenie tímov
+      displayTeams();
     }
 
-    // Funkcia na zobrazenie tímov
+    // Funkcia na zobrazenie tímov (pre všetkých)
     function displayTeams() {
       const stored = localStorage.getItem("teams");
       if (stored) {
@@ -67,6 +75,7 @@
       }
     }
 
+    // Funkcia volaná pri načítaní stránky
     window.onload = function() {
       checkLogin(); // Skontroluje, či je používateľ prihlásený
       displayTeams(); // Načíta a zobrazí tímy
