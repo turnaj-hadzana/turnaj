@@ -2,22 +2,24 @@
 <html lang="sk">
 <head>
     <meta charset="UTF-8">
-    <title>Prihlásenie do turnaja</title>
+    <title>Prihlásenie cez používateľské meno</title>
 </head>
 <body>
-    <h1>Prihlásenie</h1>
-
-    <input type="email" id="email" placeholder="Email"><br><br>
-    <input type="password" id="password" placeholder="Heslo"><br><br>
-
+    <h2>Registrácia</h2>
+    <input type="text" id="register-username" placeholder="Používateľské meno"><br>
+    <input type="password" id="register-password" placeholder="Heslo"><br>
     <button id="register-btn">Registrovať sa</button>
+
+    <h2>Prihlásenie</h2>
+    <input type="text" id="login-username" placeholder="Používateľské meno"><br>
+    <input type="password" id="login-password" placeholder="Heslo"><br>
     <button id="login-btn">Prihlásiť sa</button>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
-        // Tvoja Firebase konfigurácia
+        // Firebase konfigurácia
         const firebaseConfig = {
             apiKey: "AIzaSyDNWRlWmBtQPIR49KViBpWf16hDUjU7Npw",
             authDomain: "turnaj-skusobne.firebaseapp.com",
@@ -29,36 +31,45 @@
         };
 
         const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
+        const db = getFirestore(app);
 
-        // Registrácia používateľa
-        document.getElementById('register-btn').addEventListener('click', () => {
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
+        // Registrácia
+        document.getElementById('register-btn').addEventListener('click', async () => {
+            const username = document.getElementById('register-username').value.trim();
+            const password = document.getElementById('register-password').value;
 
-            createUserWithEmailAndPassword(auth, email, password)
-                .then((userCredential) => {
-                    alert("Registrácia úspešná!");
-                    console.log(userCredential.user);
-                })
-                .catch((error) => {
-                    alert("Chyba pri registrácii: " + error.message);
-                });
+            if (!username || !password) {
+                alert("Zadaj používateľské meno aj heslo.");
+                return;
+            }
+
+            const userRef = doc(db, "users", username);
+            const userSnap = await getDoc(userRef);
+
+            if (userSnap.exists()) {
+                alert("Používateľ už existuje!");
+            } else {
+                await setDoc(userRef, { password: password });
+                alert("Registrácia úspešná!");
+            }
         });
 
-        // Prihlásenie používateľa
-        document.getElementById('login-btn').addEventListener('click', () => {
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
+        // Prihlásenie
+        document.getElementById('login-btn').addEventListener('click', async () => {
+            const username = document.getElementById('login-username').value.trim();
+            const password = document.getElementById('login-password').value;
 
-            signInWithEmailAndPassword(auth, email, password)
-                .then((userCredential) => {
-                    alert("Prihlásenie úspešné!");
-                    console.log(userCredential.user);
-                })
-                .catch((error) => {
-                    alert("Chyba pri prihlásení: " + error.message);
-                });
+            const userRef = doc(db, "users", username);
+            const userSnap = await getDoc(userRef);
+
+            if (!userSnap.exists()) {
+                alert("Používateľ neexistuje.");
+            } else if (userSnap.data().password === password) {
+                alert("Prihlásenie úspešné!");
+                // Tu môžeš presmerovať na inú stránku alebo zobraziť obsah
+            } else {
+                alert("Nesprávne heslo.");
+            }
         });
     </script>
 </body>
