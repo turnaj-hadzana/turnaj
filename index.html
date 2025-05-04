@@ -74,25 +74,40 @@
     .auth-container div {
       margin-bottom: 20px;
     }
+
+    /* Skrytý form pre registráciu */
+    #register-form {
+      display: none;
+    }
+
+    .toggle-link {
+      color: #4CAF50;
+      cursor: pointer;
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
 
   <div class="auth-container">
-    <div class="form-container" id="register-form">
-      <h2>Registrácia</h2>
-      <input type="text" id="register-username" placeholder="Používateľské meno" required>
-      <input type="password" id="register-password" placeholder="Heslo" required>
-      <button id="register-btn">Registrovať sa</button>
-      <div class="error-message" id="register-error"></div>
-    </div>
-
+    <!-- Prihlásenie -->
     <div class="form-container" id="login-form">
       <h2>Prihlásenie</h2>
       <input type="text" id="login-username" placeholder="Používateľské meno" required>
       <input type="password" id="login-password" placeholder="Heslo" required>
       <button id="login-btn">Prihlásiť sa</button>
       <div class="error-message" id="login-error"></div>
+      <p class="toggle-link" id="show-register">Vytvoriť nový účet</p>
+    </div>
+
+    <!-- Registrácia (skrytá) -->
+    <div class="form-container" id="register-form">
+      <h2>Registrácia</h2>
+      <input type="text" id="register-username" placeholder="Používateľské meno" required>
+      <input type="password" id="register-password" placeholder="Heslo" required>
+      <button id="register-btn">Registrovať sa</button>
+      <div class="error-message" id="register-error"></div>
+      <p class="toggle-link" id="show-login">Späť na prihlásenie</p>
     </div>
   </div>
 
@@ -112,6 +127,18 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
+
+    // Zobraziť registráciu po kliknutí na "Vytvoriť nový účet"
+    document.getElementById('show-register').addEventListener('click', () => {
+      document.getElementById('login-form').style.display = 'none';
+      document.getElementById('register-form').style.display = 'block';
+    });
+
+    // Zobraziť prihlásenie po kliknutí na "Späť na prihlásenie"
+    document.getElementById('show-login').addEventListener('click', () => {
+      document.getElementById('register-form').style.display = 'none';
+      document.getElementById('login-form').style.display = 'block';
+    });
 
     // Registrácia
     document.getElementById('register-btn').addEventListener('click', async () => {
