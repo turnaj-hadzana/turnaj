@@ -2,154 +2,33 @@
 <html lang="sk">
 <head>
   <meta charset="UTF-8">
-  <title>Prihlásenie a Registrácia</title>
+  <title>Domov</title>
   <style>
-    /* Štýly pre formuláre a tlačidlá */
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-      background-color: #f4f4f9;
-    }
-    .container {
-      width: 300px;
-      margin: 0 auto;
-      padding: 20px;
-      background-color: #fff;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-      margin-top: 100px;
-    }
-    input {
-      width: 95%;
-      padding: 10px;
-      margin: 10px 0;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-    }
-    button {
-      width: 100%;
-      padding: 10px;
-      background-color: #28a745;
+    /* Štýly pre tlačidlo na prihlásenie v pravom hornom rohu */
+    .login-link {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background-color: #007bff;
       color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    button:hover {
-      background-color: #218838;
-    }
-    .link {
-      display: block;
-      text-align: center;
-      margin-top: 10px;
-      color: #007bff;
+      padding: 10px 15px;
       text-decoration: none;
+      border-radius: 5px;
+      font-size: 16px;
     }
-    .link:hover {
-      text-decoration: underline;
+
+    .login-link:hover {
+      background-color: #0056b3;
     }
   </style>
 </head>
 <body>
 
-<!-- Prihlasovací formulár -->
-<div class="container" id="login-container">
-  <h2>Prihlásenie</h2>
-  <input type="text" id="login-username" placeholder="Používateľské meno" required><br>
-  <input type="password" id="login-password" placeholder="Heslo" required><br>
-  <button id="login-btn">Prihlásiť sa</button>
-  <a href="#" class="link" id="register-link">Vytvoriť nový účet</a>
-</div>
+  <!-- Tlačidlo na prihlásenie/registráciu v pravom hornom rohu -->
+  <a href="login.html" class="login-link">Prihlásenie / Registrácia</a>
 
-<!-- Registračný formulár -->
-<div class="container" id="register-container" style="display:none;">
-  <h2>Registrácia</h2>
-  <input type="text" id="register-username" placeholder="Používateľské meno" required><br>
-  <input type="password" id="register-password" placeholder="Heslo" required><br>
-  <button id="register-btn">Registrovať sa</button>
-  <a href="#" class="link" id="login-link">Späť na prihlásenie</a>
-</div>
-
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-  import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
-  
-  const firebaseConfig = {
-    apiKey: "AIzaSyDNWRlWmBtQPIR49KViBpWf16hDUjU7Npw",
-    authDomain: "turnaj-skusobne.firebaseapp.com",
-    projectId: "turnaj-skusobne",
-    storageBucket: "turnaj-skusobne.firebasestorage.app",
-    messagingSenderId: "755998492681",
-    appId: "1:755998492681:web:f3242ae0f54b61903290d8"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-
-  // Registrácia používateľa
-  document.getElementById('register-btn').addEventListener('click', async () => {
-    const username = document.getElementById('register-username').value.trim();
-    const password = document.getElementById('register-password').value;
-
-    if (!username || !password) {
-      alert("Zadaj meno aj heslo.");
-      return;
-    }
-
-    const userRef = doc(db, "users", username);
-    const userSnap = await getDoc(userRef);
-
-    if (userSnap.exists()) {
-      alert("Používateľ už existuje!");
-    } else {
-      // Registrujeme používateľa so stavom 'approved' nastaveným na false
-      await setDoc(userRef, { 
-        password: password, 
-        approved: false  // Používateľ ešte nie je schválený
-      });
-      alert("Registrácia úspešná! Čaká sa na schválenie administrátorom.");
-    }
-  });
-
-  // Prihlásenie používateľa
-  document.getElementById('login-btn').addEventListener('click', async () => {
-    const username = document.getElementById('login-username').value.trim();
-    const password = document.getElementById('login-password').value;
-
-    const userRef = doc(db, "users", username);
-    const userSnap = await getDoc(userRef);
-
-    if (!userSnap.exists()) {
-      alert("Používateľ neexistuje.");
-      return;
-    }
-
-    const userPassword = userSnap.data().password;
-
-    if (password === userPassword) {
-      if (userSnap.data().approved) {
-        sessionStorage.setItem("username", username);  // uložíme prihlásenie
-        window.location.href = "dashboard.html";  // presmerovanie
-      } else {
-        alert("Tvoj účet ešte nebol schválený administrátorom.");
-      }
-    } else {
-      alert("Nesprávne heslo.");
-    }
-  });
-
-  // Zobrazenie registračného formulára
-  document.getElementById('register-link').addEventListener('click', () => {
-    document.getElementById('login-container').style.display = 'none';  // Skryť prihlásenie
-    document.getElementById('register-container').style.display = 'block';  // Zobraziť registráciu
-  });
-
-  // Zobrazenie prihlasovacieho formulára
-  document.getElementById('login-link').addEventListener('click', () => {
-    document.getElementById('register-container').style.display = 'none';  // Skryť registráciu
-    document.getElementById('login-container').style.display = 'block';  // Zobraziť prihlásenie
-  });
-</script>
+  <h1>Vitaj na stránke!</h1>
+  <p>Toto je domovská stránka. Klikni na tlačidlo v pravom hornom rohu pre prihlásenie alebo registráciu.</p>
 
 </body>
 </html>
