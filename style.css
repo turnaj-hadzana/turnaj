@@ -49,3 +49,9 @@ button:hover {
 .match input {
   width: 50px;
 }
+
+/* Prihlasovacie a odhlasovacie tlačidlo */
+#loginForm, #logoutDiv {
+  margin-bottom: 20px;
+  text-align: center;
+}
