@@ -7,6 +7,45 @@
 <body>
 
 <div id="header-placeholder"></div>
+<p>Prihlásený používateľ: <span id="username"></span></p>
+
+<script>
+  // Dynamické načítanie hlavičky
+  fetch("header.html")  // uprav cestu podľa umiestnenia
+    .then(res => res.text())
+    .then(html => {
+      document.getElementById("header-placeholder").innerHTML = html;
+
+      // Logika tlačidla na prihlasenie/odhlásenie - PRESUNUTÉ SEM
+      const authButton = document.getElementById("auth-button");
+      const username = sessionStorage.getItem("username");
+
+      if (authButton) {
+        if (username) {
+          authButton.textContent = "Odhlásiť sa";
+          authButton.onclick = () => {
+            sessionStorage.removeItem("username");
+            window.location.reload(); // Alebo window.location.href = "index.html"; ak chcete prejsť na inú stránku
+          };
+        } else {
+          authButton.textContent = "Prihlásiť sa";
+          authButton.onclick = () => {
+            window.location.href = "login.html";
+          };
+        }
+      } else {
+        console.error("Element s ID 'auth-button' nebol nájdený v načítanej hlavičke.");
+      }
+    });
+
+  // Zobraziť meno prihláseného používateľa
+  document.getElementById('username').textContent = sessionStorage.getItem("username") || "nie je prihlásený";
+
+  function logout() {
+    sessionStorage.removeItem("username");
+    window.location.href = "index.html";
+  }
+</script>
 
 </body>
 </html>
