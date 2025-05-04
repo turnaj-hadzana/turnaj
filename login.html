@@ -1,24 +1,14 @@
-<!DOCTYPE html>
-<html lang="sk">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Prihlásenie</title>
-  <script>
-    function doLogin() {
-      const username = document.getElementById("username").value;
-      if (username.trim() !== "") {
-        localStorage.setItem("username", username);
-        window.location.href = "admin.html";
-      } else {
-        alert("Zadaj používateľské meno.");
-      }
+<script>
+  function doLogin() {
+    const username = document.getElementById("username").value.trim();
+    const password = document.getElementById("password").value;
+
+    // Jednoduché overenie – zadaj svoje vlastné meno/heslo
+    if (username === "admin" && password === "tajneheslo") {
+      localStorage.setItem("username", username);
+      window.location.href = "admin.html";
+    } else {
+      alert("Nesprávne meno alebo heslo.");
     }
-  </script>
-</head>
-<body>
-  <h2>Prihlásenie</h2>
-  <input type="text" id="username" placeholder="Používateľské meno" />
-  <button onclick="doLogin()">Prihlásiť sa</button>
-</body>
-</html>
+  }
+</script>
