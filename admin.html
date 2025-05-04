@@ -142,5 +142,14 @@
       <li id="teamA5Display"></li>
     </ul>
   </div>
+
+  window.onload = function() {
+  const username = localStorage.getItem("username");
+
+  if (!username) {
+    // Ak nie je prihlásený, presmeruj na login stránku
+    window.location.href = "login.html";
+  }
+};
 </body>
 </html>
