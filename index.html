@@ -3,38 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Moja webová stránka</title>
+    <title>Prihlásenie do aplikácie</title>
 </head>
 <body>
-    <h1>Vitajte na mojej webovej stránke!</h1>
-    <button id="login-btn">Prihlásiť sa</button>
+    <h1>Vitajte na stránke Turnaj</h1>
+    <button id="login-btn">Prihlásiť sa cez Google</button>
 
-    <!-- Tu pridáme Firebase JavaScript pre prihlásenie -->
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
-    <script>
+    <!-- Načítanie Firebase SDK cez ES6 moduly -->
+    <script type="module">
+        // Importy Firebase modulov
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+        import { getAuth, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+
+        // Firebase konfigurácia
         const firebaseConfig = {
-          apiKey: "AIzaSyDNWRlWmBtQPIR49KViBpWf16hDUjU7Npw",
-          authDomain: "turnaj-skusobne.firebaseapp.com",
-          projectId: "turnaj-skusobne",
-          storageBucket: "turnaj-skusobne.firebasestorage.app",
-          messagingSenderId: "755998492681",
-          appId: "1:755998492681:web:f3242ae0f54b61903290d8",
-          measurementId: "G-B8DVMX2KVV"
+            apiKey: "AIzaSyDNWRlWmBtQPIR49KViBpWf16hDUjU7Npw",
+            authDomain: "turnaj-skusobne.firebaseapp.com",
+            projectId: "turnaj-skusobne",
+            storageBucket: "turnaj-skusobne.firebasestorage.app",
+            messagingSenderId: "755998492681",
+            appId: "1:755998492681:web:f3242ae0f54b61903290d8",
+            measurementId: "G-B8DVMX2KVV"
         };
 
-        const app = firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
+        // Inicializácia Firebase aplikácie
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);  // Autentifikácia
 
+        // Pripojenie event listenera na tlačidlo prihlásenia
         document.getElementById('login-btn').addEventListener('click', function() {
-            const provider = new firebase.auth.GoogleAuthProvider();
-            auth.signInWithPopup(provider).then((result) => {
-                console.log(result.user);
-                alert('Prihlásenie úspešné!');
-            }).catch((error) => {
-                console.error(error);
-                alert('Prihlásenie zlyhalo!');
-            });
+            const provider = new GoogleAuthProvider();  // Definícia poskytovateľa Google prihlásenia
+            signInWithPopup(auth, provider)  // Prihlásenie cez Google
+                .then((result) => {
+                    // Používateľské údaje po úspešnom prihlásení
+                    const user = result.user;
+                    console.log(user);  // Zobrazí informácie o prihlásenom používateľovi
+                    alert('Prihlásenie úspešné!');
+                })
+                .catch((error) => {
+                    // Ak nastane chyba
+                    console.error(error);  // Zobrazí chybu v konzole
+                    alert('Prihlásenie zlyhalo!');
+                });
         });
     </script>
 </body>
