@@ -1,32 +1,24 @@
 <!DOCTYPE html>
 <html lang="sk">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Prihlásenie</title>
-  <script src="login.js"></script>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 40px;
-      text-align: center;
+  <script>
+    function doLogin() {
+      const username = document.getElementById("username").value;
+      if (username.trim() !== "") {
+        localStorage.setItem("username", username);
+        window.location.href = "admin.html";
+      } else {
+        alert("Zadaj používateľské meno.");
+      }
     }
-    input {
-      display: block;
-      margin: 10px auto;
-      padding: 8px;
-      font-size: 1em;
-    }
-    button {
-      padding: 10px 20px;
-      font-size: 1em;
-    }
-  </style>
+  </script>
 </head>
 <body>
-  <h1>Prihlásenie</h1>
-  <input type="text" id="usernameInput" placeholder="Používateľské meno" />
-  <input type="password" id="passwordInput" placeholder="Heslo" />
-  <button onclick="login()">Prihlásiť sa</button>
+  <h2>Prihlásenie</h2>
+  <input type="text" id="username" placeholder="Používateľské meno" />
+  <button onclick="doLogin()">Prihlásiť sa</button>
 </body>
 </html>
