@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+  <meta charset="UTF-8">
+  <title>Administračné rozhranie</title>
+  <style>
+    /* Štýly pre administračné rozhranie */
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f9;
+    }
+    .container {
+      width: 300px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #fff;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      margin-top: 100px;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      background-color: #28a745;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #218838;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h2>Čakajúci používatelia</h2>
+  <ul id="pending-users">
+    <!-- Tu sa zobrazia čakajúci používatelia -->
+  </ul>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+  import { getFirestore, collection, getDocs, doc, setDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+  
+  const firebaseConfig = {
+    apiKey: "AIzaSyDNWRlWmBtQPIR49KViBpWf16hDUjU7Npw",
+    authDomain: "turnaj-skusobne.firebaseapp.com",
+    projectId: "turnaj-skusobne",
+    storageBucket: "turnaj-skusobne.firebasestorage.app",
+    messagingSenderId: "755998492681",
+    appId: "1:755998492681:web:f3242ae0f54b61903290d8"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // Funkcia na načítanie používateľov čakajúcich na schválenie
+  async function loadPendingUsers() {
+    const querySnapshot = await getDocs(collection(db, "users"));
+    const pendingUsers = [];
+
+    querySnapshot.forEach((doc) => {
+      if (!doc.data().approved) {
+        pendingUsers.push(doc.id);
+      }
+    });
+
+    const usersList = document.getElementById('pending-users');
+    pendingUsers.forEach(username => {
+      const li = document.createElement('li');
+      li.textContent = username;
+
+      const approveButton = document.createElement('button');
+      approveButton.textContent = 'Schváliť';
+      approveButton.onclick = () => approveUser(username);
+
+      li.appendChild(approveButton);
+      usersList.appendChild(li);
+    });
+  }
+
+  // Funkcia na schválenie používateľa
+  async function approveUser(username) {
+    const userRef = doc(db, "users", username);
+    await setDoc(userRef, { approved: true }, { merge: true });
+    alert(`${username} bol schválený.`);
+    loadPendingUsers();  // Obnovíme zoznam používateľov
+  }
+
+  loadPendingUsers();
+</script>
+
+</body>
+</html>
