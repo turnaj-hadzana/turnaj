@@ -4,61 +4,85 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin – Úprava tímov</title>
-  
+
   <!-- Zahrneme hlavičku pre prihlásenie/odhlásenie -->
   <div id="header-container"></div>
 
   <script>
+    // Kontrola, či je používateľ prihlásený
+    function checkLogin() {
+      const username = localStorage.getItem("username");
+      const loginButton = document.getElementById("loginButton");
+
+      if (username) {
+        loginButton.textContent = 'Odhlásiť sa';
+        loginButton.onclick = logout;
+        // Zobraziť sekciu pre editáciu tímov
+        document.getElementById("editableTeams").classList.remove("hidden");
+        document.getElementById("usernameDisplay").textContent = username;
+      } else {
+        loginButton.textContent = 'Prihlásiť sa';
+        loginButton.onclick = login;
+        // Zobraziť iba čítacie údaje
+        document.getElementById("viewTeams").classList.remove("hidden");
+      }
+    }
+
+    // Funkcia na prihlásenie
+    function login() {
+      window.location.href = 'login.html'; // Presmerovanie na prihlasovaciu stránku
+    }
+
+    // Funkcia na odhlásenie
+    function logout() {
+      localStorage.removeItem("username");
+      location.reload(); // Prečítanie stránky a skrytí editácie
+    }
+
+    // Funkcia na ukladanie tímov (len pre prihláseného používateľa)
+    function saveTeams() {
+      const teams = {
+        groupA: [
+          document.getElementById("teamA1").value,
+          document.getElementById("teamA2").value,
+          document.getElementById("teamA3").value,
+          document.getElementById("teamA4").value,
+          document.getElementById("teamA5").value
+        ]
+      };
+      localStorage.setItem("teams", JSON.stringify(teams)); // Uložíme do localStorage
+      displayTeams(); // Aktualizujeme zobrazenie tímov
+    }
+
+    // Funkcia na zobrazenie tímov
+    function displayTeams() {
+      const stored = localStorage.getItem("teams");
+      if (stored) {
+        const teams = JSON.parse(stored).groupA;
+        document.getElementById("teamA1Display").innerText = teams[0] || "";
+        document.getElementById("teamA2Display").innerText = teams[1] || "";
+        document.getElementById("teamA3Display").innerText = teams[2] || "";
+        document.getElementById("teamA4Display").innerText = teams[3] || "";
+        document.getElementById("teamA5Display").innerText = teams[4] || "";
+      }
+    }
+
     window.onload = function() {
-      // Nahradíme obsah hlavičky
-      document.getElementById('header-container').innerHTML = `
-        <div style="position: absolute; top: 10px; right: 10px;">
-          <button id="loginButton">Prihlásiť sa</button>
-        </div>
-        
-        <script>
-          // Skontroluje, či je používateľ prihlásený
-          function checkLogin() {
-            const username = localStorage.getItem("username");
-            const loginButton = document.getElementById("loginButton");
-
-            if (username) {
-              loginButton.textContent = 'Odhlásiť sa';
-              loginButton.onclick = logout;
-            } else {
-              loginButton.textContent = 'Prihlásiť sa';
-              loginButton.onclick = login;
-            }
-          }
-
-          // Funkcia pre prihlásenie
-          function login() {
-            window.location.href = 'login.html'; // Presmerovanie na prihlasovaciu stránku
-          }
-
-          // Funkcia pre odhlásenie
-          function logout() {
-            localStorage.removeItem("username");
-            window.location.href = '/'; // Presmerovanie na hlavnú stránku
-          }
-
-          checkLogin();
-        </script>
-      `;
+      checkLogin(); // Skontroluje, či je používateľ prihlásený
+      displayTeams(); // Načíta a zobrazí tímy
     };
   </script>
-  
-  <!-- Zvyšok kódu pre admin stránku -->
 </head>
 <body>
-  <h1>Admin – Úprava tímov pre turnaj U12 CH</h1>
+  <!-- Hlavička pre prihlásenie/odhlásenie -->
+  <div id="header-container"></div>
 
+  <!-- Zobrazenie prihláseného používateľa -->
   <div id="userPanel" class="hidden">
     <p>Prihlásený ako: <span id="usernameDisplay"></span></p>
-    <button onclick="logout()">Odhlásiť sa</button>
   </div>
 
-  <!-- Sekcia pre editáciu tímov (iba pre prihláseného používateľa) -->
+  <!-- Úprava tímov (len pre prihlásených) -->
   <div id="editableTeams" class="hidden">
     <h2>Úprava tímov – Skupina A</h2>
     <input type="text" id="teamA1" placeholder="Tím 1" />
@@ -69,7 +93,7 @@
     <button onclick="saveTeams()">Uložiť tímy</button>
   </div>
 
-  <!-- Sekcia pre zobrazenie tímov (pre všetkých) -->
+  <!-- Zobrazenie tímov (pre všetkých) -->
   <div id="viewTeams">
     <h2>Skupina A – Tímy</h2>
     <ul class="team-list">
@@ -80,20 +104,5 @@
       <li id="teamA5Display"></li>
     </ul>
   </div>
-
-  <script>
-    // Tu je pôvodný skript na správu tímov
-    // ...
-
-    // Skontroluj prihlásenie pri načítaní stránky
-    function checkLogin() {
-      const username = localStorage.getItem("username");
-      if (username) {
-        document.getElementById("userPanel").classList.remove("hidden");
-        document.getElementById("usernameDisplay").innerText = username;
-        document.getElementById("editableTeams").classList.remove("hidden");
-        loadTeams(); // Načítanie tímov pre prihláseného používateľa
-      } else {
-        document.getElementById("viewTeams").classList.remove("hidden");
-        loadTeams(); // Načítanie tímov pre neprihlásených používateľov
-      }
+</body>
+</html>
