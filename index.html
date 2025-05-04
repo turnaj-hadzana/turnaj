@@ -33,25 +33,26 @@
     const db = getFirestore(app);
 
     document.getElementById('register-btn').addEventListener('click', async () => {
-      const username = document.getElementById('register-username').value.trim();
-      const password = document.getElementById('register-password').value;
+  console.log("Klikol si na registrovať sa");  // Pridaj túto kontrolu
+  const username = document.getElementById('register-username').value.trim();
+  const password = document.getElementById('register-password').value;
 
-      if (!username || !password) {
-        alert("Zadaj meno aj heslo.");
-        return;
-      }
+  if (!username || !password) {
+    alert("Zadaj meno aj heslo.");
+    return;
+  }
 
-      const userRef = doc(db, "users", username);
-      const userSnap = await getDoc(userRef);
+  const userRef = doc(db, "users", username);
+  const userSnap = await getDoc(userRef);
 
-      if (userSnap.exists()) {
-        alert("Používateľ už existuje!");
-      } else {
-        const hashedPassword = await bcrypt.hash(password, 10);
-        await setDoc(userRef, { password: hashedPassword });
-        alert("Registrácia úspešná!");
-      }
-    });
+  if (userSnap.exists()) {
+    alert("Používateľ už existuje!");
+  } else {
+    const hashedPassword = await bcrypt.hash(password, 10);
+    await setDoc(userRef, { password: hashedPassword });
+    alert("Registrácia úspešná!");
+  }
+});
 
     document.getElementById('login-btn').addEventListener('click', async () => {
       const username = document.getElementById('login-username').value.trim();
