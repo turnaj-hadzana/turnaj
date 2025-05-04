@@ -30,6 +30,7 @@
     <button onclick="logout()">Odhlásiť sa</button>
   </div>
 
+  <!-- Sekcia pre editáciu tímov (iba pre prihláseného používateľa) -->
   <div id="editableTeams" class="hidden">
     <h2>Úprava tímov – Skupina A</h2>
     <input type="text" id="teamA1" placeholder="Tím 1" />
@@ -38,6 +39,18 @@
     <input type="text" id="teamA4" placeholder="Tím 4" />
     <input type="text" id="teamA5" placeholder="Tím 5" />
     <button onclick="saveTeams()">Uložiť tímy</button>
+  </div>
+
+  <!-- Sekcia pre zobrazenie tímov (pre všetkých) -->
+  <div id="viewTeams">
+    <h2>Skupina A – Tímy</h2>
+    <ul class="team-list">
+      <li id="teamA1Display"></li>
+      <li id="teamA2Display"></li>
+      <li id="teamA3Display"></li>
+      <li id="teamA4Display"></li>
+      <li id="teamA5Display"></li>
+    </ul>
   </div>
 
   <script>
@@ -92,6 +105,15 @@
       }
     }
 
+    // Funkcia na zobrazenie tímov pre všetkých používateľov
+    function displayTeams(teams) {
+      document.getElementById("teamA1Display").textContent = teams[0];
+      document.getElementById("teamA2Display").textContent = teams[1];
+      document.getElementById("teamA3Display").textContent = teams[2];
+      document.getElementById("teamA4Display").textContent = teams[3];
+      document.getElementById("teamA5Display").textContent = teams[4];
+    }
+
     // Funkcia na prihlásenie
     function checkLogin() {
       const username = localStorage.getItem("username");
@@ -101,7 +123,8 @@
         document.getElementById("editableTeams").classList.remove("hidden");
         loadTeams(); // Načítanie tímov pre prihláseného používateľa
       } else {
-        window.location.href = "login.html"; // Presmerovanie na prihlasovaciu stránku
+        document.getElementById("viewTeams").classList.remove("hidden");
+        loadTeams(); // Načítanie tímov pre neprihlásených používateľov
       }
     }
 
