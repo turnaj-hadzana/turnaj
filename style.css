@@ -55,3 +55,30 @@ button:hover {
   margin-bottom: 20px;
   text-align: center;
 }
+
+/* Sekcia pre registráciu */
+#registerForm {
+  margin-top: 20px;
+  text-align: center;
+}
+
+#registerForm input {
+  margin: 5px;
+}
+
+#registerForm button {
+  margin-top: 10px;
+}
+
+/* Sekcia pre prihlásenie */
+#loginForm button, #registerForm button {
+  background-color: #4CAF50;
+  color: white;
+  padding: 10px 15px;
+  border: none;
+  font-size: 16px;
+}
+
+button:hover {
+  background-color: #45a049;
+}
