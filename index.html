@@ -1,76 +1,80 @@
 <!DOCTYPE html>
 <html lang="sk">
 <head>
-    <meta charset="UTF-8">
-    <title>Prihlásenie cez používateľské meno</title>
+  <meta charset="UTF-8">
+  <title>Prihlásenie</title>
 </head>
 <body>
-    <h2>Registrácia</h2>
-    <input type="text" id="register-username" placeholder="Používateľské meno"><br>
-    <input type="password" id="register-password" placeholder="Heslo"><br>
-    <button id="register-btn">Registrovať sa</button>
+  <h2>Registrácia</h2>
+  <input type="text" id="register-username" placeholder="Používateľské meno"><br>
+  <input type="password" id="register-password" placeholder="Heslo"><br>
+  <button id="register-btn">Registrovať sa</button>
 
-    <h2>Prihlásenie</h2>
-    <input type="text" id="login-username" placeholder="Používateľské meno"><br>
-    <input type="password" id="login-password" placeholder="Heslo"><br>
-    <button id="login-btn">Prihlásiť sa</button>
+  <h2>Prihlásenie</h2>
+  <input type="text" id="login-username" placeholder="Používateľské meno"><br>
+  <input type="password" id="login-password" placeholder="Heslo"><br>
+  <button id="login-btn">Prihlásiť sa</button>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+    import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+    import bcrypt from "https://cdn.jsdelivr.net/npm/bcryptjs@2.4.3/dist/bcrypt.min.mjs";
 
-        // Firebase konfigurácia
-        const firebaseConfig = {
-            apiKey: "AIzaSyDNWRlWmBtQPIR49KViBpWf16hDUjU7Npw",
-            authDomain: "turnaj-skusobne.firebaseapp.com",
-            projectId: "turnaj-skusobne",
-            storageBucket: "turnaj-skusobne.firebasestorage.app",
-            messagingSenderId: "755998492681",
-            appId: "1:755998492681:web:f3242ae0f54b61903290d8",
-            measurementId: "G-B8DVMX2KVV"
-        };
+    const firebaseConfig = {
+      apiKey: "AIzaSyDNWRlWmBtQPIR49KViBpWf16hDUjU7Npw",
+      authDomain: "turnaj-skusobne.firebaseapp.com",
+      projectId: "turnaj-skusobne",
+      storageBucket: "turnaj-skusobne.firebasestorage.app",
+      messagingSenderId: "755998492681",
+      appId: "1:755998492681:web:f3242ae0f54b61903290d8"
+    };
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
 
-        // Registrácia
-        document.getElementById('register-btn').addEventListener('click', async () => {
-            const username = document.getElementById('register-username').value.trim();
-            const password = document.getElementById('register-password').value;
+    document.getElementById('register-btn').addEventListener('click', async () => {
+      const username = document.getElementById('register-username').value.trim();
+      const password = document.getElementById('register-password').value;
 
-            if (!username || !password) {
-                alert("Zadaj používateľské meno aj heslo.");
-                return;
-            }
+      if (!username || !password) {
+        alert("Zadaj meno aj heslo.");
+        return;
+      }
 
-            const userRef = doc(db, "users", username);
-            const userSnap = await getDoc(userRef);
+      const userRef = doc(db, "users", username);
+      const userSnap = await getDoc(userRef);
 
-            if (userSnap.exists()) {
-                alert("Používateľ už existuje!");
-            } else {
-                await setDoc(userRef, { password: password });
-                alert("Registrácia úspešná!");
-            }
-        });
+      if (userSnap.exists()) {
+        alert("Používateľ už existuje!");
+      } else {
+        const hashedPassword = await bcrypt.hash(password, 10);
+        await setDoc(userRef, { password: hashedPassword });
+        alert("Registrácia úspešná!");
+      }
+    });
 
-        // Prihlásenie
-        document.getElementById('login-btn').addEventListener('click', async () => {
-            const username = document.getElementById('login-username').value.trim();
-            const password = document.getElementById('login-password').value;
+    document.getElementById('login-btn').addEventListener('click', async () => {
+      const username = document.getElementById('login-username').value.trim();
+      const password = document.getElementById('login-password').value;
 
-            const userRef = doc(db, "users", username);
-            const userSnap = await getDoc(userRef);
+      const userRef = doc(db, "users", username);
+      const userSnap = await getDoc(userRef);
 
-            if (!userSnap.exists()) {
-                alert("Používateľ neexistuje.");
-            } else if (userSnap.data().password === password) {
-                alert("Prihlásenie úspešné!");
-                // Tu môžeš presmerovať na inú stránku alebo zobraziť obsah
-            } else {
-                alert("Nesprávne heslo.");
-            }
-        });
-    </script>
+      if (!userSnap.exists()) {
+        alert("Používateľ neexistuje.");
+        return;
+      }
+
+      const hashedPassword = userSnap.data().password;
+      const match = await bcrypt.compare(password, hashedPassword);
+
+      if (match) {
+        sessionStorage.setItem("username", username); // uložíme prihlásenie
+        window.location.href = "dashboard.html"; // presmerovanie
+      } else {
+        alert("Nesprávne heslo.");
+      }
+    });
+  </script>
 </body>
 </html>
