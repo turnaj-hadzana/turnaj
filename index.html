@@ -22,7 +22,7 @@
 
     .main-title {
       text-align: center;
-      margin-top: 80px; /* Pridá medzeru pod fixnú hlavičku */
+      margin-top: 80px;
       font-size: 2.5em;
       color: #333;
     }
@@ -34,7 +34,7 @@
 
   <h1 class="main-title">TURNAJ</h1>
 
-<script>
+  <script>
     fetch("header.html")
       .then(response => {
         if (!response.ok) {
@@ -45,13 +45,10 @@
       .then(data => {
         document.getElementById("header-placeholder").innerHTML = data;
 
-        // Manuálne spustenie skriptov z načítaného HTML
+        // Manuálne spustenie skriptu z načítaného HTML
         const scripts = document.getElementById("header-placeholder").getElementsByTagName('script');
-        console.log("Počet nájdených skriptov v hlavičke:", scripts.length);
         for (let i = 0; i < scripts.length; i++) {
-          console.log("Spúšťam skript:", scripts[i].textContent);
           eval(scripts[i].textContent);
-          console.log("Skript bol spustený.");
         }
       })
       .catch(error => {
