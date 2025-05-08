@@ -1,8 +1,7 @@
-// Firebase konfigurácia
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js';
 import { getFirestore, doc, getDoc } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
 
-// Inicializácia Firebase aplikácie
+// Firebase konfigurácia
 const firebaseConfig = {
   apiKey: "AIzaSyD0h0rQZiIGi0-UDb4-YU_JihRGpIlfz40",
   authDomain: "turnaj-a28c5.firebaseapp.com",
@@ -12,6 +11,7 @@ const firebaseConfig = {
   appId: "1:13732191148:web:5ad78eaef2ad452a10f809"
 };
 
+// Inicializácia Firebase aplikácie
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
