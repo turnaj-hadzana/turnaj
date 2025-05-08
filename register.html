@@ -3,41 +3,78 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registrácia</title>
-    <link rel="icon" href="favicon.ico" type="image/x-icon">
-    <link rel="stylesheet" href="style.css">
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <title>Registrácia Používateľa</title>
 </head>
 <body>
+    <h2>Registrácia Používateľa</h2>
+
+    <!-- Registračný formulár -->
+    <form id="register-form">
+        <label for="username">Používateľské meno:</label>
+        <input type="text" id="username" name="username" required />
+
+        <label for="password">Heslo:</label>
+        <input type="password" id="password" name="password" required />
+
+        <label for="confirm-password">Potvrďte heslo:</label>
+        <input type="password" id="confirm-password" name="confirm-password" required />
+
+        <button type="submit">Registrovať</button>
+    </form>
+
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
+
     <script>
-        fetch('header.html')
-            .then(response => response.text())
-            .then(data => {
-                document.body.insertAdjacentHTML('afterbegin', data);
-            });
+        // Firebase konfigurácia
+        const firebaseConfig = {
+            apiKey: "AIzaSyD0h0rQZiIGi0-UDb4-YU_JihRGpIlfz40",
+            authDomain: "turnaj-a28c5.firebaseapp.com",
+            projectId: "turnaj-a28c5",
+            storageBucket: "turnaj-a28c5.firebasestorage.app",
+            messagingSenderId: "13732191148",
+            appId: "1:13732191148:web:5ad78eaef2ad452a10f809"
+        };
+
+        // Inicializácia Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // Funkcia na registráciu používateľa
+        document.getElementById('register-form').addEventListener('submit', async function(event) {
+            event.preventDefault();
+
+            // Získaj údaje z formulára
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+
+            // Kontrola, či sa heslá zhodujú
+            if (password !== confirmPassword) {
+                alert('Heslá sa nezhodujú!');
+                return;
+            }
+
+            try {
+                // Vytvor používateľa v Firestore
+                // Nevyužívame Firebase Authentication, ale uložíme používateľské meno a heslo do Firestore
+                await db.collection('users').add({
+                    username: username,
+                    password: password, // Toto by malo byť šifrované, ale pre jednoduchý príklad to nechávame takto
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                // Úspešná registrácia
+                alert('Registrácia bola úspešná!');
+
+                // Môžeš pridať redirekciu alebo ďalšiu akciu
+                // window.location.href = "welcome.html"; // napríklad presmerovanie
+
+            } catch (error) {
+                console.error(error);
+                alert('Chyba pri registrácii: ' + error.message);
+            }
+        });
     </script>
-
-    <main>
-        <h1>Registrácia</h1>
-        <form id="registrationForm">
-            <div>
-                <label for="regUsername">Používateľské meno:</label>
-                <input type="text" id="regUsername" name="regUsername" required>
-            </div>
-            <div>
-                <label for="regPassword">Heslo:</label>
-                <input type="password" id="regPassword" name="regPassword" required>
-            </div>
-            <div>
-                <label for="regConfirmPassword">Potvrdenie hesla:</label>
-                <input type="password" id="regConfirmPassword" name="regConfirmPassword" required>
-            </div>
-            <button type="submit">Registrovať sa</button>
-            <p id="registrationError" class="error-message" style="color: red; display: none;"></p>
-        </form>
-        <p>Už máte účet? <a href="login.html">Prihlásenie</a></p>
-    </main>
-
-    <script src="auth.js"></script>
 </body>
 </html>
