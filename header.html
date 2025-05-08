@@ -95,7 +95,8 @@
     } else {
       authButton.textContent = "Prihlásiť sa";  // Ak nie je prihlásený, zobrazí sa "Prihlásiť sa"
       authButton.onclick = function () {
-        window.location.href = "login.html";  // Ak nie je prihlásený, presmeruje na login.html
+        console.log("Klikol si na tlačidlo"); // Pridaný log pre testovanie
+        window.location.assign("login.html");  // Ak nie je prihlásený, presmeruje na login.html
       };
     }
   </script>
