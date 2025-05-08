@@ -113,9 +113,28 @@ main p a:hover {
     text-decoration: underline;
 }
 
-.left-menu {
-    width: 200px;
-    background-color: #f8f8f8;
-    padding: 20px;
-    box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+
+
+.left-menu ul {
+    list-style: none; /* Odstráni bodky z zoznamu */
+    padding: 0; /* Odstráni predvolené odsadenie zoznamu */
+    margin: 0; /* Odstráni predvolený okraj zoznamu */
+}
+
+.left-menu li {
+    /* Voliteľné: Ak chcete nastaviť nejaké medzery medzi položkami */
+    margin-bottom: 5px;
+}
+
+.left-menu li a {
+    display: block; /* Toto spôsobí, že každý odkaz bude na novom riadku a vyplní dostupnú šírku */
+    text-decoration: none; /* Odstráni podčiarknutie */
+    color: #333; /* Farba textu */
+    padding: 10px 15px; /* Vnútorné odsadenie linku */
+    /* Ďalšie štýly ako background, border, hover efekty atď. */
+}
+
+.left-menu li a:hover {
+    background-color: #e0e0e0;
+    color: #3a8d41;
 }
