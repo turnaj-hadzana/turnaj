@@ -13,6 +13,7 @@ firebase.initializeApp(firebaseConfig);
 const firestore = firebase.firestore();
 
 // Spracovanie registrácie
+// Spracovanie registrácie
 document.getElementById('registrationForm').addEventListener('submit', function(event) {
     event.preventDefault(); // Zabraňuje štandardnému odoslaniu formulára
 
@@ -23,20 +24,21 @@ document.getElementById('registrationForm').addEventListener('submit', function(
     // Kontrola hesla
     if (password !== confirmPassword) {
         document.getElementById('registrationError').innerText = 'Heslá sa nezhodujú!';
-        document.getElementById('registrationError').style.display = 'block';
-        return;
+        document.getElementById('registrationError').style.display = 'block'; // Zobrazí chybovú správu
+        return; // Ukončí funkciu, aby sa neodosielali údaje
     }
 
     // Uloženie používateľských údajov do Firestore
     firestore.collection('users').add({
         username: username,
-        password: password,
+        password: password, // Heslo je uložené v čitateľnej podobe, čo by malo byť zašifrované
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
     }).then(() => {
         alert('Úspešná registrácia! Môžete sa prihlásiť.');
         window.location.href = 'login.html'; // Presmerovanie na prihlasovaciu stránku
     }).catch((error) => {
         document.getElementById('registrationError').innerText = 'Chyba pri uložení do databázy.';
-        document.getElementById('registrationError').style.display = 'block';
+        document.getElementById('registrationError').style.display = 'block'; // Zobrazí chybovú správu
     });
 });
+
