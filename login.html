@@ -2,6 +2,7 @@
 <html lang="sk">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Prihlásenie</title>
   <style>
     body {
@@ -10,14 +11,15 @@
       padding: 0;
       background-color: #f4f4f9;
     }
+
     .container {
       width: 300px;
-      margin: 0 auto;
+      margin: 120px auto 0 auto;
       padding: 20px;
       background-color: #fff;
       box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-      margin-top: 100px;
     }
+
     input {
       width: 95%;
       padding: 10px;
@@ -25,6 +27,7 @@
       border: 1px solid #ccc;
       border-radius: 5px;
     }
+
     button {
       width: 100%;
       padding: 10px;
@@ -34,6 +37,7 @@
       border-radius: 5px;
       cursor: pointer;
     }
+
     button:hover {
       background-color: #c46f50;
     }
@@ -41,90 +45,80 @@
 </head>
 <body>
 
-<!-- Miesto pre načítanie hlavičky -->
-<div id="header-placeholder"></div>
+  <!-- Miesto pre načítanie hlavičky -->
+  <div id="header-placeholder"></div>
 
-<!-- Prihlasovací formulár -->
-<div class="container" id="login-container">
-  <h2>Prihlásenie</h2>
-  <input type="text" id="login-username" placeholder="Používateľské meno" required><br>
-  <input type="password" id="login-password" placeholder="Heslo" required><br>
-  <button id="login-btn">Prihlásiť sa</button>
-</div>
+  <!-- Prihlasovací formulár -->
+  <div class="container" id="login-container">
+    <h2>Prihlásenie</h2>
+    <input type="text" id="login-username" placeholder="Používateľské meno" required><br>
+    <input type="password" id="login-password" placeholder="Heslo" required><br>
+    <button id="login-btn">Prihlásiť sa</button>
+  </div>
 
-<!-- Skript pre načítanie hlavičky -->
-<script>
-  fetch("header.html")
-    .then(res => res.text())
-    .then(html => {
-      document.getElementById("header-placeholder").innerHTML = html;
+  <!-- Skript pre načítanie hlavičky -->
+  <script>
+    fetch("header.html")
+      .then(res => res.text())
+      .then(html => {
+        document.getElementById("header-placeholder").innerHTML = html;
+      })
+      .catch(error => console.error('Chyba pri načítaní hlavičky:', error));
+  </script>
 
-      const authButton = document.getElementById("auth-button");
-      const username = sessionStorage.getItem("username");
+  <!-- Firebase skript -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
-      if (authButton) {
-        if (username) {
-          authButton.textContent = "Odhlásiť sa";
-          authButton.onclick = () => {
-            sessionStorage.removeItem("username");
-            window.location.href = "index.html";
-          };
-        } else {
-          authButton.textContent = "Prihlásiť sa";
-          authButton.onclick = () => {
-            window.location.href = "login.html";
-          };
+    const firebaseConfig = {
+      apiKey: "AIzaSyDNWRlWmBtQPIR49KViBpWf16hDUjU7Npw",
+      authDomain: "turnaj-skusobne.firebaseapp.com",
+      projectId: "turnaj-skusobne",
+      storageBucket: "turnaj-skusobne.firebasestorage.app",
+      messagingSenderId: "755998492681",
+      appId: "1:755998492681:web:f3242ae0f54b61903290d8"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    document.getElementById('login-btn').addEventListener('click', async () => {
+      const username = document.getElementById('login-username').value.trim();
+      const password = document.getElementById('login-password').value;
+
+      if (!username || !password) {
+        alert("Vyplňte všetky polia.");
+        return;
+      }
+
+      try {
+        const userRef = doc(db, "users", username);
+        const userSnap = await getDoc(userRef);
+
+        if (!userSnap.exists()) {
+          alert("Používateľ neexistuje.");
+          return;
         }
-      } else {
-        console.error("Element s ID 'auth-button' nebol nájdený v načítanej hlavičke.");
+
+        const userData = userSnap.data();
+
+        if (password === userData.password) {
+          if (userData.approved) {
+            sessionStorage.setItem("username", username);
+            window.location.href = "dashboard.html";
+          } else {
+            alert("Tvoj účet ešte nebol schválený administrátorom.");
+          }
+        } else {
+          alert("Nesprávne heslo.");
+        }
+      } catch (error) {
+        console.error("Chyba pri prihlasovaní:", error);
+        alert("Nastala chyba pri prihlasovaní. Skús znova.");
       }
-    })
-    .catch(error => console.error('Chyba pri načítaní hlavičky:', error));
-</script>
-
-<!-- Firebase skript -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-  import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyDNWRlWmBtQPIR49KViBpWf16hDUjU7Npw",
-    authDomain: "turnaj-skusobne.firebaseapp.com",
-    projectId: "turnaj-skusobne",
-    storageBucket: "turnaj-skusobne.firebasestorage.app",
-    messagingSenderId: "755998492681",
-    appId: "1:755998492681:web:f3242ae0f54b61903290d8"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-
-  document.getElementById('login-btn').addEventListener('click', async () => {
-    const username = document.getElementById('login-username').value.trim();
-    const password = document.getElementById('login-password').value;
-
-    const userRef = doc(db, "users", username);
-    const userSnap = await getDoc(userRef);
-
-    if (!userSnap.exists()) {
-      alert("Používateľ neexistuje.");
-      return;
-    }
-
-    const userPassword = userSnap.data().password;
-
-    if (password === userPassword) {
-      if (userSnap.data().approved) {
-        sessionStorage.setItem("username", username);
-        window.location.href = "dashboard.html";
-      } else {
-        alert("Tvoj účet ešte nebol schválený administrátorom.");
-      }
-    } else {
-      alert("Nesprávne heslo.");
-    }
-  });
-</script>
+    });
+  </script>
 
 </body>
 </html>
