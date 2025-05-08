@@ -77,8 +77,11 @@ document.getElementById('register-form').addEventListener('submit', async functi
     try {
         const userRef = doc(db, 'users', username);
 
+        const saltRounds = 10;
+        const hashedPassword = bcrypt.hashSync(password, saltRounds);
+        
         await setDoc(userRef, {
-            password: password,
+            password: hashedPassword,
         });
 
         alert('Registrácia bola úspešná!');
