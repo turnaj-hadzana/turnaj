@@ -66,10 +66,13 @@
     const categoryList = document.getElementById('categoryList');
 
     function toggleAddButton() {
-        const isCategoryPage = window.location.hash === '#kategórie';
-        addButton.style.display = isCategoryPage ? 'block' : 'none';
-        categoryList.style.display = isCategoryPage ? 'block' : 'none';
-    }
+    // Odkomentuj riadok nižšie ak chces aby bolo tlacitko viditelne vzdy
+    // const isCategoryPage = true; // window.location.hash === '#kategórie';
+    const isCategoryPage = window.location.hash === '#kategórie'; // Pôvodný kód
+
+    addButton.style.display = isCategoryPage ? 'block' : 'none';
+    categoryList.style.display = isCategoryPage ? 'block' : 'none';
+}
 
     window.addEventListener('hashchange', toggleAddButton);
     window.addEventListener('load', toggleAddButton);
