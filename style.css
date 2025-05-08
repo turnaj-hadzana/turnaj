@@ -48,34 +48,6 @@ header h1 {
     margin: 0;
 }
 
-.left-menu li {
-    margin-bottom: 5px; /* Priestor medzi položkami menu */
-}
-
-.left-menu li:last-child {
-    margin-bottom: 0; /* Žiadny okraj pod poslednou položkou */
-}
-
-
-.left-menu li a {
-    display: block; /* Aby odkaz zaberal celú šírku a padding fungoval vertikálne */
-    text-decoration: none;
-    color: #555;
-    padding: 10px 15px; /* Vnútorné odsadenie odkazu */
-    border-radius: 4px;
-    transition: background-color 0.3s ease, color 0.3s ease;
-}
-
-.left-menu li a:hover {
-    background-color: #e9e9e9; /* Svetlejšie pozadie pri nabehnutí myšou */
-    color: #333;
-}
-
-.left-menu li.active a {
-     background-color: #00cc00; /* Zelené pozadie pre aktívnu položku */
-     color: white; /* Biely text pre aktívnu položku */
-     font-weight: bold;
-}
 
 
 
