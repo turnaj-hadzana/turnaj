@@ -53,13 +53,14 @@ document.addEventListener("DOMContentLoaded", function() {
     return;
   }
 
-  console.log("Odkaz 'auth-link' bol nájdený:", authLink); // Pridaný log
+  console.log("Odkaz 'auth-link' bol nájdený:", authLink);
 
   const username = sessionStorage.getItem("username");
-  console.log("Hodnota username pri načítaní hlavičky: '", username, "'");
+  console.log("Hodnota username: '", username, "'");
 
   if (username) {
     authLink.textContent = "Odhlásiť sa";
+    console.log("Priraďujem funkciu pre odhlásenie.");
     authLink.onclick = function () {
       console.log("Klikol si na 'Odhlásiť sa'.");
       sessionStorage.removeItem("username");
@@ -67,6 +68,7 @@ document.addEventListener("DOMContentLoaded", function() {
     };
   } else {
     authLink.textContent = "Prihlásiť sa";
+    console.log("Priraďujem funkciu pre prihlásenie.");
     authLink.onclick = function () {
       console.log("Klikol si na 'Prihlásiť sa'.");
       window.location.href = "login.html";
