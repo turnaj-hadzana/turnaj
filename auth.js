@@ -1,4 +1,4 @@
-// Firebase Konfigurácia
+// Inicializácia Firebase (použi tú istú konfiguráciu ako pri registrácii)
 const firebaseConfig = {
   apiKey: "AIzaSyD0h0rQZiIGi0-UDb4-YU_JihRGpIlfz40",
   authDomain: "turnaj-a28c5.firebaseapp.com",
@@ -8,41 +8,45 @@ const firebaseConfig = {
   appId: "1:13732191148:web:5ad78eaef2ad452a10f809"
 };
 
-// Inicializácia Firebase
 firebase.initializeApp(firebaseConfig);
-const firestore = firebase.firestore();
+const db = firebase.firestore();
 
-// Spracovanie registrácie
-document.getElementById('registrationForm').addEventListener('submit', async function(event) {
+document.getElementById('loginForm').addEventListener('submit', async function(event) {
     event.preventDefault();
 
-    const username = document.getElementById('regUsername').value.trim();
-    const password = document.getElementById('regPassword').value;
-    const confirmPassword = document.getElementById('regConfirmPassword').value;
+    const username = document.getElementById('meno').value.trim();
+    const password = document.getElementById('password').value;
+    const errorMessage = document.getElementById('loginError');
 
-    if (password !== confirmPassword) {
-        document.getElementById('registrationError').innerText = 'Heslá sa nezhodujú!';
-        document.getElementById('registrationError').style.display = 'block';
-        return;
-    }
+    errorMessage.style.display = 'none';
+    errorMessage.textContent = '';
 
     try {
-        // Hashovanie hesla pomocou bcrypt
-        const salt = bcrypt.genSaltSync(10);
-        const hashedPassword = bcrypt.hashSync(password, salt);
+        const userDoc = await db.collection('users').doc(username).get();
 
-        // Uloženie do Firestore – ako dokument s názvom používateľa
-        await firestore.collection('users').doc(username).set({
-            password: hashedPassword,
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
+        if (!userDoc.exists) {
+            errorMessage.textContent = 'Používateľ neexistuje.';
+            errorMessage.style.display = 'block';
+            return;
+        }
 
-        alert('Úspešná registrácia! Môžete sa prihlásiť.');
-        window.location.href = 'login.html';
+        const userData = userDoc.data();
+        const hashedPassword = userData.password;
+
+        const isMatch = bcrypt.compareSync(password, hashedPassword);
+
+        if (isMatch) {
+            alert('Úspešné prihlásenie!');
+            // Tu môžeš uložiť používateľa do localStorage alebo presmerovať
+            window.location.href = 'dashboard.html';
+        } else {
+            errorMessage.textContent = 'Nesprávne heslo.';
+            errorMessage.style.display = 'block';
+        }
 
     } catch (error) {
-        console.error('Chyba pri ukladaní:', error);
-        document.getElementById('registrationError').innerText = 'Chyba pri uložení do databázy.';
-        document.getElementById('registrationError').style.display = 'block';
+        console.error('Chyba pri prihlasovaní:', error);
+        errorMessage.textContent = 'Chyba pri prihlasovaní: ' + error.message;
+        errorMessage.style.display = 'block';
     }
 });
