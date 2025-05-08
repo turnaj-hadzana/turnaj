@@ -72,8 +72,7 @@ document.getElementById('register-form').addEventListener('submit', async functi
 
         await setDoc(userRef, {
             username: username,
-            password: password, // V produkcii HASHUJTE!
-            createdAt: serverTimestamp()
+            password: password,
         });
 
         alert('Registrácia bola úspešná!');
