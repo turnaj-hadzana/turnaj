@@ -26,6 +26,12 @@ nav ul li a:hover {
     color: #007bff;
 }
 
+nav ul li.active a {
+    background-color: #e0e0e0;
+    padding: 5px 10px;
+    border-radius: 5px;
+}
+
 h1 {
     text-align: center;
 }
