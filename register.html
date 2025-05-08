@@ -41,7 +41,6 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script> <script src="https://cdn.jsdelivr.net/npm/bcryptjs@2.4.3/dist/bcrypt.min.js"></script>
 
     <script type="module">
-        // Predpokladáme, že inicializácia Firebase app a firestore je potrebná pre registráciu
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js';
         import { getFirestore, doc, setDoc } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js';
 
@@ -57,33 +56,17 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // --- NOVÝ Kód na kontrolu localStorage pri načítaní stránky ---
         document.addEventListener('DOMContentLoaded', (event) => {
             const loginLinkParagraph = document.getElementById('login-link-paragraph');
 
-            // Skontrolujeme, či existuje 'username' v localStorage
             const loggedInUsername = localStorage.getItem('username');
 
             if (loggedInUsername) {
-                // Ak username existuje v localStorage, používateľ je považovaný za prihláseného
-                loginLinkParagraph.style.display = 'none'; // Skryjeme odstavec
+                loginLinkParagraph.style.display = 'none';
             } else {
-                // Ak username neexistuje, používateľ nie je prihlásený
-                loginLinkParagraph.style.display = ''; // Zobrazíme odstavec (ak by bol predtým skrytý)
+                loginLinkParagraph.style.display = '';
             }
 
-            // Táto stránka je registrácia, takže ak je používateľ prihlásený,
-            // možno ho chcieť aj presmerovať, aby nemal prístup k registrácii
-            // (Toto je voliteľné, ale bežná prax pre lepšie UX a bezpečnosť)
-            // if (loggedInUsername) {
-            //     // Presmeruj napr. na úvodnú stránku alebo stránku profilu
-            //     window.location.href = 'index.html'; // Alebo iná stránka
-            // }
-
-        });
-        // ----------------------------------------------------------
-
-        // Existujúca logika pre registračný formulár (ponecháme ju)
         document.getElementById('register-form').addEventListener('submit', async function(event) {
             event.preventDefault();
 
@@ -97,38 +80,22 @@
                  return;
              }
 
-
             try {
-                // Opakované DÔRAZNÉ UPOZORNENIE: Ukladanie hesiel (aj nehashovaných) do Firestore NIE JE BEZPEČNÉ.
-                // Použi Firebase Authentication na správu používateľov.
-                // Hashovanie hesla by malo prebiehať BEZPEČNE na serveri alebo pomocou Firebase Auth.
-                // Ak používaš bcryptjs v browseri, uisti sa, že je správne implementovaný a BEZPEČNÝ pre browser prostredie (čo býva problém).
-
                 const userRef = doc(db, 'users', username);
 
-                // Kontrola, či používateľ už neexistuje pred registráciou
                  const existingUserDoc = await getDoc(userRef);
                  if (existingUserDoc.exists()) {
                      document.getElementById('error-message').textContent = 'Používateľské meno už existuje!';
                      return;
                  }
 
-                // Tu by si hashoval heslo pred uložením, ak by si to robil na serveri alebo iným bezpečným spôsobom
-                // const hashedPassword = await bcrypt.hash(password, 10); // Príklad ak by fungovalo v browseri
-
                 await setDoc(userRef, {
-                    password: password, // <-- Stále ukladá nezabezpečené/nehashované heslo podľa tvojho vzoru :-(
-                    // Idealne by sa tu ukladali len dáta spojené s UID z Firebase Auth
+                    password: password,
                 });
 
                 alert('Registrácia bola úspešná!');
                 document.getElementById('register-form').reset();
-                // Po úspešnej registrácii by si mohol používateľa automaticky prihlásiť
-                // a uložiť 'username' do localStorage, ako to robí tvoj login skript.
-                // localStorage.setItem('username', username); // <-- Voliteľné: automatické prihlásenie po reg.
-
-                // Potom presmerovať
-                window.location.href = 'login.html'; // Alebo na stránku, kam chceš používateľa poslať po registrácii
+                window.location.href = 'login.html';
 
             } catch (error) {
                 console.error('Chyba pri registrácii:', error);
