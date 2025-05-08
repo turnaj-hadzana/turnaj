@@ -13,32 +13,36 @@ firebase.initializeApp(firebaseConfig);
 const firestore = firebase.firestore();
 
 // Spracovanie registrácie
-// Spracovanie registrácie
-document.getElementById('registrationForm').addEventListener('submit', function(event) {
-    event.preventDefault(); // Zabraňuje štandardnému odoslaniu formulára
+document.getElementById('registrationForm').addEventListener('submit', async function(event) {
+    event.preventDefault();
 
-    const username = document.getElementById('regUsername').value;
+    const username = document.getElementById('regUsername').value.trim();
     const password = document.getElementById('regPassword').value;
     const confirmPassword = document.getElementById('regConfirmPassword').value;
 
-    // Kontrola hesla
     if (password !== confirmPassword) {
         document.getElementById('registrationError').innerText = 'Heslá sa nezhodujú!';
-        document.getElementById('registrationError').style.display = 'block'; // Zobrazí chybovú správu
-        return; // Ukončí funkciu, aby sa neodosielali údaje
+        document.getElementById('registrationError').style.display = 'block';
+        return;
     }
 
-    // Uloženie používateľských údajov do Firestore
-    firestore.collection('users').add({
-        username: username,
-        password: password, // Heslo je uložené v čitateľnej podobe, čo by malo byť zašifrované
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    }).then(() => {
-        alert('Úspešná registrácia! Môžete sa prihlásiť.');
-        window.location.href = 'login.html'; // Presmerovanie na prihlasovaciu stránku
-    }).catch((error) => {
-        document.getElementById('registrationError').innerText = 'Chyba pri uložení do databázy.';
-        document.getElementById('registrationError').style.display = 'block'; // Zobrazí chybovú správu
-    });
-});
+    try {
+        // Hashovanie hesla pomocou bcrypt
+        const salt = bcrypt.genSaltSync(10);
+        const hashedPassword = bcrypt.hashSync(password, salt);
 
+        // Uloženie do Firestore – ako dokument s názvom používateľa
+        await firestore.collection('users').doc(username).set({
+            password: hashedPassword,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        alert('Úspešná registrácia! Môžete sa prihlásiť.');
+        window.location.href = 'login.html';
+
+    } catch (error) {
+        console.error('Chyba pri ukladaní:', error);
+        document.getElementById('registrationError').innerText = 'Chyba pri uložení do databázy.';
+        document.getElementById('registrationError').style.display = 'block';
+    }
+});
