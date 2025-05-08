@@ -2,41 +2,4 @@
 
 <header>
   <div class="logo" onclick="window.location.href='index.html'">Turnaj</div>
-  <button id="auth-link" class="auth-button">Prihlásiť sa</button>
 </header>
-
-<script>
-function updateAuthButton() {
-  console.log("Funkcia updateAuthButton() bola spustená."); // Kontrola spustenia funkcie
-  const authLink = document.getElementById("auth-link");
-  if (!authLink) {
-    console.error("Odkaz 'auth-link' neexistuje!");
-    return;
-  }
-
-  const username = sessionStorage.getItem("username");
-  console.log("Hodnota username: '", username, "'"); // Kontrola hodnoty username
-
-  if (username) {
-    authLink.textContent = "Odhlásiť sa";
-    authLink.onclick = function () {
-      console.log("Klikol si na 'Odhlásiť sa'. Presmerujem na index.html"); // Kontrola onclick
-      sessionStorage.removeItem("username");
-      window.location.href = "index.html";
-    };
-  } else {
-    authLink.textContent = "Prihlásiť sa";
-    authLink.onclick = function () {
-      console.log("Klikol si na 'Prihlásiť sa'. Presmerujem na login.html"); // Kontrola onclick
-      alert("Presmerujem!"); // PRIDANÝ ALERT
-      console.log("Nastavujem window.location.href na: login.html");
-      window.location.href = "login.html";
-    };
-  }
-}
-
-document.addEventListener("DOMContentLoaded", function() {
-  console.log("DOM bol načítaný."); // Kontrola spustenia DOMContentLoaded
-  updateAuthButton(); // Zavoláme funkciu aj pri načítaní stránky
-});
-</script>
