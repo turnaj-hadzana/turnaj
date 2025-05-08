@@ -112,3 +112,10 @@ main p a {
 main p a:hover {
     text-decoration: underline;
 }
+
+
+.content-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+}
