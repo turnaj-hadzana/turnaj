@@ -1,26 +1,34 @@
 header {
-    background-color: #f0f0f0; /* Svetlosivá pozadia */
-    padding: 10px 0; /* Vnútorné okraje hore a dole */
-    text-align: center; /* Zarovnanie textu na stred */
+    background-color: #f0f0f0;
+    padding: 10px 0;
+    text-align: center;
 }
 
 nav ul {
-    list-style: none; /* Odstránenie odrážok z listu */
+    list-style: none;
     padding: 0;
     margin: 0;
 }
 
 nav ul li {
-    display: inline; /* Zobrazenie položiek menu vedľa seba */
-    margin: 0 15px; /* Vodorovné okraje medzi položkami */
+    display: inline;
+    margin: 0 15px;
 }
 
 nav ul li a {
-    text-decoration: none; /* Odstránenie podčiarknutia odkazov */
-    color: #333; /* Tmavošedá farba textu odkazov */
-    font-weight: bold; /* Tučný text odkazov */
+    text-decoration: none;
+    color: #333;
+    font-weight: bold;
 }
 
 nav ul li a:hover {
-    color: #007bff; /* Modrá farba textu pri prechode myšou */
+    color: #007bff;
+}
+
+h1 {
+    text-align: center;
+}
+
+p {
+    text-align: center;
 }
