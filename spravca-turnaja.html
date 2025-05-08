@@ -10,7 +10,6 @@
 <body>
     <script>
         const userName = localStorage.getItem('username');
-
         if (userName !== 'admin') {
             window.location.href = 'login.html';
         }
@@ -19,9 +18,26 @@
     <script type="module" src="auth.js"></script>
     <script src="script.js"></script>
 
-    <main>
+    <header>
         <h1>Správca turnaja</h1>
-        <p>Tu môžete spravovať nastavenia a údaje turnaja.</p>
-        </main>
-</body>
+    </header>
+
+    <div class="content-wrapper">
+
+        <nav class="left-menu">
+            <h2>Menu</h2>
+            <ul>
+                <li><a href="#">Prehľad</a></li>
+                <li><a href="#">Tímy</a></li>
+                <li><a href="#">Zápasy</a></li>
+                <li><a href="#">Používatelia</a></li>
+                <li><a href="#">Nastavenia</a></li>
+            </ul>
+        </nav>
+
+        <main>
+            <p>Tu môžete spravovať nastavenia a údaje turnaja.</p>
+            </main>
+
+    </div> </body>
 </html>
