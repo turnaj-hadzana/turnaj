@@ -2,19 +2,22 @@
 <html lang="sk">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Turnaj</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-      background-color: #f4f4f9;
+    .login-link {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background-color: #3a8d41;
+      color: white;
+      padding: 10px 15px;
+      text-decoration: none;
+      border-radius: 5px;
+      font-size: 16px;
     }
 
-    .content {
-      padding: 100px 20px 20px 20px;
-      text-align: center;
+    .login-link:hover {
+      background-color: #c46f50;
     }
   </style>
 </head>
@@ -22,20 +25,27 @@
 
   <div id="header-placeholder"></div>
 
-  <div class="content">
-    <h1>Vitaj na stránke</h1>
-    <p>Táto stránka slúži na správu turnaja.</p>
-  </div>
+  <p>Vitaj na stránke.</p>
 
   <script>
     fetch("header.html")
-      .then(response => response.text())
-      .then(html => {
-        document.getElementById("header-placeholder").innerHTML = html;
+      .then(response => {
+        if (!response.ok) {
+          throw new Error("Nepodarilo sa načítať header.html");
+        }
+        return response.text();
+      })
+      .then(data => {
+        document.getElementById("header-placeholder").innerHTML = data;
+
+        // Manuálne spustenie skriptu z načítaného HTML
+        const scripts = document.getElementById("header-placeholder").getElementsByTagName('script');
+        for (let i = 0; i < scripts.length; i++) {
+          eval(scripts[i].textContent);
+        }
       })
       .catch(error => {
-        document.getElementById("header-placeholder").innerHTML = "<p>Chyba pri načítaní hlavičky.</p>";
-        console.error("Chyba pri načítaní header.html:", error);
+        console.error("Chyba pri načítaní hlavičky:", error);
       });
   </script>
 
