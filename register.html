@@ -81,7 +81,7 @@
                 const userRef = doc(db, 'users', username);
 
                 await setDoc(userRef, {
-                    "": password,
+                    password: password,
                 });
 
                 alert('Registrácia bola úspešná!');
