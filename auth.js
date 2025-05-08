@@ -38,9 +38,11 @@ function updateHeaderMenu(username) {
         }
 
         // Skryje položku Prihlásenie, keď je používateľ prihlásený
-        if (loginLink) {
-            loginLink.style.display = 'none';
-        }
+        
+        // if (loginLink) {
+        //     loginLink.style.display = 'none';
+        // }
+        
     } else {
         //ak nie je prihlaseny takto
         usernameItem.style.display = 'none';
