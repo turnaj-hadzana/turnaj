@@ -28,6 +28,7 @@ function updateAuthButton() {
     authLink.textContent = "Prihlásiť sa";
     authLink.onclick = function () {
       console.log("Klikol si na 'Prihlásiť sa'. Presmerujem na login.html"); // Kontrola onclick
+      alert("Presmerujem!"); // PRIDANÝ ALERT
       console.log("Nastavujem window.location.href na: login.html");
       window.location.href = "login.html";
     };
