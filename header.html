@@ -1,3 +1,4 @@
+<!-- header.html -->
 <header>
   <div class="logo" onclick="window.location.href='index.html'">Turnaj</div>
   <a id="auth-button" class="auth-button">Prihlásiť sa</a>
@@ -52,6 +53,8 @@
 
     // Získame meno používateľa z sessionStorage
     const username = sessionStorage.getItem("username");
+
+    console.log("Získané meno používateľa: " + username);
 
     if (username) {
       // Ak je používateľ prihlásený
