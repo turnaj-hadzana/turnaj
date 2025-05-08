@@ -1,194 +1,123 @@
-/* Základné štýly tela stránky */
 body {
-    font-family: sans-serif;
-    line-height: 1.6;
-    margin: 0; /* Odstráni predvolený okraj tela stránky */
-    background-color: #f4f4f4; /* Svetlošedé pozadie celej stránky */
-    color: #333; /* Predvolená farba textu */
+    font-family: sans-serif;
+    line-height: 1.6;
+    margin: 0;
+    background-color: #f4f4f4;
+    color: #333;
 }
 
-/* Štýly pre hlavičku stránky */
-header {
-    background-color: #f0f0f0; /* Svetlošedé pozadie hlavičky */
-    padding: 10px 0; /* Vertikálne odsadenie 10px, horizontálne 0 */
-    border-bottom: 1px solid #ccc; /* Spodná čiara */
-    text-align: center; /* Centrovanie textu/obsahu v hlavičke (napr. h1) */
-}
-
-/* Štýly pre hlavný nadpis v hlavičke */
-header h1 {
-    margin: 0; /* Odstránenie predvolených okrajov h1 */
-    color: #333; /* Farba nadpisu */
-    /* Pôvodné pravidlo h1 malo margin-bottom: 20px;, ak chceš medzeru pod nadpisom, presuň h1 mimo header a použij pôvodné pravidlo, alebo tu pridaj margin-bottom: 10px; */
-}
-
-/* Kontajner pre usporiadanie ľavého menu a hlavného obsahu vedľa seba */
-.content-wrapper {
-    display: flex; /* Použijeme Flexbox na usporiadanie detí (nav a main) vedľa seba */
-    max-width: 1200px; /* Maximálna šírka hlavnej časti rozloženia */
-    margin: 20px auto; /* Centrovanie bloku na stránke s horným/dolným okrajom 20px */
-    padding: 0 20px; /* Odsadenie z bokov na menších obrazovkách, aby obsah nelepil na okraje */
-    gap: 20px; /* Medzera (priepasť) medzi Flex položkami (medzi menu a main) */
-}
-
-/* Štýly pre kontajner ľavého menu */
-.left-menu {
-    width: 220px; /* Pevná šírka ľavého menu */
-    flex-shrink: 0; /* Zabraňuje zmenšovaniu menu, ak je málo miesta (zostane na 220px) */
-    background-color: #fff; /* Biele pozadie menu */
-    padding: 15px; /* Vnútorné odsadenie menu */
-    border-radius: 8px; /* Zaoblenie rohov */
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* Tieň */
-    height: fit-content; /* Výška sa prispôsobí obsahu (ak nie je sticky) */
-    /* Ak chceš, aby menu "lepilo" pri scrolovaní, odkomentuj a uprav: */
-    /* position: sticky; top: 20px; height: calc(100vh - 40px); overflow-y: auto; */
-}
-
-/* Štýly pre nadpis v ľavom menu */
-.left-menu h2 {
-    margin-top: 0; /* Odstránenie predvoleného horného okraja */
-    color: #333; /* Farba nadpisu menu */
-    font-size: 1.2em; /* Veľkosť písma */
-    border-bottom: 1px solid #eee; /* Tenká spodná čiara pod nadpisom */
-    padding-bottom: 10px; /* Odsadenie pod textom nadpisu k čiare */
-    margin-bottom: 15px; /* Odsadenie pod celým nadpisom k prvej položke menu */
-}
-
-/* Štýly pre zoznam v ľavom menu */
-.left-menu ul {
-    list-style: none; /* Odstránenie predvolených odrážok zoznamu */
-    padding: 0; /* Odstránenie predvoleného ľavého odsadenia zoznamu */
-    margin: 0; /* Odstránenie predvolených okrajov zoznamu */
-    /* TU NEMÁME DISPLAY: FLEX ANI GRID, ABY POLOŽKY OSTALI VERTIKÁLNE */
-}
-
-/* Štýly pre jednotlivé položky zoznamu v ľavom menu */
-.left-menu li {
-    margin-bottom: 5px; /* Priestor medzi jednotlivými položkami menu */
-    /* LI ELEMENTY SÚ PREDVOLENE BLOKOVÉ -> SÚ POD SEBOU */
-}
-
-/* Štýly pre odkazy v ľavom menu */
-.left-menu li a {
-    display: block; /* Zmení z inline na blokový, zaberá celú šírku li a umožňuje vertikálny padding */
-    text-decoration: none; /* Odstránenie podčiarknutia odkazu */
-    color: #555; /* Farba textu odkazu */
-    padding: 10px 15px; /* Vnútorné odsadenie vo vnútri odkazu */
-    border-radius: 4px; /* Zaoblenie rohov odkazu (pri hover/active) */
-    transition: background-color 0.3s ease, color 0.3s ease; /* Jemný prechod farieb pri hover */
-}
-
-/* Štýly pre odkazy v ľavom menu pri nabehnutí myšou */
-.left-menu li a:hover {
-    background-color: #e9e9e9; /* Svetlejšie pozadie pri nabehnutí */
-    color: #333; /* Tmavší text pri nabehnutí */
-}
-
-/* Štýly pre aktívny odkaz v ľavom menu (podľa triedy "active" na li) */
-.left-menu li.active a {
-    background-color: #00cc00; /* Zelené pozadie pre aktívnu položku */
-    color: white; /* Biely text pre aktívnu položku */
-    font-weight: bold; /* Tučnejšie písmo */
-}
-
-/* Štýly pre hlavný obsah stránky */
 main {
-    flex-grow: 1; /* Zaberá všetok dostupný priestor po tom, čo si menu vezme svoju šírku */
-    background-color: #fff; /* Biele pozadie hlavného obsahu */
-    padding: 20px; /* Vnútorné odsadenie hlavného obsahu */
-    border-radius: 8px; /* Zaoblenie rohov */
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05); /* Tieň */
-
-    /* Štýly pre centrovanie obsahu V RÁMCI main, ak je to potrebné */
-    /* Pôvodné main pravidlo malo tieto flexbox vlastnosti: */
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    /* Ak chceš, aby obsah v main bol centrovaný a usporiadaný v stĺpci, ponechaj ich. */
-    /* Ak nie, môžeš ich odstrániť. */
+    flex-grow: 1;
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
 
-/* --- ŠTÝLY PRE FORMULÁRE A TEXTY V RÁMCI MAIN (prevzaté z tvojho kódu) --- */
+header {
+    background-color: #f0f0f0;
+    padding: 10px 0;
+    border-bottom: 1px solid #ccc;
+}
 
-/* Pôvodné h1 pravidlo, ktoré som presunul do header h1, toto tu nebolo špecifické */
-/* ak by si mal h1 aj v main, potreboval by si špecifickejšie pravidlo ako main h1 {} */
-/* h1 {
-     text-align: center;
-     color: #333;
-     margin-bottom: 20px;
-} */
+nav ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
 
+nav ul li {
+    margin: 0 15px;
+}
+
+nav ul li a {
+    text-decoration: none;
+    color: #333;
+    font-weight: bold;
+    padding: 8px 15px;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+}
+
+nav ul li a:hover {
+    color: #3a8d41;
+    background-color: #e0e0e0;
+}
+
+nav ul li.active a {
+    background-color: #00cc00;
+    color: #333;
+}
+
+h1 {
+    text-align: center;
+    color: #333;
+    margin-bottom: 20px;
+}
 
 form {
-    background-color: #fff;
-    padding: 30px;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    width: 350px;
-    max-width: 100%; /* Zabezpečí, že formulár sa nezväčší viac ako šírka rodiča */
+    background-color: #fff;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    width: 350px;
+    max-width: 100%;
 }
 
 form div {
-    margin-bottom: 20px;
+    margin-bottom: 20px;
 }
 
 form label {
-    display: block; /* Každý label na novom riadku */
-    margin-bottom: 5px;
-    color: #555;
-    font-weight: bold;
+    display: block;
+    margin-bottom: 5px;
+    color: #555;
+    font-weight: bold;
 }
 
 form input[type="text"],
 form input[type="password"] {
-    width: calc(100% - 22px); /* 100% šírky mínus ľavý+pravý padding a border */
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 16px;
-    box-sizing: border-box; /* Dôležité! Padding a border sa započítajú do celkovej šírky */
+    width: calc(100% - 22px);
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 16px;
 }
 
 form button[type="submit"] {
-    background-color: #3a8d41;
-    color: white;
-    padding: 12px 20px;
-    border: none;
-    border-radius: 5px;
-    font-size: 18px;
-    cursor: pointer; /* Zmení kurzor na ruku pri nabehnutí */
-    transition: background-color 0.3s ease;
-    width: 100%; /* Tlačidlo zaberie celú šírku rodiča */
+    background-color: #3a8d41;
+    color: white;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 5px;
+    font-size: 18px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    width: 100%;
 }
 
 form button[type="submit"]:hover {
-    background-color: #c46f50; /* Oranžová farba pri nabehnutí (podľa tvojho kódu) */
+    background-color: #c46f50;
 }
 
 .error-message {
-    margin-top: 10px;
-    font-size: 14px;
-    color: red; /* Bežné pre chybové správy */
-    /* Možno pridať text-align: center; ak chceš centrovať chyby */
+    margin-top: 10px;
+    font-size: 14px;
 }
 
 main p {
-    margin-top: 20px;
-    color: #777;
+    margin-top: 20px;
+    color: #777;
 }
 
 main p a {
-    color: #007bff;
-    text-decoration: none;
+    color: #007bff;
+    text-decoration: none;
 }
 
 main p a:hover {
-    text-decoration: underline;
+    text-decoration: underline;
 }
-
-/* --- KONIEC ŠTÝLOV PRE FORMULÁRE A TEXTY --- */
-
-/* Ak by si v budúcnosti pridával aj klasické horizontálne menu na vrch, */
-/* musel by si v HTML pridať nový <nav> element pre to menu */
-/* a pridať späť pravidlá pre 'nav ul', ale s vyššou špecifickosťou */
-/* napr. .top-nav ul {} */
