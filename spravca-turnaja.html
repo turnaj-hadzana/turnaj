@@ -526,9 +526,6 @@
                  const categoriesSnapshot = await getDocs(categoriesCollectionRef);
                  const categories = categoriesSnapshot.docs.map(doc => ({ id: doc.id, name: doc.id })); // Získaj kategórie (ID a názov)
 
-                 // Pridať statickú hlavičku pre prvý stĺpec (napr. "Názov Skupiny")
-                 const staticHeaderTh = document.createElement('th');
-                 staticHeaderTh.textContent = 'Názov Skupiny'; // Názov prvého stĺpca
                  // Optional: staticHeaderTh.style.width = '200px';
                  groupsTableHeadTr.appendChild(staticHeaderTh);
 
