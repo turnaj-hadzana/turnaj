@@ -3,7 +3,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (username) {
         // Ak je používateľ prihlásený
-        document.getElementById('usernameItem').style.display = 'list-item'; // Zobrazí meno používateľa v menu
+        document.getElementById('usernameItem').style.display = 'list-item';
         document.getElementById('usernameSpan').textContent = username; // Zobrazenie používateľského mena v hlavičke
 
         // Ak je prihlásený "admin", zobrazí aj ďalšie možnosti
