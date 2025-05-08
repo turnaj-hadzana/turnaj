@@ -466,7 +466,7 @@
                  currentCategoryModalMode = 'edit';
                  editingCategoryName = categoryName;
                  editingCategoryRow = this.closest('tr');
-                 categoryModalTitle.textContent = 'Upraviť';
+                 categoryModalTitle.textContent = 'Premenovať';
                  categoryNameInput.value = categoryName;
                  categoryModal.style.display = 'block';
                  categoryNameInput.focus();
@@ -600,7 +600,7 @@
                 // Edit mode
                 currentGroupModalMode = 'edit';
                 editingGroupId = groupId; // Store the ID of the group being edited (now composite)
-                groupModalTitle.textContent = 'Upraviť';
+                groupModalTitle.textContent = 'Premenovať';
                 groupFormSubmitButton.textContent = 'Uložiť zmeny'; // Change button text
 
                 // Populate the select and then set the value
@@ -714,7 +714,7 @@
 
                              // TLAČIDLO ÚPRAVA SKUPINY - VOLÁ openGroupModal
                              const editGroupButton = document.createElement('button');
-                             editGroupButton.textContent = 'Upraviť';
+                             editGroupButton.textContent = 'Premenovať';
                              editGroupButton.classList.add('action-button');
                              editGroupButton.onclick = () => {
                                   // Pass the composite group ID and its data
