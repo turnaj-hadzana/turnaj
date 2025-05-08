@@ -1,91 +1,44 @@
-<!DOCTYPE html>
-<html lang="sk">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registrácia</title>
-    <link rel="icon" href="favicon.ico" type="image/x-icon">
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
-    <div id="header-container"></div>
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js';
+import { getFirestore, doc, setDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js';
 
-    <main>
-        <h1>Registrácia</h1>
-        <form id="register-form">
-            <div>
-                <label for="username">Používateľské meno:</label>
-                <input type="text" id="username" name="username" required />
-            </div>
+const firebaseConfig = {
+  apiKey: "AIzaSyD0h0rQZiIGi0-UDb4-YU_JihRGpIlfz40",
+  authDomain: "turnaj-a28c5.firebaseapp.com",
+  projectId: "turnaj-a28c5",
+  storageBucket: "turnaj-a28c5.firebasestorage.app",
+  messagingSenderId: "13732191148",
+  appId: "1:13732191148:web:5ad78eaef2ad452a10f809"
+};
 
-            <div>
-                <label for="password">Heslo:</label>
-                <input type="password" id="password" name="password" required />
-            </div>
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
-            <div>
-                <label for="confirm-password">Potvrďte heslo:</label>
-                <input type="password" id="confirm-password" name="confirm-password" required />
-            </div>
+document.getElementById('register-form').addEventListener('submit', async function(event) {
+    event.preventDefault();
 
-            <button type="submit">Registrovať</button>
-            <div class="error-message" id="error-message"></div>
-        </form>
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value;
+    const confirmPassword = document.getElementById('confirm-password').value;
 
-        <p>Máte už účet? <a href="login.html">Prihláste sa tu</a></p>
-    </main>
+    if (password !== confirmPassword) {
+        document.getElementById('error-message').textContent = 'Heslá sa nezhodujú!';
+        return;
+    }
 
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
+    try {
+        const userRef = doc(db, 'users', username); // dokument bude mať ID = používateľské meno
 
-    <script type="module">
-  // Import Firebase and Firestore
-  import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js';
-  import { getFirestore, collection, addDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js';
+        await setDoc(userRef, {
+            username: username,
+            password: password, // V produkcii HASHUJTE!
+            createdAt: serverTimestamp()
+        });
 
-  // Firebase config
-  const firebaseConfig = {
-    apiKey: "AIzaSyD0h0rQZiIGi0-UDb4-YU_JihRGpIlfz40",
-    authDomain: "turnaj-a28c5.firebaseapp.com",
-    projectId: "turnaj-a28c5",
-    storageBucket: "turnaj-a28c5.firebasestorage.app",
-    messagingSenderId: "13732191148",
-    appId: "1:13732191148:web:5ad78eaef2ad452a10f809"
-  };
+        alert('Registrácia bola úspešná!');
+        document.getElementById('register-form').reset();
 
-  // Initialize Firebase
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-
-  // Your register form event listener here
-  document.getElementById('register-form').addEventListener('submit', async function(event) {
-      event.preventDefault();
-
-      const username = document.getElementById('username').value;
-      const password = document.getElementById('password').value;
-      const confirmPassword = document.getElementById('confirm-password').value;
-
-      if (password !== confirmPassword) {
-          document.getElementById('error-message').textContent = 'Heslá sa nezhodujú!';
-          return;
-      }
-
-      try {
-          // Adding user to Firestore
-          await addDoc(collection(db, 'users'), {
-              username: username,
-              password: password,  // Remember to hash password in production
-              createdAt: serverTimestamp()
-          });
-
-          alert('Registrácia bola úspešná!');
-          document.getElementById('register-form').reset();
-
-      } catch (error) {
-          console.error('Chyba pri registrácii:', error);
-          document.getElementById('error-message').textContent = 'Chyba pri registrácii: ' + error.message;
-      }
-  });
-</script>
-</body>
-</html>
+    } catch (error) {
+        console.error('Chyba pri registrácii:', error);
+        document.getElementById('error-message').textContent = 'Chyba pri registrácii: ' + error.message;
+    }
+});
