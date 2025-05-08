@@ -114,8 +114,43 @@ main p a:hover {
 }
 
 
+
+
 .content-wrapper {
     display: flex;
-    flex-direction: column;
-    align-items: stretch;
+    align-items: flex-start;
+}
+
+.left-menu {
+    width: 200px;
+    background-color: #f8f8f8;
+    padding: 20px 10px;
+    box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+}
+
+.left-menu ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.left-menu li {
+    margin-bottom: 5px;
+}
+
+.left-menu a {
+    display: block;
+    text-decoration: none;
+    color: #333;
+    padding: 10px 15px;
+}
+
+.left-menu a:hover {
+    background-color: #e0e0e0;
+    color: #3a8d41;
+}
+
+main {
+    flex-grow: 1;
+    padding: 20px;
 }
