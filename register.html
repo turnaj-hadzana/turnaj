@@ -57,28 +57,19 @@
         document.addEventListener('DOMContentLoaded', (event) => {
             const loggedInUsername = localStorage.getItem('username');
 
-            // --- Start Blocking Logic ---
-            // Check if username is NOT admin OR if no username is stored
             if (!loggedInUsername || loggedInUsername !== 'admin') {
-                console.warn('Access denied: Not logged in as admin. Redirecting...'); // Optional: log a message
-                // Redirect the user to another page, e.g., login page or home page
-                window.location.href = 'login.html'; // Change 'login.html' to your desired redirect page
-                return; // Stop further execution of this script
+                console.warn('Access denied: Not logged in as admin. Redirecting...');
+                window.location.href = 'login.html';
+                return;
             }
-            // --- End Blocking Logic ---
 
-
-            // Existing logic to hide login link paragraph (will only run if user IS admin now)
             const loginLinkParagraph = document.getElementById('login-link-paragraph');
              if (loggedInUsername) {
                  loginLinkParagraph.style.display = 'none';
              } else {
-                 // This else block will effectively never be reached due to the blocking logic above
                  loginLinkParagraph.style.display = '';
              }
 
-
-            // Existing form submission logic
             document.getElementById('register-form').addEventListener('submit', async function(event) {
                 event.preventDefault();
 
@@ -86,16 +77,13 @@
                 const password = document.getElementById('password').value;
                 const confirmPassword = document.getElementById('confirm-password').value;
 
-                // Clear previous error messages
                 document.getElementById('error-message').textContent = '';
-
 
                 if (password !== confirmPassword) {
                     document.getElementById('error-message').textContent = 'Heslá sa nezhodujú!';
                     return;
                 }
 
-                // Basic password length check (optional but recommended)
                  if (password.length < 6) {
                      document.getElementById('error-message').textContent = 'Heslo musí mať aspoň 6 znakov.';
                      return;
@@ -104,28 +92,19 @@
                 try {
                     const userRef = doc(db, 'users', username);
 
-                    // Check if the username already exists in Firestore
-                    const existingUserDoc = await getDoc(userRef); // Use the imported getDoc
+                    const existingUserDoc = await getDoc(userRef);
                     if (existingUserDoc.exists()) {
                         document.getElementById('error-message').textContent = 'Používateľské meno už existuje!';
                         return;
                     }
 
-                    // Before saving, you should ideally hash the password.
-                    // The code includes bcryptjs, but it's commented out or not used for hashing.
-                    // Storing plain text passwords is NOT secure.
-                    // For demonstration, I'll keep it as is based on your code, but strongly recommend hashing.
-                    // Example hashing (requires including the bcryptjs script and using async/await):
-                    // const hashedPassword = await bcrypt.hash(password, 10); // 10 is the salt rounds
-
                     await setDoc(userRef, {
-                        // password: hashedPassword, // Store the hashed password
-                        password: password, // Storing plain text - **highly insecure**
+                        // password: hashedPassword,
+                        password: password,
                     });
 
                     alert('Registrácia bola úspešná!');
                     document.getElementById('register-form').reset();
-                    // Redirect to login page after successful registration
                     window.location.href = 'login.html';
 
                 } catch (error) {
