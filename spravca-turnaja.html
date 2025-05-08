@@ -50,7 +50,9 @@
     </style>
 </head>
 <body>
-        <script>
+    <script type="module" src="auth.js"></script>
+    <script src="script.js"></script>
+    <script>
         const userName = localStorage.getItem('username');
         if (userName !== 'admin') {
             window.location.href = 'login.html'; // Presmeruj na login ak nie je admin
