@@ -259,27 +259,21 @@
                 <li><a href="#nastavenia">Nastavenia</a></li>
             </ul>
         </nav>
-        <main>
-            <table id="categoryTable" style="display: none;">
-                <thead>
-                    <tr>
-                        <th>Názov kategórie</th>
-                        <th style="width: 150px;"></th> <!-- Column for actions -->
+        <main>
+            <table id="categoryTable" style="display: none;">
+                <thead>
+                    <tr>
+                        <th>Názov kategórie</th>
+                        <th style="width: 150px;"></th>
                     </tr>
-                </thead>
-                <tbody id="categoryTableBody">
-                </tbody>
-            </table>
-            <table id="groupsTable" style="display: none;">
-                 <thead>
-                     <tr>
-                     </tr>
-                 </thead>
-                 <tbody>
-                 </tbody>
-            </table>
+                </thead>
+                <tbody id="categoryTableBody">
+                </tbody>
+            </table>
+            <div id="groupsContainer" style="display: none; display: flex; flex-wrap: wrap; gap: 20px;">
+            </div>
         </main>
-    </div>
+    </div>
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js';
         import { getFirestore, collection, doc, setDoc, getDoc, getDocs, deleteDoc, addDoc, updateDoc } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js'; // Added addDoc, updateDoc
@@ -354,23 +348,16 @@
             deleteButton.textContent = 'Zmazať';
             deleteButton.classList.add('action-button', 'delete-button');
             deleteButton.onclick = async function() {
-                const row = this.closest('tr');
-                const categoryToDelete = row.querySelector('td:first-child').textContent;
-                if (!confirm(`Naozaj chcete zmazať kategóriu "${categoryToDelete}"?`)) return;
-                try {
-                    await deleteDoc(doc(categoriesCollectionRef, categoryToDelete));
-                    row.remove();
-                    console.log(`Kategória "${categoryToDelete}" bola úspešne zmazaná.`);
-                    // Refresh groups table header if active, as categories changed
-                    if (window.location.hash === '#skupiny') {
-                         renderGroupsTableStructure(); // Refresh groups table header
-                         loadGroupData(); // Refresh groups data table body
-                    }
-                } catch (error) {
-                    console.error('Chyba pri mazaní kategórie: ', error);
-                    alert('Chyba pri mazaní kategórie!');
+                if (!confirm(`Naozaj chcete zmazať skupinu "${group.name || group.id}"?`)) return;
+                try {
+                    await deleteDoc(doc(groupsCollectionRef, group.id));
+                    console.log(`Skupina ${group.id} zmazaná.`);
+                    renderGroupsContent(); // Toto by už malo byť v novej funkcii
+                } catch (error) {
+                    console.error('Chyba pri mazaní skupiny:', error);
+                    alert('Chyba pri mazaní skupiny!');
                 }
-            };
+            };
             actionsTd.appendChild(renameButton);
             actionsTd.appendChild(deleteButton);
             tr.appendChild(nameTd);
@@ -394,120 +381,118 @@
                 alert('Chyba pri načítaní kategórií!');
             }
         }
-        async function renderGroupsTableStructure() {
-             const groupsTableHeadTr = groupsTable.querySelector('thead tr');
-             groupsTableHeadTr.innerHTML = '';
-             console.log("Vykresľujem dynamickú hlavičku tabuľky skupín na základe kategórií.");
-             try {
-                 const categoriesSnapshot = await getDocs(categoriesCollectionRef);
-                 const categories = categoriesSnapshot.docs.map(doc => ({ id: doc.id, name: doc.id })); // Získaj kategórie (ID a názov)
-                 const staticHeaderTh = document.createElement('th');
-                 staticHeaderTh.textContent = 'Názov Skupiny';
-                 groupsTableHeadTr.appendChild(staticHeaderTh);
-                 if (categories.length > 0) {
-                     console.log(`Načítané kategórie pre hlavičku: ${categories.map(c => c.name).join(', ')}`);
-                     categories.forEach(category => {
-                         const th = document.createElement('th');
-                         th.textContent = category.name; // Názov kategórie ako hlavička stĺpca
-                          th.dataset.categoryId = category.id; // <-- Useful to link cell data to category
-                         groupsTableHeadTr.appendChild(th);
-                     });
-                 }
-                 const actionsHeaderTh = document.createElement('th');
-                 actionsHeaderTh.textContent = 'Akcie';
-                 groupsTableHeadTr.appendChild(actionsHeaderTh);
-             } catch (error) {
-                 console.error('Chyba pri načítaní kategórií pre štruktúru tabuľky skupín: ', error);
-                 alert('Chyba pri načítaní dát pre hlavičku skupín!');
-             }
-         }
-        async function loadGroupData() {
-             const groupsTableBodyEl = groupsTable.querySelector('tbody');
-             groupsTableBodyEl.innerHTML = '';
-             const categoryHeaders = groupsTable.querySelectorAll('thead th[data-category-id]');
-             const categoryOrder = Array.from(categoryHeaders).map(th => th.dataset.categoryId);
-             try {
-                 const groupsSnapshot = await getDocs(groupsCollectionRef);
-                 if (groupsSnapshot.empty) {
-                     console.log("Žiadne skupiny nenájdené.");
-                     // Zobraziť správu, ak nie sú žiadne skupiny
-                      const noGroupsRow = document.createElement('tr');
-                      const td = document.createElement('td');
-                      // Vypočítať colspan na základe aktuálne vykreslených hlavičiek
-                      const currentHeadersCount = groupsTable.querySelectorAll('thead th').length;
-                      td.colSpan = currentHeadersCount > 0 ? currentHeadersCount : 2;
-                      td.textContent = "Zatiaľ neboli pridané žiadne skupiny.";
-                      td.style.textAlign = 'center';
-                      td.style.fontStyle = 'italic';
-                      noGroupsRow.appendChild(td);
-                      groupsTableBodyEl.appendChild(noGroupsRow);
-                 } else {
-                     console.log(`Načítané skupiny: ${groupsSnapshot.size}`);
-                     groupsSnapshot.forEach(groupDoc => {
-                         const groupData = groupDoc.data();
-                         const groupId = groupDoc.id; // Získať ID dokumentu pre akcie
-                         const tr = document.createElement('tr');
-                         tr.dataset.groupId = groupId;
-                         const groupNameTd = document.createElement('td');
-                         groupNameTd.textContent = groupData.name || 'Neznáma Skupina'; // Zobraziť názov skupiny
-                         tr.appendChild(groupNameTd);
-                         categoryOrder.forEach(categoryId => {
-                             const categoryTd = document.createElement('td');
-                             // Skontrolovať, či táto skupina patrí do tejto kategórie
-                             if (groupData.categoryId === categoryId) {
-                                 categoryTd.textContent = '✓'; // Marker, že skupina patrí do tejto kategórie
-                                 categoryTd.style.textAlign = 'center'; // Centrovať marker
-                             } else {
-                                 categoryTd.textContent = '-'; // Alebo prázdne ''
-                                 categoryTd.style.textAlign = 'center'; // Centrovať pomlčku/prázdne
-                             }
-                             tr.appendChild(categoryTd);
-                         });
-                         const actionsTd = document.createElement('td');
-                         actionsTd.style.whiteSpace = 'nowrap';
-                         actionsTd.style.textAlign = 'center'; // Centrovať obsah bunky Akcie
+        async function renderGroupsContent() {
+            const groupsContainerEl = document.getElementById('groupsContainer');
+            groupsContainerEl.innerHTML = ''; // Vyčistiť obsah kontajnera
+            console.log("Vykresľujem tabuľky skupín podľa kategórií.");
+            try {
+                const categoriesSnapshot = await getDocs(categoriesCollectionRef);
+                const categories = categoriesSnapshot.docs.map(doc => ({ id: doc.id, name: doc.id }));
+                const groupsSnapshot = await getDocs(groupsCollectionRef);
+                const allGroups = groupsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+                if (categories.length === 0) {
+                    const messageDiv = document.createElement('div');
+                    messageDiv.textContent = "Pre zobrazenie skupín musíte najprv pridať kategórie.";
+                    messageDiv.style.textAlign = 'center';
+                    messageDiv.style.fontStyle = 'italic';
+                    groupsContainerEl.appendChild(messageDiv);
+                    console.log("Žiadne kategórie, nemožno zobraziť skupiny.");
+                    return; // Ukončiť funkciu, ak nie sú kategórie
+                }
+                let groupsFound = false;
+                categories.forEach(category => {
+                    const groupsInCategory = allGroups.filter(group => group.categoryId === category.id);
+                    if (groupsInCategory.length > 0) {
+                        groupsFound = true;
+                        const categorySectionDiv = document.createElement('div');
+                        categorySectionDiv.classList.add('group-category-section'); // Trieda pre CSS štylovanie
+                        categorySectionDiv.style.flex = '1 1 300px'; // Základné flex štylovanie (rastie, zmršťuje sa, základná šírka 300px)
+                        const categoryTitle = document.createElement('h2');
+                        categoryTitle.textContent = category.name;
+                        categoryTitle.style.textAlign = 'center'; // Centrovať názov kategórie
+                        categoryTitle.style.marginTop = '0';
+                        categoryTitle.style.marginBottom = '10px';
+                        categorySectionDiv.appendChild(categoryTitle);
+                        const table = document.createElement('table');
+                        table.classList.add('groups-by-category-table'); // Trieda pre CSS štylovanie tabuľky
+                        table.style.width = '100%'; // Tabuľka zaberie celú šírku divu
+                        table.style.borderCollapse = 'collapse'; // Použiť štýly z CSS
+                        const thead = document.createElement('thead');
+                        const headerRow = document.createElement('tr');
+                        const groupNameTh = document.createElement('th');
+                        groupNameTh.textContent = 'Názov Skupiny';
+                        const actionsTh = document.createElement('th');
+                        actionsTh.textContent = 'Akcie';
+                        actionsTh.style.width = '150px'; // Rovnaká šírka pre akcie ako predtým
+                        actionsTh.style.textAlign = 'center'; // Centrovať hlavičku akcií
+                        headerRow.appendChild(groupNameTh);
+                        headerRow.appendChild(actionsTh);
+                        thead.appendChild(headerRow);
+                        table.appendChild(thead);
+                        const tbody = document.createElement('tbody');
+                        groupsInCategory.forEach(group => {
+                            const tr = document.createElement('tr');
+                            const groupNameTd = document.createElement('td');
+                            groupNameTd.textContent = group.name || 'Neznáma Skupina';
+                            tr.appendChild(groupNameTd);
+                            const actionsTd = document.createElement('td');
+                            actionsTd.style.whiteSpace = 'nowrap';
+                            actionsTd.style.textAlign = 'center';
+                            const editButton = document.createElement('button');
+                            editButton.textContent = 'Upraviť';
+                            editButton.classList.add('action-button');
+                            editButton.onclick = function() {
+                                console.log(`TODO: Implementovať úpravu skupiny ${group.id}`);
+                                alert("Funkcia úpravy skupiny zatiaľ nie je implementovaná.");
+                            };
+                            const deleteButton = document.createElement('button');
+                            deleteButton.textContent = 'Zmazať';
+                            deleteButton.classList.add('action-button', 'delete-button');
+                            deleteButton.onclick = async function() {
+                                if (!confirm(`Naozaj chcete zmazať skupinu "${group.name || group.id}"?`)) return;
+                                try {
+                                    await deleteDoc(doc(groupsCollectionRef, group.id)); // Použi ID skupiny
+                                    console.log(`Skupina ${group.id} zmazaná.`);
+                                    renderGroupsContent(); // Opätovne vykresliť celý obsah skupín
+                                } catch (error) {
+                                    console.error('Chyba pri mazaní skupiny:', error);
+                                    alert('Chyba pri mazaní skupiny!');
+                                }
+                            };
+                            actionsTd.appendChild(editButton);
+                            actionsTd.appendChild(deleteButton);
+                            tr.appendChild(actionsTd);
 
-                         // Upraviť tlačidlo (TODO)
-                         const editButton = document.createElement('button');
-                         editButton.textContent = 'Upraviť';
-                         editButton.classList.add('action-button');
-                         editButton.onclick = function() {
-                             console.log(`TODO: Implementovať úpravu skupiny ${groupId}`);
-                         };
-                         const deleteButton = document.createElement('button');
-                         deleteButton.textContent = 'Zmazať';
-                         deleteButton.classList.add('action-button', 'delete-button');
-                         deleteButton.onclick = async function() {
-                             if (!confirm(`Naozaj chcete zmazať skupinu "${groupData.name || groupId}"?`)) return;
-                             try {
-                                 await deleteDoc(doc(groupsCollectionRef, groupId));
-                                 console.log(`Skupina ${groupId} zmazaná.`);
-                                 loadGroupData(); // Reload data
-                             } catch (error) {
-                                 console.error('Chyba pri mazaní skupiny:', error);
-                                 alert('Chyba pri mazaní skupiny!');
-                             }
-                         };
-                         actionsTd.appendChild(editButton);
-                         actionsTd.appendChild(deleteButton);
-                         tr.appendChild(actionsTd);
-
-                         groupsTableBodyEl.appendChild(tr);
-                     });
-                 }
-             } catch (error) {
-                 console.error('Chyba pri načítaní dát skupín:', error);
-                 alert('Chyba pri načítaní dát skupín!');
-                 const errorRow = document.createElement('tr');
-                 const td = document.createElement('td');
-                 const currentHeadersCount = groupsTable.querySelectorAll('thead th').length;
-                 td.colSpan = currentHeadersCount > 0 ? currentHeadersCount : 2;
-                 td.textContent = "Chyba pri načítaní dát skupín.";
-                 td.style.textAlign = 'center';
-                 errorRow.appendChild(td);
-                 groupsTableBodyEl.appendChild(errorRow);
-             }
-         }
+                            tbody.appendChild(tr);
+                        });
+                        table.appendChild(tbody);
+                        categorySectionDiv.appendChild(table);
+                        groupsContainerEl.appendChild(categorySectionDiv);
+                        console.log(`Vykreslená tabuľka pre kategóriu "${category.name}" s ${groupsInCategory.length} skupinami.`);
+                    } else {
+                        console.log(`Kategória "${category.name}" nemá zatiaľ žiadne skupiny.`);
+                    }
+                });
+                if (!groupsFound && categories.length > 0) {
+                    const messageDiv = document.createElement('div');
+                    messageDiv.textContent = "Zatiaľ neboli pridané žiadne skupiny do žiadnej kategórie.";
+                    messageDiv.style.textAlign = 'center';
+                    messageDiv.style.fontStyle = 'italic';
+                    groupsContainerEl.appendChild(messageDiv);
+                    console.log("Kategórie existujú, ale žiadne skupiny nenájdené.");
+                }
+            } catch (error) {
+                console.error('Chyba pri načítaní a vykresľovaní skupín: ', error);
+                alert('Chyba pri načítaní dát skupín!');
+                const groupsContainerEl = document.getElementById('groupsContainer');
+                groupsContainerEl.innerHTML = ''; // Vyčistiť aj pri chybe
+                const errorDiv = document.createElement('div');
+                errorDiv.textContent = "Chyba pri načítaní dát skupín.";
+                errorDiv.style.textAlign = 'center';
+                errorDiv.style.color = 'red';
+                groupsContainerEl.appendChild(errorDiv);
+            }
+        }
         async function loadCategoriesToGroupDropdown() {
             groupCategorySelect.innerHTML = '<option value="">-- Vyberte kategóriu --</option>'; // Vyčistiť a pridať default option
             try {
@@ -534,54 +519,51 @@
             }
         }
         function toggleContentVisibility() {
-            const hash = window.location.hash;
-            const isCategoryPage = hash === '#kategorie';
-            const isGroupsPage = hash === '#skupiny';
-            addButton.style.display = (isCategoryPage || isGroupsPage) ? 'block' : 'none';
-            categoryTable.style.display = 'none';
-            groupsTable.style.display = 'none';
-            categoryTableBody.innerHTML = ''; // Vyčistiť telo tabuľky kategórií
-            const groupsTableHeadTr = groupsTable.querySelector('thead tr');
-            const groupsTableBodyEl = groupsTable.querySelector('tbody');
-            if(groupsTableHeadTr) groupsTableHeadTr.innerHTML = '';
-            if(groupsTableBodyEl) groupsTableBodyEl.innerHTML = '';
-            if (isCategoryPage) {
-                categoryTable.style.display = 'table';
-                loadCategories();
-                 addButton.onclick = function() {
-                     currentModalMode = 'addCategory';
-                     editingItemRef = null;
-                     editingItemRow = null;
-                     modalTitle.textContent = 'Pridať kategóriu';
-                     showCategoryFields(true); // Zobraziť polia pre kategóriu
-                     showGroupFields(false); // Skryť polia pre skupiny
-                     form.reset();
-                     modal.style.display = 'block';
-                     categoryNameInput.focus();
-                 };
-            } else if (isGroupsPage) {
-                groupsTable.style.display = 'table';
-                renderGroupsTableStructure(); // Vykresliť dynamickú štruktúru tabuľky skupín (hlavičku)
-                 loadGroupData();
-                 addButton.onclick = function() {
-                     currentModalMode = 'addGroup';
-                     editingItemRef = null; // Pri pridávaní nemáme referenciu
-                     editingItemRow = null; // Pri pridávaní nemáme riadok
-                     modalTitle.textContent = 'Pridať skupinu';
-                     showCategoryFields(false); // Skryť polia pre kategóriu
-                     showGroupFields(true); // Zobraziť polia pre skupiny
-                     loadCategoriesToGroupDropdown();
-                     form.reset();
-                     groupCategorySelect.disabled = false;
-                     modal.style.display = 'block';
-                     if (groupCategorySelect.style.display !== 'none') {
-                        groupCategorySelect.focus();
-                     } else if (groupNameInput.style.display !== 'none') {
-                        groupNameInput.focus();
-                     }
-                 };
-            }
-        }
+            const hash = window.location.hash;
+            const isCategoryPage = hash === '#kategorie';
+            const isGroupsPage = hash === '#skupiny';
+            const groupsContainerEl = document.getElementById('groupsContainer'); // Získaj nový kontajner
+            addButton.style.display = (isCategoryPage || isGroupsPage) ? 'block' : 'none';
+            categoryTable.style.display = 'none';
+            groupsContainerEl.style.display = 'none'; // Skryť nový kontajner pre skupiny
+            categoryTableBody.innerHTML = ''; // Vyčistiť telo tabuľky kategórií
+            if (isCategoryPage) {
+                categoryTable.style.display = 'table';
+                loadCategories();
+                 addButton.onclick = function() {
+                     currentModalMode = 'addCategory';
+                     editingItemRef = null;
+                     editingItemRow = null;
+                     modalTitle.textContent = 'Pridať kategóriu';
+                     showCategoryFields(true);
+                     showGroupFields(false);
+                     form.reset();
+                     modal.style.display = 'block';
+                     categoryNameInput.focus();
+                 };
+            } else if (isGroupsPage) {
+                groupsContainerEl.style.display = 'flex'; // Zobraziť ako flex kontajner
+                renderGroupsContent(); // Zavolaj novú funkciu na vykreslenie obsahu skupín
+                 addButton.onclick = function() {
+                     currentModalMode = 'addGroup';
+                     editingItemRef = null;
+                     editingItemRow = null;
+                     modalTitle.textContent = 'Pridať skupinu';
+                     showCategoryFields(false);
+                     showGroupFields(true);
+                     loadCategoriesToGroupDropdown();
+                     form.reset();
+                     groupCategorySelect.disabled = false;
+                     modal.style.display = 'block';
+                     // Zameranie na prvý viditeľný input
+                     if (groupCategorySelect.style.display !== 'none') {
+                        groupCategorySelect.focus();
+                     } else if (groupNameInput.style.display !== 'none') {
+                        groupNameInput.focus();
+                     }
+                 };
+            }
+        }
         window.addEventListener('click', (e) => {
             if (e.target === modal || e.target.classList.contains('close')) { // Check if clicked on modal overlay or close button
                  modal.style.display = 'none';
@@ -669,28 +651,31 @@
                      alert('Chyba pri premenovaní kategórie! Prosím, skúste znova.');
                  }
             } else if (currentModalMode === 'addGroup') {
-                 const categoryId = groupCategorySelect.value;
-                 const groupName = groupNameInput.value.trim();
-                 if (!categoryId || groupName === '') {
-                     alert('Vyberte kategóriu a zadajte názov skupiny.');
-                     return;
-                 }
-                 try {
-                     const newGroupRef = await addDoc(groupsCollectionRef, {
-                        categoryId: categoryId, // Uložíme ID kategórie, ku ktorej skupina patrí
-                        name: groupName,
-                        createdAt: new Date()
-                     });
-                     console.log(`Skupina "${groupName}" (ID: ${newGroupRef.id}) pridaná do kategórie "${categoryId}".`);
-                     loadGroupData(); // Načítať dáta a aktualizovať tabuľku
-                     modal.style.display = 'none'; form.reset();
-                     currentModalMode = 'addCategory'; editingItemRef = null; editingItemRow = null; // Reset stavu
-                     showCategoryFields(false); // Ensure fields are hidden
-                     showGroupFields(false); // Ensure group fields are hidden
-                 } catch (error) {
-                     console.error('Chyba pri pridávaní skupiny: ', error);
-                     alert('Chyba pri pridávaní skupiny!');
-                 }
+                 const categoryId = groupCategorySelect.value;
+                 const groupName = groupNameInput.value.trim();
+                 if (!categoryId || groupName === '') {
+                     alert('Vyberte kategóriu a zadajte názov skupiny.');
+                     return;
+                 }
+                 try {
+                     const newGroupRef = await addDoc(groupsCollectionRef, {
+                        categoryId: categoryId,
+                        name: groupName,
+                        createdAt: new Date()
+                     });
+                     console.log(`Skupina "${groupName}" (ID: ${newGroupRef.id}) pridaná do kategórie "${categoryId}".`);
+                     // Zmeniť toto volanie
+                     renderGroupsContent(); // Načítať dáta a aktualizovať tabuľky skupín
+
+                     modal.style.display = 'none'; form.reset();
+                     currentModalMode = 'addCategory'; editingItemRef = null; editingItemRow = null;
+                     showCategoryFields(false);
+                     showGroupFields(false);
+                 } catch (error) {
+                     console.error('Chyba pri pridávaní skupiny: ', error);
+                     alert('Chyba pri pridávaní skupiny!');
+                 }
+            }
             } else if (currentModalMode === 'editGroup') {
                  console.log("TODO: Implementovať logiku úpravy skupiny.");
                  alert("Funkcia úpravy skupiny zatiaľ nie je implementovaná.");
