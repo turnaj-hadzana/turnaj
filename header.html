@@ -1,4 +1,3 @@
-<!-- header.html -->
 <header>
   <div class="logo" onclick="window.location.href='index.html'">Turnaj</div>
   <button id="auth-link" class="auth-button">Prihlásiť sa</button>
@@ -45,34 +44,30 @@
 </style>
 
 <script>
-document.addEventListener("DOMContentLoaded", function() {
+function updateAuthButton() {
   const authLink = document.getElementById("auth-link");
-
   if (!authLink) {
     console.error("Odkaz 'auth-link' neexistuje!");
     return;
   }
 
-  console.log("Odkaz 'auth-link' bol nájdený:", authLink);
-
   const username = sessionStorage.getItem("username");
-  console.log("Hodnota username: '", username, "'");
 
   if (username) {
     authLink.textContent = "Odhlásiť sa";
-    console.log("Priraďujem funkciu pre odhlásenie.");
     authLink.onclick = function () {
-      console.log("Klikol si na 'Odhlásiť sa'.");
       sessionStorage.removeItem("username");
       window.location.href = "index.html";
     };
   } else {
     authLink.textContent = "Prihlásiť sa";
-    console.log("Priraďujem funkciu pre prihlásenie.");
     authLink.onclick = function () {
-      console.log("Klikol si na 'Prihlásiť sa'.");
       window.location.href = "login.html";
     };
   }
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+  updateAuthButton(); // Zavoláme funkciu aj pri načítaní stránky
 });
 </script>
