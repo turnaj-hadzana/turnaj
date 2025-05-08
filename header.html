@@ -15,57 +15,16 @@
         <ul>
             <li><a href="index.html">Turnaj</a></li>
             <li><a href="login.html">Prihlásenie</a></li>
-            <li><a href="register.html" id="registerLink" style="display: none;">Registrácia</a></li>
-            <li><a href="spravca-turnaja.html" id="registerLink" style="display: none;">Správca turnaja</a></li>
+            <li id="registerItem" style="display: none;"><a href="register.html">Registrácia</a></li>
+            <li id="adminItem" style="display: none;"><a href="spravca-turnaja.html">Správca turnaja</a></li>
         </ul>
     </nav>
 </header>
 
-<!-- Firebase a Firestore -->
-<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
-
-<script type="module">
-    import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js';
-    import { getFirestore, doc, getDoc } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js';
-
-    const firebaseConfig = {
-        apiKey: "AIzaSyD0h0rQZiIGi0-UDb4-YU_JihRGpIlfz40",
-        authDomain: "turnaj-a28c5.firebaseapp.com",
-        projectId: "turnaj-a28c5",
-        storageBucket: "turnaj-a28c5.firebasestorage.app",
-        messagingSenderId: "13732191148",
-        appId: "1:13732191148:web:5ad78eaef2ad452a10f809"
-    };
-
-    // Inicializácia Firebase
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-
-    // Kontrola prihláseného používateľa
-    async function checkUser() {
-        const username = "admin"; // Zadaný používateľ "admin"
-
-        try {
-            const userDocRef = doc(db, "users", username);
-            const userDoc = await getDoc(userDocRef);
-
-            if (userDoc.exists()) {
-                const userData = userDoc.data();
-                if (userData) {
-                    // Skontrolujeme, či používateľ je "admin"
-                    if (username === "admin") {
-                        // Zobrazíme odkaz na registráciu, ak je prihlásený používateľ "admin"
-                        document.getElementById("registerLink").style.display = "block";
-                    }
-                }
-            }
-        } catch (error) {
-            console.log("Chyba pri načítaní používateľa:", error);
-        }
+<script>
+    const username = localStorage.getItem('username');
+    if (username === 'admin') {
+        document.getElementById('registerItem').style.display = 'list-item';
+        document.getElementById('adminItem').style.display = 'list-item';
     }
-
-    // Spustíme funkciu na kontrolu používateľa
-    checkUser();
 </script>
-
