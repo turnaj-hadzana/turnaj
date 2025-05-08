@@ -5,62 +5,7 @@ body {
     background-color: #f4f4f4;
     color: #333;
 }
-
-
-
-header h1 {
-     margin: 0;
-     color: #333;
-}
-.content-wrapper {
-    display: flex; /* Použijeme Flexbox na usporiadanie detí vedľa seba */
-    max-width: 1200px; /* Maximálna šírka hlavnej časti stránky */
-    margin: 20px auto; /* Centrovanie bloku na stránke s horným/dolným okrajom */
-    padding: 0 20px; /* Odsadenie z bokov na menších obrazovkách */
-    gap: 20px; /* Priestor medzi menu a hlavným obsahom */
-}
-
-/* Štýly pre ľavé menu */
-.left-menu {
-    width: 220px; /* Pevná šírka ľavého menu */
-    flex-shrink: 0; /* Zabraňuje zmenšovaniu menu, ak je málo miesta */
-    background-color: #fff; /* Biele pozadie menu */
-    padding: 15px;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* Tieň */
-    height: fit-content; /* Výška sa prispôsobí obsahu */
-    /* Ak chceš, aby menu "lepilo" pri scrolovaní, môžeš pridať: */
-    /* position: sticky; top: 20px; */
-}
-
-.left-menu h2 {
-    margin-top: 0;
-    color: #333;
-    font-size: 1.2em;
-    border-bottom: 1px solid #eee; /* Tenká čiara pod nadpisom menu */
-    padding-bottom: 10px;
-    margin-bottom: 15px;
-}
-
-.left-menu ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
-.left-menu li {
-    margin-bottom: 5px;
-}
-
-.left-menu li a {
-    display: block;
-}
-
-
-
-
-
-
+<!--
 main {
     flex-grow: 1;
     background-color: #fff;
@@ -68,7 +13,7 @@ main {
     border-radius: 8px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
-
+-->
 header {
     background-color: #f0f0f0;
     padding: 10px 0;
