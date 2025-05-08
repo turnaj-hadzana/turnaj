@@ -10,6 +10,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 </head>
 <body>
+    <script type="module" src="auth.js"></script>
     <script>
         fetch('header.html')
             .then(response => response.text())
@@ -17,7 +18,6 @@
                 document.body.insertAdjacentHTML('afterbegin', data);
             });
     </script>
-    <script type="module" src="auth.js"></script>
     <main>
         <h1>Prihlásenie</h1>
         <form id="loginForm">
