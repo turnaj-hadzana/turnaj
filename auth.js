@@ -43,7 +43,7 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
         // Ak sa heslá zhodujú
         if (userData.password === password) {
             alert('Úspešné prihlásenie!');
-            window.location.href = 'dashboard.html'; // Presmerovanie na dashboard
+            window.location.href = 'spravca-turnaja.html'; // Presmerovanie na dashboard
         } else {
             errorMessage.textContent = 'Nesprávne heslo.';
             errorMessage.style.display = 'block';
