@@ -48,6 +48,7 @@
         const parser = new DOMParser();
         const doc = parser.parseFromString(data, 'text/html');
 
+        // Pridáme CSS, ak nie je načítaný
         if (!document.querySelector('link[href="header.css"]')) {
           const cssLink = document.createElement('link');
           cssLink.rel = 'stylesheet';
@@ -55,13 +56,14 @@
           document.head.appendChild(cssLink);
         }
 
+        // Vložme hlavičku do divu s id="header-placeholder"
         const header = doc.querySelector('header');
         if (header) {
           document.getElementById("header-placeholder").appendChild(header);
         }
 
-        // Po načítaní hlavičky inicializuj tlačidlo
-        updateAuthButton(); // Táto funkcia sa volá po načítaní hlavičky
+        // Volanie funkcie na aktualizáciu tlačidla po načítaní hlavičky
+        updateAuthButton();
       })
       .catch(error => console.error('Chyba pri načítaní hlavičky:', error));
   </script>
@@ -108,4 +110,12 @@
     async function approveUser(username) {
       const userRef = doc(db, "users", username);
       await setDoc(userRef, { approved: true }, { merge: true });
-      alert(`${
+      alert(`${username} bol schválený.`);
+      location.reload();
+    }
+
+    loadPendingUsers();
+  </script>
+
+</body>
+</html>
