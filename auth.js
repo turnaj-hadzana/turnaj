@@ -19,7 +19,7 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
     event.preventDefault(); // Zabráni odoslaniu formulára
 
     const username = document.getElementById('meno').value.trim(); // Získa meno používateľa
-    const password = document.getElementById('password').value; // Získa heslo
+    const password = document.getElementById('password').value.trim(); // Odstráni medzery pred a za heslom
     const errorMessage = document.getElementById('loginError'); // Pre získanie elementu pre chybové správy
 
     // Skryje predchádzajúce chybové správy
@@ -49,8 +49,8 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
         const userData = userDoc.data(); // Získa údaje používateľa
         console.log('Nájdené údaje používateľa:', userData);
 
-        // Ak sa heslá zhodujú
-        if (userData[""] === password) {
+        // Porovnáme heslá priamo, keď sú obe hodnoty upravené pomocou trim()
+        if (userData.password === password) {
             alert('Úspešné prihlásenie!');
             window.location.href = 'spravca-turnaja.html'; // Presmerovanie na dashboard
         } else {
