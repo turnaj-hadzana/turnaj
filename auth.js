@@ -7,32 +7,43 @@ const firebaseConfig = {
   appId: "1:13732191148:web:5ad78eaef2ad452a10f809"
 };
 
+// Inicializácia Firebase
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 document.getElementById('loginForm').addEventListener('submit', async function(event) {
-    event.preventDefault();
+    event.preventDefault(); // Zabráni odoslaniu formulára, aby sme spracovali prihlasovanie
 
-    const username = document.getElementById('meno').value.trim();
-    const password = document.getElementById('password').value;
-    const errorMessage = document.getElementById('loginError');
+    const username = document.getElementById('meno').value.trim(); // Získa meno používateľa
+    const password = document.getElementById('password').value; // Získa heslo
+    const errorMessage = document.getElementById('loginError'); // Pre získanie elementu pre chybové správy
 
+    // Skryje predchádzajúce chybové správy
     errorMessage.style.display = 'none';
 
-    try {
-        const userDoc = await db.collection('users').doc(username).get();
+    // Skontroluj, či je zadané používateľské meno a heslo
+    if (!username || !password) {
+        errorMessage.textContent = 'Prosím, vyplňte všetky polia.';
+        errorMessage.style.display = 'block';
+        return;
+    }
 
+    try {
+        const userDoc = await db.collection('users').doc(username).get(); // Získaj dokument používateľa z Firestore
+
+        // Ak používateľ neexistuje
         if (!userDoc.exists) {
             errorMessage.textContent = 'Používateľ neexistuje.';
             errorMessage.style.display = 'block';
             return;
         }
 
-        const userData = userDoc.data();
+        const userData = userDoc.data(); // Získaj údaje používateľa
 
+        // Ak sa heslá zhodujú
         if (userData.password === password) {
             alert('Úspešné prihlásenie!');
-            window.location.href = 'dashboard.html';
+            window.location.href = 'dashboard.html'; // Presmerovanie na dashboard
         } else {
             errorMessage.textContent = 'Nesprávne heslo.';
             errorMessage.style.display = 'block';
