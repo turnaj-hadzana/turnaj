@@ -1,25 +1,18 @@
-const username = localStorage.getItem('username');
+document.addEventListener("DOMContentLoaded", function () {
+    const username = localStorage.getItem('username'); // Načítanie používateľského mena z localStorage
 
-if (username) {
-    const loginItem = document.getElementById('loginItem');
-    const logoutItem = document.getElementById('logoutItem');
-    const registerItem = document.getElementById('registerItem');
-    const adminItem = document.getElementById('adminItem');
+    if (username) {
+        // Ak je používateľ prihlásený
+        document.getElementById('usernameItem').style.display = 'list-item'; // Zobrazí meno používateľa v menu
+        document.getElementById('usernameSpan').textContent = username; // Zobrazenie používateľského mena v hlavičke
 
-    if (loginItem) loginItem.style.display = 'none';
-    if (logoutItem) logoutItem.style.display = 'list-item';
+        // Ak je prihlásený "admin", zobrazí aj ďalšie možnosti
+        if (username === 'admin') {
+            document.getElementById('registerItem').style.display = 'list-item';
+            document.getElementById('adminItem').style.display = 'list-item';
+        }
 
-    if (username === 'admin') {
-        if (registerItem) registerItem.style.display = 'list-item';
-        if (adminItem) adminItem.style.display = 'list-item';
+        // Skryje položku Prihlásenie, keď je používateľ prihlásený
+        document.querySelector('a[href="login.html"]').style.display = 'none';
     }
-
-    const logoutLink = document.getElementById('logoutLink');
-    if (logoutLink) {
-        logoutLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            localStorage.removeItem('username');
-            window.location.href = 'index.html';
-        });
-    }
-}
+});
