@@ -473,13 +473,13 @@
              };
 
              const deleteButton = document.createElement('button');
-             deleteButton.textContent = 'Zmazať';
+             deleteButton.textContent = 'VYmazať';
              deleteButton.classList.add('action-button', 'delete-button');
              deleteButton.onclick = async function() {
                  const row = this.closest('tr');
                  const categoryToDelete = row.querySelector('td:first-child').textContent;
 
-                 if (!confirm(`Naozaj chcete zmazať kategóriu "${categoryToDelete}"? Skupiny priradené k tejto kategórii zostanú bez priradenia!`)) {
+                 if (!confirm(`Naozaj chcete vymazať kategóriu "${categoryToDelete}"? Skupiny priradené k tejto kategórii zostanú bez priradenia!`)) {
                      return;
                  }
 
@@ -722,12 +722,12 @@
                              };
 
 
-                             // TLAČIDLO ZMAZAŤ SKUPINU
+                             // TLAČIDLO VYMAZAŤ SKUPINU
                              const deleteGroupButton = document.createElement('button');
-                             deleteGroupButton.textContent = 'Zmazať';
+                             deleteGroupButton.textContent = 'Vymazať';
                              deleteGroupButton.classList.add('action-button', 'delete-button');
                              deleteGroupButton.onclick = async () => {
-                                  if (!confirm(`Naozaj chcete zmazať skupinu "${group.data.name}" z kategórie "${group.data.categoryId}"?`)) {
+                                  if (!confirm(`Naozaj chcete vymazať skupinu "${group.data.name}" z kategórie "${group.data.categoryId}"?`)) {
                                       return;
                                   }
                                   try {
@@ -945,7 +945,7 @@
                       return;
                  }
 
-                 // --- Kategória premenovanie: Vytvoriť novú, zmazať starú ---
+                 // --- Kategória premenovanie: Vytvoriť novú, vymazať starú ---
                 const oldCategoryDocRef = doc(categoriesCollectionRef, oldCategoryName);
                 try {
                     const oldDocSnapshot = await getDoc(oldCategoryDocRef);
@@ -1057,7 +1057,7 @@
                      }
 
                      // Ak sa kompozitné ID zmenilo (zmenil sa názov skupiny alebo kategória),
-                     // musíme vytvoriť nový dokument s novým ID a zmazať starý.
+                     // musíme vytvoriť nový dokument s novým ID a vymazať starý.
                      if (oldGroupId !== compositeGroupId) {
                           console.log(`Premenovanie/presun skupiny z "${oldGroupId}" na "${compositeGroupId}".`);
 
@@ -1067,7 +1067,7 @@
                                return; // Zastaviť proces
                           }
 
-                          // Vytvoriť nový dokument a zmazať starý pomocou dávkového zápisu pre atomickosť
+                          // Vytvoriť nový dokument a vymazať starý pomocou dávkového zápisu pre atomickosť
                           const oldGroupDocRef = doc(groupsCollectionRef, oldGroupId);
                           const batch = writeBatch(db);
 
@@ -1079,7 +1079,7 @@
                                // const oldDocSnapshot = await getDoc(oldGroupDocRef); const oldGroupData = oldDocSnapshot.data(); batch.set(..., {...oldGroupData, ...});
                            });
 
-                          // Zmazať starý dokument s pôvodným kompozitným ID
+                          // Vymazať starý dokument s pôvodným kompozitným ID
                           batch.delete(oldGroupDocRef);
 
                           // Vykonať dávkový zápis
