@@ -115,6 +115,11 @@ main p a:hover {
 
 
 
+.content-wrapper {
+    display: flex;
+    align-items: flex-start;
+}
+
 .left-menu {
     width: 200px;
     background-color: #f8f8f8;
