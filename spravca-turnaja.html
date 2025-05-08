@@ -8,21 +8,19 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<script>
-    fetch('header.html')
-        .then(response => response.text())
-        .then(data => {
-            document.body.insertAdjacentHTML('afterbegin', data);
-        })
-        .then(() => {
-            const script = document.createElement('script');
-            script.src = 'header-logic.js';
-            document.body.appendChild(script);
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const username = localStorage.getItem('username');
+
+            if (!username || username !== 'admin') {
+                window.location.href = 'login.html'; 
+            }
         });
-</script>
+    </script>
 
     <main>
         <h1>Správca turnaja</h1>
+        <p>Tu môžete spravovať nastavenia a údaje turnaja.</p>
     </main>
 </body>
 </html>
