@@ -26,12 +26,12 @@ nav ul li a {
 }
 
 nav ul li a:hover {
-    color: #007bff;
+    color: #3a8d41;
     background-color: #e0e0e0;
 }
 
 nav ul li.active a {
-    background-color: #f8f8f8;
+    background-color: #00cc00;
     color: #333;
 }
 
@@ -78,7 +78,7 @@ form input[type="password"] {
 }
 
 form button[type="submit"] {
-    background-color: #007bff;
+    background-color: #3a8d41;
     color: white;
     padding: 12px 20px;
     border: none;
@@ -90,7 +90,7 @@ form button[type="submit"] {
 }
 
 form button[type="submit"]:hover {
-    background-color: #0056b3;
+    background-color: #c46f50;
 }
 
 .error-message {
