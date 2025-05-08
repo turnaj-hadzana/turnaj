@@ -45,6 +45,7 @@
 
 <script>
 function updateAuthButton() {
+  console.log("Funkcia updateAuthButton() bola spustená."); // Kontrola spustenia funkcie
   const authLink = document.getElementById("auth-link");
   if (!authLink) {
     console.error("Odkaz 'auth-link' neexistuje!");
@@ -52,22 +53,26 @@ function updateAuthButton() {
   }
 
   const username = sessionStorage.getItem("username");
+  console.log("Hodnota username: '", username, "'"); // Kontrola hodnoty username
 
   if (username) {
     authLink.textContent = "Odhlásiť sa";
     authLink.onclick = function () {
+      console.log("Klikol si na 'Odhlásiť sa'. Presmerujem na index.html"); // Kontrola onclick
       sessionStorage.removeItem("username");
       window.location.href = "index.html";
     };
   } else {
     authLink.textContent = "Prihlásiť sa";
     authLink.onclick = function () {
+      console.log("Klikol si na 'Prihlásiť sa'. Presmerujem na login.html"); // Kontrola onclick
       window.location.href = "login.html";
     };
   }
 }
 
 document.addEventListener("DOMContentLoaded", function() {
+  console.log("DOM bol načítaný."); // Kontrola spustenia DOMContentLoaded
   updateAuthButton(); // Zavoláme funkciu aj pri načítaní stránky
 });
 </script>
