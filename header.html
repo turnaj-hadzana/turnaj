@@ -45,7 +45,7 @@
 </style>
 
 <script>
-  document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", function() {
   const authLink = document.getElementById("auth-link");
 
   if (!authLink) {
@@ -53,11 +53,12 @@
     return;
   }
 
+  console.log("Odkaz 'auth-link' bol nájdený:", authLink); // Pridaný log
+
   const username = sessionStorage.getItem("username");
-  console.log("Hodnota username pri načítaní hlavičky: '", username, "'"); // S úvodzovkami, aby bolo vidieť prípadný prázdny reťazec
+  console.log("Hodnota username pri načítaní hlavičky: '", username, "'");
 
   if (username) {
-    console.log("Používateľ je považovaný za prihláseného.");
     authLink.textContent = "Odhlásiť sa";
     authLink.onclick = function () {
       console.log("Klikol si na 'Odhlásiť sa'.");
@@ -65,7 +66,6 @@
       window.location.href = "index.html";
     };
   } else {
-    console.log("Používateľ nie je považovaný za prihláseného.");
     authLink.textContent = "Prihlásiť sa";
     authLink.onclick = function () {
       console.log("Klikol si na 'Prihlásiť sa'.");
