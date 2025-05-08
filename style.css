@@ -43,10 +43,19 @@ header h1 {
 }
 
 .left-menu ul {
-    list-style: none; /* Odstránenie odrážok */
+    list-style: none;
     padding: 0;
     margin: 0;
 }
+
+.left-menu li {
+    margin-bottom: 5px;
+}
+
+.left-menu li a {
+    display: block;
+}
+
 
 
 
