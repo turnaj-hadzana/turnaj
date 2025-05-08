@@ -915,61 +915,54 @@
 
          // --- Nová obsluha formulára na pridanie/úpravu skupiny ---
          groupForm.addEventListener('submit', async (e) => {
-             e.preventDefault();
+    e.preventDefault(); // Toto tu už je
 
-             const selectedCategoryId = groupCategorySelect.value;
-             const groupName = groupNameInput.value.trim();
+    const selectedCategoryId = groupCategorySelect.value; // Toto tu už je
+    const groupName = groupNameInput.value.trim(); // Toto tu už je
 
-             if (selectedCategoryId === '') {
-                 alert('Prosím, vyberte kategóriu pre skupinu.');
-                 return;
-             }
-             if (groupName === '') {
-                 alert('Názov skupiny nemôže byť prázdny.');
-                 return;
-             }
+    if (selectedCategoryId === '') { // Toto tu už je
+        alert('Prosím, vyberte kategóriu pre skupinu.'); // Toto tu už je
+        return; // Toto tu už je
+    }
+    if (groupName === '') { // Toto tu už je
+        alert('Názov skupiny nemôže byť prázdny.'); // Toto tu už je
+        return; // Toto tu už je
+    }
 
-             // TODO: Voliteľné: Skontrolovať, či skupina s rovnakým názvom už v danej kategórii existuje.
-             // To si vyžaduje dodatočný Firestore dotaz. Pre jednoduchosť zatiaľ nekontrolujeme.
-             // Alebo použiť unikátne ID pre skupiny a akceptovať duplicitné názvy v rámci kategórie.
+    // TODO: Voliteľné: Skontrolovať unikátnosť názvu skupiny v danej kategórii.
 
-             if (currentGroupModalMode === 'add') {
-                 // === LOGIKA PRIDÁVANIA SKUPINY ===
-                 try {
-                     // Pridáme nový dokument s auto-generovaným ID do kolekcie 'groups'
-                     const newGroupRef = await addDoc(groupsCollectionRef, {
-                         name: groupName,
-                         categoryId: selectedCategoryId, // Priradíme kategóriu
-                         createdAt: new Date()
-                         // Môžete pridať ďalšie počiatočné polia pre skupinu (hráči, skóre, atď.)
-                     });
+    if (currentGroupModalMode === 'add') {
+        // === LOGIKA PRIDÁVANIA SKUPINY ===
+        try {
+            // Pridáme nový dokument s auto-generovaným ID do kolekcie 'groups'
+            const newGroupRef = await addDoc(groupsCollectionRef, {
+                name: groupName,            // Uložíme názov skupiny
+                categoryId: selectedCategoryId // Uložíme ID vybranej kategórie
+                // Už nepridávame createdAt
+            });
 
-                     console.log(`Skupina "${groupName}" (ID: ${newGroupRef.id}) bola úspešne pridaná do kategórie "${selectedCategoryId}".`);
+            console.log(`Skupina "${groupName}" (ID: ${newGroupRef.id}) bola úspešne pridaná do kategórie "${selectedCategoryId}".`);
 
-                     groupModal.style.display = 'none';
-                     groupForm.reset();
-                     // Reset state
-                     currentGroupModalMode = 'add'; editingGroupId = null;
+            groupModal.style.display = 'none';
+            groupForm.reset();
+            // Reset state
+            currentGroupModalMode = 'add'; editingGroupId = null;
 
-                     // Po pridaní skupiny znova načítame a zobrazíme skupiny
-                     if (window.location.hash === '#skupiny') {
-                         displayGroupsByCategory();
-                     }
+            // Po pridaní skupiny znova načítame a zobrazíme skupiny
+            if (window.location.hash === '#skupiny') {
+                displayGroupsByCategory();
+            }
 
-                 } catch (error) {
-                     console.error('Chyba pri pridávaní skupiny: ', error);
-                     alert('Chyba pri pridávaní skupiny!');
-                 }
-             } else if (currentGroupModalMode === 'edit') {
-                 // TODO: Implement group editing logic here
-                 console.log(`TODO: Implementácia úpravy skupiny ${editingGroupId}`);
-                 alert('Úprava skupiny zatiaľ nie je implementovaná.');
-                 // Example: Update document using setDoc(doc(groupsCollectionRef, editingGroupId), { ...updatedData... })
-                 // After update, close modal and reload displayGroupsByCategory()
-             }
-         });
-
-
+        } catch (error) {
+            console.error('Chyba pri pridávaní skupiny: ', error);
+            alert('Chyba pri pridávaní skupiny!');
+        }
+    } else if (currentGroupModalMode === 'edit') {
+        // TODO: Implement group editing logic here
+        console.log(`TODO: Implementácia úpravy skupiny ${editingGroupId}`);
+        alert('Úprava skupiny zatiaľ nie je implementovaná.');
+    }
+});
     </script>
 
 </body>
