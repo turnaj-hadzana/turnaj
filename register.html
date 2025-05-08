@@ -8,7 +8,14 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<script type="module" src="auth.js"></script>
+    <script>
+        fetch('header.html')
+            .then(response => response.text())
+            .then(data => {
+                document.body.insertAdjacentHTML('afterbegin', data);
+            });
+    </script>
+    <script type="module" src="auth.js"></script>
     <main>
         <h1>Registrácia</h1>
         <form id="register-form">
