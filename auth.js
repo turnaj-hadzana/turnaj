@@ -1,6 +1,5 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js';
-import { getFirestore, doc, getDoc, signOut } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
-import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js';
+import { getFirestore, doc, getDoc } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
 
 // Firebase konfigurácia
 const firebaseConfig = {
@@ -15,28 +14,22 @@ const firebaseConfig = {
 // Inicializácia Firebase aplikácie
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const auth = getAuth(app); // Inicializácia Firebase Auth
 
 // Funkcia na úpravu menu
-function updateHeaderMenu(user) { // Upravený parameter na objekt user
+function updateHeaderMenu(username) {
     const usernameItem = document.getElementById('usernameItem');
     const usernameSpan = document.getElementById('usernameSpan');
     const registerItem = document.getElementById('registerItem');
     const adminItem = document.getElementById('adminItem');
-    const loginLink = document.querySelector('a[href="login.html"]'); // Získame odkaz na prihlásenie
+    const loginLink = document.querySelector('a[href="login.html"]');
 
-    if (user) { // Používame objekt user na kontrolu prihlásenia
+    if (username) {
         // Ak je používateľ prihlásený
         usernameItem.style.display = 'list-item';
-        usernameSpan.textContent = user.displayName || user.email; // Zobrazíme meno alebo email
-        if (loginLink) {
-            loginLink.textContent = 'Odhlásenie'; // Zmeníme text na "Odhlásenie"
-            loginLink.removeEventListener('click', loginClickHandler); // Odstránime pôvodný listener
-            loginLink.addEventListener('click', handleLogout); // Pridáme listener pre odhlásenie
-        }
+        usernameSpan.textContent = username;
 
         // Ak je prihlásený "admin", zobrazí aj ďalšie možnosti
-        if (user.email === 'admin@example.com') { // Toto by malo byť nahradené porovnaním roly z databázy
+        if (username === 'admin') {
             registerItem.style.display = 'list-item';
             adminItem.style.display = 'list-item';
         } else {
@@ -44,54 +37,43 @@ function updateHeaderMenu(user) { // Upravený parameter na objekt user
             adminItem.style.display = 'none'; // skryjeme pre beznych userov
         }
 
-
+        // Skryje položku Prihlásenie, keď je používateľ prihlásený
+        if (loginLink) {
+            loginLink.style.display = 'none';
+        }
     } else {
         //ak nie je prihlaseny takto
         usernameItem.style.display = 'none';
         registerItem.style.display = 'none';
         adminItem.style.display = 'none';
         if (loginLink) {
-            loginLink.textContent = 'Prihlásenie'; // Vrátime text na "Prihlásenie"
-            loginLink.removeEventListener('click', handleLogout); // Odstránime odhlasovanie
-            loginLink.addEventListener('click', loginClickHandler);  //pridame povodny listener
             loginLink.style.display = 'list-item'; //zobrazime prihlasenie
         }
     }
 }
-let loginClickHandler;
-// Funkcia pre odhlásenie
-function handleLogout(event) {
-    event.preventDefault(); // Zabránime presmerovaniu
-    signOut(auth).then(() => {
-        console.log('Používateľ odhlásený.');
-        localStorage.removeItem('username'); // Odstránime používateľské meno z localStorage
-        updateHeaderMenu(null); // Aktualizujeme menu
-        window.location.href = '/index.html'; // Presmerujeme na hlavnú stránku
-    }).catch((error) => {
-        console.error('Chyba pri odhlasovaní:', error);
-    });
-}
-
-
 
 document.addEventListener('DOMContentLoaded', function() {
     const loginForm = document.getElementById('loginForm');
-     loginClickHandler =  function(event) { // Store the original login click handler
-        event.preventDefault();
-        const usernameInput = document.getElementById('meno');
-        const passwordInput = document.getElementById('password');
-        const errorMessage = document.getElementById('loginError');
+    if (loginForm) { // kontrolujeme ci existuje pre pripad viacerych pouziti auth.js
+        loginForm.addEventListener('submit', async function(event) {
+            event.preventDefault();
 
-        errorMessage.style.display = 'none';
+            const username = document.getElementById('meno').value.trim();
+            const password = document.getElementById('password').value.trim();
+            const errorMessage = document.getElementById('loginError');
 
-        if (!usernameInput.value.trim() || !passwordInput.value.trim()) {
-            errorMessage.textContent = 'Prosím, vyplňte všetky polia.';
-            errorMessage.style.display = 'block';
-            return;
-        }
+            errorMessage.style.display = 'none';
 
-        getDoc(doc(db, 'users', usernameInput.value.trim()))
-            .then(userDoc => {
+            if (!username || !password) {
+                errorMessage.textContent = 'Prosím, vyplňte všetky polia.';
+                errorMessage.style.display = 'block';
+                return;
+            }
+
+            try {
+                const userDocRef = doc(db, 'users', username);
+                const userDoc = await getDoc(userDocRef);
+
                 if (!userDoc.exists()) {
                     errorMessage.textContent = 'Používateľ neexistuje.';
                     errorMessage.style.display = 'block';
@@ -100,28 +82,26 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 const userData = userDoc.data();
 
-                if (userData.password === passwordInput.value.trim()) {
-                    localStorage.setItem('username', usernameInput.value.trim());
-                    updateHeaderMenu(userDoc.data());
-                    window.location.href = 'index.html';
+                if (userData.password === password) {
+                    localStorage.setItem('username', username);
+                    updateHeaderMenu(username); // Aktualizujeme menu po úspešnom prihlásení
+                    if (username === "admin") {
+                        window.location.href = 'spravca-turnaja.html';
+                    } else {
+                        window.location.href = 'index.html';
+                    }
                 } else {
                     errorMessage.textContent = 'Nesprávne heslo.';
                     errorMessage.style.display = 'block';
                 }
-            })
-            .catch(error => {
+            } catch (error) {
                 console.error('Chyba pri prihlasovaní:', error);
                 errorMessage.textContent = 'Chyba pri prihlasovaní: ' + error.message;
                 errorMessage.style.display = 'block';
-            });
-    };
-    if (loginForm) {
-        loginForm.addEventListener('submit', loginClickHandler);
+            }
+        });
     }
-
-
     // Pri načítaní stránky skontrolujeme, či je používateľ už prihlásený a upravíme menu
-    onAuthStateChanged(auth, (user) => {
-        updateHeaderMenu(user); // Zavoláme funkciu s aktuálnym používateľom
-    });
+    const loggedInUsername = localStorage.getItem('username');
+    updateHeaderMenu(loggedInUsername);
 });
