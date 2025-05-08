@@ -12,6 +12,9 @@
     <script>
         fetch('header.html')
             .then(response => response.text())
+            .then(data => {
+                document.body.insertAdjacentHTML('afterbegin', data);
+            })
             .then(() => {
                 const script = document.createElement('script');
                 script.src = 'header-logic.js';
