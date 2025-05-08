@@ -41,6 +41,7 @@
 </head>
 <body>
 
+<!-- Miesto pre načítanie hlavičky -->
 <div id="header-placeholder"></div>
 
 <!-- Prihlasovací formulár -->
@@ -54,7 +55,7 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
   import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
-  
+
   const firebaseConfig = {
     apiKey: "AIzaSyDNWRlWmBtQPIR49KViBpWf16hDUjU7Npw",
     authDomain: "turnaj-skusobne.firebaseapp.com",
@@ -67,7 +68,6 @@
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-  // Prihlásenie používateľa
   document.getElementById('login-btn').addEventListener('click', async () => {
     const username = document.getElementById('login-username').value.trim();
     const password = document.getElementById('login-password').value;
@@ -93,6 +93,14 @@
       alert("Nesprávne heslo.");
     }
   });
+
+  // Načítanie header.html
+  fetch('header.html')
+    .then(response => response.text())
+    .then(data => {
+      document.getElementById('header-placeholder').innerHTML = data;
+    })
+    .catch(error => console.error('Chyba pri načítaní hlavičky:', error));
 </script>
 
 </body>
