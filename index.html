@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Turnaj</title>
+
   <style>
     .login-link {
       position: fixed;
@@ -22,11 +23,13 @@
 
     .main-title {
       text-align: center;
-      margin-top: 80px;
+      margin-top: 120px;
       font-size: 2.5em;
       color: #333;
     }
   </style>
+
+  <link rel="stylesheet" href="header.css">
 </head>
 <body>
 
@@ -34,38 +37,27 @@
 
   <h1 class="main-title">TURNAJ</h1>
 
-<script>
-  fetch("header.html")
-    .then(response => {
-      if (!response.ok) {
-        throw new Error("Nepodarilo sa načítať header.html");
-      }
-      return response.text();
-    })
-    .then(data => {
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(data, 'text/html');
+  <script>
+    fetch("header.html")
+      .then(response => {
+        if (!response.ok) {
+          throw new Error("Nepodarilo sa načítať header.html");
+        }
+        return response.text();
+      })
+      .then(data => {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(data, 'text/html');
 
-      // Dynamické načítanie CSS (ak existuje)
-      const link = doc.querySelector('link[rel="stylesheet"]');
-      if (link) {
-        const cssLink = document.createElement('link');
-        cssLink.rel = 'stylesheet';
-        cssLink.href = link.href;
-        document.head.appendChild(cssLink);
-      }
-
-      // Vloženie samotného HTML obsahu (napr. <header>)
-      const header = doc.querySelector('header');
-      if (header) {
-        document.getElementById("header-placeholder").appendChild(header);
-      }
-    })
-    .catch(error => {
-      console.error("Chyba pri načítaní hlavičky:", error);
-    });
-</script>
-
+        const header = doc.querySelector('header');
+        if (header) {
+          document.getElementById("header-placeholder").appendChild(header);
+        }
+      })
+      .catch(error => {
+        console.error("Chyba pri načítaní hlavičky:", error);
+      });
+  </script>
 
 </body>
 </html>
