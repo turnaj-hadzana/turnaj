@@ -7,29 +7,30 @@
         <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="style.css">
     <style>
+        /* Základné štýly pre tabuľku, ktoré môžete presunúť do style.css */
         #categoryTable {
             width: 100%;
-            border-collapse: collapse;
+            border-collapse: collapse; /* Zlúči okraje buniek */
             margin-top: 20px;
         }
 
         #categoryTable th,
         #categoryTable td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
+            border: 1px solid #ddd; /* Svetlý okraj buniek */
+            padding: 8px; /* Vnútorné odsadenie buniek */
+            text-align: left; /* Zarovnanie textu vľavo */
         }
 
         #categoryTable th {
-            background-color: #f2f2f2;
+            background-color: #f2f2f2; /* Svetlo šedé pozadie hlavičky */
         }
 
         #categoryTable tbody tr:nth-child(even) {
-            background-color: #f9f9f9;
+            background-color: #f9f9f9; /* Svetlo šedé pozadie pre párne riadky */
         }
 
         #categoryTable tbody tr:hover {
-            background-color: #ddd;
+            background-color: #ddd; /* Zvýraznenie riadku pri nabehnutí myšou */
         }
 
         .action-button {
@@ -40,83 +41,92 @@
             cursor: pointer;
             border-radius: 4px;
             font-size: 0.8em;
-            margin-right: 5px;
+            margin-right: 5px;
         }
 
         .action-button:hover {
             background-color: #d32f2f;
         }
 
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-            background-color: rgb(0,0,0);
-            background-color: rgba(0,0,0,0.4);
-        }
-
-        .modal-content {
-            background-color: #fefefe;
-            margin: 15% auto;
-            padding: 20px;
-            border: 1px solid #888;
-            width: 80%;
-            max-width: 500px;
-            border-radius: 8px;
-        }
-
-        .close {
-            color: #aaa;
-            float: right;
-            font-size: 28px;
-            font-weight: bold;
-        }
-
-        .close:hover,
-        .close:focus {
-            color: black;
-            text-decoration: none;
-            cursor: pointer;
-        }
-
-         .modal-content form label {
-             display: block;
-             margin-bottom: 5px;
-             font-weight: bold;
+        /* Pridaj špecifický štýl pre tlačidlo Premenovať, ak chceš inú farbu */
+         .rename-button {
+             background-color: #2196F3; /* Modrá */
+         }
+         .rename-button:hover {
+             background-color: #1976D2; /* Tmavšie modrá */
          }
 
-         .modal-content form input[type="text"],
-         .modal-content form input[type="password"] {
-             width: calc(100% - 22px);
-             padding: 10px;
-             margin-bottom: 15px;
-             border: 1px solid #ccc;
-             border-radius: 4px;
-         }
 
-        .modal-content form button[type="submit"] {
-            background-color: #4CAF50;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgb(0,0,0);
+            background-color: rgba(0,0,0,0.4);
+        }
 
-        .modal-content form button[type="submit"]:hover {
-            background-color: #45a049;
-        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 500px;
+            border-radius: 8px;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+         .modal-content form label {
+             display: block;
+             margin-bottom: 5px;
+             font-weight: bold;
+         }
+
+         .modal-content form input[type="text"],
+         .modal-content form input[type="password"] {
+             width: calc(100% - 22px);
+             padding: 10px;
+             margin-bottom: 15px;
+             border: 1px solid #ccc;
+             border-radius: 4px;
+         }
+
+        .modal-content form button[type="submit"] {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .modal-content form button[type="submit"]:hover {
+            background-color: #45a049;
+        }
 
     </style>
 </head>
 <body>
-        <script>
+        <script>
         const userName = localStorage.getItem('username');
         if (userName !== 'admin') {
             window.location.href = 'login.html';
@@ -126,14 +136,14 @@
         <script type="module" src="auth.js"></script>
     <script src="script.js"></script>
 
-        <h1>Správca turnaja</h1>
+        <h1>Správca turnaja</h1>
 
         <button class="add-button" id="addCategoryButton" title="Pridať kategóriu">+</button>
 
 <div class="modal" id="categoryModal">
     <div class="modal-content">
         <span class="close">&times;</span>
-        <h2>Pridať kategóriu</h2>
+                <h2 id="modalTitle">Pridať kategóriu</h2>
         <form id="categoryForm">
             <label for="categoryName">Názov kategórie:</label>
             <input type="text" id="categoryName" name="categoryName" required>
@@ -146,7 +156,7 @@
         <nav class="left-menu">
             <ul>
                 <li><a href="#kluby">Kluby</a></li>
-                <li><a href="#kategorie">Kategórie</a></li>
+                <li><a href="#kateg%C3%B3rie">Kategórie</a></li>
                 <li><a href="#skupiny">Skupiny</a></li>
                 <li><a href="#sportove-haly">Športové haly</a></li>
                 <li><a href="#sprava-turnaja">Správa turnaja</a></li>
@@ -155,15 +165,17 @@
         </nav>
 
         <main>
+            <p>Tu môžete spravovať nastavenia a údaje turnaja.</p>
+
             <table id="categoryTable" style="display: none;">
                 <thead>
                     <tr>
                         <th>Názov kategórie</th>
                         <th style="width: 150px;">Akcie</th>
-                    </tr>
+                    </tr>
                 </thead>
                 <tbody id="categoryTableBody">
-            </tbody>
+            </tbody>
             </table>
         </main>
     </div>
@@ -197,9 +209,19 @@
     const modal = document.getElementById('categoryModal');
     const closeBtn = document.querySelector('.close');
     const form = document.getElementById('categoryForm');
+    const categoryNameInput = document.getElementById('categoryName'); // Referencia na input poľe názvu kategórie
+    const modalTitle = document.getElementById('modalTitle'); // Referencia na nadpis modalu
     const categoryTable = document.getElementById('categoryTable');
     const categoryTableBody = document.getElementById('categoryTableBody');
 
+
+    // Premenné na sledovanie stavu modálneho okna (pridávanie alebo úprava)
+    let currentModalMode = 'add'; // 'add' alebo 'edit'
+    let editingCategoryName = null; // Uchová pôvodný názov pri úprave
+    let editingCategoryRow = null; // Uchová referenciu na riadok tabuľky pri úprave
+
+
+    // Funkcia na vytvorenie a pridanie riadku kategórie do tabuľky (s tlačidlami Akcie)
     function addCategoryRowToTable(categoryName) {
         const tr = document.createElement('tr');
 
@@ -210,84 +232,54 @@
         actionsTd.style.whiteSpace = 'nowrap'; // Aby sa tlačidlá nezalomili
 
 
+        // === TLAČIDLO PREMENOVAŤ ===
         const renameButton = document.createElement('button');
         renameButton.textContent = 'Premenovať';
-        renameButton.classList.add('action-button'); // Použijeme existujúci štýl
-        // Voliteľné: zmena farby pre odlíšenie
-        // renameButton.style.backgroundColor = '#2196F3'; // Modrá farba
-        // renameButton.style.hoverBackgroundColor = '#1976D2'; // Tmavšie modrá pri nabehnutí
+        // Použijeme štýl action-button a voliteľne pridáme rename-button pre inú farbu
+        renameButton.classList.add('action-button', 'rename-button');
 
 
-        renameButton.onclick = async function() {
-            const row = this.closest('tr');
-            const oldCategoryName = row.querySelector('td:first-child').textContent;
+        // Obsluha kliknutia na tlačidlo Premenovať (teraz otvára modal)
+        renameButton.onclick = function() {
+            // Nastavíme stav na úpravu
+            currentModalMode = 'edit';
+            // Uložíme pôvodný názov kategórie
+            editingCategoryName = categoryName;
+            // Uložíme referenciu na riadok tabuľky
+            editingCategoryRow = this.closest('tr');
 
-            const newCategoryName = prompt(`Zadajte nový názov pre kategóriu "${oldCategoryName}":`, oldCategoryName);
+            // Zmeníme nadpis modálneho okna
+            modalTitle.textContent = 'Upraviť kategóriu';
+            // Naplníme vstup poľe aktuálnym názvom kategórie
+            categoryNameInput.value = categoryName;
 
-            if (newCategoryName === null || newCategoryName.trim() === '') {
-                console.log('Premenovanie zrušené alebo zadaný prázdny názov.');
-                return;
-            }
-
-            const trimmedNewName = newCategoryName.trim();
-
-            if (trimmedNewName === oldCategoryName) {
-                console.log('Nový názov je rovnaký ako pôvodný. Žiadna zmena.');
-                return;
-            }
-
-            const newCategoryDocRef = doc(categoriesCollectionRef, trimmedNewName);
-            try {
-                const existingDoc = await getDoc(newCategoryDocRef);
-                if (existingDoc.exists()) {
-                    alert(`Kategória s názvom "${trimmedNewName}" už existuje!`);
-                    return;
-                }
-            } catch (error) {
-                 console.error('Chyba pri kontrole existencie novej kategórie:', error);
-                 alert('Chyba pri kontrole nového názvu kategórie. Prosím, skúste znova.');
-                 return;
-            }
-
-            const oldCategoryDocRef = doc(categoriesCollectionRef, oldCategoryName);
-
-            try {
-                const oldDocSnapshot = await getDoc(oldCategoryDocRef);
-                if (!oldDocSnapshot.exists()) {
-                     console.error(`Stará kategória "${oldCategoryName}" nenájdená vo Firestore pre premenovanie.`);
-                     alert('Stará kategória nebola nájdená pre premenovanie. Prosím, obnovte stránku.');
-                     return;
-                }
-                const oldDocData = oldDocSnapshot.data();
-
-                await setDoc(newCategoryDocRef, oldDocData);
-
-                await deleteDoc(oldCategoryDocRef);
-
-                row.querySelector('td:first-child').textContent = trimmedNewName;
-                console.log(`Kategória "${oldCategoryName}" úspešne premenovaná na "${trimmedNewName}" v Firestore a v tabuľke.`);
-
-            } catch (error) {
-                console.error('Chyba pri premenovaní kategórie vo Firestore: ', error);
-                // Pre jednoduchosť len zobrazíme chybu. V reálnej app by si možno potreboval rollback.
-                alert('Chyba pri premenovaní kategórie! Prosím, skúste znova.');
-            }
+            // Zobrazíme modálne okno
+            modal.style.display = 'block';
+            // Nastavíme focus na vstup poľe
+            categoryNameInput.focus();
         };
+        // === KONIEC TLAČIDLA PREMENOVAŤ ===
 
+
+        // === TLAČIDLO ZMAZAŤ ===
         const deleteButton = document.createElement('button');
         deleteButton.textContent = 'Zmazať';
-        deleteButton.classList.add('action-button');
+        deleteButton.classList.add('action-button'); // Použijeme CSS triedu pre štýl
 
+        // Obsluha kliknutia na tlačidlo Zmazať (používa Firestore)
         deleteButton.onclick = async function() {
             const row = this.closest('tr');
             const categoryToDelete = row.querySelector('td:first-child').textContent;
 
+            // Potvrdenie pred zmazaním (voliteľné)
             if (!confirm(`Naozaj chcete zmazať kategóriu "${categoryToDelete}"?`)) {
                 return; // Zastaví funkciu, ak používateľ zruší potvrdenie
             }
 
             try {
+                // Zmazať kategóriu z Firestore (použijeme názov kategórie ako ID dokumentu)
                 await deleteDoc(doc(categoriesCollectionRef, categoryToDelete));
+                // Odstrániť riadok z tabuľky po úspešnom zmazaní z Firestore
                 row.remove();
                 console.log(`Kategória "${categoryToDelete}" bola úspešne zmazaná z Firestore.`);
             } catch (error) {
@@ -295,101 +287,278 @@
                 alert('Chyba pri mazaní kategórie!'); // Informovať používateľa o chybe
             }
         };
+        // === KONIEC TLAČIDLA ZMAZAŤ ===
 
-        actionsTd.appendChild(renameButton);
-        actionsTd.appendChild(deleteButton);
 
+        // Pridáme tlačidlá do bunky akcií
+        actionsTd.appendChild(renameButton); // Najprv Premenovať
+        actionsTd.appendChild(deleteButton); // Potom Zmazať
+
+
+        // Pridáme bunky do riadku
         tr.appendChild(nameTd);
         tr.appendChild(actionsTd);
 
+        // Pridáme riadok do tela tabuľky (tbody)
         categoryTableBody.appendChild(tr);
     }
 
 
+    // Funkcia na načítanie kategórií z Firestore a naplnenie tabuľky
     async function loadCategories() {
         try {
+            // Vyčistiť telo tabuľky pred načítaním nových dát
             categoryTableBody.innerHTML = '';
 
+            // Získať všetky dokumenty (kategórie) z podkolekcie
             const querySnapshot = await getDocs(categoriesCollectionRef);
 
             if (querySnapshot.empty) {
                  console.log("Žiadne kategórie nenájdené vo Firestore.");
+                 // Voliteľné: zobraziť správu "Žiadne kategórie"
             } else {
+                // Pre každý dokument (kategóriu) vytvoriť riadok v tabuľke
                 querySnapshot.forEach((doc) => {
+                    // Názov kategórie je ID dokumentu vo Firestore
                     const categoryName = doc.id;
-                    addCategoryRowToTable(categoryName);
+                    addCategoryRowToTable(categoryName); // Použijeme funkciu na pridanie riadku
                 });
                 console.log("Kategórie boli načítané z Firestore.");
             }
 
         } catch (error) {
             console.error('Chyba pri načítaní kategórií z Firestore: ', error);
-            alert('Chyba pri načítaní kategórií!');
+            alert('Chyba pri načítaní kategórií!'); // Informovať používateľa o chybe
         }
     }
 
-    function toggleAddButton() {
-        const isCategoryPage = window.location.hash === '#kategorie';
 
+    // Funkcia na zobrazenie/skrytie tlačidla "+" a tabuľky kategórií
+    function toggleAddButton() {
+        // !!! OPRAVENÉ: Používame kódovanú formu hašu, ako sme zistili z konzoly !!!
+        const isCategoryPage = window.location.hash === '#kateg%C3%B3rie';
+
+        // Zobrazíme/skryjeme tlačidlo "+"
         addButton.style.display = isCategoryPage ? 'block' : 'none';
 
-        categoryTable.style.display = isCategoryPage ? 'table' : 'none';
+        // Zobrazíme/skryjeme celú tabuľku
+        categoryTable.style.display = isCategoryPage ? 'table' : 'none'; // Nastavíme display na 'table'
 
+        // Ak sme na stránke kategórií, načítať kategórie z Firestore
         if (isCategoryPage) {
-            loadCategories();
+            loadCategories(); // Načítať kategórie, keď sme na stránke kategórií
         } else {
+            // Ak odchádzame zo stránky kategórií, vyčistíme tabuľku pre prehľadnosť
             categoryTableBody.innerHTML = '';
         }
     }
 
+
+    // === EVENT LISTENERS ===
+
+    // Obsluha kliknutia na tlačidlo Pridať (+) - nastaví modal na režim pridávania a zobrazí ho
+    addButton.addEventListener('click', () => {
+        currentModalMode = 'add'; // Nastavíme režim na pridávanie
+        editingCategoryName = null; // Vyčistíme názov úpravy
+        editingCategoryRow = null; // Vyčistíme referenciu na riadok
+
+        modalTitle.textContent = 'Pridať kategóriu'; // Nastavíme nadpis modalu
+        form.reset(); // Vyčistiť formulár pri otvorení modalu
+
+        modal.style.display = 'block'; // Zobrazíme modal
+        categoryNameInput.focus(); // Nastaviť focus na input
+    });
+
+
+    // Obsluha zatvorenia modálneho okna (kliknutie na X alebo mimo modal)
+    closeBtn.addEventListener('click', () => { modal.style.display = 'none'; });
+    window.addEventListener('click', (e) => { // Ak klikne mimo modal
+        if (e.target === modal) {
+            modal.style.display = 'none';
+        }
+    });
+
+    // Pri zatvorení modalu je dobré resetovať stav a formulár
+     modal.addEventListener('click', (e) => {
+         if (e.target === modal || e.target === closeBtn) {
+             currentModalMode = 'add'; // Resetujeme stav späť na pridávanie
+             editingCategoryName = null;
+             editingCategoryRow = null;
+             form.reset(); // Resetujeme formulár
+             // modalTitle.textContent = 'Pridať kategóriu'; // Voliteľné: resetovať nadpis, ale robí sa to aj pri kliknutí na Pridať
+         }
+     });
+     // Táto obsluha z window.addEventListener('click') nad tým už zatvára modal, ale nevolá reset stavu.
+     // Môžeme upraviť tú nad tým, alebo pridať novú na modal element.
+     // Upravme existujúcu, aby pri zatvorení volala aj reset stavu.
+
+     window.addEventListener('click', (e) => {
+        if (e.target === modal || e.target === closeBtn) { // Ak klikne na modal overlay ALEBO na X tlačidlo
+             modal.style.display = 'none';
+             currentModalMode = 'add'; // Resetujeme stav späť na pridávanie
+             editingCategoryName = null;
+             editingCategoryRow = null;
+             form.reset(); // Resetujeme formulár
+             // modalTitle.textContent = 'Pridať kategóriu'; // Voliteľné
+         }
+     });
+     // Odstránime pôvodnú closeBtn.addEventListener ak sme ho presunuli sem.
+     // Alebo môžeme volať reset stavu pri zatvorení modalu iným spôsobom.
+     // Pre jednoduchosť teraz ponecháme obe click obsluhy (jedna na X, druhá na overlay)
+     // a pridáme reset stavu k obom (už som to zrobil vyššie v upravenej window.addEventListener).
+     // Takže closeBtn.addEventListener môže zostať, len sa uistiť, že volá reset.
+     // Pôvodné closeBtn.addEventListener('click', ...) len zatváralo modal.
+     // Teraz to upravíme takto:
+
+     closeBtn.addEventListener('click', () => {
+        modal.style.display = 'none';
+        currentModalMode = 'add'; // Reset stavu
+        editingCategoryName = null;
+        editingCategoryRow = null;
+        form.reset(); // Reset formulára
+        // modalTitle.textContent = 'Pridať kategóriu'; // Voliteľné
+     });
+
+
+    // Spustíme toggleAddButton pri načítaní stránky a zmene hašu
     window.addEventListener('hashchange', toggleAddButton);
     window.addEventListener('load', toggleAddButton);
 
-    addButton.addEventListener('click', () => {
-        modal.style.display = 'block';
-        form.reset();
-        document.getElementById('categoryName').focus();
-    });
-    closeBtn.addEventListener('click', () => { modal.style.display = 'none'; });
-    window.addEventListener('click', (e) => { if (e.target === modal) { modal.style.display = 'none'; } });
 
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
+    // Obsluha formulára na pridanie/úpravu kategórie
+    form.addEventListener('submit', async (e) => { // Funkcia je async pre použitie await
+        e.preventDefault(); // Zabraňuje odoslaniu formulára a načítaniu stránky
 
         const categoryNameInput = document.getElementById('categoryName');
-        const categoryName = categoryNameInput.value.trim();
+        const categoryName = categoryNameInput.value.trim(); // Toto je NOVÝ názov (pri úprave) alebo názov pri pridávaní
 
         if (categoryName === '') {
-            alert('Názov kategórie nemôže byť prázdny.');
-            return;
+            alert('Názov kategórie nemôže byť prázdny.'); // Základná validácia
+            return; // Zastaví funkciu
         }
 
-        const categoryDocRef = doc(categoriesCollectionRef, categoryName);
+        // === ROZHODNUTIE: PRIDÁVANIE alebo ÚPRAVA ===
+        if (currentModalMode === 'add') {
+            // === LOGIKA PRIDÁVANIA ===
 
-        try {
-            const existingDoc = await getDoc(categoryDocRef);
+            const categoryDocRef = doc(categoriesCollectionRef, categoryName); // Document referencia pre nový názov
 
-            if (existingDoc.exists()) {
-                alert(`Kategória "${categoryName}" už existuje!`);
-                form.reset();
-                return;
-            }
+            try {
+                // Skontrolovať, či kategória s daným názvom už neexistuje
+                const existingDoc = await getDoc(categoryDocRef);
 
-            await setDoc(categoryDocRef, {
-                createdAt: new Date()
-            });
+                if (existingDoc.exists()) {
+                    alert(`Kategória "${categoryName}" už existuje!`);
+                    form.reset();
+                    return; // Zastaví funkciu
+                }
 
-            addCategoryRowToTable(categoryName);
+                // Uložiť novú kategóriu do Firestore
+                await setDoc(categoryDocRef, {
+                    createdAt: new Date() // Pridaj napr. čas vytvorenia
+                });
 
-            console.log(`Kategória "${categoryName}" bola úspešne pridaná do Firestore a do tabuľky.`);
-            modal.style.display = 'none';
-            form.reset();
+                // Pridať riadok do HTML tabuľky hneď po úspešnom uložení
+                addCategoryRowToTable(categoryName);
 
-        } catch (error) {
-            console.error('Chyba pri pridávaní kategórie do Firestore: ', error);
-            alert('Chyba pri pridávaní kategórie!');
-        }
-    });
+                console.log(`Kategória "${categoryName}" bola úspešne pridaná do Firestore a do tabuľky.`);
+                modal.style.display = 'none';
+                form.reset();
+                // Reset stavu (aj keď pri pridávaní to nie je nevyhnutné, pre konzistenciu)
+                currentModalMode = 'add';
+                editingCategoryName = null;
+                editingCategoryRow = null;
+
+
+            } catch (error) {
+                console.error('Chyba pri pridávaní kategórie do Firestore: ', error);
+                alert('Chyba pri pridávaní kategórie!');
+            }
+
+        } else if (currentModalMode === 'edit') {
+            // === LOGIKA ÚPRAVY (PREMENOVANIA) ===
+
+            const oldCategoryName = editingCategoryName; // Pôvodný názov uložený zo stavu
+            const rowToUpdate = editingCategoryRow; // Referencia na riadok uložená zo stavu
+
+            // Skontrolovať, či nový názov nie je rovnaký ako starý
+            if (categoryName === oldCategoryName) {
+                console.log('Nový názov je rovnaký ako pôvodný. Žiadna zmena.');
+                // Reset stavu a zatvoriť modal
+                currentModalMode = 'add';
+                editingCategoryName = null;
+                editingCategoryRow = null;
+                modal.style.display = 'none';
+                form.reset();
+                return; // Ukončí funkciu
+            }
+
+            // Skontrolovať, či kategória s NOVÝM názvom už neexistuje vo Firestore
+            const newCategoryDocRef = doc(categoriesCollectionRef, categoryName); // Document referencia pre NOVÝ názov
+            try {
+                const existingDoc = await getDoc(newCategoryDocRef);
+                if (existingDoc.exists()) {
+                    alert(`Kategória s názvom "${categoryName}" už existuje!`);
+                    // V tomto prípade nezatvárame modal ani neresetujeme formulár, aby mohol používateľ zadať iný názov
+                    return; // Ukončí funkciu
+                }
+            } catch (error) {
+                 console.error('Chyba pri kontrole existencie novej kategórie pri úprave:', error);
+                 alert('Chyba pri kontrole nového názvu kategórie. Prosím, skúste znova.');
+                 return; // Ukončí funkciu pri chybe
+            }
+
+            // === Vykonanie premenovania vo Firestore (Zmazať starú, Pridať novú) ===
+            const oldCategoryDocRef = doc(categoriesCollectionRef, oldCategoryName); // Document referencia pre STARÝ názov
+
+            try {
+                // 1. Získať dáta zo starého dokumentu (ak chceš zachovať napr. createdAt)
+                const oldDocSnapshot = await getDoc(oldCategoryDocRef);
+                if (!oldDocSnapshot.exists()) {
+                     console.error(`Stará kategória "${oldCategoryName}" nenájdená vo Firestore pre premenovanie. Data inconsistency?`);
+                     alert('Chyba: Pôvodná kategória nebola nájdená. Prosím, obnovte stránku a skúste znova.');
+                     // V tomto prípade možno resetovať stav a zatvoriť modal, pretože úprava zlyhala
+                     currentModalMode = 'add';
+                     editingCategoryName = null;
+                     editingCategoryRow = null;
+                     modal.style.display = 'none';
+                     form.reset();
+                     return; // Ukončí funkciu
+                }
+                const oldDocData = oldDocSnapshot.data(); // Získaj všetky dáta
+
+                // 2. Vytvoriť nový dokument s novým názvom (ako ID) a dátami zo starého dokumentu
+                await setDoc(newCategoryDocRef, oldDocData);
+
+                // 3. Zmazať starý dokument
+                await deleteDoc(oldCategoryDocRef);
+
+
+                // Ak sú všetky operácie vo Firestore úspešné, aktualizovať názov aj v HTML tabuľke
+                // Použijeme referenciu na riadok, ktorú sme si uložili
+                rowToUpdate.querySelector('td:first-child').textContent = categoryName; // Aktualizovať názov v prvom <td>
+
+                console.log(`Kategória "${oldCategoryName}" úspešne premenovaná na "${categoryName}" vo Firestore a v tabuľke.`);
+                // Voliteľné: Zobraziť správu o úspechu
+                // alert(`Kategória bola úspešne premenovaná na "${categoryName}".`);
+
+                // Reset stavu a zatvoriť modal po úspešnej úprave
+                currentModalMode = 'add';
+                editingCategoryName = null;
+                editingCategoryRow = null;
+                modal.style.display = 'none';
+                form.reset();
+
+
+            } catch (error) {
+                console.error('Chyba pri premenovaní kategórie vo Firestore: ', error);
+                alert('Chyba pri premenovaní kategórie! Prosím, skúste znova.');
+                // V tomto prípade zostaneme v stave úpravy a modal zostane otvorený,
+                // aby mohol používateľ skúsiť znova alebo zrušiť.
+            }
+        } // Koniec if/else pre režimy
+
+    }); // Koniec form.addEventListener('submit')
 
 </script>
 
