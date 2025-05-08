@@ -1,109 +1,78 @@
-<!DOCTYPE html>
-<html lang="sk">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Turnaj</title>
-  <style>
-    header {
-      width: 100%;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 12px 20px;
-      background-color: #ffffff;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-      position: fixed;
-      top: 0;
-      left: 0;
-      z-index: 1000;
-    }
+<!-- header.html -->
+<header>
+  <div class="logo" onclick="window.location.href='index.html'">Turnaj</div>
+  <a id="auth-button" class="auth-button">Prihlásiť sa</a>
+</header>
 
-    .logo {
-      font-size: 20px;
-      font-weight: bold;
-      cursor: pointer;
-    }
+<style>
+  header {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 20px;
+    background-color: #ffffff;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+  }
 
-    .auth-button {
-      padding: 8px 18px;
-      border: none;
-      border-radius: 5px;
-      background-color: #3a8d41;
-      color: white;
-      cursor: pointer;
-      font-size: 16px;
-      margin-right: 40px;
-    }
+  .logo {
+    font-size: 20px;
+    font-weight: bold;
+    cursor: pointer;
+  }
 
-    .auth-button:hover {
-      background-color: #c46f50;
-    }
+  .auth-button {
+    padding: 8px 18px;
+    border: none;
+    border-radius: 5px;
+    background-color: #3a8d41;
+    color: white;
+    cursor: pointer;
+    font-size: 16px;
+    margin-right: 40px;
+  }
 
-    .content-offset {
-      height: 64px;
-    }
+  .auth-button:hover {
+    background-color: #c46f50;
+  }
+</style>
 
-    .login-link {
-      position: relative;
-      background-color: #3a8d41;
-      color: white;
-      padding: 10px 15px;
-      text-decoration: none;
-      border-radius: 5px;
-      font-size: 16px;
-    }
-
-    .login-link:hover {
-      background-color: #c46f50;
-    }
-
-    @media (max-width: 480px) {
-      header {
-        flex-direction: column;
-        align-items: flex-start;
-        padding: 10px 15px;
-      }
-
-      .auth-button {
-        margin-top: 8px;
-        width: 100%;
-        margin-left: 0;
-      }
-    }
-  </style>
-</head>
-<body>
-
-  <header>
-    <div class="logo" onclick="window.location.href='index.html'">Turnaj</div>
-    <a id="auth-button" class="auth-button">Prihlásiť sa</a>
-  </header>
-
-  <div class="content-offset"></div>
-
-  <script>
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    // Uistíme sa, že element s ID 'auth-button' existuje
     const authButton = document.getElementById("auth-button");
+    
+    if (!authButton) {
+      console.error("Tlačidlo 'auth-button' neexistuje!");
+      return;
+    }
+
+    // Získame meno používateľa z sessionStorage
     const username = sessionStorage.getItem("username");
 
-    // Logovanie v JavaScripte pre diagnostiku
-    console.log("Stránka bola načítaná.");
-
     if (username) {
-      authButton.textContent = "Odhlásiť sa";  // Ak je používateľ prihlásený, zobrazí sa "Odhlásiť sa"
+      // Ak je používateľ prihlásený
+      authButton.textContent = "Odhlásiť sa";  // Zmeň text na "Odhlásiť sa"
+      
       authButton.onclick = function () {
-        console.log("Klikol si na odhlásiť sa.");
-        sessionStorage.removeItem("username");
-        window.location.href = "index.html";  // Po odhlásení presmeruje na index.html
+        // Funkcia na odhlásenie
+        console.log("Klikol si na 'Odhlásiť sa'.");
+        sessionStorage.removeItem("username");  // Odstrániť používateľa z sessionStorage
+        window.location.href = "index.html";  // Presmerovať na úvodnú stránku
       };
     } else {
-      authButton.textContent = "Prihlásiť sa";  // Ak nie je prihlásený, zobrazí sa "Prihlásiť sa"
+      // Ak nie je prihlásený
+      authButton.textContent = "Prihlásiť sa";  // Zmeň text na "Prihlásiť sa"
+      
       authButton.onclick = function () {
-        console.log("Klikol si na prihlásiť sa.");
-        window.location.href = "login.html";  // Po kliknutí na tlačidlo, presmeruje na login.html
+        // Funkcia na presmerovanie na stránku prihlásenia
+        console.log("Klikol si na 'Prihlásiť sa'.");
+        window.location.href = "login.html";  // Presmerovať na stránku prihlásenia
       };
     }
-  </script>
-
-</body>
-</html>
+  });
+</script>
