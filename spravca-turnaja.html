@@ -156,7 +156,7 @@
         <nav class="left-menu">
             <ul>
                 <li><a href="#kluby">Kluby</a></li>
-                <li><a href="#kateg%C3%B3rie">Kategórie</a></li>
+                <li><a href="#kategorie">Kategórie</a></li>
                 <li><a href="#skupiny">Skupiny</a></li>
                 <li><a href="#sportove-haly">Športové haly</a></li>
                 <li><a href="#sprava-turnaja">Správa turnaja</a></li>
@@ -336,7 +336,7 @@
     // Funkcia na zobrazenie/skrytie tlačidla "+" a tabuľky kategórií
     function toggleAddButton() {
         // !!! OPRAVENÉ: Používame kódovanú formu hašu, ako sme zistili z konzoly !!!
-        const isCategoryPage = window.location.hash === '#kateg%C3%B3rie';
+        const isCategoryPage = window.location.hash === '#kategorie';
 
         // Zobrazíme/skryjeme tlačidlo "+"
         addButton.style.display = isCategoryPage ? 'block' : 'none';
