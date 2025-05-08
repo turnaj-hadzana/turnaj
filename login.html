@@ -55,14 +55,28 @@
     <button id="login-btn" class="login-button">Prihlásiť sa</button>
   </div>
 
-  <script>
-    fetch("header.html")
-      .then(res => res.text())
-      .then(html => {
-        document.getElementById("header-placeholder").innerHTML = html;
-      })
-      .catch(error => console.error('Chyba pri načítaní hlavičky:', error));
-  </script>
+<script>
+  fetch("header.html")
+    .then(response => response.text())
+    .then(data => {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(data, 'text/html');
+
+      if (!document.querySelector('link[href="header.css"]')) {
+        const cssLink = document.createElement('link');
+        cssLink.rel = 'stylesheet';
+        cssLink.href = 'header.css';
+        document.head.appendChild(cssLink);
+      }
+
+      // Vlož iba <header> časť
+      const header = doc.querySelector('header');
+      if (header) {
+        document.getElementById("header-placeholder").appendChild(header);
+      }
+    })
+    .catch(error => console.error('Chyba pri načítaní hlavičky:', error));
+</script>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
