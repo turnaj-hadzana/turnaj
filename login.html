@@ -10,18 +10,18 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 </head>
 <body>
-<script>
-    fetch('header.html')
-        .then(response => response.text())
-        .then(data => {
-            document.body.insertAdjacentHTML('afterbegin', data);
-        })
-        .then(() => {
-            const script = document.createElement('script');
-            script.src = 'header-logic.js';
-            document.body.appendChild(script);
-        });
-</script>
+    <script>
+        fetch('header.html')
+            .then(response => response.text())
+            .then(data => {
+                document.body.insertAdjacentHTML('afterbegin', data);
+            })
+            .then(() => {
+                const script = document.createElement('script');
+                script.src = 'header-logic.js';
+                document.body.appendChild(script);
+            });
+    </script>
 
     <main>
         <h1>Prihlásenie</h1>
