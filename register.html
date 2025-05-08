@@ -4,23 +4,40 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registrácia Používateľa</title>
+    
+    <!-- Pripojenie externého CSS súboru -->
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h2>Registrácia Používateľa</h2>
+    <!-- Hlavný obsah -->
+    <header>
+        <h1>Registrácia Používateľa</h1>
+    </header>
 
-    <!-- Registračný formulár -->
-    <form id="register-form">
-        <label for="username">Používateľské meno:</label>
-        <input type="text" id="username" name="username" required />
+    <main>
+        <!-- Registračný formulár -->
+        <form id="register-form">
+            <div>
+                <label for="username">Používateľské meno:</label>
+                <input type="text" id="username" name="username" required />
+            </div>
 
-        <label for="password">Heslo:</label>
-        <input type="password" id="password" name="password" required />
+            <div>
+                <label for="password">Heslo:</label>
+                <input type="password" id="password" name="password" required />
+            </div>
 
-        <label for="confirm-password">Potvrďte heslo:</label>
-        <input type="password" id="confirm-password" name="confirm-password" required />
+            <div>
+                <label for="confirm-password">Potvrďte heslo:</label>
+                <input type="password" id="confirm-password" name="confirm-password" required />
+            </div>
 
-        <button type="submit">Registrovať</button>
-    </form>
+            <button type="submit">Registrovať</button>
+            <div class="error-message" id="error-message"></div>
+        </form>
+
+        <p>Máte už účet? <a href="#">Prihláste sa tu</a></p>
+    </main>
 
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
@@ -51,28 +68,27 @@
 
             // Kontrola, či sa heslá zhodujú
             if (password !== confirmPassword) {
-                alert('Heslá sa nezhodujú!');
+                document.getElementById('error-message').textContent = 'Heslá sa nezhodujú!';
                 return;
             }
 
             try {
-                // Vytvor používateľa v Firestore
-                // Nevyužívame Firebase Authentication, ale uložíme používateľské meno a heslo do Firestore
+                // Ulož údaje do Firestore
                 await db.collection('users').add({
                     username: username,
-                    password: password, // Toto by malo byť šifrované, ale pre jednoduchý príklad to nechávame takto
+                    password: password, // Heslo by malo byť šifrované, ale pre tento príklad ho ukládame takto
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
 
                 // Úspešná registrácia
                 alert('Registrácia bola úspešná!');
 
-                // Môžeš pridať redirekciu alebo ďalšiu akciu
-                // window.location.href = "welcome.html"; // napríklad presmerovanie
+                // Presmerovanie (voliteľné)
+                // window.location.href = "welcome.html";
 
             } catch (error) {
                 console.error(error);
-                alert('Chyba pri registrácii: ' + error.message);
+                document.getElementById('error-message').textContent = 'Chyba pri registrácii: ' + error.message;
             }
         });
     </script>
