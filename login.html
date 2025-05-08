@@ -28,7 +28,8 @@
       border-radius: 5px;
     }
 
-    button {
+    /* Špeciálne štýly pre tlačidlo v prihlasovacom formulári */
+    .login-button {
       width: 100%;
       padding: 10px;
       background-color: #3a8d41;
@@ -38,35 +39,46 @@
       cursor: pointer;
     }
 
-    button:hover {
+    .login-button:hover {
       background-color: #c46f50;
     }
   </style>
 </head>
 <body>
 
-  <!-- Miesto pre načítanie hlavičky -->
   <div id="header-placeholder"></div>
 
-  <!-- Prihlasovací formulár -->
   <div class="container" id="login-container">
     <h2>Prihlásenie</h2>
     <input type="text" id="login-username" placeholder="Používateľské meno" required><br>
     <input type="password" id="login-password" placeholder="Heslo" required><br>
-    <button id="login-btn">Prihlásiť sa</button>
-  </div>
+    <button id="login-btn" class="login-button">Prihlásiť sa</button> </div>
 
-  <!-- Skript pre načítanie hlavičky -->
   <script>
     fetch("header.html")
       .then(res => res.text())
       .then(html => {
         document.getElementById("header-placeholder").innerHTML = html;
+
+        // Po načítaní hlavičky nájdeme tlačidlo pre prihlásenie/odhlásenie
+        const authButton = document.getElementById("auth-link");
+        if (authButton) {
+          authButton.textContent = sessionStorage.getItem("username") ? "Odhlásiť sa" : "Prihlásiť sa";
+          authButton.onclick = () => {
+            if (sessionStorage.getItem("username")) {
+              sessionStorage.removeItem("username");
+              window.location.href = "index.html";
+            } else {
+              window.location.href = "login.html";
+            }
+          };
+        } else {
+          console.error("Tlačidlo auth-link nebolo nájdené v hlavičke!");
+        }
       })
       .catch(error => console.error('Chyba pri načítaní hlavičky:', error));
   </script>
 
-  <!-- Firebase skript -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
     import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
