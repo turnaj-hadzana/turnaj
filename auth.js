@@ -51,7 +51,6 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
 
         // Porovnáme heslá priamo, keď sú obe hodnoty upravené pomocou trim()
         if (userData.password === password) {
-            alert('Úspešné prihlásenie!');
             window.location.href = 'spravca-turnaja.html'; // Presmerovanie na dashboard
         } else {
             console.log('Heslo sa nezhoduje');
