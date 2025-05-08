@@ -129,6 +129,7 @@ main p a:hover {
 }
 
 .left-menu ul {
+    display: block;
     list-style: none;
     padding: 0;
     margin: 0;
