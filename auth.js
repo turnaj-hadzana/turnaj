@@ -1,12 +1,11 @@
 // Firebase Konfigurácia
 const firebaseConfig = {
-    apiKey: "AIzaSyAPW_DWwLqaiymC_uAoC8ozb6UZ7fIwsQM",
-    authDomain: "turnaj-653d7.firebaseapp.com",
-    projectId: "turnaj-653d7",
-    storageBucket: "turnaj-653d7.firebasestorage.app",
-    messagingSenderId: "38415358286",
-    appId: "1:38415358286:web:428472df8c239172bd261f",
-    measurementId: "G-07DBYGZMYV"
+  apiKey: "AIzaSyD0h0rQZiIGi0-UDb4-YU_JihRGpIlfz40",
+  authDomain: "turnaj-a28c5.firebaseapp.com",
+  projectId: "turnaj-a28c5",
+  storageBucket: "turnaj-a28c5.firebasestorage.app",
+  messagingSenderId: "13732191148",
+  appId: "1:13732191148:web:5ad78eaef2ad452a10f809"
 };
 
 // Inicializácia Firebase
