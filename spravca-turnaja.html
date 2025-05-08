@@ -363,7 +363,7 @@
     <script type="module">
         // Import potrebných Firebase Firestore funkcií priamo z CDN
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js';
-        import { getFirestore, collection, doc, setDoc, getDoc, getDocs, deleteDoc, addDoc, updateDoc } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js'; // Added addDoc, updateDoc
+        import { getFirestore, collection, doc, setDoc, getDoc, getDocs, deleteDoc, addDoc, updateDoc } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js';
 
         // Tvoja Firebase konfigurácia
         const firebaseConfig = {
@@ -399,12 +399,12 @@
         // Skupina polia (referencie na nové polia v modale)
         const groupCategorySelect = document.getElementById('groupCategory');
         const groupNameInput = document.getElementById('groupName');
-        // Odstránené referencie na polia Parameter 1 a Parameter 2
+        // Odstránené referencie na parameter 1 a 2
         // const param1Input = document.getElementById('param1');
         // const param2Input = document.getElementById('param2');
         const labelGroupCategory = document.getElementById('labelGroupCategory');
         const labelGroupName = document.getElementById('labelGroupName');
-        // Odstránené referencie na labely Parameter 1 a Parameter 2
+        // Odstránené referencie na labely parameter 1 a 2
         // const labelParam1 = document.getElementById('labelParam1');
         // const labelParam2 = document.getElementById('labelParam2');
 
@@ -427,11 +427,7 @@
             groupNameInput.style.display = show ? 'block' : 'none';
             labelGroupCategory.style.display = show ? 'block' : 'none';
             labelGroupName.style.display = show ? 'block' : 'none';
-            // Odstránené zobrazenie/skrytie polí Parameter 1 a Parameter 2
-            // if (param1Input) param1Input.style.display = show ? 'block' : 'none';
-            // if (param2Input) param2Input.style.display = show ? 'block' : 'none';
-            // if (labelParam1) labelParam1.style.display = show ? 'block' : 'none';
-            // if (labelParam2) labelParam2.style.display = show ? 'block' : 'none';
+             // Parameter 1 a 2 polia sú teraz trvalo skryté (odstránené z HTML a logiky)
         }
 
         // Funkcia na vytvorenie a pridanie riadku kategórie do tabuľky kategórií
@@ -452,6 +448,7 @@
                 editingItemRow = this.closest('tr');
                 modalTitle.textContent = 'Upraviť kategóriu';
 
+                // Zobraziť/skryť polia v modale pre kategóriu/skupinu
                 showCategoryFields(true);
                 showGroupFields(false);
 
@@ -514,8 +511,9 @@
         }
 
 
-        // === FUNKCIA: Vykreslenie dynamickej štruktúry tabuľky SKUPÍN na základe kategórií ===
-        async function renderGroupsTableStructure() {
+        // === NOVÁ FUNKCIA: Vykreslenie dynamickej štruktúry tabuľky SKUPÍN na základe kategórií ===
+        // Táto funkcia iba vytvorí hlavičku a voliteľný placeholder v tele
+        async function renderGroupsTableStructure() { // Async because it fetches categories
              // Vyčistiť existujúci obsah hlavičky a tela tabuľky skupín
              const groupsTableHeadTr = groupsTable.querySelector('thead tr');
              const groupsTableBodyEl = groupsTable.querySelector('tbody');
@@ -526,27 +524,25 @@
 
              try {
                  const categoriesSnapshot = await getDocs(categoriesCollectionRef);
-                 const categories = categoriesSnapshot.docs.map(doc => doc.id); // Získaj názvy kategórií (ID dokumentov)
+                 const categories = categoriesSnapshot.docs.map(doc => ({ id: doc.id, name: doc.id })); // Získaj kategórie (ID a názov)
 
-                 // Pridať statickú hlavičku pre prvý stĺpec "Názov Skupiny"
+                 // Pridať statickú hlavičku pre prvý stĺpec (napr. "Názov Skupiny")
                  const staticHeaderTh = document.createElement('th');
-                 staticHeaderTh.textContent = 'Názov Skupiny';
+                 staticHeaderTh.textContent = 'Názov Skupiny'; // Názov prvého stĺpca
                  // Optional: staticHeaderTh.style.width = '200px';
                  groupsTableHeadTr.appendChild(staticHeaderTh);
 
                  if (categories.length === 0) {
-                     console.log("Žiadne kategórie nájdené. Tabuľka skupín bude mať iba statickú hlavičku + akcie.");
-                     // Pridať statickú hlavičku pre stĺpec Akcie aj keď nie sú kategórie
-                     const actionsHeaderTh = document.createElement('th');
-                     actionsHeaderTh.textContent = 'Akcie';
-                     // Optional: actionsHeaderTh.style.width = '150px'; // Style is in CSS
-                     // Optional: actionsHeaderTh.style.textAlign = 'center'; // Style is in CSS
-                     groupsTableHeadTr.appendChild(actionsHeaderTh);
+                     console.log("Žiadne kategórie nájdené. Tabuľka skupín bude mať iba statickú hlavičku a Akcie.");
+                     // Pridáme Akcie hlavičku aj keď nie sú kategórie
+                      const actionsHeaderTh = document.createElement('th');
+                      actionsHeaderTh.textContent = 'Akcie';
+                      groupsTableHeadTr.appendChild(actionsHeaderTh);
 
                      // Placeholder message in the body if no categories exist
                      const noCategoriesRow = document.createElement('tr');
                      const td = document.createElement('td');
-                     td.colSpan = 2; // Span "Názov Skupiny" + "Akcie" columns
+                     td.colSpan = 2; // Span static column + Akcie column
                      td.textContent = "Pridajte kategórie v sekcii 'Kategórie' pre zobrazenie detailov skupín.";
                      td.style.textAlign = 'center';
                      td.style.fontStyle = 'italic';
@@ -554,20 +550,20 @@
                      groupsTableBodyEl.appendChild(noCategoriesRow);
 
                  } else {
-                     console.log(`Načítané kategórie pre hlavičku: ${categories.join(', ')}`);
+                     console.log(`Načítané kategórie pre hlavičku: ${categories.map(c => c.name).join(', ')}`);
                      // Pridať dynamické hlavičky pre každú kategóriu
-                     categories.forEach(categoryName => {
+                     categories.forEach(category => {
                          const th = document.createElement('th');
-                         th.textContent = categoryName; // Názov kategórie ako hlavička stĺpca
+                         th.textContent = category.name; // Názov kategórie ako hlavička stĺpca
                           // Optional: th.style.width = '100px';
+                          // Maybe store category ID on the header for later use (e.g., loadGroupData)
+                          // th.dataset.categoryId = category.id;
                          groupsTableHeadTr.appendChild(th);
                      });
 
                       // Pridať statickú hlavičku pre stĺpec Akcie
                       const actionsHeaderTh = document.createElement('th');
                       actionsHeaderTh.textContent = 'Akcie';
-                       // Optional: actionsHeaderTh.style.width = '150px'; // Style is in CSS
-                       // Optional: actionsHeaderTh.style.textAlign = 'center'; // Style is in CSS
                       groupsTableHeadTr.appendChild(actionsHeaderTh);
 
 
@@ -598,7 +594,8 @@
                  const errorRow = document.createElement('tr');
                  const td = document.createElement('td');
                  const currentHeadersCount = groupsTableHeadTr.children.length;
-                 td.colSpan = currentHeadersCount > 0 ? currentHeadersCount : 2; // Fallback to 2 if header creation failed
+                 // If an error occurs before adding category headers, currentHeadersCount might be just 1 (static)
+                 td.colSpan = currentHeadersCount > 0 ? currentHeadersCount : 2; // At least span static + actions
                  td.textContent = "Chyba pri načítaní dát skupín.";
                  errorRow.appendChild(td);
                  groupsTableBodyEl.appendChild(errorRow);
@@ -621,11 +618,7 @@
             } catch (error) {
                 console.error('Chyba pri načítaní kategórií pre dropdown: ', error);
                  // Optional: Disable dropdown or show error message
-                 const option = document.createElement('option');
-                 option.value = "";
-                 option.textContent = "Chyba pri načítaní kategórií";
-                 option.disabled = true;
-                 groupCategorySelect.appendChild(option);
+                 // groupCategorySelect.disabled = true;
             }
         }
 
@@ -690,8 +683,13 @@
                      loadCategoriesToGroupDropdown(); // Načítať kategórie do dropdownu skupiny
 
                      form.reset();
+                     modal.style.display = 'block';
                      // Nastaviť focus na prvé viditeľné input pole skupiny
-                     if (groupCategorySelect) groupCategorySelect.focus();
+                     if (groupCategorySelect.style.display !== 'none') {
+                        groupCategorySelect.focus();
+                     } else if (groupNameInput.style.display !== 'none') {
+                        groupNameInput.focus();
+                     }
                  };
             }
              // Pre akýkoľvek iný hash (kluby, haly, atď.) zostanú všetky prvky skryté.
@@ -822,7 +820,7 @@
                  // === LOGIKA PRIDÁVANIA SKUPINY ===
                  const categoryId = groupCategorySelect.value;
                  const groupName = groupNameInput.value.trim();
-                 // Odstránené získavanie hodnôt pre Parameter 1 a Parameter 2
+                 // Odstránené získavanie hodnôt parametrov
                  // const param1Value = param1Input.value.trim();
                  // const param2Value = param2Input.value.trim();
 
@@ -840,7 +838,7 @@
                      const newGroupRef = await addDoc(groupsCollectionRef, {
                         categoryId: categoryId, // Uložíme ID kategórie, ku ktorej skupina patrí
                         name: groupName,
-                        // Odstránené ukladanie parametrov 1 a 2
+                        // Odstránené ukladanie parametrov
                         // param1: param1Value,
                         // param2: param2Value,
                         createdAt: new Date()
@@ -871,7 +869,7 @@
                  // Tu by si získal aktualizované dáta z formulára
                  // const newCategoryId = groupCategorySelect.value;
                  // const newGroupName = groupNameInput.value.trim();
-                 // Odstránené získavanie hodnôt parametrov pri úprave
+                 // Odstránené získavanie hodnôt parametrov
                  // const newParam1Value = param1Input.value.trim();
                  // const newParam2Value = param2Input.value.trim();
 
@@ -882,7 +880,7 @@
                  // await updateDoc(editingItemRef, {
                  //    categoryId: newCategoryId,
                  //    name: newGroupName,
-                 //    // Odstránené aktualizovanie parametrov 1 a 2
+                 //    // Odstránené aktualizovanie parametrov
                  //    // param1: newParam1Value,
                  //    // param2: newParam2Value
                  // });
