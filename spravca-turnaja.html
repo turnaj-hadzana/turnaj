@@ -1055,14 +1055,11 @@
                         return;
                     }
 
-                     // Voliteľné: Kontrola duplicity nového názvu v novej kategórii (okrem aktuálnej skupiny)
-                     // const existingGroups = await getDocs(query(groupsCollectionRef, where("categoryId", "==", newCategoryId), where("name", "==", newGroupName)));
-                     // // Kontrola, či existuje nejaká skupina s rovnakým názvom v cieľovej kategórii, ktorá NIE JE tá, ktorú práve upravujeme
-                     // if (!existingGroups.empty && existingGroups.docs.some(doc => doc.id !== groupId)) {
-                     //      alert(`Skupina s názvom "${newGroupName}" už v kategórii "${newCategoryId}" existuje!`);
-                     //      return;
-                     // }
-
+                     const existingGroups = await getDocs(query(groupsCollectionRef, where("categoryId", "==", newCategoryId), where("name", "==", newGroupName)));
+                     if (!existingGroups.empty && existingGroups.docs.some(doc => doc.id !== groupId)) {
+                         alert(`Skupina s názvom "${newGroupName}" už v kategórii "${newCategoryId}" existuje!`);
+                         return;
+                     }
 
                     // Aktualizácia skupiny vo Firebase
                     await updateDoc(editingItemRef, {
