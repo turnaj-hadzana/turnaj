@@ -1,3 +1,8 @@
+// Firebase konfigurácia
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js';
+import { getFirestore, doc, getDoc } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
+
+// Inicializácia Firebase aplikácie
 const firebaseConfig = {
   apiKey: "AIzaSyD0h0rQZiIGi0-UDb4-YU_JihRGpIlfz40",
   authDomain: "turnaj-a28c5.firebaseapp.com",
@@ -7,12 +12,11 @@ const firebaseConfig = {
   appId: "1:13732191148:web:5ad78eaef2ad452a10f809"
 };
 
-// Inicializácia Firebase
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
 document.getElementById('loginForm').addEventListener('submit', async function(event) {
-    event.preventDefault(); // Zabráni odoslaniu formulára, aby sme spracovali prihlasovanie
+    event.preventDefault(); // Zabráni odoslaniu formulára
 
     const username = document.getElementById('meno').value.trim(); // Získa meno používateľa
     const password = document.getElementById('password').value; // Získa heslo
@@ -29,16 +33,18 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
     }
 
     try {
-        const userDoc = await db.collection('users').doc(username).get(); // Získaj dokument používateľa z Firestore
+        // Získa dokument používateľa z Firestore
+        const userDocRef = doc(db, 'users', username);
+        const userDoc = await getDoc(userDocRef);
 
         // Ak používateľ neexistuje
-        if (!userDoc.exists) {
+        if (!userDoc.exists()) {
             errorMessage.textContent = 'Používateľ neexistuje.';
             errorMessage.style.display = 'block';
             return;
         }
 
-        const userData = userDoc.data(); // Získaj údaje používateľa
+        const userData = userDoc.data(); // Získa údaje používateľa
 
         // Ak sa heslá zhodujú
         if (userData.password === password) {
