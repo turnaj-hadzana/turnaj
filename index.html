@@ -8,19 +8,6 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <script>
-        // Načíta hlavičku len raz
-        fetch('header.html')
-            .then(response => response.text())
-            .then(data => {
-                document.body.insertAdjacentHTML('afterbegin', data);
-                // Po načítaní hlavičky načítame aj logiku pre hlavičku
-                const script = document.createElement('script');
-                script.src = 'header-logic.js';  // Tento súbor sa načíta len raz
-                document.body.appendChild(script);
-            });
-    </script>
-
     <h1>Turnaj</h1>
     <p>Príprava turnajového rozhrania.</p>
 </body>
