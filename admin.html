@@ -59,9 +59,9 @@
         if (header) {
           document.getElementById("header-placeholder").appendChild(header);
         }
-        
-        // Inicializovať tlačidlo na základe prihlásenia
-        updateAuthButton();
+
+        // Po načítaní hlavičky inicializuj tlačidlo
+        updateAuthButton(); // Táto funkcia sa volá po načítaní hlavičky
       })
       .catch(error => console.error('Chyba pri načítaní hlavičky:', error));
   </script>
@@ -108,12 +108,4 @@
     async function approveUser(username) {
       const userRef = doc(db, "users", username);
       await setDoc(userRef, { approved: true }, { merge: true });
-      alert(`${username} bol schválený.`);
-      location.reload();
-    }
-
-    loadPendingUsers();
-  </script>
-
-</body>
-</html>
+      alert(`${
