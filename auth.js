@@ -16,7 +16,7 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 // Funkcia na úpravu menu
-function updateHeaderMenu(username) {
+function updateHeaderMenu(username, role) {
     const usernameItem = document.getElementById('usernameItem');
     const usernameSpan = document.getElementById('usernameSpan');
     const registerItem = document.getElementById('registerItem');
@@ -29,12 +29,12 @@ function updateHeaderMenu(username) {
         usernameSpan.textContent = username;
 
         // Ak je prihlásený "admin", zobrazí aj ďalšie možnosti
-        if (username === 'admin') {
+        if (role === 'admin') {
             registerItem.style.display = 'list-item';
             adminItem.style.display = 'list-item';
         } else {
-            registerItem.style.display = 'none'; // skryjeme pre beznych userov
-            adminItem.style.display = 'none'; // skryjeme pre beznych userov
+            registerItem.style.display = 'none'; // skryjeme pre bezných užívateľov
+            adminItem.style.display = 'none'; // skryjeme pre bezných užívateľov
         }
 
         // Skryje položku Prihlásenie, keď je používateľ prihlásený
@@ -42,20 +42,20 @@ function updateHeaderMenu(username) {
             loginLink.style.display = 'none';
         }
     } else {
-        //ak nie je prihlaseny takto
+        // Ak nie je prihlásený, takto
         usernameItem.style.display = 'none';
         registerItem.style.display = 'none';
         adminItem.style.display = 'none';
         if (loginLink) {
-            loginLink.style.display = 'list-item'; //zobrazime prihlasenie
+            loginLink.style.display = 'list-item'; // zobrazíme prihlásenie
         }
     }
 }
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     const loginForm = document.getElementById('loginForm');
-    if (loginForm) { // kontrolujeme ci existuje pre pripad viacerych pouziti auth.js
-        loginForm.addEventListener('submit', async function(event) {
+    if (loginForm) { // kontrolujeme, či existuje pre prípad viacero stránok s auth.js
+        loginForm.addEventListener('submit', async function (event) {
             event.preventDefault();
 
             const username = document.getElementById('meno').value.trim();
@@ -82,10 +82,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 const userData = userDoc.data();
 
+                // Porovnáme heslo - ideálne by bolo hashovať a porovnávať heslá
                 if (userData.password === password) {
+                    // Ak je prihlásený používateľ admin, nastavíme rolu
                     localStorage.setItem('username', username);
-                    updateHeaderMenu(username); // Aktualizujeme menu po úspešnom prihlásení
-                    if (username === "admin") {
+                    localStorage.setItem('role', userData.role); // Uložíme rolu do localStorage
+                    updateHeaderMenu(username, userData.role); // Aktualizujeme menu podľa roly
+
+                    // Ak je administrátor, presmerujeme ho na správcu turnaja
+                    if (userData.role === 'admin') {
                         window.location.href = 'spravca-turnaja.html';
                     } else {
                         window.location.href = 'index.html';
@@ -101,7 +106,9 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
     // Pri načítaní stránky skontrolujeme, či je používateľ už prihlásený a upravíme menu
     const loggedInUsername = localStorage.getItem('username');
-    updateHeaderMenu(loggedInUsername);
+    const role = localStorage.getItem('role');
+    updateHeaderMenu(loggedInUsername, role);
 });
