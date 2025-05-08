@@ -77,9 +77,7 @@ document.getElementById('register-form').addEventListener('submit', async functi
 
     try {
         const userRef = doc(db, 'users', username);
-
-        const saltRounds = 10;
-        const hashedPassword = bcrypt.hashSync(password, saltRounds);
+        const hashedPassword = bcrypt.hashSync(password, 10);
         
         await setDoc(userRef, {
             password: hashedPassword,
