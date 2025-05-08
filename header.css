@@ -1,0 +1,37 @@
+header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  background-color: #ffffff;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1000;
+}
+
+.logo {
+  font-size: 20px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+/* Tlačidlo štýl */
+.auth-button {
+  padding: 8px 18px;
+  border: none;
+  border-radius: 5px;
+  background-color: #3a8d41;
+  color: white;
+  cursor: pointer;
+  font-size: 16px;
+  text-decoration: none;
+  display: inline-block;
+  margin-right: 40px;
+}
+
+.auth-button:hover {
+  background-color: #c46f50;
+}
