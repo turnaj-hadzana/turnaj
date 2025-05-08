@@ -2,47 +2,47 @@
 <html lang="sk">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Turnaj</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f9;
+    }
+
+    .content {
+      padding: 100px 20px 20px 20px;
+      text-align: center;
+    }
+  </style>
 </head>
 <body>
 
-<div id="header-placeholder"></div>
-<p>Prihlásený používateľ: <span id="username"></span></p>
+  <!-- Miesto pre načítanie hlavičky -->
+  <div id="header-placeholder"></div>
 
-<script>
-  fetch("header.html")
-    .then(res => res.text())
-    .then(html => {
-      document.getElementById("header-placeholder").innerHTML = html;
+  <div class="content">
+    <h1>Dashboard</h1>
+    <p>Prihlásený používateľ: <span id="username"></span></p>
+  </div>
 
-      const authButton = document.getElementById("auth-button");
-      const username = sessionStorage.getItem("username");
+  <script>
+    // Načítanie hlavičky
+    fetch("header.html")
+      .then(response => response.text())
+      .then(html => {
+        document.getElementById("header-placeholder").innerHTML = html;
+      })
+      .catch(error => {
+        document.getElementById("header-placeholder").innerHTML = "<p>Chyba pri načítaní hlavičky.</p>";
+        console.error("Chyba pri načítaní header.html:", error);
+      });
 
-      if (authButton) {
-        if (username) {
-          authButton.textContent = "Odhlásiť sa";
-          authButton.onclick = () => {
-            sessionStorage.removeItem("username");
-            window.location.href = "index.html";
-          };
-        } else {
-          authButton.textContent = "Prihlásiť sa";
-          authButton.onclick = () => {
-            window.location.href = "login.html";
-          };
-        }
-      } else {
-        console.error("Element s ID 'auth-button' nebol nájdený v načítanej hlavičke.");
-      }
-    });
-
-  document.getElementById('username').textContent = sessionStorage.getItem("username") || "nie je prihlásený";
-
-  function logout() {
-    sessionStorage.removeItem("username");
-    window.location.href = "index.html";
-  }
-</script>
+    // Zobrazenie prihláseného používateľa
+    document.getElementById('username').textContent = sessionStorage.getItem("username") || "nie je prihlásený";
+  </script>
 
 </body>
 </html>
