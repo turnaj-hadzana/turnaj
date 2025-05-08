@@ -1,4 +1,4 @@
-// Tvoja Firebase konfigurácia
+// Firebase Konfigurácia
 const firebaseConfig = {
     apiKey: "AIzaSyAPW_DWwLqaiymC_uAoC8ozb6UZ7fIwsQM",
     authDomain: "turnaj-653d7.firebaseapp.com",
@@ -12,102 +12,43 @@ const firebaseConfig = {
 // Inicializácia Firebase
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
-const db = firebase.firestore();
+const firestore = firebase.firestore();
 
-document.addEventListener('DOMContentLoaded', () => {
-    const loginForm = document.getElementById('loginForm');
-    const loginErrorDiv = document.getElementById('loginError');
-    const registrationForm = document.getElementById('registrationForm');
-    const registrationErrorDiv = document.getElementById('registrationError');
+// Spracovanie registrácie
+document.getElementById('registrationForm').addEventListener('submit', function(event) {
+    event.preventDefault();
 
-    // Logika pre prihlásenie
-    if (loginForm) {
-        loginForm.addEventListener('submit', (event) => {
-            event.preventDefault();
+    const username = document.getElementById('regUsername').value;
+    const password = document.getElementById('regPassword').value;
+    const confirmPassword = document.getElementById('regConfirmPassword').value;
 
-            const usernameInput = document.getElementById('meno');
-            const passwordInput = document.getElementById('password');
-
-            if (usernameInput && passwordInput) {
-                const username = usernameInput.value;
-                const password = passwordInput.value;
-
-                db.collection('users')
-                    .where('username', '==', username)
-                    .limit(1)
-                    .get()
-                    .then((querySnapshot) => {
-                        if (!querySnapshot.empty) {
-                            const doc = querySnapshot.docs[0];
-                            const userData = doc.data();
-                            const email = userData.email;
-
-                            return auth.signInWithEmailAndPassword(email, password);
-                        } else {
-                            throw new Error('Používateľské meno nebolo nájdené.');
-                        }
-                    })
-                    .then((userCredential) => {
-                        const user = userCredential.user;
-                        console.log('Používateľ prihlásený:', user);
-                        window.location.href = '/index.html';
-                    })
-                    .catch((error) => {
-                        console.error('Chyba pri prihlásení:', error);
-                        if (loginErrorDiv) {
-                            loginErrorDiv.textContent = error.message;
-                            loginErrorDiv.style.display = 'block';
-                        }
-                    });
-            }
-        });
+    // Kontrola hesla
+    if (password !== confirmPassword) {
+        document.getElementById('registrationError').innerText = 'Heslá sa nezhodujú!';
+        document.getElementById('registrationError').style.display = 'block';
+        return;
     }
 
-    // Logika pre registráciu
-    if (registrationForm) {
-        registrationForm.addEventListener('submit', (event) => {
-            event.preventDefault();
+    // Vytvorenie používateľa
+    auth.createUserWithEmailAndPassword(username + "@example.com", password) // Pre Firebase potrebujeme email
+        .then((userCredential) => {
+            const user = userCredential.user;
 
-            const emailInput = document.getElementById('regEmail');
-            const passwordInput = document.getElementById('regPassword');
-            const usernameInput = document.getElementById('regUsername');
+            // Uloženie údajov do Firestore
+            firestore.collection('users').doc(user.uid).set({
+                username: username,
+                email: username + "@example.com", // Meno + doména ako email
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            }).then(() => {
+                alert('Úspešná registrácia! Môžete sa prihlásiť.');
+                window.location.href = '/login.html'; // Presmerovanie na prihlasovaciu stránku
+            }).catch((error) => {
+                document.getElementById('registrationError').innerText = 'Chyba pri uložení do databázy.';
+                document.getElementById('registrationError').style.display = 'block';
+            });
 
-            if (emailInput && passwordInput && usernameInput) {
-                const email = emailInput.value;
-                const password = passwordInput.value;
-                const username = usernameInput.value;
-
-                auth.createUserWithEmailAndPassword(email, password)
-                    .then((userCredential) => {
-                        const user = userCredential.user;
-                        console.log('Používateľ úspešne zaregistrovaný:', user);
-                        return db.collection('users').doc(user.uid).set({
-                            username: username,
-                            email: email
-                        });
-                    })
-                    .then(() => {
-                        console.log('Používateľské meno uložené do Firestore.');
-                        window.location.href = '/login.html';
-                    })
-                    .catch((error) => {
-                        console.error('Chyba pri registrácii:', error);
-                        if (registrationErrorDiv) {
-                            registrationErrorDiv.textContent = error.message;
-                            registrationErrorDiv.style.display = 'block';
-                        }
-                    });
-            }
+        }).catch((error) => {
+            document.getElementById('registrationError').innerText = error.message;
+            document.getElementById('registrationError').style.display = 'block';
         });
-    }
-
-    // (Voliteľné) Kód pre sledovanie stavu prihlásenia
-    auth.onAuthStateChanged((user) => {
-        if (user) {
-            console.log("Používateľ je prihlásený:", user);
-            // Môžeš tu pridať presmerovanie alebo inú logiku po prihlásení
-        } else {
-            console.log("Používateľ nie je prihlásený.");
-        }
-    });
 });
