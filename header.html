@@ -86,17 +86,21 @@
     const authButton = document.getElementById("auth-button");
     const username = sessionStorage.getItem("username");
 
+    // Logovanie v JavaScripte pre diagnostiku
+    console.log("Stránka bola načítaná.");
+
     if (username) {
-      authButton.textContent = "Odhlásiť sa";
+      authButton.textContent = "Odhlásiť sa";  // Ak je používateľ prihlásený, zobrazí sa "Odhlásiť sa"
       authButton.onclick = function () {
+        console.log("Klikol si na odhlásiť sa.");
         sessionStorage.removeItem("username");
-        window.location.href = "index.html";
+        window.location.href = "index.html";  // Po odhlásení presmeruje na index.html
       };
     } else {
-      authButton.textContent = "Prihlásiť sa";
+      authButton.textContent = "Prihlásiť sa";  // Ak nie je prihlásený, zobrazí sa "Prihlásiť sa"
       authButton.onclick = function () {
-        console.log("Klikol si na tlačidlo");
-        window.location.assign("/login.html");
+        console.log("Klikol si na prihlásiť sa.");
+        window.location.href = "login.html";  // Po kliknutí na tlačidlo, presmeruje na login.html
       };
     }
   </script>
