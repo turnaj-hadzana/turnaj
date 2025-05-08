@@ -10,7 +10,15 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 </head>
 <body>
-    <header>
+    <script>
+        fetch('header.html')
+            .then(response => response.text())
+            .then(data => {
+                document.body.insertAdjacentHTML('afterbegin', data);
+            });
+    </script>
+
+    <header style="display: none;">
         <nav>
             <ul>
                 <li><a href="/index.html">Turnaj</a></li>
@@ -24,7 +32,7 @@
         <form id="loginForm">
             <div>
                 <label for="meno">Používateľské meno:</label>
-                <input type="meno" id="meno" name="meno" required>
+                <input type="text" id="meno" name="meno" required>
             </div>
             <div>
                 <label for="password">Heslo:</label>
@@ -33,6 +41,7 @@
             <button type="submit">Prihlásiť sa</button>
             <p id="loginError" class="error-message" style="color: red; display: none;"></p>
         </form>
+        <p>Nemáte účet? <a href="/register.html">Registrácia</a></p>
     </main>
 
     <script src="auth.js"></script>
