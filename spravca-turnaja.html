@@ -309,15 +309,27 @@
         let editingItemRef = null; // Firestore Doc Ref (kategória/skupina) pri úprave
         let editingItemRow = null; // Riadok tabuľky pri úprave
         function showCategoryFields(show) {
-            categoryNameInput.style.display = show ? 'block' : 'none';
-            labelCategoryName.style.display = show ? 'block' : 'none';
-        }
-        function showGroupFields(show) {
-            groupCategorySelect.style.display = show ? 'block' : 'none';
-            groupNameInput.style.display = show ? 'block' : 'none';
-            labelGroupCategory.style.display = show ? 'block' : 'none';
-            labelGroupName.style.display = show ? 'block' : 'none';
-        }
+            categoryNameInput.style.display = show ? 'block' : 'none';
+            labelCategoryName.style.display = show ? 'block' : 'none';
+            if (show) {
+                categoryNameInput.setAttribute('required', 'true');
+            } else {
+                categoryNameInput.removeAttribute('required');
+            }
+        }
+        function showGroupFields(show) {
+            groupCategorySelect.style.display = show ? 'block' : 'none';
+            groupNameInput.style.display = show ? 'block' : 'none';
+            labelGroupCategory.style.display = show ? 'block' : 'none';
+            labelGroupName.style.display = show ? 'block' : 'none';
+            if (show) {
+                groupCategorySelect.setAttribute('required', 'true');
+                groupNameInput.setAttribute('required', 'true');
+            } else {
+                groupCategorySelect.removeAttribute('required');
+                groupNameInput.removeAttribute('required');
+            }
+        }
         function addCategoryRowToTable(categoryName) {
             const tr = document.createElement('tr');
             const nameTd = document.createElement('td');
