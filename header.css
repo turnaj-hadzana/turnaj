@@ -1,7 +1,7 @@
 header {
   width: 100%;
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
   padding: 12px 20px;
   background-color: #ffffff;
@@ -16,22 +16,4 @@ header {
   font-size: 20px;
   font-weight: bold;
   cursor: pointer;
-}
-
-/* Tlačidlo štýl */
-.auth-button {
-  padding: 8px 18px;
-  border: none;
-  border-radius: 5px;
-  background-color: #3a8d41;
-  color: white;
-  cursor: pointer;
-  font-size: 16px;
-  text-decoration: none;
-  display: inline-block;
-  margin-right: 40px;
-}
-
-.auth-button:hover {
-  background-color: #c46f50;
 }
