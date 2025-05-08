@@ -21,7 +21,21 @@
     <h1>Správca turnaja</h1>
 
 
-    <button class="add-button" title="Pridať nový prvok">+</button>
+    <button class="add-button" id="addCategoryButton" title="Pridať kategóriu">+</button>
+
+<div class="modal" id="categoryModal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2>Pridať kategóriu</h2>
+        <form id="categoryForm">
+            <label for="categoryName">Názov kategórie:</label>
+            <input type="text" id="categoryName" name="categoryName" required>
+            <button type="submit">Uložiť</button>
+        </form>
+    </div>
+</div>
+    
+    
     
     <div class="content-wrapper">
         <nav class="left-menu">
