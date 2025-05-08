@@ -48,22 +48,11 @@
         const parser = new DOMParser();
         const doc = parser.parseFromString(data, 'text/html');
 
-        // Pridáme CSS, ak nie je načítaný
-        if (!document.querySelector('link[href="header.css"]')) {
-          const cssLink = document.createElement('link');
-          cssLink.rel = 'stylesheet';
-          cssLink.href = 'header.css';
-          document.head.appendChild(cssLink);
-        }
-
         // Vložme hlavičku do divu s id="header-placeholder"
         const header = doc.querySelector('header');
         if (header) {
           document.getElementById("header-placeholder").appendChild(header);
         }
-
-        // Volanie funkcie na aktualizáciu tlačidla po načítaní hlavičky
-        updateAuthButton();
       })
       .catch(error => console.error('Chyba pri načítaní hlavičky:', error));
   </script>
