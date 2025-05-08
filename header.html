@@ -46,39 +46,31 @@
 
 <script>
   document.addEventListener("DOMContentLoaded", function() {
-    console.log("DOM je načítaný");
+  const authLink = document.getElementById("auth-link");
 
-    // Vyhľadáme odkaz pre prihlásenie/odhlásenie
-    const authLink = document.getElementById("auth-link");
+  if (!authLink) {
+    console.error("Odkaz 'auth-link' neexistuje!");
+    return;
+  }
 
-    // Skontrolujeme, či je element nájdený
-    if (!authLink) {
-      console.error("Odkaz 'auth-link' neexistuje!");
-      return;
-    }
+  const username = sessionStorage.getItem("username");
+  console.log("Hodnota username pri načítaní hlavičky: '", username, "'"); // S úvodzovkami, aby bolo vidieť prípadný prázdny reťazec
 
-    console.log("Odkaz 'auth-link' bol nájdený.");
-
-    // Získame meno používateľa zo sessionStorage
-    const username = sessionStorage.getItem("username");
-    console.log("Meno používateľa zo sessionStorage: ", username);
-
-    if (username) {
-      // Ak je používateľ prihlásený
-      authLink.textContent = "Odhlásiť sa";  // Zmeň text na "Odhlásiť sa"
-      authLink.onclick = function () {
-        console.log("Klikol si na 'Odhlásiť sa'.");
-
-        sessionStorage.removeItem("username");  // Odstrániť používateľa zo sessionStorage
-        window.location.href = "index.html";  // Presmerovať na úvodnú stránku
-      };
-    } else {
-      // Ak nie je prihlásený
-      authLink.textContent = "Prihlásiť sa";  // Zmeň text na "Prihlásiť sa"
-      authLink.onclick = function () {
-        console.log("Klikol si na 'Prihlásiť sa'.");
-        window.location.href = "login.html";  // Presmerovať na stránku prihlásenia
-      };
-    }
-  });
+  if (username) {
+    console.log("Používateľ je považovaný za prihláseného.");
+    authLink.textContent = "Odhlásiť sa";
+    authLink.onclick = function () {
+      console.log("Klikol si na 'Odhlásiť sa'.");
+      sessionStorage.removeItem("username");
+      window.location.href = "index.html";
+    };
+  } else {
+    console.log("Používateľ nie je považovaný za prihláseného.");
+    authLink.textContent = "Prihlásiť sa";
+    authLink.onclick = function () {
+      console.log("Klikol si na 'Prihlásiť sa'.");
+      window.location.href = "login.html";
+    };
+  }
+});
 </script>
