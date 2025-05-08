@@ -11,7 +11,6 @@ const firebaseConfig = {
 
 // Inicializácia Firebase
 firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
 const firestore = firebase.firestore();
 
 // Spracovanie registrácie
@@ -29,26 +28,16 @@ document.getElementById('registrationForm').addEventListener('submit', function(
         return;
     }
 
-    // Vytvorenie používateľa
-    auth.createUserWithEmailAndPassword(username + "@example.com", password) // Pre Firebase potrebujeme email
-        .then((userCredential) => {
-            const user = userCredential.user;
-
-            // Uloženie údajov do Firestore
-            firestore.collection('users').doc(user.uid).set({
-                username: username,
-                email: username + "@example.com", // Meno + doména ako email
-                createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            }).then(() => {
-                alert('Úspešná registrácia! Môžete sa prihlásiť.');
-                window.location.href = '/login.html'; // Presmerovanie na prihlasovaciu stránku
-            }).catch((error) => {
-                document.getElementById('registrationError').innerText = 'Chyba pri uložení do databázy.';
-                document.getElementById('registrationError').style.display = 'block';
-            });
-
-        }).catch((error) => {
-            document.getElementById('registrationError').innerText = error.message;
-            document.getElementById('registrationError').style.display = 'block';
-        });
+    // Uloženie používateľských údajov do Firestore
+    firestore.collection('users').add({
+        username: username,
+        password: password, // Ukladanie hesla (je dôležité zvážiť jeho zašifrovanie pred uložením do Firestore)
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    }).then(() => {
+        alert('Úspešná registrácia! Môžete sa prihlásiť.');
+        window.location.href = '/login.html'; // Presmerovanie na prihlasovaciu stránku
+    }).catch((error) => {
+        document.getElementById('registrationError').innerText = 'Chyba pri uložení do databázy.';
+        document.getElementById('registrationError').style.display = 'block';
+    });
 });
