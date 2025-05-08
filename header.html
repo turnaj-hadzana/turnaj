@@ -1,4 +1,31 @@
+<link rel="stylesheet" href="header.css">
+
 <header>
   <div class="logo" onclick="window.location.href='index.html'">Turnaj</div>
-  <a href="login.html" id="auth-link" class="header-login-button">Prihlásiť sa</a>
+  <a href="#" id="auth-link" class="login-link">Prihlásiť sa</a>
 </header>
+
+<script>
+  function updateAuthButton() {
+    const authButton = document.getElementById("auth-link");
+
+    if (authButton) {
+      const username = sessionStorage.getItem("username");
+
+      if (username) {
+        authButton.textContent = "Odhlásiť sa";
+        authButton.onclick = () => {
+          sessionStorage.removeItem("username");
+          window.location.href = "index.html";
+        };
+      } else {
+        authButton.textContent = "Prihlásiť sa";
+        authButton.onclick = () => {
+          window.location.href = "login.html";
+        };
+      }
+    }
+  }
+
+  updateAuthButton();
+</script>
