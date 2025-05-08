@@ -112,3 +112,10 @@ main p a {
 main p a:hover {
     text-decoration: underline;
 }
+
+.left-menu {
+    width: 200px;
+    background-color: #f8f8f8;
+    padding: 20px;
+    box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+}
