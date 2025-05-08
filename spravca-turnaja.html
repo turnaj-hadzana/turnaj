@@ -50,17 +50,17 @@
     </style>
 </head>
 <body>
-    <script>
+        <script>
         const userName = localStorage.getItem('username');
         if (userName !== 'admin') {
-            window.location.href = 'login.html';
+            window.location.href = 'login.html'; // Presmeruj na login ak nie je admin
         }
     </script>
 
-    <script type="module" src="auth.js"></script>
-    <script src="script.js"></script>
-
-    <h1>Správca turnaja</h1>
+        <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
+        <h1>Správca turnaja</h1>
 
         <button class="add-button" id="addCategoryButton" title="Pridať kategóriu">+</button>
 
@@ -80,7 +80,8 @@
         <nav class="left-menu">
             <ul>
                 <li><a href="#kluby">Kluby</a></li>
-                <li><a href="#kateg%C3%B3rie">Kategórie</a></li>                 <li><a href="#skupiny">Skupiny</a></li>
+                                <li><a href="#kateg%C3%B3rie">Kategórie</a></li>
+                <li><a href="#skupiny">Skupiny</a></li>
                 <li><a href="#sportove-haly">Športové haly</a></li>
                 <li><a href="#sprava-turnaja">Správa turnaja</a></li>
                 <li><a href="#nastavenia">Nastavenia</a></li>
@@ -88,8 +89,7 @@
         </nav>
 
         <main>
-            <p>Tu môžete spravovať nastavenia a údaje turnaja.</p>
-
+            <p>Tu môžete spravovať nastavenia a údaje turnaja.</p>
 
                         <table id="categoryTable" style="display: none;">
                 <thead>
@@ -104,19 +104,117 @@
         </main>
     </div>
 
-<script>
+<script type="module">
+    // Import potrebných Firebase Firestore funkcií
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js';
+    import { getFirestore, collection, doc, setDoc, getDoc, getDocs, deleteDoc } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js';
+
+    // Tvoja Firebase konfigurácia
+    const firebaseConfig = {
+        apiKey: "AIzaSyD0h0rQZiIGi0-UDb4-YU_JihRGpIlfz40",
+        authDomain: "turnaj-a28c5.firebaseapp.com",
+        projectId: "turnaj-a28c5",
+        storageBucket: "turnaj-a28c5.firebasestorage.app",
+        messagingSenderId: "13732191148",
+        appId: "1:13732191148:web:5ad78eaef2ad452a10f809"
+    };
+
+    // Inicializácia Firebase aplikácie
+    const app = initializeApp(firebaseConfig);
+    // Získanie inštancie Firestore databázy
+    const db = getFirestore(app);
+
+    // Referencia na kolekciu, kde budeme ukladať kategórie
+    // Vytvoríme podkolekciu 'categories' pod dokumentom 'mainTournamentData' v kolekcii 'tournamentData'
+    // Názov kategórie bude použitý ako ID dokumentu v podkolekcii 'categories'
+    const categoriesCollectionRef = collection(db, 'tournamentData', 'mainTournamentData', 'categories');
+
+
+    // Získame referencie na DOM elementy
     const addButton = document.getElementById('addCategoryButton');
     const modal = document.getElementById('categoryModal');
     const closeBtn = document.querySelector('.close');
     const form = document.getElementById('categoryForm');
-
-    // Získame referenciu na celú tabuľku a na jej telo (tbody)
     const categoryTable = document.getElementById('categoryTable');
-    const categoryTableBody = document.getElementById('categoryTableBody'); // Získame tbody element
+    const categoryTableBody = document.getElementById('categoryTableBody');
 
-    // Funkcia na zobrazenie/skrytie tlačidla "+" a tabuľky kategórií
+
+    // Funkcia na vytvorenie a pridanie riadku kategórie do tabuľky
+    function addCategoryRowToTable(categoryName) {
+        const tr = document.createElement('tr');
+
+        const nameTd = document.createElement('td');
+        nameTd.textContent = categoryName;
+
+        const actionsTd = document.createElement('td');
+
+        const deleteButton = document.createElement('button');
+        deleteButton.textContent = 'Zmazať';
+        deleteButton.classList.add('action-button');
+
+        // Obsluha kliknutia na tlačidlo Zmazať
+        deleteButton.onclick = async function() {
+            const row = this.closest('tr');
+            const categoryToDelete = row.querySelector('td:first-child').textContent;
+
+            // Potvrdenie pred zmazaním (voliteľné)
+            // if (!confirm(`Naozaj chcete zmazať kategóriu "${categoryToDelete}"?`)) {
+            //     return; // Zastaví funkciu, ak používateľ zruší potvrdenie
+            // }
+
+            try {
+                // Zmazať kategóriu z Firestore (použijeme názov kategórie ako ID dokumentu)
+                await deleteDoc(doc(categoriesCollectionRef, categoryToDelete));
+                // Odstrániť riadok z tabuľky po úspešnom zmazaní z Firestore
+                row.remove();
+                console.log(`Kategória "${categoryToDelete}" bola úspešne zmazaná z Firestore.`);
+            } catch (error) {
+                console.error('Chyba pri mazaní kategórie z Firestore: ', error);
+                alert('Chyba pri mazaní kategórie!'); // Informovať používateľa o chybe
+            }
+        };
+
+        actionsTd.appendChild(deleteButton);
+        tr.appendChild(nameTd);
+        tr.appendChild(actionsTd);
+
+        categoryTableBody.appendChild(tr);
+    }
+
+
+    // Funkcia na načítanie kategórií z Firestore a naplnenie tabuľky
+    async function loadCategories() {
+        try {
+            // Vyčistiť telo tabuľky pred načítaním nových dát
+            categoryTableBody.innerHTML = '';
+
+            // Získať všetky dokumenty (kategórie) z podkolekcie
+            const querySnapshot = await getDocs(categoriesCollectionRef);
+
+            if (querySnapshot.empty) {
+                 console.log("Žiadne kategórie nenájdené vo Firestore.");
+                 // Voliteľné: zobraziť správu "Žiadne kategórie"
+            } else {
+                // Pre každý dokument (kategóriu) vytvoriť riadok v tabuľke
+                querySnapshot.forEach((doc) => {
+                    // Názov kategórie je ID dokumentu
+                    const categoryName = doc.id;
+                    addCategoryRowToTable(categoryName); // Použijeme funkciu na pridanie riadku
+                });
+                console.log("Kategórie boli načítané z Firestore.");
+            }
+
+        } catch (error) {
+            console.error('Chyba pri načítaní kategórií z Firestore: ', error);
+            alert('Chyba pri načítaní kategórií!'); // Informovať používateľa o chybe
+        }
+    }
+
+
+    // Funkcia na zobrazenie/skrytie tlačidla "+" a tabuľky kategórií
     function toggleAddButton() {
-        // Porovnanie hašu s kódovanou formou, ako sme zistili z konzoly
+        // Porovnanie hašu s kódovanou formou ('#kateg%C3%B3rie')
+        // Podľa zistení z konzoly, window.location.hash vracia kódovanú formu
         const isCategoryPage = window.location.hash === '#kateg%C3%B3rie';
 
         // Zobrazíme/skryjeme tlačidlo "+"
@@ -124,17 +222,32 @@
 
         // Zobrazíme/skryjeme celú tabuľku
         categoryTable.style.display = isCategoryPage ? 'table' : 'none'; // Nastavíme display na 'table'
+
+        // Ak sme na stránke kategórií, načítať kategórie z Firestore
+        if (isCategoryPage) {
+            loadCategories();
+        } else {
+            // Ak odchádzame zo stránky kategórií, vyčistíme tabuľku
+            categoryTableBody.innerHTML = '';
+        }
     }
 
-    // Spustíme funkciu pri načítaní stránky a zmene hašu
+
+    // === EVENT LISTENERS ===
+
+    // Spustíme toggleAddButton pri načítaní stránky a zmene hašu
     window.addEventListener('hashchange', toggleAddButton);
     window.addEventListener('load', toggleAddButton); // Spustí sa hneď pri načítaní stránky
 
-    // Obsluha modálneho okna pre pridanie kategórie
+    // Obsluha modálneho okna pre pridanie kategórie (zobrazenie)
     addButton.addEventListener('click', () => {
         modal.style.display = 'block';
+        // Voliteľné: vyčistiť formulár pri otvorení modalu
+        form.reset();
+        document.getElementById('categoryName').focus(); // Nastaviť focus na input
     });
 
+    // Obsluha zatvorenia modálneho okna (kliknutie na X)
     closeBtn.addEventListener('click', () => {
         modal.style.display = 'none';
     });
@@ -146,70 +259,59 @@
         }
     });
 
-    // Obsluha formulára na pridanie kategórie
-    form.addEventListener('submit', (e) => {
+
+    // Obsluha formulára na pridanie kategórie (odoslanie)
+    form.addEventListener('submit', async (e) => { // Funkcia je async pre použitie await
         e.preventDefault(); // Zabraňuje odoslaniu formulára a načítaniu stránky
+
         const categoryNameInput = document.getElementById('categoryName');
         const categoryName = categoryNameInput.value.trim();
 
-
-        if (categoryName !== '') {
-            // Vytvoríme nový riadok tabuľky
-            const tr = document.createElement('tr');
-
-            // Vytvoríme bunku pre názov kategórie
-            const nameTd = document.createElement('td');
-            nameTd.textContent = categoryName;
-
-            // Vytvoríme bunku pre akcie (napr. tlačidlo Zmazať)
-            const actionsTd = document.createElement('td');
-
-            // Pridáme tlačidlo Zmazať do bunky Akcie
-            const deleteButton = document.createElement('button');
-            deleteButton.textContent = 'Zmazať';
-            deleteButton.classList.add('action-button'); // Použijeme CSS triedu pre štýl
-
-            // === TENTO RIADOK BOLA PREDTÝM ZAKOMENTOVANÝ - TERAZ JE AKTÍVNY ===
-            // Pridáme obsluhu udalosti pre kliknutie na tlačidlo Zmazať
-            deleteButton.onclick = function() {
-                // 'this' odkazuje na tlačidlo, na ktoré sa kliklo.
-                // closest('tr') nájde najbližší rodičovský element, ktorý je <tr> (riadok tabuľky).
-                // .remove() odstráni tento riadok z HTML.
-                this.closest('tr').remove();
-
-                // Voliteľné: Ak ukladáš kategórie (napr. do localStorage), tu by si ich mal znova uložiť
-                // saveCategories();
-            };
-            // ===================================================================
-
-
-            actionsTd.appendChild(deleteButton);
-
-            // Pridáme bunky do riadku
-            tr.appendChild(nameTd);
-            tr.appendChild(actionsTd);
-
-            // Pridáme riadok do tela tabuľky (tbody)
-            categoryTableBody.appendChild(tr);
-
-            // Vyčistíme vstup pre názov kategórie po pridaní
-            categoryNameInput.value = '';
-
-            // Voliteľné: uložiť kategórie do lokálneho úložiska alebo poslať na server
-            // saveCategories();
+        if (categoryName === '') {
+            alert('Názov kategórie nemôže byť prázdny.'); // Základná validácia
+            return; // Zastaví funkciu, ak je názov prázdny
         }
 
-        // Zatvoríme modal a resetujeme formulár po uložení
-        modal.style.display = 'none';
-        // Reset formulára bol presunutý sem, aby sa nevymazal input ak bol prázdny
-        form.reset();
+        // Referencia na dokument v Firestore, ktorý by mal reprezentovať túto kategóriu
+        // Používame názov kategórie ako ID dokumentu
+        const categoryDocRef = doc(categoriesCollectionRef, categoryName);
+
+        try {
+            // Najprv skontrolovať, či kategória s daným názvom už neexistuje vo Firestore
+            const existingDoc = await getDoc(categoryDocRef);
+
+            if (existingDoc.exists()) {
+                alert(`Kategória "${categoryName}" už existuje!`);
+                // Voliteľné: Resetovať formulár aj v tomto prípade
+                form.reset();
+                return; // Zastaví funkciu, ak kategória existuje
+            }
+
+            // Ak kategória neexistuje, pridáme ju do Firestore
+            // setDoc pridá dokument s konkrétnym ID (názvom kategórie)
+            await setDoc(categoryDocRef, {
+                // Môžeš tu pridať aj ďalšie polia, napr. dátum vytvorenia
+                createdAt: new Date()
+            });
+
+            // Po úspešnom pridaní do Firestore, pridáme kategóriu aj do HTML tabuľky
+            // Pomocou funkcie, ktorú sme vytvorili skôr
+            addCategoryRowToTable(categoryName);
+
+            console.log(`Kategória "${categoryName}" bola úspešne pridaná do Firestore a do tabuľky.`);
+
+            // Zatvoríme modal a vyčistíme formulár
+            modal.style.display = 'none';
+            form.reset();
+
+            // Voliteľné: Zobraziť správu o úspechu
+            // alert(`Kategória "${categoryName}" bola úspešne pridaná.`);
+
+        } catch (error) {
+            console.error('Chyba pri pridávaní kategórie do Firestore: ', error);
+            alert('Chyba pri pridávaní kategórie!'); // Informovať používateľa o chybe
+        }
     });
-
-    // Funkcie saveCategories a loadCategories (voliteľné, ak chcete zachovať kategórie po obnovení stránky)
-    // Ako som spomínal, ideálne je ich implementovať a volať.
-    // Napr.: loadCategories() by sa volala v toggleAddButton() ak isCategoryPage je true
-    // a saveCategories() by sa volala po pridaní a po zmazaní kategórie.
-
 
 </script>
 
