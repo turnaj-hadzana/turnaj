@@ -294,8 +294,10 @@
 
     <h1>Správca turnaja</h1>
 
+    <!-- This button is used for adding Categories or Groups depending on the page -->
     <button class="add-button" id="addButton" title="Pridať položku">+</button>
 
+    <!-- Modal for adding/editing Categories -->
     <div class="modal" id="categoryModal">
         <div class="modal-content">
             <span class="close category-modal-close">&times;</span>
@@ -308,6 +310,7 @@
         </div>
     </div>
 
+     <!-- Modal for adding/editing Groups -->
      <div class="modal" id="groupModal">
          <div class="modal-content">
               <span class="close group-modal-close">&times;</span>
@@ -316,7 +319,8 @@
                   <label for="groupCategory">Kategória:</label>
                   <select id="groupCategory" name="groupCategory" required>
                        <option value="">-- Vyberte kategóriu --</option>
-                       </select>
+                       <!-- Options will be populated by JavaScript -->
+                  </select>
 
                   <label for="groupName">Názov skupiny:</label>
                   <input type="text" id="groupName" name="groupName" required>
@@ -340,7 +344,8 @@
         </nav>
 
         <main>
-            <table id="categoryTable" style="display: none;">
+            <!-- Table for displaying Categories -->
+             <table id="categoryTable" style="display: none;">
                  <thead>
                      <tr>
                          <th>Názov kategórie</th>
@@ -348,21 +353,28 @@
                      </tr>
                  </thead>
                  <tbody id="categoryTableBody">
-                     </tbody>
+                     <!-- Category rows will be added here by JavaScript -->
+                 </tbody>
              </table>
 
+             <!-- Container for generated Group tables (one table per category) -->
              <div id="groupsContent" style="display: none;">
-                 </div>
+                 <!-- Category headings (<h2>) and tables (<table class="category-group-table">) will be added here by JavaScript -->
+             </div>
 
-             </main>
+             <!-- Add other content areas for Kluby, Haly, etc. if needed -->
+             <!-- <div id="klubyContent" style="display: none;">...</div> -->
+
+
+         </main>
     </div>
 
 
     <script type="module">
         // Import potrebných Firebase Firestore funkcií priamo z CDN
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js';
-        // Import 'writeBatch' for atomic operations (rename = delete + create) - not needed in the end for groups with auto-ID
-        import { getFirestore, collection, doc, setDoc, getDoc, getDocs, deleteDoc, query, where, addDoc, updateDoc } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js'; // Imported 'updateDoc'
+        // Pridané 'writeBatch' pre atomické operácie (premenovanie skupiny = zmazanie + vytvorenie nového dokumentu s novým ID)
+        import { getFirestore, collection, doc, setDoc, getDoc, getDocs, deleteDoc, query, where, addDoc, updateDoc, writeBatch } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js'; // Pridaný 'writeBatch'
 
         // Tvoja Firebase konfigurácia
         const firebaseConfig = {
@@ -381,7 +393,7 @@
 
         // Referencia na kolekciu kategórií
         const categoriesCollectionRef = collection(db, 'tournamentData', 'mainTournamentData', 'categories');
-        // Referencia na kolekciu skupín (teraz s auto-generovanými ID)
+        // Referencia na kolekciu skupín (teraz s kompozitnými ID)
         const groupsCollectionRef = collection(db, 'tournamentData', 'mainTournamentData', 'groups');
 
 
@@ -418,10 +430,10 @@
 
         // Premenné na sledovanie stavu modálneho okna skupiny
         let currentGroupModalMode = 'add'; // 'add' alebo 'edit'
-        let editingGroupId = null; // Uchová ID skupiny pri úprave (teraz automaticky generované ID)
+        let editingGroupId = null; // Uchová ID skupiny pri úprave (teraz kompozitné ID)
 
 
-        // --- Funkcie pre Kategórie (bez zmien v logike oproti predošlej verzii, len formátovanie) ---
+        // --- Funkcie pre Kategórie (bez zmien v logike oproti predošlej verzii) ---
 
         // Funkcia na vytvorenie a pridanie riadku kategórie do tabuľky
         function addCategoryRowToTable(categoryName) {
@@ -566,12 +578,12 @@
             editingGroupId = null; // Clear editing ID
             groupForm.reset(); // Clear form fields
             groupNameInput.disabled = false; // Ensure name input is enabled
-            // No oninput listener needed now that ID is auto-generated
+
 
             if (groupId && groupData) {
                 // Edit mode
                 currentGroupModalMode = 'edit';
-                editingGroupId = groupId; // Store the ID of the group being edited
+                editingGroupId = groupId; // Store the ID of the group being edited (now composite)
                 groupModalTitle.textContent = 'Upraviť skupinu';
                 groupFormSubmitButton.textContent = 'Uložiť zmeny'; // Change button text
 
@@ -617,7 +629,7 @@
                  const groupsByCategory = {};
                  groupsSnapshot.forEach(doc => {
                      const groupData = doc.data();
-                     const groupId = doc.id; // This is now the auto-generated ID
+                     const groupId = doc.id; // This is now the composite ID
                      const categoryId = groupData.categoryId;
 
                      if (categoryId) { // If group has a category assigned
@@ -684,7 +696,7 @@
                              editGroupButton.textContent = 'Upraviť Skupinu';
                              editGroupButton.classList.add('action-button');
                              editGroupButton.onclick = () => {
-                                  // Pass the auto-generated group ID and its data
+                                  // Pass the composite group ID and its data
                                   openGroupModal(group.id, group.data);
                              };
 
@@ -694,11 +706,11 @@
                              deleteGroupButton.textContent = 'Zmazať Skupinu';
                              deleteGroupButton.classList.add('action-button', 'delete-button');
                              deleteGroupButton.onclick = async () => {
-                                  if (!confirm(`Naozaj chcete zmazať skupinu "${group.data.name}"?`)) {
+                                  if (!confirm(`Naozaj chcete zmazať skupinu "${group.data.name}" z kategórie "${group.data.categoryId}"?`)) {
                                       return;
                                   }
                                   try {
-                                       // Use the auto-generated group ID to delete
+                                       // Use the composite group ID to delete
                                       await deleteDoc(doc(groupsCollectionRef, group.id));
                                       console.log(`Skupina "${group.data.name}" (ID: ${group.id}) bola úspešne zmazaná.`);
                                        displayGroupsByCategory(); // Reload display
@@ -947,7 +959,7 @@
 
 
                     currentCategoryModalMode = 'add'; editingCategoryName = null; editingCategoryRow = null;
-                    categoryModal.style.display = 'none'; categoryForm.reset();
+                    categoryModal.style.display = 'none'; form.reset();
 
                      if (window.location.hash === '#skupiny') {
                          // Re-display groups to reflect the category name change in headings and potentially update select options
@@ -965,7 +977,7 @@
         });
 
 
-         // --- Upravená obsluha formulára na pridanie/úpravu skupiny (vynucuje unikátnosť v rámci kategórie) ---
+         // --- Upravená obsluha formulára na pridanie/úpravu skupiny (používa kompozitné ID "Kategória - Názov Skupiny") ---
          groupForm.addEventListener('submit', async (e) => {
              e.preventDefault();
 
@@ -981,75 +993,93 @@
                  return;
              }
 
-             // === KONTROLA UNIKÁTNOSTI v rámci KATEGÓRIE ===
-             // Skontrolujeme, či v cieľovej kategórii už existuje iná skupina s rovnakým názvom.
-             const uniquenessQuery = query(
-                 groupsCollectionRef,
-                 where('categoryId', '==', selectedCategoryId),
-                 where('name', '==', groupName)
-             );
+             // === VYTVORENIE KOMPOZITNÉHO ID ===
+             const compositeGroupId = `${selectedCategoryId} - ${groupName}`;
+
+             // === KONTROLA UNIKÁTNOSTI (Implicitne vďaka kompozitnému ID) ===
+             // Unikátnosť sa teraz kontroluje priamo overením existencie dokumentu s vypočítaným kompozitným ID.
+             const groupDocRef = doc(groupsCollectionRef, compositeGroupId);
 
              try {
-                 const querySnapshot = await getDocs(uniquenessQuery);
+                 const existingDoc = await getDoc(groupDocRef); // Kontrola existencie na základe kompozitného ID
 
                  if (currentGroupModalMode === 'add') {
                      // --- LOGIKA PRIDÁVANIA ---
-                     if (!querySnapshot.empty) {
-                         // Ak dotaz vrátil nejaké dokumenty, znamená to, že skupina s týmto názvom v tejto kategórii už existuje.
+                     if (existingDoc.exists()) {
+                         // Ak dokument s týmto kompozitným ID už existuje, znamená to, že skupina s týmto názvom v tejto kategórii už existuje.
                          alert(`Skupina s názvom "${groupName}" už v kategórii "${selectedCategoryId}" existuje! Názvy skupín musia byť unikátne v rámci kategórie.`);
                          return; // Zastaviť proces
                      }
 
-                     // Ak dotaz nevrátil nič, názov je v rámci kategórie unikátny, môžeme pridať novú skupinu.
-                     // Používame addDoc pre automaticky generované ID.
-                     const newGroupRef = await addDoc(groupsCollectionRef, {
-                         name: groupName,            // Uložíme názov skupiny
-                         categoryId: selectedCategoryId // Uložíme ID vybranej kategórie
-                         // Už nepridávame createdAt pre skupiny
+                     // Ak dokument neexistuje, môžeme pridať novú skupinu s kompozitným ID.
+                     await setDoc(groupDocRef, { // Používame setDoc na zápis s určeným ID
+                         name: groupName,            // Uložíme názov skupiny ako pole
+                         categoryId: selectedCategoryId // Uložíme ID kategórie ako pole
+                         // Nepridávame createdAt pre skupiny
                      });
 
-                     console.log(`Skupina "${groupName}" (ID: ${newGroupRef.id}) bola úspešne pridaná do kategórie "${selectedCategoryId}".`);
+                     console.log(`Skupina "${groupName}" (ID: ${compositeGroupId}) bola úspešne pridaná do kategórie "${selectedCategoryId}".`);
 
                  } else if (currentGroupModalMode === 'edit') {
                      // --- LOGIKA ÚPRAVY ---
-                     const oldGroupId = editingGroupId; // ID skupiny, ktorú upravujeme
+                     const oldGroupId = editingGroupId; // Pôvodné kompozitné ID skupiny
 
                      if (!oldGroupId) {
                          console.error("Chyba: Režim úpravy skupiny bez platného editingGroupId.");
                          alert("Chyba pri úprave skupiny. Prosím, obnovte stránku.");
-                         // Zatvoriť modál a resetovať
-                          groupModal.style.display = 'none';
-                          groupForm.reset();
-                          currentGroupModalMode = 'add'; editingGroupId = null;
+                         groupModal.style.display = 'none';
+                         groupForm.reset();
+                         currentGroupModalMode = 'add'; editingGroupId = null;
                          return;
                      }
 
-                     // Pri úprave musíme skontrolovať, či nájdený duplicitný dokument
-                     // NIE JE tá istá skupina, ktorú práve upravujeme.
-                     let conflictFound = false;
-                     querySnapshot.forEach(doc => {
-                         if (doc.id !== oldGroupId) {
-                             // Ak existuje iná skupina (s iným ID) v tej istej kategórii s rovnakým novým názvom
-                             conflictFound = true;
-                             return; // Prerušiť forEach
-                         }
-                     });
+                     // Ak sa kompozitné ID zmenilo (zmenil sa názov skupiny alebo kategória),
+                     // musíme vytvoriť nový dokument s novým ID a zmazať starý.
+                     if (oldGroupId !== compositeGroupId) {
+                          console.log(`Premenovanie/presun skupiny z "${oldGroupId}" na "${compositeGroupId}".`);
 
-                     if (conflictFound) {
-                          alert(`Skupina s názvom "${groupName}" už v kategórii "${selectedCategoryId}" existuje (iná skupina)! Názvy skupín musia byť unikátne v rámci kategórie.`);
-                          return; // Zastaviť proces
+                          // Kontrola, či nové kompozitné ID už neexistuje (inak ako staré ID, čo sa stane len ak existuje iná skupina s cieľovým názvom v cieľovej kategórii)
+                          if (existingDoc.exists()) { // exists() sa vzťahuje na groupDocRef, čo je nové ID
+                               alert(`Skupina s názvom "${groupName}" už v kategórii "${selectedCategoryId}" existuje (iná skupina)! Názvy skupín musia byť unikátne v rámci kategórie.`);
+                               return; // Zastaviť proces
+                          }
+
+                          // Vytvoriť nový dokument a zmazať starý pomocou dávkového zápisu pre atomickosť
+                          const oldGroupDocRef = doc(groupsCollectionRef, oldGroupId);
+                          const batch = writeBatch(db);
+
+                          // Nastaviť dáta pre nový dokument s novým kompozitným ID
+                          batch.set(groupDocRef, {
+                               name: groupName,
+                               categoryId: selectedCategoryId
+                               // Ak by dokument obsahoval ďalšie polia, museli by sa načítať zo starého dokumentu a skopírovať sem.
+                               // const oldDocSnapshot = await getDoc(oldGroupDocRef); const oldGroupData = oldDocSnapshot.data(); batch.set(..., {...oldGroupData, ...});
+                           });
+
+                          // Zmazať starý dokument s pôvodným kompozitným ID
+                          batch.delete(oldGroupDocRef);
+
+                          // Vykonať dávkový zápis
+                          await batch.commit();
+
+                          console.log(`Skupina úspešne premenovaná/presunutá z ID "${oldGroupId}" na "${compositeGroupId}".`);
+
+                          // DÔLEŽITÁ POZNÁMKA: Ak iné dokumenty odkazujú na túto skupinu
+                          // pomocou jej ID, musia byť aktualizované na nové kompozitné ID.
+                          console.warn("POZNÁMKA: Premenovaním/presunom skupiny sa zmenilo jej ID vo Firestore. Ak iné dáta odkazujú na túto skupinu pomocou jej ID, musia byť aktualizované manuálne!");
+
+
+                     } else {
+                         // Ak sa kompozitné ID nezmenilo (nezmenil sa ani názov skupiny, ani kategória),
+                         // len aktualizujeme existujúci dokument.
+                         console.log(`Úprava údajov pre skupinu s ID "${oldGroupId}". Kompozitné ID sa nemení.`);
+                         await updateDoc(groupDocRef, { // Používame updateDoc (alebo setDoc s merge) na aktualizáciu
+                              name: groupName,
+                              categoryId: selectedCategoryId
+                              // Ďalšie polia sa vďaka updateDoc zachovajú
+                         });
+                         console.log(`Skupina s ID "${oldGroupId}" úspešne upravená.`);
                      }
-
-                     // Ak sa sem dostaneme, názov je v cieľovej kategórii unikátny (alebo sa nezmenil a je to tá istá skupina).
-                     // Môžeme aktualizovať existujúci dokument skupiny.
-                     const groupDocRef = doc(groupsCollectionRef, oldGroupId);
-                     await updateDoc(groupDocRef, { // Používame updateDoc, lebo dokument už existuje
-                         name: groupName,            // Aktualizujeme názov skupiny
-                         categoryId: selectedCategoryId // Aktualizujeme kategóriu
-                         // Ďalšie polia (ak existujú) zostanú nezmenené vďaka updateDoc
-                     });
-
-                     console.log(`Skupina s ID "${oldGroupId}" úspešne upravená (názov "${groupName}", kategória "${selectedCategoryId}").`);
 
                  } // Koniec if/else currentGroupModalMode
 
