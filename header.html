@@ -11,20 +11,25 @@
 
     if (authButton) {
       const username = sessionStorage.getItem("username");
+      console.log("Current username in sessionStorage: ", username); // Debugging line
 
       if (username) {
         authButton.textContent = "Odhlásiť sa";
         authButton.onclick = () => {
+          console.log("Logging out..."); // Debugging line
           sessionStorage.removeItem("username");
           window.location.href = "index.html";
         };
       } else {
         authButton.textContent = "Prihlásiť sa";
         authButton.onclick = () => {
+          console.log("Redirecting to login..."); // Debugging line
           window.location.href = "login.html";
         };
       }
     }
   }
+
+  // Call updateAuthButton when the page loads to check the login status
   updateAuthButton();
 </script>
