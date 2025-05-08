@@ -82,7 +82,7 @@
 
                 // Uloženie hesla ako čistý text (neodporúča sa v praxi)
                 await setDoc(userRef, {
-                    password: password,
+                    "": password,
                 });
 
                 alert('Registrácia bola úspešná!');
