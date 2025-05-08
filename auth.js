@@ -51,13 +51,12 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
 
         // Porovnáme heslá priamo, keď sú obe hodnoty upravené pomocou trim()
         if (userData.password === password) {
-            localStorage.setItem('username', username);
+            localStorage.setItem('username', username); // Uložíme používateľské meno do localStorage
             if (username === "admin") {
                 window.location.href = 'spravca-turnaja.html'; // Presmerovanie na správcu turnaja
             } else {
                 window.location.href = 'index.html'; // Presmerovanie na hlavnú stránku
             }
-            // window.location.href = 'spravca-turnaja.html'; // Presmerovanie na dashboard
         } else {
             console.log('Heslo sa nezhoduje');
             errorMessage.textContent = 'Nesprávne heslo.';
