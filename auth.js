@@ -34,23 +34,27 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
 
     try {
         // Získa dokument používateľa z Firestore
+        console.log(`Získavam používateľa: ${username}`);
         const userDocRef = doc(db, 'users', username);
         const userDoc = await getDoc(userDocRef);
 
-        // Ak používateľ neexistuje
+        // Skontrolujeme, či dokument existuje
         if (!userDoc.exists()) {
+            console.log('Používateľ neexistuje!');
             errorMessage.textContent = 'Používateľ neexistuje.';
             errorMessage.style.display = 'block';
             return;
         }
 
         const userData = userDoc.data(); // Získa údaje používateľa
+        console.log('Nájdené údaje používateľa:', userData);
 
         // Ak sa heslá zhodujú
-        if (userData.password === password) {
+        if (userData[""] === password) {
             alert('Úspešné prihlásenie!');
             window.location.href = 'spravca-turnaja.html'; // Presmerovanie na dashboard
         } else {
+            console.log('Heslo sa nezhoduje');
             errorMessage.textContent = 'Nesprávne heslo.';
             errorMessage.style.display = 'block';
         }
