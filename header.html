@@ -2,7 +2,7 @@
 
 <header>
   <div class="logo" onclick="window.location.href='index.html'">Turnaj</div>
-  <a href="#" id="auth-link" class="login-link">Prihlásiť sa</a>
+  <a href="javascript:void(0);" id="auth-link" class="login-link">Prihlásiť sa</a>
 </header>
 
 <script>
@@ -11,25 +11,25 @@
 
     if (authButton) {
       const username = sessionStorage.getItem("username");
-      console.log("Current username in sessionStorage: ", username); // Debugging line
+      console.log("Current username in sessionStorage: ", username);
 
       if (username) {
         authButton.textContent = "Odhlásiť sa";
         authButton.onclick = () => {
-          console.log("Logging out..."); // Debugging line
+          console.log("Logging out...");
           sessionStorage.removeItem("username");
           window.location.href = "index.html";
         };
       } else {
         authButton.textContent = "Prihlásiť sa";
         authButton.onclick = () => {
-          console.log("Redirecting to login..."); // Debugging line
+          console.log("Redirecting to login...");
           window.location.href = "login.html";
         };
       }
     }
   }
 
-  // Call updateAuthButton when the page loads to check the login status
-  updateAuthButton();
+  window.onload = updateAuthButton;
+
 </script>
