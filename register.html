@@ -68,7 +68,7 @@ document.getElementById('register-form').addEventListener('submit', async functi
     }
 
     try {
-        const userRef = doc(db, 'users', username); // dokument bude mať ID = používateľské meno
+        const userRef = doc(db, 'users', username);
 
         await setDoc(userRef, {
             password: password,
