@@ -11,14 +11,6 @@ header h1 {
      color: #333;
 }
 
-.content-wrapper {
-    display: flex; /* Použijeme Flexbox na usporiadanie detí vedľa seba */
-    max-width: 1200px; /* Maximálna šírka hlavnej časti stránky */
-    margin: 20px auto; /* Centrovanie bloku na stránke s horným/dolným okrajom */
-    padding: 0 20px; /* Odsadenie z bokov na menších obrazovkách */
-    gap: 20px; /* Priestor medzi menu a hlavným obsahom */
-}
-
 main {
     flex-grow: 1;
     background-color: #fff;
