@@ -9,10 +9,8 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- Hlavný obsah -->
-    <header>
-        <h1>Registrácia Používateľa</h1>
-    </header>
+    <!-- Kontajner pre hlavičku, kde sa neskôr načíta obsah zo súboru header.html -->
+    <div id="header-container"></div>
 
     <main>
         <!-- Registračný formulár -->
@@ -43,6 +41,16 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
 
     <script>
+        // Načítanie hlavičky zo súboru header.html
+        fetch('header.html')
+            .then(response => response.text())
+            .then(data => {
+                document.getElementById('header-container').innerHTML = data;
+            })
+            .catch(error => {
+                console.error('Chyba pri načítaní hlavičky:', error);
+            });
+
         // Firebase konfigurácia
         const firebaseConfig = {
             apiKey: "AIzaSyD0h0rQZiIGi0-UDb4-YU_JihRGpIlfz40",
