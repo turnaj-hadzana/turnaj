@@ -6,26 +6,31 @@
 </header>
 
 <script>
+  // Funkcia na aktualizáciu stavu tlačidla prihlásenia/odhlásenia
   function updateAuthButton() {
     const authButton = document.getElementById("auth-link");
 
     if (authButton) {
+      // Zmena textu a odkazu na tlačidle na základe prihláseného používateľa
       const username = sessionStorage.getItem("username");
 
       if (username) {
         authButton.textContent = "Odhlásiť sa";
         authButton.onclick = () => {
-          sessionStorage.removeItem("username");
-          window.location.href = "index.html";
+          sessionStorage.removeItem("username");  // Odstrániť používateľa zo session
+          window.location.href = "index.html";   // Presmerovanie na index
         };
       } else {
         authButton.textContent = "Prihlásiť sa";
         authButton.onclick = () => {
-          window.location.href = "login.html";
+          window.location.href = "login.html";  // Presmerovanie na login
         };
       }
     }
   }
 
-  updateAuthButton();
+  // Volanie funkcie na inicializáciu tlačidla pri načítaní stránky
+  document.addEventListener('DOMContentLoaded', () => {
+    updateAuthButton();
+  });
 </script>
