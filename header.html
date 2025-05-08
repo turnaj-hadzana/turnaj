@@ -29,7 +29,7 @@
     }
   }
 
-  // Volanie funkcie na inicializáciu tlačidla pri načítaní stránky
+  // Po načítaní stránky zavoláme updateAuthButton aj v prípade, že sa načíta hlavička cez fetch
   document.addEventListener('DOMContentLoaded', () => {
     updateAuthButton();
   });
