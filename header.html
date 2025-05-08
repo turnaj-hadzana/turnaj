@@ -4,30 +4,3 @@
   <div class="logo" onclick="window.location.href='index.html'">Turnaj</div>
   <a href="#" id="auth-link" class="login-link">Prihlásiť sa</a>
 </header>
-
-<script>
-  // Funkcia na aktualizáciu stavu tlačidla prihlásenia/odhlásenia
-  function updateAuthButton() {
-    const authButton = document.getElementById("auth-link");
-
-    if (authButton) {
-      const username = sessionStorage.getItem("username");
-
-      if (username) {
-        authButton.textContent = "Odhlásiť sa";
-        authButton.onclick = () => {
-          sessionStorage.removeItem("username");
-          window.location.href = "index.html";
-        };
-      } else {
-        authButton.textContent = "Prihlásiť sa";
-        authButton.onclick = () => {
-          window.location.href = "login.html";
-        };
-      }
-    }
-  }
-
-  // Zavoláme funkciu na začiatku, aby sme správne nastavili tlačidlo
-  updateAuthButton();
-</script>
