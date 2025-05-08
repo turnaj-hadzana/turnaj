@@ -21,11 +21,9 @@ function updateHeaderMenu(username) {
     const loginLink = document.querySelector('a[href="login.html"]');
 
     if (username) {
-        // Ak je používateľ prihlásený
         usernameItem.style.display = 'list-item';
         usernameSpan.textContent = username;
 
-        // Ak je prihlásený "admin", zobrazí aj ďalšie možnosti
         if (username === 'admin') {
             registerItem.style.display = 'list-item';
             adminItem.style.display = 'list-item';
@@ -35,7 +33,6 @@ function updateHeaderMenu(username) {
         }
         
     } else {
-        //ak nie je prihlaseny takto
         usernameItem.style.display = 'none';
         registerItem.style.display = 'none';
         adminItem.style.display = 'none';
@@ -94,7 +91,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-    // Pri načítaní stránky skontrolujeme, či je používateľ už prihlásený a upravíme menu
     const loggedInUsername = localStorage.getItem('username');
     updateHeaderMenu(loggedInUsername);
 });
