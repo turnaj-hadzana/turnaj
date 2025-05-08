@@ -1,7 +1,7 @@
 <!-- header.html -->
 <header>
   <div class="logo" onclick="window.location.href='index.html'">Turnaj</div>
-  <a id="auth-link" class="auth-button">Prihlásiť sa</a>
+  <button id="auth-link" class="auth-button">Prihlásiť sa</button>
 </header>
 
 <style>
@@ -68,6 +68,7 @@
       authLink.textContent = "Odhlásiť sa";  // Zmeň text na "Odhlásiť sa"
       authLink.onclick = function () {
         console.log("Klikol si na 'Odhlásiť sa'.");
+
         sessionStorage.removeItem("username");  // Odstrániť používateľa zo sessionStorage
         window.location.href = "index.html";  // Presmerovať na úvodnú stránku
       };
