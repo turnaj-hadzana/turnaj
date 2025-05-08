@@ -1,7 +1,7 @@
 <!-- header.html -->
 <header>
   <div class="logo" onclick="window.location.href='index.html'">Turnaj</div>
-  <a id="auth-button" class="auth-button">Prihlásiť sa</a>
+  <a id="auth-link" class="auth-button">Prihlásiť sa</a>
 </header>
 
 <style>
@@ -34,6 +34,7 @@
     cursor: pointer;
     font-size: 16px;
     margin-right: 40px;
+    text-decoration: none;
   }
 
   .auth-button:hover {
@@ -43,34 +44,35 @@
 
 <script>
   document.addEventListener("DOMContentLoaded", function() {
-    console.log("DOM je načítaný");  // Táto správa by mala byť v konzole, ak je DOM načítaný
+    console.log("DOM je načítaný");
 
-    const authButton = document.getElementById("auth-button");
+    const authLink = document.getElementById("auth-link");
 
-    if (!authButton) {
-      console.error("Tlačidlo 'auth-button' neexistuje!");  // Táto správa sa objaví, ak tlačidlo neexistuje
+    if (!authLink) {
+      console.error("Odkaz 'auth-link' neexistuje!");
       return;
     }
 
-    console.log("Tlačidlo 'auth-button' bolo nájdené.");
+    console.log("Odkaz 'auth-link' bol nájdený.");
 
     const username = sessionStorage.getItem("username");
-    console.log("Meno používateľa zo sessionStorage: ", username);  // Skontroluj, čo je uložené v sessionStorage
+    console.log("Meno používateľa zo sessionStorage: ", username);
 
     if (username) {
-      authButton.textContent = "Odhlásiť sa";  // Ak je používateľ prihlásený, zobrazí sa "Odhlásiť sa"
-      authButton.onclick = function () {
+      // Ak je používateľ prihlásený
+      authLink.textContent = "Odhlásiť sa";  // Zmeň text na "Odhlásiť sa"
+      authLink.onclick = function () {
         console.log("Klikol si na 'Odhlásiť sa'.");
         sessionStorage.removeItem("username");  // Odstrániť používateľa z sessionStorage
         window.location.href = "index.html";  // Presmerovať na úvodnú stránku
       };
     } else {
-      authButton.textContent = "Prihlásiť sa";  // Ak nie je prihlásený, zobrazí sa "Prihlásiť sa"
-      authButton.onclick = function () {
+      // Ak nie je prihlásený
+      authLink.textContent = "Prihlásiť sa";  // Zmeň text na "Prihlásiť sa"
+      authLink.onclick = function () {
         console.log("Klikol si na 'Prihlásiť sa'.");
         window.location.href = "login.html";  // Presmerovať na stránku prihlásenia
       };
     }
   });
 </script>
-
