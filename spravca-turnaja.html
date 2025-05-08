@@ -450,7 +450,7 @@
                  currentCategoryModalMode = 'edit';
                  editingCategoryName = categoryName;
                  editingCategoryRow = this.closest('tr');
-                 categoryModalTitle.textContent = 'Upraviť kategóriu';
+                 categoryModalTitle.textContent = 'Upraviť';
                  categoryNameInput.value = categoryName;
                  categoryModal.style.display = 'block';
                  categoryNameInput.focus();
@@ -584,7 +584,7 @@
                 // Edit mode
                 currentGroupModalMode = 'edit';
                 editingGroupId = groupId; // Store the ID of the group being edited (now composite)
-                groupModalTitle.textContent = 'Upraviť skupinu';
+                groupModalTitle.textContent = 'Upraviť';
                 groupFormSubmitButton.textContent = 'Uložiť zmeny'; // Change button text
 
                 // Populate the select and then set the value
@@ -693,7 +693,7 @@
 
                              // TLAČIDLO ÚPRAVA SKUPINY - VOLÁ openGroupModal
                              const editGroupButton = document.createElement('button');
-                             editGroupButton.textContent = 'Upraviť Skupinu';
+                             editGroupButton.textContent = 'Upraviť';
                              editGroupButton.classList.add('action-button');
                              editGroupButton.onclick = () => {
                                   // Pass the composite group ID and its data
@@ -703,7 +703,7 @@
 
                              // TLAČIDLO ZMAZAŤ SKUPINU
                              const deleteGroupButton = document.createElement('button');
-                             deleteGroupButton.textContent = 'Zmazať Skupinu';
+                             deleteGroupButton.textContent = 'Zmazať';
                              deleteGroupButton.classList.add('action-button', 'delete-button');
                              deleteGroupButton.onclick = async () => {
                                   if (!confirm(`Naozaj chcete zmazať skupinu "${group.data.name}" z kategórie "${group.data.categoryId}"?`)) {
