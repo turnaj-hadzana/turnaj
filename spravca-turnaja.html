@@ -15,15 +15,9 @@
             document.body.insertAdjacentHTML('afterbegin', data);
         })
         .then(() => {
-            // Skript spustíme AŽ keď je header načítaný
-            const username = localStorage.getItem('username');
-            if (username === 'admin') {
-                const registerItem = document.getElementById('registerItem');
-                const adminItem = document.getElementById('adminItem');
-
-                if (registerItem) registerItem.style.display = 'list-item';
-                if (adminItem) adminItem.style.display = 'list-item';
-            }
+            const script = document.createElement('script');
+            script.src = 'header-logic.js';
+            document.body.appendChild(script);
         });
 </script>
 
