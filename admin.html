@@ -59,6 +59,9 @@
         if (header) {
           document.getElementById("header-placeholder").appendChild(header);
         }
+        
+        // Inicializovať tlačidlo na základe prihlásenia
+        updateAuthButton();
       })
       .catch(error => console.error('Chyba pri načítaní hlavičky:', error));
   </script>
