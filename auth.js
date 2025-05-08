@@ -21,14 +21,14 @@ document.addEventListener('DOMContentLoaded', () => {
         loginForm.addEventListener('submit', (event) => {
             event.preventDefault(); // Zabránenie predvolenému odoslaniu formulára
 
-            const emailInput = document.getElementById('meno');
+            const emailInput = document.getElementById('email'); // Opravené ID
             const passwordInput = document.getElementById('password');
 
             if (emailInput && passwordInput) {
                 const email = emailInput.value;
                 const password = passwordInput.value;
 
-                auth.signInWithEmailAndPassword(meno, password)
+                auth.signInWithEmailAndPassword(email, password) // Opravená premenná
                     .then((userCredential) => {
                         // Používateľ úspešne prihlásený
                         const user = userCredential.user;
