@@ -1,4 +1,3 @@
-// Inicializácia Firebase (použi tú istú konfiguráciu ako pri registrácii)
 const firebaseConfig = {
   apiKey: "AIzaSyD0h0rQZiIGi0-UDb4-YU_JihRGpIlfz40",
   authDomain: "turnaj-a28c5.firebaseapp.com",
@@ -19,7 +18,6 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
     const errorMessage = document.getElementById('loginError');
 
     errorMessage.style.display = 'none';
-    errorMessage.textContent = '';
 
     try {
         const userDoc = await db.collection('users').doc(username).get();
@@ -31,19 +29,14 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
         }
 
         const userData = userDoc.data();
-        const hashedPassword = userData.password;
 
-        const isMatch = bcrypt.compareSync(password, hashedPassword);
-
-        if (isMatch) {
+        if (userData.password === password) {
             alert('Úspešné prihlásenie!');
-            // Tu môžeš uložiť používateľa do localStorage alebo presmerovať
             window.location.href = 'dashboard.html';
         } else {
             errorMessage.textContent = 'Nesprávne heslo.';
             errorMessage.style.display = 'block';
         }
-
     } catch (error) {
         console.error('Chyba pri prihlasovaní:', error);
         errorMessage.textContent = 'Chyba pri prihlasovaní: ' + error.message;
