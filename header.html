@@ -25,6 +25,7 @@
     cursor: pointer;
   }
 
+  /* Tlačidlo štýl */
   .auth-button {
     padding: 8px 18px;
     border: none;
@@ -33,8 +34,8 @@
     color: white;
     cursor: pointer;
     font-size: 16px;
-    margin-right: 40px;
-    text-decoration: none;  /* Zabezpečí, že odkaz bude vyzerať ako tlačidlo */
+    text-decoration: none; /* Zabezpečí, že odkaz bude vyzerať ako tlačidlo */
+    display: inline-block; /* Aby odkaz vyzeral ako tlačidlo */
   }
 
   .auth-button:hover {
@@ -46,8 +47,10 @@
   document.addEventListener("DOMContentLoaded", function() {
     console.log("DOM je načítaný");
 
+    // Vyhľadáme odkaz pre prihlásenie/odhlásenie
     const authLink = document.getElementById("auth-link");
 
+    // Skontrolujeme, či je element nájdený
     if (!authLink) {
       console.error("Odkaz 'auth-link' neexistuje!");
       return;
@@ -55,6 +58,7 @@
 
     console.log("Odkaz 'auth-link' bol nájdený.");
 
+    // Získame meno používateľa zo sessionStorage
     const username = sessionStorage.getItem("username");
     console.log("Meno používateľa zo sessionStorage: ", username);
 
@@ -63,7 +67,7 @@
       authLink.textContent = "Odhlásiť sa";  // Zmeň text na "Odhlásiť sa"
       authLink.onclick = function () {
         console.log("Klikol si na 'Odhlásiť sa'.");
-        sessionStorage.removeItem("username");  // Odstrániť používateľa z sessionStorage
+        sessionStorage.removeItem("username");  // Odstrániť používateľa zo sessionStorage
         window.location.href = "index.html";  // Presmerovať na úvodnú stránku
       };
     } else {
