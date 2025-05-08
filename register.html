@@ -6,10 +6,6 @@
     <title>Registrácia</title>
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="style.css">
-    
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
 </head>
 <body>
     <script>
@@ -45,49 +41,57 @@
         <p>Máte už účet? <a href="login.html">Prihláste sa tu</a></p>
     </main>
 
-    <!-- REGISTRAČNÝ SKRIPT -->
+    <!-- Firebase a Firestore -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
+
+    <!-- Bcrypt.js pre hashovanie (nie je potrebné v tejto verzii, ak už nechceme hashovanie) -->
+    <script src="https://cdn.jsdelivr.net/npm/bcryptjs@2.4.3/dist/bcrypt.min.js"></script>
+
+    <!-- Inicializácia Firebase -->
     <script type="module">
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js';
-import { getFirestore, doc, setDoc } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js';
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js';
+        import { getFirestore, doc, setDoc } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js';
 
-const firebaseConfig = {
-  apiKey: "AIzaSyD0h0rQZiIGi0-UDb4-YU_JihRGpIlfz40",
-  authDomain: "turnaj-a28c5.firebaseapp.com",
-  projectId: "turnaj-a28c5",
-  storageBucket: "turnaj-a28c5.firebasestorage.app",
-  messagingSenderId: "13732191148",
-  appId: "1:13732191148:web:5ad78eaef2ad452a10f809"
-};
+        const firebaseConfig = {
+            apiKey: "AIzaSyD0h0rQZiIGi0-UDb4-YU_JihRGpIlfz40",
+            authDomain: "turnaj-a28c5.firebaseapp.com",
+            projectId: "turnaj-a28c5",
+            storageBucket: "turnaj-a28c5.firebasestorage.app",
+            messagingSenderId: "13732191148",
+            appId: "1:13732191148:web:5ad78eaef2ad452a10f809"
+        };
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
 
-document.getElementById('register-form').addEventListener('submit', async function(event) {
-    event.preventDefault();
+        document.getElementById('register-form').addEventListener('submit', async function(event) {
+            event.preventDefault();
 
-    const username = document.getElementById('username').value.trim();
-    const password = document.getElementById('password').value;
-    const confirmPassword = document.getElementById('confirm-password').value;
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
 
-    if (password !== confirmPassword) {
-        document.getElementById('error-message').textContent = 'Heslá sa nezhodujú!';
-        return;
-    }
+            if (password !== confirmPassword) {
+                document.getElementById('error-message').textContent = 'Heslá sa nezhodujú!';
+                return;
+            }
 
-    try {
-        const userRef = doc(db, 'users', username);
+            try {
+                const userRef = doc(db, 'users', username);
 
-        await setDoc(userRef, {
-            password: password
+                // Uloženie hesla ako čistý text (neodporúča sa v praxi)
+                await setDoc(userRef, {
+                    password: password,
+                });
+
+                alert('Registrácia bola úspešná!');
+                document.getElementById('register-form').reset();
+            } catch (error) {
+                console.error('Chyba pri registrácii:', error);
+                document.getElementById('error-message').textContent = 'Chyba pri registrácii: ' + error.message;
+            }
         });
-
-        alert('Registrácia bola úspešná!');
-        document.getElementById('register-form').reset();
-    } catch (error) {
-        console.error('Chyba pri registrácii:', error);
-        document.getElementById('error-message').textContent = 'Chyba pri registrácii: ' + error.message;
-    }
-});
-</script>
+    </script>
 </body>
 </html>
