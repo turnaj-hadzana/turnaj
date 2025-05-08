@@ -40,64 +40,99 @@
 
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js';
-        import { getFirestore, doc, setDoc } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js';
+        import { getFirestore, doc, setDoc, getDoc } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js'; // Import getDoc
 
         const firebaseConfig = {
-             apiKey: "AIzaSyD0h0rQZiIGi0-UDb4-YU_JihRGpIlfz40",
-             authDomain: "turnaj-a28c5.firebaseapp.com",
-             projectId: "turnaj-a28c5",
-             storageBucket: "turnaj-a28c5.firebasestorage.app",
-             messagingSenderId: "13732191148",
-             appId: "1:13732191148:web:5ad78eaef2ad452a10f809"
+            apiKey: "AIzaSyD0h0rQZiIGi0-UDb4-YU_JihRGpIlfz40",
+            authDomain: "turnaj-a28c5.firebaseapp.com",
+            projectId: "turnaj-a28c5",
+            storageBucket: "turnaj-a28c5.firebasestorage.app",
+            messagingSenderId: "13732191148",
+            appId: "1:13732191148:web:5ad78eaef2ad452a10f809"
         };
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
         document.addEventListener('DOMContentLoaded', (event) => {
-            const loginLinkParagraph = document.getElementById('login-link-paragraph');
-
             const loggedInUsername = localStorage.getItem('username');
 
-            if (loggedInUsername) {
-                loginLinkParagraph.style.display = 'none';
-            } else {
-                loginLinkParagraph.style.display = '';
+            // --- Start Blocking Logic ---
+            // Check if username is NOT admin OR if no username is stored
+            if (!loggedInUsername || loggedInUsername !== 'admin') {
+                console.warn('Access denied: Not logged in as admin. Redirecting...'); // Optional: log a message
+                // Redirect the user to another page, e.g., login page or home page
+                window.location.href = 'login.html'; // Change 'login.html' to your desired redirect page
+                return; // Stop further execution of this script
             }
+            // --- End Blocking Logic ---
 
-        document.getElementById('register-form').addEventListener('submit', async function(event) {
-            event.preventDefault();
 
-            const username = document.getElementById('username').value.trim();
-            const password = document.getElementById('password').value;
-
-            const confirmPassword = document.getElementById('confirm-password').value;
-             if (password !== confirmPassword) {
-                 document.getElementById('error-message').textContent = 'Heslá sa nezhodujú!';
-                 return;
+            // Existing logic to hide login link paragraph (will only run if user IS admin now)
+            const loginLinkParagraph = document.getElementById('login-link-paragraph');
+             if (loggedInUsername) {
+                 loginLinkParagraph.style.display = 'none';
+             } else {
+                 // This else block will effectively never be reached due to the blocking logic above
+                 loginLinkParagraph.style.display = '';
              }
 
-            try {
-                const userRef = doc(db, 'users', username);
 
-                 const existingUserDoc = await getDoc(userRef);
-                 if (existingUserDoc.exists()) {
-                     document.getElementById('error-message').textContent = 'Používateľské meno už existuje!';
+            // Existing form submission logic
+            document.getElementById('register-form').addEventListener('submit', async function(event) {
+                event.preventDefault();
+
+                const username = document.getElementById('username').value.trim();
+                const password = document.getElementById('password').value;
+                const confirmPassword = document.getElementById('confirm-password').value;
+
+                // Clear previous error messages
+                document.getElementById('error-message').textContent = '';
+
+
+                if (password !== confirmPassword) {
+                    document.getElementById('error-message').textContent = 'Heslá sa nezhodujú!';
+                    return;
+                }
+
+                // Basic password length check (optional but recommended)
+                 if (password.length < 6) {
+                     document.getElementById('error-message').textContent = 'Heslo musí mať aspoň 6 znakov.';
                      return;
                  }
 
-                await setDoc(userRef, {
-                    password: password,
-                });
+                try {
+                    const userRef = doc(db, 'users', username);
 
-                alert('Registrácia bola úspešná!');
-                document.getElementById('register-form').reset();
-                window.location.href = 'login.html';
+                    // Check if the username already exists in Firestore
+                    const existingUserDoc = await getDoc(userRef); // Use the imported getDoc
+                    if (existingUserDoc.exists()) {
+                        document.getElementById('error-message').textContent = 'Používateľské meno už existuje!';
+                        return;
+                    }
 
-            } catch (error) {
-                console.error('Chyba pri registrácii:', error);
-                document.getElementById('error-message').textContent = 'Chyba pri registrácii: ' + error.message;
-            }
+                    // Before saving, you should ideally hash the password.
+                    // The code includes bcryptjs, but it's commented out or not used for hashing.
+                    // Storing plain text passwords is NOT secure.
+                    // For demonstration, I'll keep it as is based on your code, but strongly recommend hashing.
+                    // Example hashing (requires including the bcryptjs script and using async/await):
+                    // const hashedPassword = await bcrypt.hash(password, 10); // 10 is the salt rounds
+
+                    await setDoc(userRef, {
+                        // password: hashedPassword, // Store the hashed password
+                        password: password, // Storing plain text - **highly insecure**
+                    });
+
+                    alert('Registrácia bola úspešná!');
+                    document.getElementById('register-form').reset();
+                    // Redirect to login page after successful registration
+                    window.location.href = 'login.html';
+
+                } catch (error) {
+                    console.error('Chyba pri registrácii:', error);
+                    document.getElementById('error-message').textContent = 'Chyba pri registrácii: ' + error.message;
+                }
+            });
         });
     </script>
 </body>
