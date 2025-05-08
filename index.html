@@ -48,7 +48,25 @@
         // Manuálne spustenie skriptu z načítaného HTML
         const scripts = document.getElementById("header-placeholder").getElementsByTagName('script');
         for (let i = 0; i < scripts.length; i++) {
+
+          const scripts = document.getElementById("header-placeholder").getElementsByTagName('script');
+console.log("Počet nájdených skriptov v hlavičke:", scripts.length);
+for (let i = 0; i < scripts.length; i++) {
+  console.log("Spúšťam skript:", scripts[i].textContent);
+  eval(scripts[i].textContent);
+  console.log("Skript bol spustený.");
+}
+          
           eval(scripts[i].textContent);
+
+          const scripts = document.getElementById("header-placeholder").getElementsByTagName('script');
+console.log("Počet nájdených skriptov v hlavičke:", scripts.length);
+for (let i = 0; i < scripts.length; i++) {
+  console.log("Spúšťam skript:", scripts[i].textContent);
+  eval(scripts[i].textContent);
+  console.log("Skript bol spustený.");
+}
+          
         }
       })
       .catch(error => {
