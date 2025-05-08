@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registrácia</title>
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+    <script>
+        fetch('header.html')
+            .then(response => response.text())
+            .then(data => {
+                document.body.insertAdjacentHTML('afterbegin', data);
+            });
+    </script>
+
+    <main>
+        <h1>Registrácia</h1>
+        <form id="registrationForm">
+            <div>
+                <label for="regUsername">Používateľské meno:</label>
+                <input type="text" id="regUsername" name="regUsername" required>
+            </div>
+            <div>
+                <label for="regEmail">E-mail:</label>
+                <input type="email" id="regEmail" name="regEmail" required>
+            </div>
+            <div>
+                <label for="regPassword">Heslo:</label>
+                <input type="password" id="regPassword" name="regPassword" required>
+            </div>
+            <button type="submit">Registrovať sa</button>
+            <p id="registrationError" class="error-message" style="color: red; display: none;"></p>
+        </form>
+        <p>Už máte účet? <a href="/login.html">Prihlásenie</a></p>
+    </main>
+
+    <script src="auth.js"></script>
+</body>
+</html>
