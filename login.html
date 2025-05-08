@@ -52,29 +52,14 @@
     <h2>Prihlásenie</h2>
     <input type="text" id="login-username" placeholder="Používateľské meno" required><br>
     <input type="password" id="login-password" placeholder="Heslo" required><br>
-    <button id="login-btn" class="login-button">Prihlásiť sa</button> </div>
+    <button id="login-btn" class="login-button">Prihlásiť sa</button>
+  </div>
 
   <script>
     fetch("header.html")
       .then(res => res.text())
       .then(html => {
         document.getElementById("header-placeholder").innerHTML = html;
-
-        // Po načítaní hlavičky nájdeme tlačidlo pre prihlásenie/odhlásenie
-        const authButton = document.getElementById("auth-link");
-        if (authButton) {
-          authButton.textContent = sessionStorage.getItem("username") ? "Odhlásiť sa" : "Prihlásiť sa";
-          authButton.onclick = () => {
-            if (sessionStorage.getItem("username")) {
-              sessionStorage.removeItem("username");
-              window.location.href = "index.html";
-            } else {
-              window.location.href = "login.html";
-            }
-          };
-        } else {
-          console.error("Tlačidlo auth-link nebolo nájdené v hlavičke!");
-        }
       })
       .catch(error => console.error('Chyba pri načítaní hlavičky:', error));
   </script>
@@ -94,6 +79,23 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
+
+    // Deklarujeme funkciu updateAuthButton, ktorú voláme z header.html
+    function updateAuthButton() {
+      const authButton = document.getElementById("auth-link"); // Získame button
+      if (authButton) {
+        authButton.textContent = sessionStorage.getItem("username") ? "Odhlásiť sa" : "Prihlásiť sa";
+        authButton.onclick = () => {
+          if (sessionStorage.getItem("username")) {
+            sessionStorage.removeItem("username");
+            window.location.href = "index.html";
+          } else {
+            window.location.href = "login.html";
+          }
+        };
+      }
+    }
+
 
     document.getElementById('login-btn').addEventListener('click', async () => {
       const username = document.getElementById('login-username').value.trim();
@@ -118,6 +120,8 @@
         if (password === userData.password) {
           if (userData.approved) {
             sessionStorage.setItem("username", username);
+            // Zavoláme funkciu na aktualizáciu tlačidla v hlavičke
+            updateAuthButton(); // <-- Toto je kľúčová zmena
             window.location.href = "dashboard.html";
           } else {
             alert("Tvoj účet ešte nebol schválený administrátorom.");
