@@ -51,6 +51,7 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
 
         // Porovnáme heslá priamo, keď sú obe hodnoty upravené pomocou trim()
         if (userData.password === password) {
+            localStorage.setItem('username', username);
             if (username === "admin") {
                 window.location.href = 'spravca-turnaja.html'; // Presmerovanie na správcu turnaja
             } else {
