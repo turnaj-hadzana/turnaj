@@ -33,10 +33,7 @@
       color: white;
       cursor: pointer;
       font-size: 16px;
-      margin-left: 20px;
-      margin-right: 20px;
-      display: inline-block;
-      box-sizing: border-box;
+      margin-right: 20px; /* Odsadenie od pravého okraja */
     }
 
     .auth-button:hover {
@@ -80,7 +77,7 @@
 
   <header>
     <div class="logo" onclick="window.location.href='index.html'">Turnaj</div>
-    <a id="auth-button" class="login-link">Prihlásiť sa</a>
+    <a id="auth-button" class="auth-button">Prihlásiť sa</a>
   </header>
 
   <div class="content-offset"></div>
@@ -90,15 +87,15 @@
     const username = sessionStorage.getItem("username");
 
     if (username) {
-      authButton.textContent = "Odhlásiť sa";
+      authButton.textContent = "Odhlásiť sa";  // Ak je používateľ prihlásený, zobrazí sa "Odhlásiť sa"
       authButton.onclick = function () {
         sessionStorage.removeItem("username");
-        window.location.href = "index.html";
+        window.location.href = "index.html";  // Po odhlásení presmeruje na index.html
       };
     } else {
-      authButton.textContent = "Prihlásiť sa";
+      authButton.textContent = "Prihlásiť sa";  // Ak nie je prihlásený, zobrazí sa "Prihlásiť sa"
       authButton.onclick = function () {
-        window.location.href = "login.html";
+        window.location.href = "login.html";  // Ak nie je prihlásený, presmeruje na login.html
       };
     }
   </script>
