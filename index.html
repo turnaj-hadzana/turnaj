@@ -5,25 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Turnaj</title>
     <link rel="icon" href="favicon.ico" type="image/x-icon">
-    <script src="script.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <script>
+        // Načíta hlavičku len raz
         fetch('header.html')
             .then(response => response.text())
             .then(data => {
                 document.body.insertAdjacentHTML('afterbegin', data);
-            })
-            .then(() => {
+                // Po načítaní hlavičky načítame aj logiku pre hlavičku
                 const script = document.createElement('script');
-                script.src = 'header-logic.js';
+                script.src = 'header-logic.js';  // Tento súbor sa načíta len raz
                 document.body.appendChild(script);
             });
     </script>
 
     <h1>Turnaj</h1>
     <p>Príprava turnajového rozhrania.</p>
-
 </body>
 </html>
