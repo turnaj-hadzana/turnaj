@@ -56,31 +56,28 @@
     </div>
 
 
+    
 
-    <script>
+<script>
     const addButton = document.getElementById('addCategoryButton');
     const modal = document.getElementById('categoryModal');
     const closeBtn = document.querySelector('.close');
     const form = document.getElementById('categoryForm');
+    const categoryList = document.getElementById('categoryList');
 
-    // Zobraz tlačidlo len ak je aktívna sekcia #kategórie
     function toggleAddButton() {
-        if (window.location.hash === '#kategórie') {
-            addButton.style.display = 'block';
-        } else {
-            addButton.style.display = 'none';
-        }
+        const isCategoryPage = window.location.hash === '#kategórie';
+        addButton.style.display = isCategoryPage ? 'block' : 'none';
+        categoryList.style.display = isCategoryPage ? 'block' : 'none';
     }
 
     window.addEventListener('hashchange', toggleAddButton);
     window.addEventListener('load', toggleAddButton);
 
-    // Otvoriť modal
     addButton.addEventListener('click', () => {
         modal.style.display = 'block';
     });
 
-    // Zavrieť modal
     closeBtn.addEventListener('click', () => {
         modal.style.display = 'none';
     });
@@ -91,14 +88,18 @@
         }
     });
 
-    // Spracovanie formulára
     form.addEventListener('submit', (e) => {
         e.preventDefault();
-        const categoryName = document.getElementById('categoryName').value;
-        alert(`Kategória pridaná: ${categoryName}`);
+        const categoryName = document.getElementById('categoryName').value.trim();
+        if (categoryName !== '') {
+            const li = document.createElement('li');
+            li.textContent = categoryName;
+            categoryList.appendChild(li);
+        }
         modal.style.display = 'none';
         form.reset();
     });
 </script>
+
 </body>
 </html>
