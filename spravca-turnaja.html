@@ -1,449 +1,263 @@
-<!DOCTYPE html>
-<html lang="sk">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Správca turnaja</title>
-    <link rel="icon" href="favicon.ico" type="image/x-icon">
-    <link rel="stylesheet" href="style.css">
+<!-- ... head and basic body structure ... -->
 
     <style>
-        /* --- Modern Table Styles for #categoryTable and #groupsTable --- */
+        /* ... (Previous CSS remains the same) ... */
 
-        /* Apply general table styles to both category and groups tables */
-        #categoryTable, #groupsTable {
-            border-collapse: collapse;
-            width: 100%;
-            margin-top: 20px;
-            border: none;
-            overflow: hidden;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        /* Add style for form groups */
+        .form-group {
+            margin-bottom: 15px; /* Space between form fields */
         }
 
-        /* Style header cells for both tables */
-        #categoryTable th, #groupsTable th {
-            background-color: #f2f2f2;
-            color: #333;
-            font-weight: bold;
-            text-align: left;
-            padding: 12px 15px;
-            border-bottom: 2px solid #ddd;
-        }
-
-         /* Specific style for the first header column in groups table (e.g., "Názov Skupiny") */
-        #groupsTable th:first-child {
-             /* Add any specific styling if needed, e.g., fixed width */
-             /* width: 200px; */ /* Can be set in JS or here */
-        }
-
-
-        /* Style data cells for both tables */
-        #categoryTable td, #groupsTable td {
-            text-align: left;
-            padding: 10px 15px;
-            border-bottom: 1px solid #eee;
-        }
-
-        /* Style the last row's data cells for both tables (optional: remove bottom border) */
-        #categoryTable tbody tr:last-child td,
-        #groupsTable tbody tr:last-child td {
-             border-bottom: none;
-        }
-
-        /* Add a hover effect to rows in both tables */
-        #categoryTable tbody tr:hover,
-        #groupsTable tbody tr:hover {
-            background-color: #f9f9f9;
-            cursor: pointer;
-        }
-
-        /* Style the action buttons within the table (applies to category table) */
-        /* The JS adds class 'action-button' to both rename and delete */
-        .action-button {
-            padding: 5px 10px;
-            margin-right: 5px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.9em;
-            transition: background-color 0.3s ease;
-        }
-
-        /* Specific style for Rename button (default action-button) */
-        .action-button:not(.delete-button) { /* Style action-buttons that are NOT delete-button */
-            background-color: #007bff;
-            color: white;
-        }
-
-        /* Specific style for Delete button */
-        .action-button.delete-button {
-            background-color: #dc3545;
-            color: white;
-        }
-
-        /* Hover effects for buttons */
-        .action-button:not(.delete-button):hover {
-            background-color: #0056b3;
-        }
-
-        .action-button.delete-button:hover {
-            background-color: #c82333;
-        }
-
-        /* Optional: Style for the cell containing the buttons */
-        #categoryTable td:last-child {
-             /* text-align: center; If you want buttons centered */
-             /* The JS already adds white-space: nowrap; which is good */
-        }
-
-
-        /* Basic modal styling (ensure it works with the table) */
-         .modal {
-            display: none; /* Hidden by default */
-            position: fixed; /* Stay in place */
-            z-index: 1; /* Sit on top */
-            left: 0;
-            top: 0;
-            width: 100%; /* Full width */
-            height: 100%; /* Full height */
-            overflow: auto; /* Enable scroll if needed */
-            background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
-            padding-top: 60px; /* Location of the modal box */
-        }
-
-        .modal-content {
-            background-color: #fefefe;
-            margin: 5% auto; /* 15% from the top and centered */
-            padding: 20px;
-            border: 1px solid #888;
-            width: 80%; /* Could be more responsive */
-            max-width: 500px; /* Maximum width */
-            border-radius: 8px;
-            position: relative; /* Needed for the close button positioning */
-        }
-
-        .close {
-            color: #aaa;
-            position: absolute;
-            top: 10px;
-            right: 15px;
-            font-size: 28px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-
-        .close:hover,
-        .close:focus {
-            color: black;
-            text-decoration: none;
-            cursor: pointer;
-        }
-
-        .modal-content form label {
-            display: block;
-            margin-bottom: 8px;
+        .form-group label {
+            display: block; /* Labels on their own line */
+            margin-bottom: 5px;
             font-weight: bold;
         }
 
-         .modal-content form input[type="text"] {
-            width: calc(100% - 22px); /* Adjust for padding and border */
-            padding: 10px;
-            margin-bottom: 20px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
+         .modal-content form input[type="text"],
+         .modal-content form select { /* Apply input style to select too */
+             width: calc(100% - 22px); /* Adjust for padding and border */
+             padding: 10px;
+             margin-bottom: 10px; /* Less margin here, form-group adds spacing */
+             border: 1px solid #ccc;
+             border-radius: 4px;
+             box-sizing: border-box; /* Include padding and border in element's total width */
          }
 
-         .modal-content form button {
-            background-color: #28a745; /* Green for save */
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 1em;
-            transition: background-color 0.3s ease;
+         /* Adjust button margin in modal form */
+         .modal-content form button[type="submit"] {
+             margin-top: 10px; /* Add some space above the submit button */
          }
 
-         .modal-content form button:hover {
-            background-color: #218838; /* Darker green */
-         }
 
-        /* Basic layout adjustments (if not already in style.css) */
-        body {
-            font-family: sans-serif; /* Use a common sans-serif font */
-            margin: 0;
-            padding: 0;
-            background-color: #f8f9fa; /* Light background for the page */
-        }
-
-        h1 {
-            text-align: center;
-            color: #333;
-            margin-top: 20px;
-        }
-
-        .add-button {
-             /* Style for the main add button */
-            display: block; /* Controlled by JS */
-            margin: 20px auto; /* Center the button */
-            width: 50px;
-            height: 50px;
-            border-radius: 50%; /* Round button */
-            background-color: #28a745; /* Green */
-            color: white;
-            font-size: 2em;
-            border: none;
-            cursor: pointer;
-            text-align: center;
-            line-height: 50px; /* Vertically center the plus sign */
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            transition: background-color 0.3s ease;
-            position: sticky; /* Keep button visible */
-            top: 20px; /* Distance from the top */
-            z-index: 10; /* Ensure it's above other content */
-        }
-
-        .add-button:hover {
-            background-color: #218838; /* Darker green on hover */
-        }
-
-
-        .content-wrapper {
-            display: flex; /* Use flexbox for layout */
-            margin-top: 20px;
-            padding: 0 20px; /* Add some horizontal padding */
-        }
-
-        .left-menu {
-            width: 200px; /* Fixed width for the menu */
-            margin-right: 20px;
-            background-color: #fff; /* White background for menu */
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-
-        .left-menu ul {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-
-        .left-menu li {
-            margin-bottom: 10px;
-        }
-
-        .left-menu a {
-            text-decoration: none;
-            color: #007bff; /* Blue links */
-            font-weight: bold;
-            display: block; /* Make the whole list item clickable */
-            padding: 5px 0;
-            transition: color 0.3s ease;
-        }
-
-        .left-menu a:hover {
-            color: #0056b3; /* Darker blue on hover */
-        }
-
-
-        main {
-            flex-grow: 1; /* Main content takes up the remaining space */
-            background-color: #fff; /* White background for main content */
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-
-
+        /* ... (Rest of the CSS remains the same) ... */
     </style>
 </head>
 <body>
-    <script>
-        // Basic check for admin, redirect if not
-        const userName = localStorage.getItem('username');
-        if (userName !== 'admin') {
-            // console.log("User not admin, redirecting to login."); // Debugging
-            window.location.href = 'login.html';
-        } else {
-           // console.log("User is admin, staying on page."); // Debugging
-        }
-    </script>
+    <!-- ... (Auth script, h1, add button) ... -->
 
-    <h1>Správca turnaja</h1>
+     <button class="add-button" id="addButton" title="Pridať">+</button> <!-- Renamed ID to be more generic -->
 
-    <button class="add-button" id="addCategoryButton" title="Pridať kategóriu">+</button>
 
-    <div class="modal" id="categoryModal">
+    <!-- Modal for Add/Edit Category/Group -->
+    <div class="modal" id="itemModal"> <!-- Renamed ID to be more generic -->
         <div class="modal-content">
-            <span class="close">&times;</span>
-            <h2 id="modalTitle">Pridať kategóriu</h2>
-            <form id="categoryForm">
-                <label for="categoryName">Názov kategórie:</label>
-                <input type="text" id="categoryName" name="categoryName" required>
+            <span class="close" id="closeModal">&times;</span> <!-- Renamed ID -->
+            <h2 id="modalTitle">Pridať položku</h2> <!-- Generic title -->
+            <form id="itemForm"> <!-- Renamed ID -->
+                <!-- Fields for Categories -->
+                <div class="form-group category-fields">
+                    <label for="categoryName">Názov kategórie:</label>
+                    <input type="text" id="categoryName" name="categoryName"> <!-- Removed 'required' here, add via JS if needed -->
+                </div>
+
+                <!-- Fields for Groups -->
+                 <div class="form-group group-fields" style="display: none;">
+                     <label for="groupCategory">Kategória:</label>
+                     <select id="groupCategory" name="groupCategory"> <!-- Removed 'required' here, add via JS if needed -->
+                         <option value="">-- Vyberte kategóriu --</option>
+                         <!-- Options populated by JS -->
+                     </select>
+                 </div>
+                 <div class="form-group group-fields" style="display: none;">
+                     <label for="groupName">Názov Skupiny:</label>
+                     <input type="text" id="groupName" name="groupName"> <!-- Removed 'required' here, add via JS if needed -->
+                 </div>
+                 <div class="form-group group-fields" style="display: none;">
+                     <label for="groupDetail1">Detail 1:</label>
+                     <input type="text" id="groupDetail1" name="groupDetail1">
+                 </div>
+                 <div class="form-group group-fields" style="display: none;">
+                     <label for="groupDetail2">Detail 2:</label>
+                     <input type="text" id="groupDetail2" name="groupDetail2">
+                 </div>
+                 <!-- Hidden input to store item ID (category or group) when editing -->
+                <input type="hidden" id="itemId" name="itemId">
+                 <!-- Hidden input to track item type being edited/added -->
+                <input type="hidden" id="itemType" name="itemType">
+
+
                 <button type="submit">Uložiť</button>
             </form>
         </div>
     </div>
 
-    <div class="content-wrapper">
-        <nav class="left-menu">
-            <ul>
-                <li><a href="#kluby">Kluby</a></li>
-                <li><a href="#kategorie">Kategórie</a></li>
-                <li><a href="#skupiny">Skupiny</a></li>
-                <li><a href="#sportove-haly">Športové haly</a></li>
-                <li><a href="#sprava-turnaja">Správa turnaja</a></li>
-                <li><a href="#nastavenia">Nastavenia</a></li>
-            </ul>
-        </nav>
+    <!-- ... (Content wrapper, nav, main) ... -->
 
         <main>
-             <table id="categoryTable" style="display: none;">
+             <!-- Category Table -->
+            <table id="categoryTable" style="display: none;">
                 <thead>
                     <tr>
                         <th>Názov kategórie</th>
-                        <th style="width: 150px;"></th> </tr>
+                        <th style="width: 150px;">Akcie</th> <!-- Changed header text -->
+                    </tr>
                 </thead>
                 <tbody id="categoryTableBody">
-                    </tbody>
+                    <!-- Table rows will be added here by JavaScript -->
+                </tbody>
             </table>
 
+            <!-- Groups Table -->
             <table id="groupsTable" style="display: none;">
                  <thead>
                      <tr>
-                         </tr>
+                         <!-- Fixed header columns will be added here by JS -->
+                     </tr>
                  </thead>
                  <tbody>
-                     </tbody>
+                     <!-- Group data rows will be added here by JavaScript -->
+                 </tbody>
             </table>
 
-             </main>
+             <!-- Other content for different menu items would go here -->
+        </main>
     </div>
 
 
     <script type="module">
-        // Import potrebných Firebase Firestore funkcií priamo z CDN
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js';
-        import { getFirestore, collection, doc, setDoc, getDoc, getDocs, deleteDoc } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js';
+        // ... (Firebase Imports and Config remain the same) ...
 
-        // Tvoja Firebase konfigurácia
-        const firebaseConfig = {
-            apiKey: "AIzaSyD0h0rQZiIGi0-UDb4-YU_JihRGpIlfz40",
-            authDomain: "turnaj-a28c5.firebaseapp.com",
-            projectId: "turnaj-a28c5",
-            storageBucket: "turnaj-a28c5.firebasestorage.app",
-            messagingSenderId: "13732191148",
-            appId: "1:13732191148:web:5ad78eaef2ad452a10f809"
-        };
+        // Získame referencie na DOM elementy (UPDATED IDs)
+        const addButton = document.getElementById('addButton'); // Changed ID
+        const modal = document.getElementById('itemModal'); // Changed ID
+        const closeModalBtn = document.getElementById('closeModal'); // Changed ID
+        const form = document.getElementById('itemForm'); // Changed ID
+        const modalTitle = document.getElementById('modalTitle'); // Remains the same
 
-        // Inicializácia Firebase aplikácie
-        const app = initializeApp(firebaseConfig);
-        // Získanie inštancie Firestore databázy
-        const db = getFirestore(app);
+        // Form fields (NEW references)
+        const categoryFields = form.querySelectorAll('.category-fields'); // Select the div containing category fields
+        const categoryNameInput = document.getElementById('categoryName'); // Specific input
 
-        // Referencia na kolekciu, kde budeme ukladať kategórie
-        const categoriesCollectionRef = collection(db, 'tournamentData', 'mainTournamentData', 'categories');
-        // Prípadná referencia na kolekciu skupín (pre budúcnosť)
-        const groupsCollectionRef = collection(db, 'tournamentData', 'mainTournamentData', 'groups'); // Example path
+        const groupFields = form.querySelectorAll('.group-fields'); // Select the divs containing group fields
+        const groupCategorySelect = document.getElementById('groupCategory');
+        const groupNameInput = document.getElementById('groupName');
+        const groupDetail1Input = document.getElementById('groupDetail1');
+        const groupDetail2Input = document.getElementById('groupDetail2');
+        const itemIdInput = document.getElementById('itemId'); // Hidden input for ID
+        const itemTypeInput = document.getElementById('itemType'); // Hidden input for type
 
 
-        // Získame referencie na DOM elementy
-        const addButton = document.getElementById('addCategoryButton');
-        const modal = document.getElementById('categoryModal');
-        const closeBtn = document.querySelector('.close');
-        const form = document.getElementById('categoryForm');
-        const categoryNameInput = document.getElementById('categoryName'); // Referencia na input poľe názvu kategórie
-        const modalTitle = document.getElementById('modalTitle'); // Referencia na nadpis modalu
         const categoryTable = document.getElementById('categoryTable');
         const categoryTableBody = document.getElementById('categoryTableBody');
-        // Nová referencia na tabuľku skupín
         const groupsTable = document.getElementById('groupsTable');
+        const groupsTableHeadTr = groupsTable.querySelector('thead tr');
+        const groupsTableBodyEl = groupsTable.querySelector('tbody');
 
 
-        // Premenné na sledovanie stavu modálneho okna (pridávanie alebo úprava)
-        let currentModalMode = 'add'; // 'add' alebo 'edit'
-        let editingCategoryName = null; // Uchová pôvodný názov pri úprave
-        let editingCategoryRow = null; // Uchová referenciu na riadok tabuľky pri úprave
+        // State variable to track the type of item being managed in the modal
+        // This replaces the old 'currentModalMode' and 'editingItemRef/Row'
+        let currentItemType = null; // 'category' or 'group'
+        let editingItemId = null; // ID of the item being edited
+        let editingItemRow = null; // Reference to the table row being edited
 
 
-        // Funkcia na vytvorenie a pridanie riadku kategórie do tabuľky (s tlačidlami Akcie)
-        function addCategoryRowToTable(categoryName) {
+        // Helper function to show/hide form fields
+        function showFormFields(type) {
+            // Hide all field groups first
+            categoryFields.forEach(el => el.style.display = 'none');
+            groupFields.forEach(el => el.style.display = 'none');
+
+            // Show fields based on type
+            if (type === 'category') {
+                categoryFields.forEach(el => el.style.display = 'block');
+            } else if (type === 'group') {
+                groupFields.forEach(el => el.style.display = 'block');
+            }
+            // Reset validation/required states (more robust way needed for production)
+             categoryNameInput.required = (type === 'category');
+             groupCategorySelect.required = (type === 'group');
+             groupNameInput.required = (type === 'group');
+        }
+
+
+        // Funkcia na vytvorenie a pridanie riadku kategórie do tabuľky kategórií
+        function addCategoryRowToTable(categoryName, categoryId) { // Added categoryId parameter
+             // Find existing row if editing
+             const existingRow = editingItemRow && editingItemId === categoryId ? editingItemRow : null;
+
+             if (existingRow) {
+                 // Update existing row if in edit mode and it matches
+                 existingRow.querySelector('td:first-child').textContent = categoryName;
+                 // editingItemRow = null; // Clear editing state after update
+                 // editingItemId = null;
+                 console.log(`Aktualizovaný riadok pre kategóriu: ${categoryName}`);
+                 return; // Stop here, don't add a new row
+             }
+
+
             const tr = document.createElement('tr');
+            // Store the category ID on the row for easier access during delete/edit
+            tr.dataset.itemId = categoryId; // Use Firestore document ID
 
             const nameTd = document.createElement('td');
             nameTd.textContent = categoryName;
 
             const actionsTd = document.createElement('td');
-            actionsTd.style.whiteSpace = 'nowrap'; // Aby sa tlačidlá nezalomili
+            actionsTd.style.whiteSpace = 'nowrap';
 
 
-            // === TLAČIDLO PREMENOVAŤ ===
+            // === TLAČIDLO PREMENOVAŤ (pre kategórie) ===
             const renameButton = document.createElement('button');
             renameButton.textContent = 'Premenovať';
-            renameButton.classList.add('action-button'); // Add the action-button class
+            renameButton.classList.add('action-button');
 
-            // Obsluha kliknutia na tlačidlo Premenovať (teraz otvára modal)
             renameButton.onclick = function() {
-                currentModalMode = 'edit'; // Nastavíme stav na úpravu
-                editingCategoryName = categoryName; // Uložíme pôvodný názov kategórie
-                editingCategoryRow = this.closest('tr'); // Uložíme referenciu na riadok
+                currentItemType = 'category'; // Set type
+                editingItemId = this.closest('tr').dataset.itemId; // Get ID from row
+                editingItemRow = this.closest('tr'); // Get row reference
 
-                modalTitle.textContent = 'Upraviť kategóriu'; // Zmeníme nadpis modálneho okna
-                categoryNameInput.value = categoryName; // Naplníme vstup poľe aktuálnym názvom kategórie
+                modalTitle.textContent = 'Upraviť kategóriu';
+                showFormFields('category'); // Show only category fields
 
-                modal.style.display = 'block'; // Zobrazíme modálne okno
-                categoryNameInput.focus(); // Nastavíme focus na vstup poľe
+                // Fetch current data to populate modal
+                 const currentCategoryName = editingItemRow.querySelector('td:first-child').textContent; // Get name from row
+                categoryNameInput.value = currentCategoryName;
+                itemIdInput.value = editingItemId; // Store ID in hidden field for submit handler
+                itemTypeInput.value = 'category'; // Store type
+
+                modal.style.display = 'block';
+                categoryNameInput.focus();
             };
-            // === KONIEC TLAČIDLA PREMENOVAŤ ===
 
 
-            // === TLAČIDLO ZMAZAŤ ===
+            // === TLAČIDLO ZMAZAŤ (pre kategórie) ===
             const deleteButton = document.createElement('button');
             deleteButton.textContent = 'Zmazať';
-            // Pridaná trieda 'delete-button' pre špecifický štýl
-            deleteButton.classList.add('action-button', 'delete-button'); // Use CSS class for style
+            deleteButton.classList.add('action-button', 'delete-button');
 
-            // Obsluha kliknutia na tlačidlo Zmazať (používa Firestore)
             deleteButton.onclick = async function() {
                 const row = this.closest('tr');
-                const categoryToDelete = row.querySelector('td:first-child').textContent;
+                const categoryIdToDelete = row.dataset.itemId; // Use stored ID
+                const categoryNameToDelete = row.querySelector('td:first-child').textContent; // Get name for confirmation
 
-                // Potvrdenie pred zmazaním (voliteľné)
-                if (!confirm(`Naozaj chcete zmazať kategóriu "${categoryToDelete}"?`)) {
-                    return; // Zastaví funkciu, ak používateľ zruší potvrdenie
+                if (!confirm(`Naozaj chcete zmazať kategóriu "${categoryNameToDelete}"?`)) {
+                    return;
                 }
 
                 try {
-                    // Zmazať kategóriu z Firestore (použijeme názov kategórie ako ID dokumentu)
-                    await deleteDoc(doc(categoriesCollectionRef, categoryToDelete));
-                    // Odstrániť riadok z tabuľky po úspešnom zmazaní z Firestore
+                    await deleteDoc(doc(categoriesCollectionRef, categoryIdToDelete)); // Use ID for deletion
                     row.remove();
-                    console.log(`Kategória "${categoryToDelete}" bola úspešne zmazaná z Firestore.`);
+                    console.log(`Kategória "${categoryNameToDelete}" (ID: ${categoryIdToDelete}) bola úspešne zmazaná.`);
 
-                    // OPTIONAL: Ak sa zmaže kategória, znova načítať hlavičku tabuľky skupín, ak je zobrazená
+                    // Optional: Re-render groups table if active, as headers might change
                      if (window.location.hash === '#skupiny') {
-                         loadGroupsTableStructure();
+                         renderGroupsTableStructure(); // Refresh groups table header
                      }
 
                 } catch (error) {
-                    console.error('Chyba pri mazaní kategórie z Firestore: ', error);
-                    alert('Chyba pri mazaní kategórie!'); // Informovať používateľa o chybe
+                    console.error('Chyba pri mazaní kategórie: ', error);
+                    alert('Chyba pri mazaní kategórie!');
                 }
             };
-            // === KONIEC TLAČIDLA ZMAZAŤ ===
 
 
-            // Pridáme tlačidlá do bunky akcií
-            actionsTd.appendChild(renameButton); // Najprv Premenovať
-            actionsTd.appendChild(deleteButton); // Potom Zmazať
+            actionsTd.appendChild(renameButton);
+            actionsTd.appendChild(deleteButton);
 
-
-            // Pridáme bunky do riadku
             tr.appendChild(nameTd);
             tr.appendChild(actionsTd);
 
-            // Pridáme riadok do tela tabuľky (tbody)
             categoryTableBody.appendChild(tr);
         }
 
@@ -451,30 +265,33 @@
         // Funkcia na načítanie kategórií z Firestore a naplnenie tabuľky KATEGÓRIÍ
         async function loadCategories() {
             try {
-                // Vyčistiť telo tabuľky pred načítaním nových dát
-                categoryTableBody.innerHTML = '';
+                categoryTableBody.innerHTML = ''; // Vyčistiť telo tabuľky
 
                 const querySnapshot = await getDocs(categoriesCollectionRef);
 
                 if (querySnapshot.empty) {
-                     console.log("Žiadne kategórie nenájdené vo Firestore pre tabuľku kategórií.");
+                     console.log("Žiadne kategórie nenájdené pre tabuľku kategórií.");
                 } else {
                     querySnapshot.forEach((doc) => {
-                        const categoryName = doc.id;
-                        addCategoryRowToTable(categoryName); // Použijeme funkciu na pridanie riadku
+                        const categoryId = doc.id; // Firestore document ID is the category ID
+                        const categoryData = doc.data(); // Get document data if needed
+                        const categoryName = categoryData.name || categoryId; // Use a 'name' field if it exists, otherwise use ID
+
+                        addCategoryRowToTable(categoryName, categoryId); // Pass ID to the function
                     });
-                    console.log("Kategórie boli načítané z Firestore pre tabuľku kategórií.");
+                    console.log("Kategórie boli načítané pre tabuľku kategórií.");
                 }
 
             } catch (error) {
-                console.error('Chyba pri načítaní kategórií z Firestore: ', error);
+                console.error('Chyba pri načítaní kategórií: ', error);
                 alert('Chyba pri načítaní kategórií!');
             }
         }
 
 
-        // === NOVÁ FUNKCIA: Načítanie kategórií a vytvorenie štruktúry tabuľky SKUPÍN ===
-        async function loadGroupsTableStructure() {
+        // === Funkcia: Vytvorenie pevnej hlavičky tabuľky SKUPÍN a načítanie dát ===
+        // Teraz táto funkcia bude aj načítavať dáta skupín
+        async function loadGroupsTable() {
              const groupsTableHeadTr = groupsTable.querySelector('thead tr');
              const groupsTableBodyEl = groupsTable.querySelector('tbody');
 
@@ -482,264 +299,430 @@
              groupsTableHeadTr.innerHTML = '';
              groupsTableBodyEl.innerHTML = '';
 
+             console.log("Pripravujem tabuľku skupín (pevná hlavička + dáta).");
+
+             // --- Vytvorenie pevnej hlavičky ---
+             const headers = ['Kategória', 'Názov Skupiny', 'Detail 1', 'Detail 2', 'Akcie']; // Pevná hlavička
+
+             headers.forEach(headerText => {
+                 const th = document.createElement('th');
+                 th.textContent = headerText;
+                  // Optional: Set specific widths
+                  if (headerText === 'Akcie') {
+                      th.style.width = '150px';
+                      th.style.textAlign = 'center';
+                  } else if (headerText === 'Kategória') {
+                       th.style.width = '150px';
+                  } else if (headerText === 'Názov Skupiny') {
+                       th.style.width = '200px';
+                  }
+                 groupsTableHeadTr.appendChild(th);
+             });
+
+             // --- Načítanie a zobrazenie dát skupín ---
              try {
-                 const querySnapshot = await getDocs(categoriesCollectionRef);
+                  // 1. Načítaj všetky kategórie na vytvorenie mapy ID -> Názov
+                  const categoriesSnapshot = await getDocs(categoriesCollectionRef);
+                  const categoryMap = {};
+                  categoriesSnapshot.forEach(doc => {
+                      const catData = doc.data();
+                      categoryMap[doc.id] = catData.name || doc.id; // Store ID -> Name mapping
+                  });
 
-                 // Pridať statický prvý stĺpec hlavičky (napr. "Názov Skupiny" alebo "Klub")
-                 const staticHeaderTh = document.createElement('th');
-                 staticHeaderTh.textContent = 'Názov Skupiny'; // Text pre prvý stĺpec
-                 staticHeaderTh.style.width = '200px'; // Voliteľná šírka
-                 groupsTableHeadTr.appendChild(staticHeaderTh); // Pridaj do riadku hlavičky
+                  // 2. Načítaj všetky skupiny
+                 const groupsSnapshot = await getDocs(groupsCollectionRef);
 
-                 if (querySnapshot.empty) {
-                     console.log("Žiadne kategórie nenájdené vo Firestore. Tabuľka skupín bude obsahovať iba statickú hlavičku.");
-                      // Optional: Add a row indicating no categories/groups
-                     const noDataRow = document.createElement('tr');
-                     const td = document.createElement('td');
-                     td.colSpan = 1; // Zatiahne len cez statický stĺpec, ak nie sú žiadne kategórie
-                      // Ak by sme chceli zatiahnuť cez všetky stĺpce, museli by sme vedieť ich počet
-                     td.textContent = "Pridajte kategórie v sekcii 'Kategórie'.";
-                     noDataRow.appendChild(td);
-                     groupsTableBodyEl.appendChild(noDataRow);
-
+                 if (groupsSnapshot.empty) {
+                     console.log("Žiadne skupiny nenájdené vo Firestore.");
+                      const noDataRow = document.createElement('tr');
+                      const td = document.createElement('td');
+                      td.colSpan = headers.length; // Span across all headers
+                      td.textContent = "Zatiaľ žiadne skupiny nie sú pridané.";
+                      td.style.textAlign = 'center';
+                      td.style.fontStyle = 'italic';
+                      noDataRow.appendChild(td);
+                      groupsTableBodyEl.appendChild(noDataRow);
                  } else {
-                     console.log("Načítavam kategórie pre dynamickú hlavičku tabuľky skupín.");
-                     // Pridať názvy kategórií ako hlavičky stĺpcov
-                     querySnapshot.forEach((doc) => {
-                         const categoryName = doc.id;
-                         const th = document.createElement('th');
-                         th.textContent = categoryName; // Názov kategórie ako hlavička stĺpca
-                         th.style.width = '100px'; // Voliteľná šírka stĺpca kategórie
-                         // Optional: Add specific data attribute for later use (e.g., when populating rows)
-                         // th.dataset.categoryId = doc.id;
-                         groupsTableHeadTr.appendChild(th); // Pridaj do riadku hlavičky
-                     });
+                      console.log("Načítavam a zobrazujem dáta skupín.");
+                      groupsSnapshot.forEach((doc) => {
+                          const groupId = doc.id;
+                          const groupData = doc.data();
 
-                     // TODO: Implement logic to fetch and display actual group data in the tbody
-                     // For each group, create a row (<tr>).
-                     // The first cell (<td>) would contain the group name.
-                     // Subsequent cells (<td>) would contain data relevant to that group for each category.
-                     // Example (concept only):
-                     /*
-                     const groupsQuerySnapshot = await getDocs(groupsCollectionRef); // Fetch group data
-                     groupsQuerySnapshot.forEach((groupDoc) => {
-                         const groupData = groupDoc.data();
-                         const groupTr = document.createElement('tr');
-                         const groupNameTd = document.createElement('td');
-                         groupNameTd.textContent = groupData.name || groupDoc.id; // Assuming group has a name field
-                         groupTr.appendChild(groupNameTd);
+                          const tr = document.createElement('tr');
+                          tr.dataset.itemId = groupId; // Store group ID on the row
 
-                         // Add cells for each category
-                         const categories = querySnapshot.docs.map(doc => doc.id); // Get category names array again
-                         categories.forEach(categoryName => {
-                              const categoryTd = document.createElement('td');
-                              // Find data for this group and this category
-                              // This depends heavily on how you structure group data in Firestore
-                              // e.g., groupData.categoryScores? groupData.playersInCategory?
-                              categoryTd.textContent = '... data ...'; // Populate with relevant data
-                              groupTr.appendChild(categoryTd);
-                         });
-                         groupsTableBodyEl.appendChild(groupTr);
-                     });
-                     */
-                     console.log("TODO: Implement loading actual group data into the table body.");
+                          // Cell 1: Category Name (using the map)
+                          const categoryTd = document.createElement('td');
+                          const categoryName = categoryMap[groupData.categoryId] || 'Neznáma kategória'; // Lookup name, handle missing
+                          categoryTd.textContent = categoryName;
+                          tr.appendChild(categoryTd);
+
+                          // Cell 2: Group Name
+                          const groupNameTd = document.createElement('td');
+                          groupNameTd.textContent = groupData.name || 'Bez názvu'; // Assuming 'name' field
+                          tr.appendChild(groupNameTd);
+
+                          // Cell 3: Detail 1
+                          const detail1Td = document.createElement('td');
+                          detail1Td.textContent = groupData.detail1 || '-'; // Assuming 'detail1' field
+                          tr.appendChild(detail1Td);
+
+                          // Cell 4: Detail 2
+                          const detail2Td = document.createElement('td');
+                          detail2Td.textContent = groupData.detail2 || '-'; // Assuming 'detail2' field
+                          tr.appendChild(detail2Td);
+
+                          // Cell 5: Actions
+                          const actionsTd = document.createElement('td');
+                          actionsTd.style.whiteSpace = 'nowrap';
+                          actionsTd.style.textAlign = 'center'; // Center action buttons
+
+
+                          // === TLAČIDLO UPRAVIŤ (pre skupiny) ===
+                          const editButton = document.createElement('button');
+                          editButton.textContent = 'Upraviť';
+                          editButton.classList.add('action-button');
+
+                          editButton.onclick = function() {
+                               currentItemType = 'group'; // Set type
+                               editingItemId = this.closest('tr').dataset.itemId; // Get ID from row
+                               editingItemRow = this.closest('tr'); // Get row reference
+
+                               modalTitle.textContent = 'Upraviť skupinu';
+                               showFormFields('group'); // Show only group fields
+
+                               // TODO: Populate group form fields with current data (groupData)
+                               // This requires fetching the specific group document again or storing data on the row
+                               // groupCategorySelect.value = groupData.categoryId;
+                               // groupNameInput.value = groupData.name;
+                               // groupDetail1Input.value = groupData.detail1;
+                               // groupDetail2Input.value = groupData.detail2;
+                               itemIdInput.value = editingItemId; // Store ID
+                               itemTypeInput.value = 'group'; // Store type
+
+                               modal.style.display = 'block';
+                               // Focus on first group input, e.g., groupCategorySelect.focus();
+                          };
+
+                          // === TLAČIDLO ZMAZAŤ (pre skupiny) ===
+                          const deleteButton = document.createElement('button');
+                          deleteButton.textContent = 'Zmazať';
+                          deleteButton.classList.add('action-button', 'delete-button');
+
+                          deleteButton.onclick = async function() {
+                              const row = this.closest('tr');
+                              const groupIdToDelete = row.dataset.itemId; // Use stored ID
+                              const groupNameToDelete = row.querySelector('td:nth-child(2)').textContent; // Get name from row
+
+                              if (!confirm(`Naozaj chcete zmazať skupinu "${groupNameToDelete}"?`)) {
+                                  return;
+                              }
+
+                              try {
+                                  await deleteDoc(doc(groupsCollectionRef, groupIdToDelete)); // Use ID for deletion
+                                  row.remove();
+                                  console.log(`Skupina "${groupNameToDelete}" (ID: ${groupIdToDelete}) bola úspešne zmazaná.`);
+                                   // No need to re-load the whole table, just the row is removed
+                              } catch (error) {
+                                  console.error('Chyba pri mazaní skupiny: ', error);
+                                  alert('Chyba pri mazaní skupiny!');
+                              }
+                          };
+
+                          actionsTd.appendChild(editButton);
+                          actionsTd.appendChild(deleteButton);
+                          tr.appendChild(actionsTd); // Add the actions cell
+
+                          groupsTableBodyEl.appendChild(tr); // Add row to the table body
+                      });
                  }
 
+
              } catch (error) {
-                 console.error('Chyba pri načítaní kategórií alebo skupín z Firestore: ', error);
-                 alert('Chyba pri načítaní dát pre tabuľku skupín!');
-                  // Optional: Display an error message in the table body
-                 const errorRow = document.createElement('tr');
-                 const td = document.createElement('td');
-                  // Calculate colspan based on current headers or assume max
-                 const currentHeadersCount = groupsTableHeadTr.children.length;
-                 td.colSpan = currentHeadersCount > 0 ? currentHeadersCount : 2; // Span across headers if exist, or default to 2
-                 td.textContent = "Chyba pri načítaní dát skupín.";
-                 errorRow.appendChild(td);
-                 groupsTableBodyEl.appendChild(errorRow);
+                 console.error('Chyba pri načítaní dát skupín z Firestore: ', error);
+                 alert('Chyba pri načítaní dát skupín!');
+                  const errorRow = document.createElement('tr');
+                  const td = document.createElement('td');
+                  td.colSpan = headers.length;
+                  td.textContent = "Chyba pri načítaní dát skupín.";
+                  td.style.textAlign = 'center';
+                  td.style.fontStyle = 'italic';
+                  errorRow.appendChild(td);
+                  groupsTableBodyEl.appendChild(errorRow);
              }
          }
 
-        // Funkcia na zobrazenie/skrytie tlačidla "+" a tabuliek na základe hašu
-        function toggleAddButton() {
+
+        // Funkcia na zobrazenie/skrytie tabuliek a nastavenie tlačidla "+" na základe hašu
+        function toggleContentAndButton() { // Renamed function for clarity
             const hash = window.location.hash;
             const isCategoryPage = hash === '#kategorie';
-            const isGroupsPage = hash === '#skupiny'; // Nová kontrola pre #skupiny
+            const isGroupsPage = hash === '#skupiny';
 
-            // Skryť všetky dynamické oblasti a tlačidlo pred zobrazením správnej
-            addButton.style.display = 'none';
+            // Skryť obe tabuľky a resetovať tlačidlo + (pred nastavením novej akcie)
+            addButton.style.display = 'none'; // Hide initially
             categoryTable.style.display = 'none';
-            groupsTable.style.display = 'none'; // Skryť aj tabuľku skupín
+            groupsTable.style.display = 'none';
 
-            // Vyčistiť obsah tabuliek, keď odchádzame zo stránky
-            categoryTableBody.innerHTML = ''; // Vyčistiť telo tabuľky kategórií
-            // Vyčistiť hlavičku a telo tabuľky skupín
-            const groupsTableHeadTr = groupsTable.querySelector('thead tr');
-            const groupsTableBodyEl = groupsTable.querySelector('tbody');
-            if(groupsTableHeadTr) groupsTableHeadTr.innerHTML = '';
-            if(groupsTableBodyEl) groupsTableBodyEl.innerHTML = '';
+             // Clear table content (optional but good practice)
+             categoryTableBody.innerHTML = '';
+             if(groupsTableHeadTr) groupsTableHeadTr.innerHTML = '';
+             if(groupsTableBodyEl) groupsTableBodyEl.innerHTML = '';
 
 
             if (isCategoryPage) {
                 // Zobraziť prvky špecifické pre kategórie
-                addButton.style.display = 'block';
-                categoryTable.style.display = 'table';
-                loadCategories(); // Načítať dáta pre tabuľku kategórií
+                addButton.style.display = 'block'; // Show button
+                categoryTable.style.display = 'table'; // Show table
+                loadCategories(); // Load data
+
+                // Nastaviť akciu tlačidla '+' pre pridávanie kategórie
+                 addButton.onclick = function() {
+                     currentItemType = 'category'; // Set type
+                     editingItemId = null; // Not editing
+                     editingItemRow = null;
+                     modalTitle.textContent = 'Pridať kategóriu';
+                     showFormFields('category'); // Show category fields
+
+                     form.reset(); // Clear form fields
+                     // categoryNameInput.required = true; // Ensure required is set
+
+                     modal.style.display = 'block'; // Show modal
+                     categoryNameInput.focus(); // Focus input
+                 };
+
             } else if (isGroupsPage) {
                 // Zobraziť prvky špecifické pre skupiny
-                // Tlačidlo '+' zostáva skryté
-                groupsTable.style.display = 'table'; // Zobraziť tabuľku skupín
-                loadGroupsTableStructure(); // Načítať štruktúru a dáta pre tabuľku skupín
+                 addButton.style.display = 'block'; // Show button
+                 groupsTable.style.display = 'table'; // Show table
+                 loadGroupsTable(); // Load data (includes rendering header)
+
+                 // Nastaviť akciu tlačidla '+' pre pridávanie skupiny
+                  addButton.onclick = async function() { // Made async because we need to fetch categories
+                      currentItemType = 'group'; // Set type
+                      editingItemId = null; // Not editing
+                      editingItemRow = null;
+                      modalTitle.textContent = 'Pridať skupinu';
+                      showFormFields('group'); // Show group fields
+
+                      form.reset(); // Clear form fields
+                       // groupCategorySelect.required = true; // Ensure required is set
+                       // groupNameInput.required = true;
+
+
+                      // Populate the category dropdown for the group form
+                      try {
+                          const categoriesSnapshot = await getDocs(categoriesCollectionRef);
+                          groupCategorySelect.innerHTML = '<option value="">-- Vyberte kategóriu --</option>'; // Clear and add default
+                          categoriesSnapshot.forEach(doc => {
+                              const categoryId = doc.id;
+                              const categoryData = doc.data();
+                              const categoryName = categoryData.name || categoryId;
+                              const option = document.createElement('option');
+                              option.value = categoryId; // Use ID as value
+                              option.textContent = categoryName;
+                              groupCategorySelect.appendChild(option);
+                          });
+                           console.log("Dropdown kategórií pre skupiny naplnený.");
+                      } catch (error) {
+                          console.error("Chyba pri načítaní kategórií pre dropdown:", error);
+                          // Handle error, maybe disable form or show message
+                      }
+
+
+                      modal.style.display = 'block'; // Show modal
+                      groupCategorySelect.focus(); // Focus the first group input
+                  };
             }
-             // Pre akýkoľvek iný hash zostanú všetky prvky skryté a tabuľky vyčistené.
+             // For any other hash, elements remain hidden and tables cleared.
         }
 
 
         // === EVENT LISTENERS ===
 
-        // Obsluha kliknutia na tlačidlo Pridať (+)
-        addButton.addEventListener('click', () => {
-            // (Logika zostáva rovnaká ako predtým)
-            currentModalMode = 'add';
-            editingCategoryName = null;
-            editingCategoryRow = null;
-            modalTitle.textContent = 'Pridať kategóriu';
-            form.reset();
-            modal.style.display = 'block';
-            categoryNameInput.focus();
-        });
-
-
-        // Obsluha zatvorenia modálneho okna (kliknutie na X alebo mimo modal)
-        // Upravené, aby volalo reset stavu a formulára pri zatvorení
+        // Handle modal close (X button or click outside)
         window.addEventListener('click', (e) => {
-            if (e.target === modal || e.target === closeBtn) {
-                 modal.style.display = 'none';
-                 currentModalMode = 'add'; // Resetujeme stav späť na pridávanie
-                 editingCategoryName = null;
-                 editingCategoryRow = null;
-                 form.reset(); // Resetujeme formulár
-             }
-         });
-         closeBtn.addEventListener('click', () => {
-            modal.style.display = 'none';
-            currentModalMode = 'add'; // Reset stavu
-            editingCategoryName = null;
-            editingCategoryRow = null;
-            form.reset(); // Reset formulára
-         });
+             if (e.target === modal || e.target === closeModalBtn) {
+                  modal.style.display = 'none';
+                  // Reset state after closing
+                  currentItemType = null;
+                  editingItemId = null;
+                  editingItemRow = null;
+                  form.reset(); // Clear form fields
+                  showFormFields(null); // Hide all fields
+              }
+          });
+          closeModalBtn.addEventListener('click', () => {
+             modal.style.display = 'none';
+             // Reset state after closing
+             currentItemType = null;
+             editingItemId = null;
+             editingItemRow = null;
+             form.reset(); // Clear form fields
+             showFormFields(null); // Hide all fields
+          });
 
 
-        // Spustíme toggleAddButton pri načítaní stránky a zmene hašu
-        window.addEventListener('hashchange', toggleAddButton);
-        window.addEventListener('load', toggleAddButton);
+        // Trigger toggleContentAndButton on page load and hash change
+        window.addEventListener('hashchange', toggleContentAndButton);
+        window.addEventListener('load', toggleContentAndButton);
 
 
-        // Obsluha formulára na pridanie/úpravu kategórie
+        // Handle form submission (for both categories and groups)
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            const categoryName = categoryNameInput.value.trim();
+            const submitButton = form.querySelector('button[type="submit"]');
+            submitButton.disabled = true; // Disable button on submit to prevent double clicks
+            submitButton.textContent = 'Ukladám...'; // Provide feedback
 
-            if (categoryName === '') {
-                alert('Názov kategórie nemôže byť prázdny.');
-                return;
-            }
 
-            if (currentModalMode === 'add') {
-                // === LOGIKA PRIDÁVANIA ===
-                const categoryDocRef = doc(categoriesCollectionRef, categoryName);
+            const type = itemTypeInput.value; // Get item type from hidden input
+            const itemId = itemIdInput.value || null; // Get item ID (null if adding)
 
-                try {
-                    const existingDoc = await getDoc(categoryDocRef);
-                    if (existingDoc.exists()) {
-                        alert(`Kategória "${categoryName}" už existuje!`);
-                        return;
-                    }
 
-                    await setDoc(categoryDocRef, { createdAt: new Date() });
-                    addCategoryRowToTable(categoryName); // Pridať do tabuľky kategórií
-                    console.log(`Kategória "${categoryName}" bola úspešne pridaná.`);
-                    modal.style.display = 'none';
-                    form.reset();
-                    currentModalMode = 'add'; editingCategoryName = null; editingCategoryRow = null;
+            if (type === 'category') {
+                 const categoryName = categoryNameInput.value.trim();
+                 if (categoryName === '') { alert('Názov kategórie nemôže byť prázdny.'); submitButton.disabled = false; submitButton.textContent = 'Uložiť'; return; }
 
-                    // OPTIONAL: Ak sme pridali kategóriu a sme na stránke skupín, znova načítať tabuľku skupín
-                    if (window.location.hash === '#skupiny') {
-                         loadGroupsTableStructure();
-                    }
+                 const docRef = itemId ? doc(categoriesCollectionRef, itemId) : doc(categoriesCollectionRef); // Use ID if editing, let Firestore generate if adding
 
-                } catch (error) {
-                    console.error('Chyba pri pridávaní kategórie: ', error);
-                    alert('Chyba pri pridávaní kategórie!');
-                }
+                 try {
+                     if (!itemId) { // Adding Category
+                         // Check if category with this name already exists (only when adding)
+                          const existingDoc = await getDoc(doc(categoriesCollectionRef, categoryName)); // Check using the name as ID
+                          if (existingDoc.exists()) { alert(`Kategória "${categoryName}" už existuje!`); submitButton.disabled = false; submitButton.textContent = 'Uložiť'; return; }
 
-            } else if (currentModalMode === 'edit') {
-                // === LOGIKA ÚPRAVY (PREMENOVANIA) ===
-                const oldCategoryName = editingCategoryName;
-                const rowToUpdate = editingCategoryRow;
+                         // Save new category
+                         await setDoc(doc(categoriesCollectionRef, categoryName), { // Use name as document ID
+                             createdAt: new Date()
+                              // You might want to save the name *inside* the document too, not just as ID
+                              // name: categoryName
+                         });
+                         console.log(`Kategória "${categoryName}" bola úspešne pridaná.`);
+                         // Reload the category table after adding
+                         loadCategories();
 
-                if (!oldCategoryName || !rowToUpdate) {
-                     console.error("Chyba: Úprava v režime 'edit' bez pôvodného názvu alebo referencie na riadok.");
-                     alert("Chyba pri úprave. Prosím, obnovte stránku a skúste znova.");
-                     currentModalMode = 'add'; editingCategoryName = null; editingCategoryRow = null;
-                     modal.style.display = 'none'; form.reset();
-                     return;
-                }
+                     } else { // Editing Category (renaming)
+                         // Firestore document IDs are immutable. Renaming means deleting the old and creating a new one.
+                         const oldCategoryName = editingItemRow.querySelector('td:first-child').textContent; // Get old name from the row
+                         if (categoryName === oldCategoryName) {
+                            console.log('Nový názov kategórie je rovnaký ako pôvodný. Žiadna zmena.');
+                         } else {
+                            // Check if a category with the NEW name already exists
+                             const existingDoc = await getDoc(doc(categoriesCollectionRef, categoryName)); // Check using the NEW name as ID
+                             if (existingDoc.exists()) { alert(`Kategória s názvom "${categoryName}" už existuje!`); submitButton.disabled = false; submitButton.textContent = 'Uložiť'; return; }
 
-                if (categoryName === oldCategoryName) {
-                    console.log('Nový názov je rovnaký ako pôvodný. Žiadna zmena.');
-                    currentModalMode = 'add'; editingCategoryName = null; editingCategoryRow = null;
-                    modal.style.display = 'none'; form.reset();
-                    return;
-                }
+                            // Get data from the old document before deleting
+                             const oldDocRef = doc(categoriesCollectionRef, itemId); // Use the original ID (which is the old name)
+                             const oldDocSnapshot = await getDoc(oldDocRef);
+                             if (!oldDocSnapshot.exists()) {
+                                  console.error(`Pôvodný dokument kategórie ${itemId} nenájdený pre premenovanie.`);
+                                  alert('Chyba: Pôvodná kategória nebola nájdená.');
+                                   submitButton.disabled = false; submitButton.textContent = 'Uložiť';
+                                  return;
+                             }
+                             const oldDocData = oldDocSnapshot.data();
 
-                const newCategoryDocRef = doc(categoriesCollectionRef, categoryName);
-                try {
-                    const existingDoc = await getDoc(newCategoryDocRef);
-                    if (existingDoc.exists()) {
-                        alert(`Kategória s názvom "${categoryName}" už existuje!`);
-                        return;
-                    }
-                } catch (error) {
-                     console.error('Chyba pri kontrole existencie novej kategórie pri úprave:', error);
-                     alert('Chyba pri kontrole nového názvu kategórie. Prosím, skúste znova.');
-                     return;
+                            // Create new document with the new name as ID, copy data
+                            await setDoc(doc(categoriesCollectionRef, categoryName), oldDocData);
+
+                            // Delete the old document
+                            await deleteDoc(oldDocRef);
+
+                             console.log(`Kategória "${oldCategoryName}" (ID: ${itemId}) úspešne premenovaná na "${categoryName}".`);
+                             // Reload the category table after editing
+                             loadCategories(); // Simpler to reload than update the row manually after rename
+
+                         }
+                     }
+
+                     modal.style.display = 'none';
+                     form.reset();
+                     // Reset state after successful operation
+                     currentItemType = null; editingItemId = null; editingItemRow = null;
+                     showFormFields(null); // Hide fields
+
+                     // Re-render groups table if active and categories changed
+                     if (window.location.hash === '#skupiny') {
+                          loadGroupsTable(); // Reload groups table (its header depends on categories)
+                     }
+
+
+                 } catch (error) {
+                     console.error(`Chyba pri ukladaní kategórie (${itemId ? 'úprava' : 'pridávanie'}): `, error);
+                     alert(`Chyba pri ukladaní kategórie! ${error.message}`);
+                 } finally {
+                     submitButton.disabled = false;
+                     submitButton.textContent = 'Uložiť';
                  }
 
-                const oldCategoryDocRef = doc(categoriesCollectionRef, oldCategoryName);
-                try {
-                    const oldDocSnapshot = await getDoc(oldCategoryDocRef);
-                    if (!oldDocSnapshot.exists()) {
-                         console.error(`Stará kategória "${oldCategoryName}" nenájdená pre premenovanie.`);
-                         alert('Chyba: Pôvodná kategória nebola nájdená.');
-                         currentModalMode = 'add'; editingCategoryName = null; editingCategoryRow = null;
-                         modal.style.display = 'none'; form.reset();
-                         return;
+            } else if (type === 'group') {
+                 // === LOGIKA PRIDÁVANIA/ÚPRAVY SKUPINY (TODO) ===
+                 console.log(`TODO: Implementovať logiku ${itemId ? 'úpravy' : 'pridávania'} skupiny.`);
+
+                 const categoryId = groupCategorySelect.value;
+                 const groupName = groupNameInput.value.trim();
+                 const detail1 = groupDetail1Input.value.trim();
+                 const detail2 = groupDetail2Input.value.trim();
+
+                 if (categoryId === '') { alert('Vyberte kategóriu.'); submitButton.disabled = false; submitButton.textContent = 'Uložiť'; return; }
+                 if (groupName === '') { alert('Názov skupiny nemôže byť prázdny.'); submitButton.disabled = false; submitButton.textContent = 'Uložiť'; return; }
+
+
+                 try {
+                     if (!itemId) { // Adding Group
+                         // Optional: Check for duplicate group name within the same category before adding
+                          // You would need a query: where('categoryId', '==', categoryId).where('name', '==', groupName)
+                          // const q = query(groupsCollectionRef, where('categoryId', '==', categoryId), where('name', '==', groupName));
+                          // const querySnapshot = await getDocs(q);
+                          // if (!querySnapshot.empty) { alert(`Skupina s názvom "${groupName}" už v tejto kategórii existuje!`); submitButton.disabled = false; submitButton.textContent = 'Uložiť'; return; }
+
+
+                         // Add a new group document. Firestore generates the ID.
+                         await setDoc(doc(groupsCollectionRef), { // Let Firestore generate ID
+                              categoryId: categoryId,
+                              name: groupName,
+                              detail1: detail1,
+                              detail2: detail2,
+                             createdAt: new Date()
+                         });
+                          console.log(`Skupina "${groupName}" pridaná do kategórie ${categoryId}.`);
+
+                     } else { // Editing Group
+                          // Update the existing group document using the stored itemId
+                          const groupDocRef = doc(groupsCollectionRef, itemId);
+                          await setDoc(groupDocRef, { // Use setDoc with merge: true if you only want to update some fields
+                               categoryId: categoryId, // Can change category during edit
+                               name: groupName,
+                               detail1: detail1,
+                               detail2: detail2,
+                              // Don't update createdAt here
+                          }, { merge: true }); // Use merge: true to avoid overwriting the whole document
+                           console.log(`Skupina (ID: ${itemId}) úspešne aktualizovaná.`);
                      }
-                    const oldDocData = oldDocSnapshot.data();
 
-                    await setDoc(newCategoryDocRef, oldDocData);
-                    await deleteDoc(oldCategoryDocRef);
+                      // After adding/editing a group, reload the groups table data
+                      loadGroupsTable(); // This will re-fetch and re-render the entire table body
 
-                    rowToUpdate.querySelector('td:first-child').textContent = categoryName; // Aktualizovať v tabuľke kategórií
-                    console.log(`Kategória "${oldCategoryName}" úspešne premenovaná na "${categoryName}".`);
-
-                    currentModalMode = 'add'; editingCategoryName = null; editingCategoryRow = null;
-                    modal.style.display = 'none'; form.reset();
-
-                    // OPTIONAL: Ak sme premenovali kategóriu a sme na stránke skupín, znova načítať tabuľku skupín
-                    if (window.location.hash === '#skupiny') {
-                         loadGroupsTableStructure();
-                    }
+                      modal.style.display = 'none';
+                      form.reset();
+                      // Reset state
+                      currentItemType = null; editingItemId = null; editingItemRow = null;
+                      showFormFields(null); // Hide fields
 
 
-                } catch (error) {
-                    console.error('Chyba pri premenovaní kategórie: ', error);
-                    alert('Chyba pri premenovaní kategórie! Prosím, skúste znova.');
-                }
-            }
-        });
+                 } catch (error) {
+                      console.error(`Chyba pri ukladaní skupiny (${itemId ? 'úprava' : 'pridávanie'}): `, error);
+                     alert(`Chyba pri ukladaní skupiny! ${error.message}`);
+                 } finally {
+                      submitButton.disabled = false;
+                      submitButton.textContent = 'Uložiť';
+                 }
+
+             } // End of group submit logic
+        }); // End of form.addEventListener('submit')
+
 
     </script>
 
