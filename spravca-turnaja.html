@@ -8,9 +8,6 @@
     <link rel="stylesheet" href="style.css">
 
     <style>
-        /* --- Modern Table Styles for #categoryTable and #groupsTable --- */
-
-        /* Apply general table styles to both category and groups tables */
         #categoryTable, #groupsTable {
             border-collapse: collapse;
             width: 100%;
@@ -19,8 +16,6 @@
             overflow: hidden;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
-
-        /* Style header cells for both tables */
         #categoryTable th, #groupsTable th {
             background-color: #f2f2f2;
             color: #333;
@@ -29,46 +24,24 @@
             padding: 12px 15px;
             border-bottom: 2px solid #ddd;
         }
-
-        /* Specific style for the static header column in groups table (e.g., "Názov Skupiny") */
-        #groupsTable th:first-child {
-             /* width: 200px; */ /* Example width */
-        }
-
-         /* Specific style for the 'Akcie' header column in groups table */
         #groupsTable th:last-child {
             width: 150px; /* Give some space for action buttons */
             text-align: center; /* Center the header text */
         }
-
-
-        /* Style data cells for both tables */
         #categoryTable td, #groupsTable td {
             text-align: left;
             padding: 10px 15px;
             border-bottom: 1px solid #eee;
-             /* Add border-right for visual separation of category columns in groups table */
-             /* border-right: 1px solid #eee; */ /* Optional */
         }
-
-         /* Optional: Remove right border from the last data cell in a row (except actions) */
-         /* #groupsTable td:nth-last-child(2) { border-right: none; } */
-
-
-        /* Style the last row's data cells for both tables (optional: remove bottom border) */
         #categoryTable tbody tr:last-child td,
         #groupsTable tbody tr:last-child td {
              border-bottom: none;
         }
-
-        /* Add a hover effect to rows in both tables */
         #categoryTable tbody tr:hover,
         #groupsTable tbody tr:hover {
             background-color: #f9f9f9;
             cursor: pointer;
         }
-
-        /* Style the action buttons within the table (applies to category table and future group table) */
         .action-button {
             padding: 5px 10px;
             margin-right: 5px;
@@ -78,29 +51,20 @@
             font-size: 0.9em;
             transition: background-color 0.3s ease;
         }
-
-        /* Specific style for Rename/Edit button */
         .action-button:not(.delete-button) {
             background-color: #007bff;
             color: white;
         }
-
-        /* Specific style for Delete button */
         .action-button.delete-button {
             background-color: #dc3545;
             color: white;
         }
-
-        /* Hover effects for buttons */
         .action-button:not(.delete-button):hover {
             background-color: #0056b3;
         }
-
         .action-button.delete-button:hover {
             background-color: #c82333;
         }
-
-        /* Optional: Style for the cell containing the buttons */
         #categoryTable td:last-child {
              text-align: center; /* Center actions in category table */
              white-space: nowrap;
@@ -109,9 +73,6 @@
              text-align: center; /* Center action buttons in groups table */
              white-space: nowrap;
          }
-
-
-        /* Basic modal styling (ensure it works with the table) */
          .modal {
             display: none; /* Hidden by default */
             position: fixed; /* Stay in place */
@@ -124,7 +85,6 @@
             background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
             padding-top: 60px; /* Location of the modal box */
         }
-
         .modal-content {
             background-color: #fefefe;
             margin: 5% auto; /* 15% from the top and centered */
@@ -137,7 +97,6 @@
             display: flex; /* Use flexbox for content layout */
             flex-direction: column;
         }
-
         .close {
             color: #aaa;
             position: absolute;
@@ -147,28 +106,23 @@
             font-weight: bold;
             cursor: pointer;
         }
-
         .close:hover,
         .close:focus {
             color: black;
             text-decoration: none;
             cursor: pointer;
         }
-
         .modal-content form {
             display: flex;
             flex-direction: column;
         }
-
         .modal-content form label {
             display: block; /* Controlled by JS */
             margin-bottom: 8px;
             font-weight: bold;
         }
-
          .modal-content form input[type="text"],
          .modal-content form select { /* Also style select */
-            /* display: block; */ /* Controlled by JS */
             width: calc(100% - 22px); /* Adjust for padding and border */
             padding: 10px;
             margin-bottom: 20px;
@@ -176,8 +130,6 @@
             border-radius: 4px;
             box-sizing: border-box; /* Include padding and border in element's total width and height */
          }
-
-
          .modal-content form button {
             background-color: #28a745; /* Green for save */
             color: white;
@@ -189,27 +141,21 @@
             transition: background-color 0.3s ease;
             align-self: flex-start; /* Align button to the left */
          }
-
          .modal-content form button:hover {
             background-color: #218838; /* Darker green */
          }
-
-        /* Basic layout adjustments (if not already in style.css) */
         body {
             font-family: sans-serif; /* Use a common sans-serif font */
             margin: 0;
             padding: 0;
             background-color: #f8f9fa; /* Light background for the page */
         }
-
         h1 {
             text-align: center;
             color: #333;
             margin-top: 20px;
         }
-
         .add-button {
-             /* Style for the main add button */
             display: block; /* Controlled by JS */
             margin: 20px auto; /* Center the button */
             width: 50px;
@@ -228,18 +174,14 @@
             top: 20px; /* Distance from the top */
             z-index: 10; /* Ensure it's above other content */
         }
-
         .add-button:hover {
             background-color: #218838; /* Darker green on hover */
         }
-
-
         .content-wrapper {
             display: flex; /* Use flexbox for layout */
             margin-top: 20px;
             padding: 0 20px; /* Add some horizontal padding */
         }
-
         .left-menu {
             width: 200px; /* Fixed width for the menu */
             margin-right: 20px;
@@ -251,17 +193,14 @@
              min-height: calc(100vh - 40px - 20px - 20px); /* Viewport height - h1 margin - button margin - wrapper padding */
              align-self: flex-start; /* Stick to the top */
         }
-
         .left-menu ul {
             list-style: none;
             padding: 0;
             margin: 0;
         }
-
         .left-menu li {
             margin-bottom: 10px;
         }
-
         .left-menu a {
             text-decoration: none;
             color: #007bff; /* Blue links */
@@ -270,12 +209,9 @@
             padding: 5px 0;
             transition: color 0.3s ease;
         }
-
         .left-menu a:hover {
             color: #0056b3; /* Darker blue on hover */
         }
-
-
         main {
             flex-grow: 1; /* Main content takes up the remaining space */
             background-color: #fff; /* White background for main content */
@@ -283,58 +219,35 @@
             border-radius: 8px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
-
-
     </style>
 </head>
 <body>
     <script>
-        // Basic check for admin, redirect if not
         const userName = localStorage.getItem('username');
         if (userName !== 'admin') {
-            // console.log("User not admin, redirecting to login."); // Debugging
             window.location.href = 'login.html';
         } else {
-           // console.log("User is admin, staying on page."); // Debugging
         }
     </script>
-
     <h1>Správca turnaja</h1>
-
-    <!-- Add Button - Display and behavior controlled by JS -->
     <button class="add-button" id="addCategoryButton" title="Pridať">+</button>
-
-    <!-- Modal for Add/Edit Category/Group -->
     <div class="modal" id="categoryModal">
         <div class="modal-content">
             <span class="close">&times;</span>
-            <!-- Modal title will change based on context (Add Category/Add Group) -->
             <h2 id="modalTitle">Pridať kategóriu</h2>
             <form id="categoryForm">
-                <!-- Fields for CATEGORY -->
                 <label id="labelCategoryName" for="categoryName">Názov kategórie:</label>
                 <input type="text" id="categoryName" name="categoryName" required>
-
-                <!-- Fields for GROUP (initially hidden) -->
-                <!-- Note: The IDs and names should be different from category fields -->
                 <label id="labelGroupCategory" for="groupCategory" style="display: none;">Kategória:</label>
                 <select id="groupCategory" name="groupCategory" required style="display: none;">
                     <option value="">-- Vyberte kategóriu --</option>
-                    <!-- Options will be populated by JS -->
                 </select>
-
                 <label id="labelGroupName" for="groupName" style="display: none;">Názov skupiny:</label>
                 <input type="text" id="groupName" name="groupName" style="display: none;">
-
-                <!-- Parameter 1 and Parameter 2 fields are removed as per user request -->
-
-
                 <button type="submit">Uložiť</button>
             </form>
         </div>
     </div>
-
-    <!-- Main Content Area (Menu and Table/Other Content) -->
     <div class="content-wrapper">
         <nav class="left-menu">
             <ul>
@@ -346,9 +259,7 @@
                 <li><a href="#nastavenia">Nastavenia</a></li>
             </ul>
         </nav>
-
         <main>
-             <!-- Category Table - Display controlled by JS -->
             <table id="categoryTable" style="display: none;">
                 <thead>
                     <tr>
@@ -357,35 +268,21 @@
                     </tr>
                 </thead>
                 <tbody id="categoryTableBody">
-                    <!-- Table rows will be added here by JavaScript -->
                 </tbody>
             </table>
-
-            <!-- Groups Table - Display controlled by JS -->
             <table id="groupsTable" style="display: none;">
                  <thead>
                      <tr>
-                         <!-- Dynamic header columns will be added here by JS -->
                      </tr>
                  </thead>
                  <tbody>
-                     <!-- Group data rows will be added here by JavaScript (later) -->
-                     <!-- Placeholder row if no data -->
                  </tbody>
             </table>
-
-             <!-- Other content for different menu items would go here -->
         </main>
     </div>
-
-
-    <!-- Firebase and Table Management Script -->
     <script type="module">
-        // Import potrebných Firebase Firestore funkcií priamo z CDN
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js';
         import { getFirestore, collection, doc, setDoc, getDoc, getDocs, deleteDoc, addDoc, updateDoc } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js'; // Added addDoc, updateDoc
-
-        // Tvoja Firebase konfigurácia
         const firebaseConfig = {
             apiKey: "AIzaSyD0h0rQZiIGi0-UDb4-YU_JihRGpIlfz40",
             authDomain: "turnaj-a28c5.firebaseapp.com",
@@ -394,65 +291,39 @@
             messagingSenderId: "13732191148",
             appId: "1:13732191148:web:5ad78eaef2ad452a10f809"
         };
-
-        // Inicializácia Firebase aplikácie
         const app = initializeApp(firebaseConfig);
-        // Získanie inštancie Firestore databázy
         const db = getFirestore(app);
-
-        // Referencia na kolekciu kategórií
         const categoriesCollectionRef = collection(db, 'tournamentData', 'mainTournamentData', 'categories');
-        // Referencia na kolekciu skupín
         const groupsCollectionRef = collection(db, 'tournamentData', 'mainTournamentData', 'groups');
-
-
-        // Získame referencie na DOM elementy
         const addButton = document.getElementById('addCategoryButton'); // Tlačidlo '+'
         const modal = document.getElementById('categoryModal'); // Modal okno
         const closeBtn = document.querySelector('.close'); // Tlačidlo 'X' v modale
         const form = document.getElementById('categoryForm'); // Formulár v modale
-
-        // Kategória polia
         const categoryNameInput = document.getElementById('categoryName'); // Input pre názov kategórie
         const labelCategoryName = document.getElementById('labelCategoryName'); // Label pre názov kategórie
-
-        // Skupina polia (referencie na nové polia v modale)
         const groupCategorySelect = document.getElementById('groupCategory');
         const groupNameInput = document.getElementById('groupName');
         const labelGroupCategory = document.getElementById('labelGroupCategory');
         const labelGroupName = document.getElementById('labelGroupName');
-
-
-        // Premenné na sledovanie stavu modálneho okna
         let currentModalMode = 'addCategory'; // 'addCategory', 'editCategory', 'addGroup', 'editGroup'
         let editingItemRef = null; // Firestore Doc Ref (kategória/skupina) pri úprave
         let editingItemRow = null; // Riadok tabuľky pri úprave
-
-
-        // Pomocná funkcia na zobrazenie/skrytie polí formulára pre Kategórie
         function showCategoryFields(show) {
             categoryNameInput.style.display = show ? 'block' : 'none';
             labelCategoryName.style.display = show ? 'block' : 'none';
         }
-
-         // Pomocná funkcia na zobrazenie/skrytie polí formulára pre Skupiny
         function showGroupFields(show) {
             groupCategorySelect.style.display = show ? 'block' : 'none';
             groupNameInput.style.display = show ? 'block' : 'none';
             labelGroupCategory.style.display = show ? 'block' : 'none';
             labelGroupName.style.display = show ? 'block' : 'none';
-             // Parameter 1 a 2 polia sú teraz trvalo skryté (odstránené z HTML a logiky)
         }
-
-        // Funkcia na vytvorenie a pridanie riadku kategórie do tabuľky kategórií
         function addCategoryRowToTable(categoryName) {
             const tr = document.createElement('tr');
             const nameTd = document.createElement('td');
             nameTd.textContent = categoryName;
             const actionsTd = document.createElement('td');
             actionsTd.style.whiteSpace = 'nowrap';
-
-            // Premenovať tlačidlo
             const renameButton = document.createElement('button');
             renameButton.textContent = 'Premenovať';
             renameButton.classList.add('action-button');
@@ -461,17 +332,12 @@
                 editingItemRef = doc(categoriesCollectionRef, categoryName);
                 editingItemRow = this.closest('tr');
                 modalTitle.textContent = 'Upraviť kategóriu';
-
-                // Zobraziť/skryť polia v modale pre kategóriu/skupinu
                 showCategoryFields(true);
                 showGroupFields(false);
-
                 categoryNameInput.value = categoryName;
                 modal.style.display = 'block';
                 categoryNameInput.focus();
             };
-
-            // Zmazať tlačidlo
             const deleteButton = document.createElement('button');
             deleteButton.textContent = 'Zmazať';
             deleteButton.classList.add('action-button', 'delete-button');
@@ -479,7 +345,6 @@
                 const row = this.closest('tr');
                 const categoryToDelete = row.querySelector('td:first-child').textContent;
                 if (!confirm(`Naozaj chcete zmazať kategóriu "${categoryToDelete}"?`)) return;
-
                 try {
                     await deleteDoc(doc(categoriesCollectionRef, categoryToDelete));
                     row.remove();
@@ -487,7 +352,6 @@
                     // Refresh groups table header if active, as categories changed
                     if (window.location.hash === '#skupiny') {
                          renderGroupsTableStructure(); // Refresh groups table header
-                         // TODO: Ak sa zmaže kategória, skupiny patriace k nej by sa mali tiež buď zmazať alebo ich upraviť/presunúť. Táto logika tu nie je.
                          loadGroupData(); // Refresh groups data table body
                     }
                 } catch (error) {
@@ -495,16 +359,12 @@
                     alert('Chyba pri mazaní kategórie!');
                 }
             };
-
             actionsTd.appendChild(renameButton);
             actionsTd.appendChild(deleteButton);
             tr.appendChild(nameTd);
             tr.appendChild(actionsTd);
             categoryTableBody.appendChild(tr);
         }
-
-
-        // Funkcia na načítanie kategórií pre tabuľku KATEGÓRIÍ
         async function loadCategories() {
             try {
                 categoryTableBody.innerHTML = '';
@@ -522,28 +382,16 @@
                 alert('Chyba pri načítaní kategórií!');
             }
         }
-
-
-        // === NOVÁ FUNKCIA: Vykreslenie dynamickej štruktúry tabuľky SKUPÍN na základe kategórií ===
-        // Táto funkcia iba vytvorí hlavičku (a volá loadGroupData pre telo)
-        async function renderGroupsTableStructure() { // Async because it fetches categories
-             // Vyčistiť existujúci obsah hlavičky tabuľky skupín
+        async function renderGroupsTableStructure() {
              const groupsTableHeadTr = groupsTable.querySelector('thead tr');
              groupsTableHeadTr.innerHTML = '';
-             // Telo tabuľky vyčistí loadGroupData
-
              console.log("Vykresľujem dynamickú hlavičku tabuľky skupín na základe kategórií.");
-
              try {
                  const categoriesSnapshot = await getDocs(categoriesCollectionRef);
                  const categories = categoriesSnapshot.docs.map(doc => ({ id: doc.id, name: doc.id })); // Získaj kategórie (ID a názov)
-
-                 // Pridať statickú hlavičku pre prvý stĺpec ("Názov Skupiny")
                  const staticHeaderTh = document.createElement('th');
                  staticHeaderTh.textContent = 'Názov Skupiny';
-                 // Optional: staticHeaderTh.style.width = '200px';
                  groupsTableHeadTr.appendChild(staticHeaderTh);
-
                  if (categories.length > 0) {
                      console.log(`Načítané kategórie pre hlavičku: ${categories.map(c => c.name).join(', ')}`);
                      // Pridať dynamické hlavičky pre každú kategóriu
@@ -556,26 +404,17 @@
                          groupsTableHeadTr.appendChild(th);
                      });
                  }
-
-                 // Pridať statickú hlavičku pre stĺpec Akcie
                  const actionsHeaderTh = document.createElement('th');
                  actionsHeaderTh.textContent = 'Akcie';
                  groupsTableHeadTr.appendChild(actionsHeaderTh);
-
-
              } catch (error) {
                  console.error('Chyba pri načítaní kategórií pre štruktúru tabuľky skupín: ', error);
                  alert('Chyba pri načítaní dát pre hlavičku skupín!');
              }
          }
-
-        // === NOVÁ FUNKCIA: Načítanie a zobrazenie dát skupín v tele tabuľky ===
         async function loadGroupData() {
              const groupsTableBodyEl = groupsTable.querySelector('tbody');
-             groupsTableBodyEl.innerHTML = ''; // Vyčistiť aktuálne dátové riadky
-
-             // Získať aktuálne kategórie z hlavičky tabuľky, aby sa zachovalo poradie stĺpcov
-             // Preskočíme prvý (Názov Skupiny) a posledný (Akcie) stĺpec
+             groupsTableBodyEl.innerHTML = '';
              const categoryHeaders = groupsTable.querySelectorAll('thead th[data-category-id]');
              const categoryOrder = Array.from(categoryHeaders).map(th => th.dataset.categoryId);
 
