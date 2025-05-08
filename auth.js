@@ -1,7 +1,6 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js';
 import { getFirestore, doc, getDoc } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
 
-// Firebase konfigurácia
 const firebaseConfig = {
     apiKey: "AIzaSyD0h0rQZiIGi0-UDb4-YU_JihRGpIlfz40",
     authDomain: "turnaj-a28c5.firebaseapp.com",
@@ -11,11 +10,9 @@ const firebaseConfig = {
     appId: "1:13732191148:web:5ad78eaef2ad452a10f809"
 };
 
-// Inicializácia Firebase aplikácie
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// Funkcia na úpravu menu
 function updateHeaderMenu(username) {
     const usernameItem = document.getElementById('usernameItem');
     const usernameSpan = document.getElementById('usernameSpan');
@@ -33,15 +30,9 @@ function updateHeaderMenu(username) {
             registerItem.style.display = 'list-item';
             adminItem.style.display = 'list-item';
         } else {
-            registerItem.style.display = 'none'; // skryjeme pre beznych userov
-            adminItem.style.display = 'none'; // skryjeme pre beznych userov
+            registerItem.style.display = 'none';
+            adminItem.style.display = 'none';
         }
-
-        // Skryje položku Prihlásenie, keď je používateľ prihlásený
-        
-        // if (loginLink) {
-        //     loginLink.style.display = 'none';
-        // }
         
     } else {
         //ak nie je prihlaseny takto
@@ -49,14 +40,14 @@ function updateHeaderMenu(username) {
         registerItem.style.display = 'none';
         adminItem.style.display = 'none';
         if (loginLink) {
-            loginLink.style.display = 'list-item'; //zobrazime prihlasenie
+            loginLink.style.display = 'list-item';
         }
     }
 }
 
 document.addEventListener('DOMContentLoaded', function() {
     const loginForm = document.getElementById('loginForm');
-    if (loginForm) { // kontrolujeme ci existuje pre pripad viacerych pouziti auth.js
+    if (loginForm) { 
         loginForm.addEventListener('submit', async function(event) {
             event.preventDefault();
 
@@ -86,7 +77,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 if (userData.password === password) {
                     localStorage.setItem('username', username);
-                    updateHeaderMenu(username); // Aktualizujeme menu po úspešnom prihlásení
+                    updateHeaderMenu(username);
                     if (username === "admin") {
                         window.location.href = 'spravca-turnaja.html';
                     } else {
