@@ -1,0 +1,26 @@
+header {
+    background-color: #f0f0f0; /* Svetlosivá pozadia */
+    padding: 10px 0; /* Vnútorné okraje hore a dole */
+    text-align: center; /* Zarovnanie textu na stred */
+}
+
+nav ul {
+    list-style: none; /* Odstránenie odrážok z listu */
+    padding: 0;
+    margin: 0;
+}
+
+nav ul li {
+    display: inline; /* Zobrazenie položiek menu vedľa seba */
+    margin: 0 15px; /* Vodorovné okraje medzi položkami */
+}
+
+nav ul li a {
+    text-decoration: none; /* Odstránenie podčiarknutia odkazov */
+    color: #333; /* Tmavošedá farba textu odkazov */
+    font-weight: bold; /* Tučný text odkazov */
+}
+
+nav ul li a:hover {
+    color: #007bff; /* Modrá farba textu pri prechode myšou */
+}
