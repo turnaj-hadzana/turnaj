@@ -12,37 +12,50 @@ const firebaseConfig = {
 // Inicializácia Firebase
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
+const db = firebase.firestore();
 
 document.addEventListener('DOMContentLoaded', () => {
     const loginForm = document.getElementById('loginForm');
     const loginErrorDiv = document.getElementById('loginError');
+    const registrationForm = document.getElementById('registrationForm');
+    const registrationErrorDiv = document.getElementById('registrationError');
 
+    // Logika pre prihlásenie
     if (loginForm) {
         loginForm.addEventListener('submit', (event) => {
-            event.preventDefault(); // Zabránenie predvolenému odoslaniu formulára
+            event.preventDefault();
 
-            const emailInput = document.getElementById('email'); // Opravené ID
+            const usernameInput = document.getElementById('meno');
             const passwordInput = document.getElementById('password');
 
-            if (emailInput && passwordInput) {
-                const email = emailInput.value;
+            if (usernameInput && passwordInput) {
+                const username = usernameInput.value;
                 const password = passwordInput.value;
 
-                auth.signInWithEmailAndPassword(email, password) // Opravená premenná
+                db.collection('users')
+                    .where('username', '==', username)
+                    .limit(1)
+                    .get()
+                    .then((querySnapshot) => {
+                        if (!querySnapshot.empty) {
+                            const doc = querySnapshot.docs[0];
+                            const userData = doc.data();
+                            const email = userData.email;
+
+                            return auth.signInWithEmailAndPassword(email, password);
+                        } else {
+                            throw new Error('Používateľské meno nebolo nájdené.');
+                        }
+                    })
                     .then((userCredential) => {
-                        // Používateľ úspešne prihlásený
                         const user = userCredential.user;
                         console.log('Používateľ prihlásený:', user);
-                        // Presmeruj používateľa na inú stránku po úspešnom prihlásení
-                        window.location.href = '/index.html'; // Alebo na inú požadovanú stránku
+                        window.location.href = '/index.html';
                     })
                     .catch((error) => {
-                        // Chyba pri prihlásení
-                        const errorCode = error.code;
-                        const errorMessage = error.message;
-                        console.error('Chyba pri prihlásení:', errorCode, errorMessage);
+                        console.error('Chyba pri prihlásení:', error);
                         if (loginErrorDiv) {
-                            loginErrorDiv.textContent = errorMessage;
+                            loginErrorDiv.textContent = error.message;
                             loginErrorDiv.style.display = 'block';
                         }
                     });
@@ -50,15 +63,51 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // (Voliteľné) Kód pre sledovanie stavu prihlásenia, ak ho chceš mať aj na tejto stránke
+    // Logika pre registráciu
+    if (registrationForm) {
+        registrationForm.addEventListener('submit', (event) => {
+            event.preventDefault();
+
+            const emailInput = document.getElementById('regEmail');
+            const passwordInput = document.getElementById('regPassword');
+            const usernameInput = document.getElementById('regUsername');
+
+            if (emailInput && passwordInput && usernameInput) {
+                const email = emailInput.value;
+                const password = passwordInput.value;
+                const username = usernameInput.value;
+
+                auth.createUserWithEmailAndPassword(email, password)
+                    .then((userCredential) => {
+                        const user = userCredential.user;
+                        console.log('Používateľ úspešne zaregistrovaný:', user);
+                        return db.collection('users').doc(user.uid).set({
+                            username: username,
+                            email: email
+                        });
+                    })
+                    .then(() => {
+                        console.log('Používateľské meno uložené do Firestore.');
+                        window.location.href = '/login.html';
+                    })
+                    .catch((error) => {
+                        console.error('Chyba pri registrácii:', error);
+                        if (registrationErrorDiv) {
+                            registrationErrorDiv.textContent = error.message;
+                            registrationErrorDiv.style.display = 'block';
+                        }
+                    });
+            }
+        });
+    }
+
+    // (Voliteľné) Kód pre sledovanie stavu prihlásenia
     auth.onAuthStateChanged((user) => {
         if (user) {
-            console.log("Používateľ je prihlásený na stránke prihlásenia:", user);
-            // Ak je používateľ už prihlásený, presmeruj ho preč z prihlasovacej stránky
-            window.location.href = '/index.html'; // Alebo na inú požadovanú stránku
+            console.log("Používateľ je prihlásený:", user);
+            // Môžeš tu pridať presmerovanie alebo inú logiku po prihlásení
         } else {
-            console.log("Používateľ nie je prihlásený na stránke prihlásenia.");
-            // Používateľ nie je prihlásený, môže vyplniť formulár
+            console.log("Používateľ nie je prihlásený.");
         }
     });
 });
