@@ -14,7 +14,7 @@ const firestore = firebase.firestore();
 
 // Spracovanie registrácie
 document.getElementById('registrationForm').addEventListener('submit', function(event) {
-    event.preventDefault();
+    event.preventDefault(); // Zabraňuje štandardnému odoslaniu formulára
 
     const username = document.getElementById('regUsername').value;
     const password = document.getElementById('regPassword').value;
@@ -30,11 +30,11 @@ document.getElementById('registrationForm').addEventListener('submit', function(
     // Uloženie používateľských údajov do Firestore
     firestore.collection('users').add({
         username: username,
-        password: password, // Ukladanie hesla (je dôležité zvážiť jeho zašifrovanie pred uložením do Firestore)
+        password: password,
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
     }).then(() => {
         alert('Úspešná registrácia! Môžete sa prihlásiť.');
-        window.location.href = '/login.html'; // Presmerovanie na prihlasovaciu stránku
+        window.location.href = 'login.html'; // Presmerovanie na prihlasovaciu stránku
     }).catch((error) => {
         document.getElementById('registrationError').innerText = 'Chyba pri uložení do databázy.';
         document.getElementById('registrationError').style.display = 'block';
