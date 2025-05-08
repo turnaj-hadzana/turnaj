@@ -34,27 +34,38 @@
 
   <h1 class="main-title">TURNAJ</h1>
 
-  <script>
-    fetch("header.html")
-      .then(response => {
-        if (!response.ok) {
-          throw new Error("Nepodarilo sa načítať header.html");
-        }
-        return response.text();
-      })
-      .then(data => {
-        document.getElementById("header-placeholder").innerHTML = data;
+<script>
+  fetch("header.html")
+    .then(response => {
+      if (!response.ok) {
+        throw new Error("Nepodarilo sa načítať header.html");
+      }
+      return response.text();
+    })
+    .then(data => {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(data, 'text/html');
 
-        // Manuálne spustenie skriptu z načítaného HTML
-        const scripts = document.getElementById("header-placeholder").getElementsByTagName('script');
-        for (let i = 0; i < scripts.length; i++) {
-          eval(scripts[i].textContent);
-        }
-      })
-      .catch(error => {
-        console.error("Chyba pri načítaní hlavičky:", error);
-      });
-  </script>
+      // Dynamické načítanie CSS (ak existuje)
+      const link = doc.querySelector('link[rel="stylesheet"]');
+      if (link) {
+        const cssLink = document.createElement('link');
+        cssLink.rel = 'stylesheet';
+        cssLink.href = link.href;
+        document.head.appendChild(cssLink);
+      }
+
+      // Vloženie samotného HTML obsahu (napr. <header>)
+      const header = doc.querySelector('header');
+      if (header) {
+        document.getElementById("header-placeholder").appendChild(header);
+      }
+    })
+    .catch(error => {
+      console.error("Chyba pri načítaní hlavičky:", error);
+    });
+</script>
+
 
 </body>
 </html>
