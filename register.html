@@ -32,7 +32,7 @@
             <div class="error-message" id="error-message"></div>
         </form>
 
-        <p id="login-link" style="display: none;">Máte už účet? <a href="login.html">Prihláste sa</a></p>
+        <p>Máte už účet? <a href="login.html">Prihláste sa</a></p>
     </main>
 
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
@@ -55,13 +55,6 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-
-        // Kontrola, či je používateľ prihlásený
-        if (localStorage.getItem('loggedIn') === 'true') {
-            document.getElementById('login-link').style.display = 'none';
-        } else {
-            document.getElementById('login-link').style.display = 'block';
-        }
 
         document.getElementById('register-form').addEventListener('submit', async function(event) {
             event.preventDefault();
