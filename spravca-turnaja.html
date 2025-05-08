@@ -6,46 +6,48 @@
     <title>Správca turnaja</title>
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="style.css">
-    <style>
-        #categoryTable {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
+    <style>
+        /* Základné štýly pre tabuľku, ktoré môžete presunúť do style.css */
+        #categoryTable {
+            width: 100%;
+            border-collapse: collapse; /* Zlúči okraje buniek */
+            margin-top: 20px;
+        }
 
-        #categoryTable th,
-        #categoryTable td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-        }
+        #categoryTable th,
+        #categoryTable td {
+            border: 1px solid #ddd; /* Svetlý okraj buniek */
+            padding: 8px; /* Vnútorné odsadenie buniek */
+            text-align: left; /* Zarovnanie textu vľavo */
+        }
 
-        #categoryTable th {
-            background-color: #f2f2f2;
-        }
+        #categoryTable th {
+            background-color: #f2f2f2; /* Svetlo šedé pozadie hlavičky */
+        }
 
-        #categoryTable tbody tr:nth-child(even) {
-            background-color: #f9f9f9;
-        }
+        #categoryTable tbody tr:nth-child(even) {
+            background-color: #f9f9f9; /* Svetlo šedé pozadie pre párne riadky */
+        }
 
-        #categoryTable tbody tr:hover {
-            background-color: #ddd;
-        }
+        #categoryTable tbody tr:hover {
+            background-color: #ddd; /* Zvýraznenie riadku pri nabehnutí myšou */
+        }
 
-        .action-button {
-            background-color: #f44336;
-            color: white;
-            border: none;
-            padding: 5px 10px;
-            cursor: pointer;
-            border-radius: 4px;
-            font-size: 0.8em;
-        }
+        .action-button {
+            background-color: #f44336; /* Červené pozadie pre tlačidlo Zmazať */
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 0.8em; /* Menšia veľkosť písma */
+            margin-right: 5px; /* malý odstup od ďalších tlačidiel, ak by boli */
+        }
 
-        .action-button:hover {
-            background-color: #d32f2f;
-        }
-    </style>
+        .action-button:hover {
+            background-color: #d32f2f; /* Tmavšie červená pri nabehnutí */
+        }
+    </style>
 </head>
 <body>
     <script>
@@ -60,7 +62,7 @@
 
     <h1>Správca turnaja</h1>
 
-    <button class="add-button" id="addCategoryButton" title="Pridať kategóriu">+</button>
+        <button class="add-button" id="addCategoryButton" title="Pridať kategóriu">+</button>
 
 <div class="modal" id="categoryModal">
     <div class="modal-content">
@@ -78,8 +80,7 @@
         <nav class="left-menu">
             <ul>
                 <li><a href="#kluby">Kluby</a></li>
-                <li><a href="#kategorie">Kategórie</a></li>
-                <li><a href="#skupiny">Skupiny</a></li>
+                <li><a href="#kateg%C3%B3rie">Kategórie</a></li>                 <li><a href="#skupiny">Skupiny</a></li>
                 <li><a href="#sportove-haly">Športové haly</a></li>
                 <li><a href="#sprava-turnaja">Správa turnaja</a></li>
                 <li><a href="#nastavenia">Nastavenia</a></li>
@@ -87,7 +88,10 @@
         </nav>
 
         <main>
-                <table id="categoryTable" style="display: none;">
+            <p>Tu môžete spravovať nastavenia a údaje turnaja.</p>
+
+
+                        <table id="categoryTable" style="display: none;">
                 <thead>
                     <tr>
                         <th>Názov kategórie</th>
@@ -95,7 +99,7 @@
                     </tr>
                 </thead>
                 <tbody id="categoryTableBody">
-                </tbody>
+                                    </tbody>
             </table>
         </main>
     </div>
@@ -106,20 +110,27 @@
     const closeBtn = document.querySelector('.close');
     const form = document.getElementById('categoryForm');
 
+    // Získame referenciu na celú tabuľku a na jej telo (tbody)
     const categoryTable = document.getElementById('categoryTable');
-    const categoryTableBody = document.getElementById('categoryTableBody');
+    const categoryTableBody = document.getElementById('categoryTableBody'); // Získame tbody element
 
+    // Funkcia na zobrazenie/skrytie tlačidla "+" a tabuľky kategórií
     function toggleAddButton() {
-        const isCategoryPage = window.location.hash === '#kategorie';
+        // Porovnanie hašu s kódovanou formou, ako sme zistili z konzoly
+        const isCategoryPage = window.location.hash === '#kateg%C3%B3rie';
 
+        // Zobrazíme/skryjeme tlačidlo "+"
         addButton.style.display = isCategoryPage ? 'block' : 'none';
 
-        categoryTable.style.display = isCategoryPage ? 'table' : 'none';
+        // Zobrazíme/skryjeme celú tabuľku
+        categoryTable.style.display = isCategoryPage ? 'table' : 'none'; // Nastavíme display na 'table'
     }
 
+    // Spustíme funkciu pri načítaní stránky a zmene hašu
     window.addEventListener('hashchange', toggleAddButton);
-    window.addEventListener('load', toggleAddButton);
+    window.addEventListener('load', toggleAddButton); // Spustí sa hneď pri načítaní stránky
 
+    // Obsluha modálneho okna pre pridanie kategórie
     addButton.addEventListener('click', () => {
         modal.style.display = 'block';
     });
@@ -128,44 +139,76 @@
         modal.style.display = 'none';
     });
 
+    // Zatvoriť modal kliknutím mimo neho
     window.addEventListener('click', (e) => {
         if (e.target === modal) {
             modal.style.display = 'none';
         }
     });
 
+    // Obsluha formulára na pridanie kategórie
     form.addEventListener('submit', (e) => {
-        e.preventDefault();
+        e.preventDefault(); // Zabraňuje odoslaniu formulára a načítaniu stránky
         const categoryNameInput = document.getElementById('categoryName');
-        const categoryName = categoryNameInput.value.trim();
+        const categoryName = categoryNameInput.value.trim();
 
 
         if (categoryName !== '') {
+            // Vytvoríme nový riadok tabuľky
             const tr = document.createElement('tr');
 
+            // Vytvoríme bunku pre názov kategórie
             const nameTd = document.createElement('td');
             nameTd.textContent = categoryName;
 
             // Vytvoríme bunku pre akcie (napr. tlačidlo Zmazať)
             const actionsTd = document.createElement('td');
 
+            // Pridáme tlačidlo Zmazať do bunky Akcie
             const deleteButton = document.createElement('button');
             deleteButton.textContent = 'Zmazať';
-            deleteButton.classList.add('action-button');
+            deleteButton.classList.add('action-button'); // Použijeme CSS triedu pre štýl
+
+            // === TENTO RIADOK BOLA PREDTÝM ZAKOMENTOVANÝ - TERAZ JE AKTÍVNY ===
+            // Pridáme obsluhu udalosti pre kliknutie na tlačidlo Zmazať
+            deleteButton.onclick = function() {
+                // 'this' odkazuje na tlačidlo, na ktoré sa kliklo.
+                // closest('tr') nájde najbližší rodičovský element, ktorý je <tr> (riadok tabuľky).
+                // .remove() odstráni tento riadok z HTML.
+                this.closest('tr').remove();
+
+                // Voliteľné: Ak ukladáš kategórie (napr. do localStorage), tu by si ich mal znova uložiť
+                // saveCategories();
+            };
+            // ===================================================================
 
 
             actionsTd.appendChild(deleteButton);
 
+            // Pridáme bunky do riadku
             tr.appendChild(nameTd);
             tr.appendChild(actionsTd);
 
+            // Pridáme riadok do tela tabuľky (tbody)
             categoryTableBody.appendChild(tr);
 
+            // Vyčistíme vstup pre názov kategórie po pridaní
+            categoryNameInput.value = '';
+
+            // Voliteľné: uložiť kategórie do lokálneho úložiska alebo poslať na server
+            // saveCategories();
         }
 
+        // Zatvoríme modal a resetujeme formulár po uložení
         modal.style.display = 'none';
+        // Reset formulára bol presunutý sem, aby sa nevymazal input ak bol prázdny
         form.reset();
     });
+
+    // Funkcie saveCategories a loadCategories (voliteľné, ak chcete zachovať kategórie po obnovení stránky)
+    // Ako som spomínal, ideálne je ich implementovať a volať.
+    // Napr.: loadCategories() by sa volala v toggleAddButton() ak isCategoryPage je true
+    // a saveCategories() by sa volala po pridaní a po zmazaní kategórie.
 
 
 </script>
