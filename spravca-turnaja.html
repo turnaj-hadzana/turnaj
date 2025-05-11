@@ -1808,18 +1808,13 @@ async function openGroupModal(groupId = null, groupData = null) {
                 try {
                     // Use a batch write for multiple documents for efficiency
                     const batch = writeBatch(db);
-                    const successfullyAddedCount = 0; // Counter for successful additions
+                    // ZMENA: Zmeň const na let
+                    let successfullyAddedCount = 0; // Counter for successful additions
 
                     for (let i = 1; i <= teamCount; i++) {
                          const teamName = teamCount > 1 ? `${teamNameBase} ${i}` : teamNameBase;
-                         // For initial creation, let's use auto-generated IDs
-                         // Or, if you prefer composite IDs even for created teams,
-                         // you could use `${selectedCategoryId} - ${teamName}` as the ID.
-                         // Sticking to auto-generated IDs with addDoc for simplicity here.
                          // Using addDoc will create a document with a random ID.
                          // If you need predictable composite IDs, use doc(collectionRef, compositeId) and setDoc.
-                         // Let's use addDoc as it's simpler for initial creation.
-                         // Data stored will be { name: teamName, categoryId: selectedCategoryId, groupId: null } initially
 
                          const newTeamRef = doc(clubsCollectionRef); // Get a document reference with an auto-generated ID
                          batch.set(newTeamRef, {
@@ -1828,7 +1823,7 @@ async function openGroupModal(groupId = null, groupData = null) {
                              groupId: null // Initially, no group assigned
                              // optional fields like createdAt: new Date()
                          });
-                         successfullyAddedCount++; // Increment counter (batch commit might still fail partially)
+                         successfullyAddedCount++; // Increment counter
                     }
 
                     await batch.commit(); // Commit the batch
@@ -1848,9 +1843,7 @@ async function openGroupModal(groupId = null, groupData = null) {
                     }
                      // Also refresh clubs-in-groups display if visible, as new teams might appear as assignable
                      if (window.location.hash === '#timy-do-skupin') {
-                          displayClubs(); // This function currently filters for groupId != null.
-                                           // If you want to see unassigned teams here too, displayClubs needs adjustment.
-                                           // For now, refreshing displayClubs doesn't show the newly created teams unless you assign them.
+                          displayClubs();
                      }
 
 
@@ -1862,7 +1855,7 @@ async function openGroupModal(groupId = null, groupData = null) {
                      teamCreationForm.reset();
                 }
             });
-
+        
             // NEW: Event Listener for change in category select in team creation modal
             teamCategorySelect.addEventListener('change', () => {
                  // No need to populate group select in this modal
