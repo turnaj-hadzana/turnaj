@@ -237,6 +237,38 @@
                 text-align: left; /* Keep team name header left-aligned */
            }
 
+           /* Style for the dynamically added sub-rows */
+            #createdTeamsTable tr.sub-row td {
+                 background-color: #e9ecef; /* Slightly different background */
+                 font-size: 0.9em; /* Smaller font */
+                 padding-left: 35px; /* Indent the text */
+                 border-top: none; /* Remove top border */
+                 border-bottom: 1px dotted #ccc; /* Dotted border below sub-row */
+            }
+
+            #createdTeamsTable tr.sub-row:last-child td {
+                 border-bottom: 1px solid #eee; /* Restore standard border for the last sub-row before next main row */
+            }
+
+            #createdTeamsTable tr.sub-row td:not(:first-child) {
+                 /* Keep category cells empty or add specific info if needed */
+                 text-align: left; /* Align sub-team names to the left */
+                 padding-left: 35px; /* Indent the text */
+                 font-weight: normal;
+            }
+             #createdTeamsTable tr.sub-row td:first-child {
+                  font-weight: normal; /* Normal font weight for the sub-team name */
+             }
+
+            /* Optional: Style for clickable count cells */
+            #createdTeamsTable td[data-team-count]:not([data-team-count=""]):not([data-team-count="0"]) {
+                 cursor: pointer;
+                 text-decoration: underline;
+                 color: #007bff;
+            }
+            #createdTeamsTable td[data-team-count]:not([data-team-count=""]):not([data-team-count="0"]):hover {
+                 color: #0056b3;
+            }
 
         /* --- Action Button Styles --- */
         .action-button {
@@ -1466,6 +1498,9 @@ async function openGroupModal(groupId = null, groupData = null) {
             }
 
             // NEW: Funkcia na zobrazenie vytvorených tímov (klubov, ktoré ešte nie sú priradené do skupiny) - UPRAVENÉ PRE TABUĽKOVÉ ZOBRAZENIE PODĽA KATEGÓRIÍ
+
+
+            // NEW: Funkcia na zobrazenie vytvorených tímov (klubov, ktoré ešte nie sú priradené do skupiny) - UPRAVENÉ PRE TABUĽKOVÉ ZOBRAZENIE PODĽA KATEGÓRIÍ A ROZKLIKÁVACÍCH RIADKOV
             async function displayCreatedTeams() {
                  createdTeamsTableBody.innerHTML = ''; // Clear existing rows
                  createdTeamsTableHead.innerHTML = ''; // Clear existing header
@@ -1497,30 +1532,33 @@ async function openGroupModal(groupId = null, groupData = null) {
                      }
 
                     // 3. Vytvoriť zoskupenie tímov podľa základného názvu tímu a kategórie
-                     // Budeme potrebovať funkciu na extrakciu základného názvu, ak používate prípony (napr. "MŠK A A" -> "MŠK A")
-                    // Pre jednoduchosť teraz predpokladám, že základný názov je to, čo ste zadali pri vytváraní,
-                    // a ak je tam prípona (napr. " MŠK A A"), základný názov je "MŠK A".
-                    // Ak je názov bez prípony (napr. "MŠK B"), základný názov je "MŠK B".
+                     // Budeme potrebovať funkciu na extrakciu základného názvu, ak používate prípony (napr. "MŠK IUVENTA Michalovce A" -> "MŠK IUVENTA Michalovce")
+                    // Predpokladám, že základný názov je to, čo ste zadali pri vytváraní.
+                    // Ak je názov vo formáte "Base Name Letter" (napr. "MŠK IUVENTA Michalovce A"), základný názov je "Base Name" ("MŠK IUVENTA Michalovce").
+                    // Ak je názov bez prípony alebo s iným formátom, celý názov sa považuje za základný názov.
+                    // Toto je jednoduchá heuristika, môže byť potrebné ju upraviť podľa vašich presných pravidiel pomenovania.
+
+                    function getBaseTeamName(fullTeamName) {
+                        if (!fullTeamName) return 'Neznámy názov';
+                         const parts = fullTeamName.split(' ');
+                         if (parts.length > 1) {
+                              const lastPart = parts[parts.length - 1];
+                              // Check if the last part is a single uppercase letter
+                             if (lastPart.length === 1 && lastPart >= 'A' && lastPart <= 'Z') {
+                                return parts.slice(0, -1).join(' '); // Base name is everything except the last part
+                             }
+                         }
+                         return fullTeamName; // If no letter suffix found, the full name is the base name
+                    }
+
 
                     const teamNames = new Set();
                     const teamsByBaseNameAndCategory = {};
 
                     unassignedTeams.forEach(team => {
-                        const fullTeamName = team.data.name || 'Neznámy názov';
+                        const fullTeamName = team.data.name; // Use the full name from data
+                        const baseName = getBaseTeamName(fullTeamName); // Get the derived base name
                         const categoryId = team.data.categoryId || 'Nepriradená'; // Handle teams without category if they exist
-
-                        // Simple logic to find base name: Assume base name is everything before the last space if it ends with Letter.
-                        // This might need refinement based on your exact naming convention.
-                        let baseName = fullTeamName;
-                        const parts = fullTeamName.split(' ');
-                        if (parts.length > 1) {
-                             const lastPart = parts[parts.length - 1];
-                              // Check if the last part is a single uppercase letter
-                             if (lastPart.length === 1 && lastPart >= 'A' && lastPart <= 'Z') {
-                                baseName = parts.slice(0, -1).join(' '); // Base name is everything except the last part
-                             }
-                        }
-
 
                         teamNames.add(baseName); // Collect unique base names
 
@@ -1531,7 +1569,7 @@ async function openGroupModal(groupId = null, groupData = null) {
                               // Store the list of teams with this base name and category
                               teamsByBaseNameAndCategory[baseName][categoryId] = [];
                          }
-                         teamsByBaseNameAndCategory[baseName][categoryId].push(team); // Store the full team object
+                         teamsByBaseNameAndCategory[baseName][categoryId].push(team); // Store the full team object (id, data)
 
                     });
 
@@ -1565,7 +1603,8 @@ async function openGroupModal(groupId = null, groupData = null) {
 
                     // 5. Vytvoriť telo tabuľky
                     sortedBaseNames.forEach(baseName => {
-                        const tr = document.createElement('tr');
+                        const tr = document.createElement('tr'); // Main row for the base name
+                        tr.setAttribute('data-base-name', baseName); // Add data attribute for easy selection
 
                          // First cell: Team Base Name
                         const nameTd = document.createElement('td');
@@ -1577,18 +1616,75 @@ async function openGroupModal(groupId = null, groupData = null) {
                              const countTd = document.createElement('td');
                              // Get the array of teams for this base name and category, or empty array if none
                               const teamsInThisCategory = teamsByBaseNameAndCategory[baseName]?.[categoryName] || [];
-                             // Display the count
-                             countTd.textContent = teamsInThisCategory.length > 0 ? teamsInThisCategory.length : ''; // Display count or empty string if 0
+                              const teamCount = teamsInThisCategory.length;
 
-                              // Optional: Add a click listener to the cell to show details or actions for these specific teams
-                              if (teamsInThisCategory.length > 0) {
+                             // Display the count
+                             countTd.textContent = teamCount > 0 ? teamCount : ''; // Display count or empty string if 0
+                             // Add data attribute to store the count and category
+                             countTd.setAttribute('data-team-count', teamCount);
+                             countTd.setAttribute('data-category', categoryName);
+
+                              // Add click listener if there are teams to display
+                              if (teamCount > 0) {
                                    countTd.style.cursor = 'pointer'; // Indicate it's clickable
-                                    countTd.title = `Kliknutím zobrazíte tímy s názvom "${baseName}" v kategórii "${categoryName}".`; // Add tooltip
-                                   countTd.addEventListener('click', () => {
-                                       console.log(`Tímy s názvom "${baseName}" v kategórii "${categoryName}":`, teamsInThisCategory);
-                                        // Here you could implement logic to open a small modal or list
-                                        // showing the exact names and IDs of these teams, with edit/delete buttons for each.
-                                        alert(`Tímy s názvom "${baseName}" v kategórii "${categoryName}":\n\n${teamsInThisCategory.map(t => t.data.name).join('\n')}\n\n(Akcie pre jednotlivé tímy zatiaľ nie sú v tomto zobrazení priamo dostupné.)`);
+                                    // Store the team data associated with this cell
+                                   countTd.dataset.teams = JSON.stringify(teamsInThisCategory); // Store team data as a JSON string
+
+
+                                   countTd.addEventListener('click', function() {
+                                       const clickedCell = this;
+                                       const baseName = clickedCell.parentElement.getAttribute('data-base-name'); // Get base name from parent row
+                                       const category = clickedCell.getAttribute('data-category'); // Get category from cell
+                                       const teamsData = JSON.parse(clickedCell.dataset.teams); // Parse the stored team data
+
+                                        // Find the main row (the one with the base name)
+                                        const mainRow = clickedCell.parentElement;
+
+                                        // Check if sub-rows for this cell already exist
+                                        // We can identify sub-rows by a specific class and data attributes linking them to the main row and category
+                                        const existingSubRows = mainRow.parentElement.querySelectorAll(`tr.sub-row[data-base-name="${baseName}"][data-category="${category}"]`);
+
+
+                                        if (existingSubRows.length > 0) {
+                                            // Sub-rows exist, hide them
+                                            existingSubRows.forEach(subRow => subRow.remove());
+                                        } else {
+                                            // Sub-rows do not exist, create and display them
+                                            teamsData.forEach(team => {
+                                                const subRow = document.createElement('tr');
+                                                subRow.classList.add('sub-row'); // Add class for styling and identification
+                                                subRow.setAttribute('data-base-name', baseName); // Link to main row
+                                                subRow.setAttribute('data-category', category); // Link to category
+
+                                                // First cell for indented team name
+                                                const subNameTd = document.createElement('td');
+                                                subNameTd.textContent = team.data.name;
+                                                // Apply indentation
+                                                subNameTd.style.paddingLeft = '35px'; // Indent by 20px
+
+
+                                                // Create empty cells for other categories to maintain column alignment
+                                                sortedCategoriesForHeader.forEach(cat => {
+                                                    const emptyTd = document.createElement('td');
+                                                     // Optional: Add a small indicator if this sub-team belongs to this column's category
+                                                     // if (team.data.categoryId === cat) { emptyTd.textContent = '•'; emptyTd.style.textAlign = 'center'; }
+                                                    subRow.appendChild(emptyTd);
+                                                });
+
+
+                                                // Optional: Add an actions cell for the individual team
+                                                // const subActionsTd = document.createElement('td');
+                                                // Add edit/delete buttons for team.id
+                                                // subRow.appendChild(subActionsTd);
+
+
+                                                subRow.appendChild(subNameTd); // Add the name cell to the sub-row
+
+                                                // Insert the sub-row immediately after the main row
+                                                mainRow.parentElement.insertBefore(subRow, mainRow.nextSibling);
+                                            });
+                                        }
+
                                    });
                               }
 
@@ -1619,7 +1715,6 @@ async function openGroupModal(groupId = null, groupData = null) {
                      createdTeamsTableBody.appendChild(errorMessage);
                  }
             }
-
 
             // --- Funkcia na prepínanie zobrazenia obsahu ---
 
