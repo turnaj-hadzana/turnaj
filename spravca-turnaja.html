@@ -269,6 +269,18 @@
                 color: #0056b3;
            }
 
+            #createdTeamsTable tbody td[data-team-count] {
+                color: #333; /* Nastaví farbu textu na tmavošedú (alebo akúkoľvek inú farbu, ktorú preferujete) */
+                text-decoration: none; /* Odstráni podčiarknutie */
+                cursor: pointer; /* Voliteľné: Zmení kurzor myši na ručičku (pointer), aby bolo jasné, že sa na element dá kliknúť */
+            }
+
+            /* Voliteľné: Pridajte efekt pri nabehnutí myšou, ak chcete vizuálne naznačiť, že je to klikateľné */
+            #createdTeamsTable tbody td[data-team-count]:hover {
+                color: #007bff; /* Príklad: Zmení farbu textu na modrú pri nabehnutí myšou */
+                /* text-decoration: underline; */ /* Alebo pridajte podčiarknutie pri nabehnutí myšou */
+            }
+
         /* --- Action Button Styles --- */
         .action-button {
             padding: 5px 10px;
