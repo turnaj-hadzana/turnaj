@@ -762,7 +762,10 @@
 
                       // Refresh displays that might be affected
                        loadCategoriesTable(); // Always refresh category table
-                       if (window.location.hash === '#skupiny') displayGroupsByCategory();
+                       if (window.location.hash === '#skupiny') {
+                           groupsContentDiv.innerHTML = '';
+                           displayGroupsByCategory(); // Call displayGroupsByCategory after successful save
+                      }
                        if (window.location.hash === '#timy-do-skupin') displayClubs();
                        if (window.location.hash === '#vytvorenie-timov') displayCreatedTeams();
 
@@ -2132,7 +2135,10 @@ async function openGroupModal(groupId = null, groupData = null) {
                            currentCategoryModalMode = 'add'; editingCategoryName = null;
                            // Refresh displays that might be affected
                            loadCategoriesTable(); // Always refresh category table
-                           if (window.location.hash === '#skupiny') displayGroupsByCategory();
+                           if (window.location.hash === '#skupiny') {
+                               groupsContentDiv.innerHTML = '';
+                               displayGroupsByCategory();
+                           }
                            if (window.location.hash === '#timy-do-skupin') displayClubs();
                            if (window.location.hash === '#vytvorenie-timov') displayCreatedTeams();
 
