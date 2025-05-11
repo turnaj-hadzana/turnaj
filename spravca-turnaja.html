@@ -275,45 +275,48 @@
 #createdTeamsTable thead {
     position: fixed; /* Fix to the viewport */
     top: 0; /* Position at the top */
-    /* Left/right/width might need adjustment based on your layout padding/margins */
-    left: auto; /* Reset left */
-    right: auto; /* Reset right */
-    width: auto; /* Reset width */
+    /* Set left and right to stretch the header across the content area */
+    /* Adjust these values based on the padding/margin of your main content area */
+    left: 0; /* Príklad: Ak obsah začína od ľavého okraja bez paddingu */
+    right: 0; /* Príklad: Ak obsah končí pri pravom okraji bez paddingu */
 
-    /* You might need to set an explicit width here to match the table's container width */
-    /* Príklad: width: calc(100% - <šírka postranných paddingov/marginov>); */
-    /* Náročnejšie je zistiť šírku dynamicky. */
+    /* Ak máte nejaký hlavný kontajner s paddingom (napr. .container { padding: 0 15px; }),
+       musíte nastaviť left a right na hodnotu paddingu kontajnera.
+       Napr: left: 15px; right: 15px;
+       Alebo použiť calc: width: calc(100% - 30px); left: 15px;
+    */
 
+    width: 100%; /* Set width to 100% of the positioned parent (viewport by default) */
 
     z-index: 10; /* Ensure the header is above scrolling content */
     background-color: #f8f9fa; /* Add a background color */
-    /* You might need to adjust the background color to match your table style */
 
-    /* Add padding to match the table layout if needed */
-     padding-top: 10px;
-     padding-bottom: 10px;
-     /* Border bottom might be needed */
-     border-bottom: 2px solid #dee2e6;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #dee2e6;
+
+    /* IMPORTANT: White-space and overflow hidden to prevent header content wrap/overflow */
+    white-space: nowrap; /* Prevent header text from wrapping */
+    overflow: hidden; /* Hide any overflowing header content */
+    box-sizing: border-box; /* Include padding and border in the element's total width */
 }
 
 /* Adjust the table's padding-top to prevent content from being hidden under the fixed header */
 /* Výška hlavičky + nejaká medzera */
 #createdTeamsTable {
-     margin-top: 50px; /* Adjust this value based on the height of your fixed header */
-     /* You will need to measure or estimate the header height */
+     margin-top: 60px; /* Zvýšte hodnotu, ak je hlavička vyššia */
 }
 
 
 /* Ensure the table can be scrolled horizontally if content overflows */
-/* Apply overflow-x to the container holding the table if the table itself doesn't scroll */
 #teamCreationContentSection .section-block {
      overflow-x: auto; /* Add horizontal scroll if needed */
-     /* Ak chcete aj vertikálne posúvanie V RÁMCI TOHTO BLOKU (nie celej stránky), nastavte height a overflow-y: auto */
+     /* Ak chcete aj vertikálne posúvanie V RÁMCI TOHTO BLOKU, nastavte height a overflow-y: auto */
      /* Example: height: 400px; overflow-y: auto; */
 }
 
 /* Setting fixed widths for columns is ALMOST ALWAYS necessary for fixed headers with horizontal scrolling */
-/* This is where misalignment usually happens */
+/* This is where misalignment usually happens. You need to manually set widths for TH and corresponding TDs. */
 /* Example (adjust widths as needed):
 #createdTeamsTable th:first-child,
 #createdTeamsTable td:first-child {
