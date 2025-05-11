@@ -683,53 +683,43 @@
          }
 
 
-        // Funkcia na otvorenie modálu skupiny (pre pridanie alebo úpravu)
-        async function openGroupModal(groupId = null, groupData = null) { // groupId is composite ID, groupData has name, categoryId
-            groupModal.style.display = 'block';
+// Funkcia na otvorenie modálu skupiny (pre pridanie alebo úpravu)
+        async function openGroupModal(groupId = null, groupData = null) { // groupId je kompozitné ID, groupData má name, categoryId
+            groupModal.style.display = 'block';
 
-            // Reset modal state and form first
-            currentGroupModalMode = 'add';
-            editingGroupId = null; // Clear editing ID
-            groupForm.reset(); // Clear form fields
-            groupNameInput.disabled = false; // Ensure name input is enabled
+            // Resetuj stav modálu a formulár
+            currentGroupModalMode = 'add';
+            editingGroupId = null; // Vymaž ID upravovanej skupiny
+            groupForm.reset(); // Vyčisti polia formulára
+            groupNameInput.disabled = false; // Uisti sa, že vstup pre názov je povolený
 
-            // Disable group select initially and clear it
-            groupCategorySelect.value = ""; // Reset category select
-            groupGroupSelect.innerHTML = '<option value="">-- Najprv vyberte kategóriu --</option>';
-            groupGroupSelect.disabled = true;
+            // Naplň select kategórií pre modál skupiny
+            groupCategorySelect.value = ""; // Resetuj výber kategórie
 
+            if (groupId && groupData) {
+                // Režim úpravy
+                currentGroupModalMode = 'edit';
+                editingGroupId = groupId; // Ulož kompozitné ID skupiny, ktorá sa upravuje
+                groupModalTitle.textContent = 'Premenovať';
+                groupFormSubmitButton.textContent = 'Uložiť zmeny'; // Zmeň text tlačidla
 
-            if (groupId && groupData) {
-                // Edit mode
-                currentGroupModalMode = 'edit';
-                editingGroupId = groupId; // Store the composite ID of the group being edited
-                groupModalTitle.textContent = 'Premenovať';
-                groupFormSubmitButton.textContent = 'Uložiť zmeny'; // Change button text
+                // Naplň select kategórií a potom nastav zvolenú hodnotu
+                await populateCategorySelect(groupData.categoryId, groupCategorySelect);
 
-                // Populate the category select and then set the value
-                await populateCategorySelect(groupData.categoryId, groupCategorySelect);
+                // Vyplň polia formulára
+                groupNameInput.value = groupData.name; // Použi pole 'name' z dát
+                // Hodnota groupCategorySelect sa nastaví funkciou populateCategorySelect
 
-                // Populate the group select based on the selected category and then set the group value
-                 if(groupData.categoryId) {
-                      await populateGroupSelect(groupData.categoryId, groupGroupSelect, groupId); // Pass composite ID to select
-                 }
+            } else {
+                // Režim pridania (počiatočný stav už nastavený vyššie)
+                groupModalTitle.textContent = 'Pridať skupinu';
+                groupFormSubmitButton.textContent = 'Uložiť';
 
+                await populateCategorySelect(null, groupCategorySelect); // Naplň select kategórií
+            }
 
-                // Fill the form fields
-                groupNameInput.value = groupData.name; // Use the 'name' field from data
-                // groupCategorySelect value is set by populateCategorySelect
-                // groupGroupSelect value is set by populateGroupSelect
-
-            } else {
-                // Add mode (initial state already set above)
-                groupModalTitle.textContent = 'Pridať skupinu';
-                groupFormSubmitButton.textContent = 'Uložiť';
-
-                await populateCategorySelect(null, groupCategorySelect); // Populate category select
-            }
-
-            groupNameInput.focus(); // Set focus
-        }
+            groupNameInput.focus(); // Nastav focus na pole pre názov
+        }
 
 
         // Funkcia na zobrazenie skupín usporiadaných podľa kategórií
