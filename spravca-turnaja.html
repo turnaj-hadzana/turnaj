@@ -1300,88 +1300,138 @@
           });
 
            // --- Obsluha formulára Kluby (NOVÉ) ---
-           clubForm.addEventListener('submit', async (e) => {
-               e.preventDefault();
+           // --- Obsluha formulára Kluby (UPRAVENÉ pre kompozitné ID) ---
+            clubForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
 
-               const clubName = clubNameInput.value.trim();
-               const selectedCategoryId = clubCategorySelect.value;
-               const selectedGroupId = clubGroupSelect.value; // This is the composite group ID
+                const clubName = clubNameInput.value.trim();
+                const selectedCategoryId = clubCategorySelect.value;
+                const selectedGroupId = clubGroupSelect.value; // Toto je kompozitné ID skupiny (NázovKategórie - NázovSkupiny)
 
-               if (clubName === '') {
-                   alert('Názov klubu nemôže byť prázdny.');
-                   return;
-               }
-               // Category and Group are required if selects are not disabled
-               if (clubCategorySelect.disabled === false && (selectedCategoryId === '' || selectedCategoryId === '-- Vyberte kategóriu --')) {
+                if (clubName === '') {
+                    alert('Názov klubu nemôže byť prázdny.');
+                    return;
+                }
+                // Kategória a Skupina sú povinné, ak selecty nie sú disabled
+                if (clubCategorySelect.disabled === false && (selectedCategoryId === '' || selectedCategoryId === '-- Vyberte kategóriu --')) {
                     alert('Prosím, vyberte platnú kategóriu pre klub.');
                     return;
-               }
+                }
                 if (clubGroupSelect.disabled === false && (selectedGroupId === '' || selectedGroupId === '-- Vyberte skupinu --' || selectedGroupId === '-- Žiadne skupiny v kategórii --')) {
                     alert('Prosím, vyberte platnú skupinu pre klub.');
                     return;
                 }
 
+                // Vytvoríme nové kompozitné ID klubu: Kompozitné ID Skupiny - Názov Klubu
+                // Výsledné ID bude v tvare: NázovKategórie - NázovSkupiny - NázovKlubu
+                const newCompositeClubId = `${selectedGroupId} - ${clubName}`;
+                // Referencia na dokument s NOVÝM ID
+                const clubDocRef = doc(clubsCollectionRef, newCompositeClubId);
 
-               try {
-                   if (currentClubModalMode === 'add') {
-                       // === LOGIKA PRIDÁVANIA KLUBU ===
-                        // Klubu dáme automaticky generované ID pre jednoduchosť a flexibilitu
-                       const newClubRef = await addDoc(clubsCollectionRef, {
-                            name: clubName,
-                            categoryId: selectedCategoryId, // Store category ID
-                            groupId: selectedGroupId // Store composite group ID
-                            // Optional: createdAt: new Date()
-                       });
+                try {
+                    // Skontrolujeme, či klub s týmto kompozitným ID už existuje (kontrola unikátnosti)
+                    const existingDoc = await getDoc(clubDocRef);
 
-                       console.log(`Klub "${clubName}" (ID: ${newClubRef.id}) úspešne pridaný do kategórie "${selectedCategoryId}" a skupiny "${selectedGroupId}".`);
+                    if (currentClubModalMode === 'add') {
+                        // === LOGIKA PRIDÁVANIA KLUBU S KOMPOZITNÝM ID ===
+                        if (existingDoc.exists()) {
+                            alert(`Klub s názvom "${clubName}" už v skupine "${selectedGroupId}" existuje! Názvy klubov musia byť unikátne v rámci skupiny.`);
+                            return;
+                        }
 
-                   } else if (currentClubModalMode === 'edit') {
-                       // === LOGIKA ÚPRAVY KLUBU ===
-                       const clubId = editingClubId; // Auto-generated ID of the club being edited
+                        // Použijeme setDoc s vlastným kompozitným ID
+                        await setDoc(clubDocRef, {
+                             name: clubName, // Názov klubu uložíme aj v dátach pre jednoduchšie zobrazenie
+                             categoryId: selectedCategoryId, // Uložíme ID kategórie
+                             groupId: selectedGroupId // Uložíme kompozitné ID skupiny
+                             // Voliteľné: createdAt: new Date()
+                        });
 
-                       if (!clubId) {
-                           console.error("Chyba: Režim úpravy klubu bez platného editingClubId.");
-                           alert("Chyba pri úprave klubu. Prosím, obnovte stránku.");
-                            // Close modal and reset
+                        console.log(`Klub "${clubName}" (ID: ${newCompositeClubId}) úspešne pridaný.`);
+            
+                    } else if (currentClubModalMode === 'edit') {
+                        // === LOGIKA ÚPRAVY KLUBU S KOMPOZITNÝM ID ===
+                        // editingClubId teraz obsahuje STARÉ kompozitné ID klubu
+                        const oldCompositeClubId = editingClubId;
+            
+                        if (!oldCompositeClubId) {
+                            console.error("Chyba: Režim úpravy klubu bez platného editingClubId.");
+                            alert("Chyba pri úprave klubu. Prosím, obnovte stránku.");
+                             // Zatvor modál a resetuj stav
                              clubModal.style.display = 'none';
                              clubForm.reset();
                              currentClubModalMode = 'add'; editingClubId = null;
-                           return;
-                       }
+                            return;
+                        }
 
-                       const clubDocRef = doc(clubsCollectionRef, clubId);
+                        // Skontrolujeme, či sa zmenilo kompozitné ID (zmenil sa názov klubu, kategória alebo skupina)
+                        if (oldCompositeClubId !== newCompositeClubId) {
+                             console.log(`Premenovanie/presun klubu z ID "${oldCompositeClubId}" na "${newCompositeClubId}".`);
+                             // Skontrolujeme, či NOVÉ kompozitné ID už neexistuje (iný klub s týmto názvom v tejto skupine/kategórii)
+                             if (existingDoc.exists()) {
+                                 alert(`Klub s názvom "${clubName}" už v skupine "${selectedGroupId}" existuje (iný klub)! Názvy klubov musia byť unikátne v rámci skupiny.`);
+                                 return;
+                             }
+    
+                             // Ak sa ID mení, musíme starý dokument zmazať a vytvoriť nový s novým ID pomocou batch operácie
+                             const oldClubDocRef = doc(clubsCollectionRef, oldCompositeClubId);
+                             const batch = writeBatch(db);
+            
+                             // Nastavíme nový dokument s aktuálnymi (upravenými) dátami z formulára
+                             batch.set(clubDocRef, { // clubDocRef ukazuje na nové ID
+                                  name: clubName,
+                                  categoryId: selectedCategoryId,
+                                  groupId: selectedGroupId
+                                  // Ak máš v dokumente klubu aj iné polia, ktoré formulár neupravuje,
+                                  // musel by si ich načítať zo starého dokumentu a pridať sem.
+                                  // Napr.: ...oldDocSnapshot.data(), name: clubName, ...
+                             });
 
-                       // Update the existing club document
-                       await updateDoc(clubDocRef, {
-                            name: clubName,
-                            categoryId: selectedCategoryId,
-                            groupId: selectedGroupId
-                            // Other fields remain unchanged
-                       });
+                             // Zmažeme starý dokument
+                             batch.delete(oldClubDocRef);
 
-                       console.log(`Klub s ID "${clubId}" úspešne upravený (názov "${clubName}", kategória "${selectedCategoryId}", skupina "${selectedGroupId}").`);
-                   }
+                             // Potvrdíme batch operáciu (vykoná sa ako jedna transakcia)
+                             await batch.commit();
+
+                             console.warn(`Klub úspešne premenovaný/presunutý z ID "${oldCompositeClubId}" na "${newCompositeClubId}".`);
+                             // POZNÁMKA: Ak akékoľvek iné dátové štruktúry (napr. rozpisy zápasov) odkazovali na STARÉ ID tohto klubu,
+                             // tieto referencie sa NEAKTUALIZOVALI automaticky a musia byť upravené manuálne!
+
+                        } else {
+                             // Ak sa kompozitné ID nezmenilo (zmenili sa len iné polia, ak by existovali),
+                             // stačí aktualizovať existujúci dokument
+                             console.log(`Úprava údajov pre klub s ID "${oldCompositeClubId}". Kompozitné ID sa nemení.`);
+                             // Použijeme updateDoc na dokument s aktuálnym ID
+                             await updateDoc(clubDocRef, { // clubDocRef tu stále ukazuje na aktuálne ID, ktoré je rovnaké ako staré
+                                  name: clubName,
+                                  categoryId: selectedCategoryId,
+                                  groupId: selectedGroupId
+                                  // Aktualizuj aj iné polia, ak by existovali
+                             });
+                             console.log(`Klub s ID "${oldCompositeClubId}" úspešne upravený.`);
+                        }
+                    }
 
                     // --- Spoločná logika po úspešnom pridaní alebo úprave klubu ---
                     clubModal.style.display = 'none';
                     clubForm.reset();
-                    currentClubModalMode = 'add';
-                    editingClubId = null;
+                    currentClubModalMode = 'add'; // Reset stav na pridávanie
+                    editingClubId = null; // Vymaž ID upravovaného klubu
 
-                    // Po úspechu znova načítame a zobrazíme kluby
+                    // Po úspechu znova načítame a zobrazíme kluby pre aktuálnu sekciu
                     if (window.location.hash === '#kluby') {
                          displayClubs();
                     }
 
-               } catch (error) {
-                   console.error('Chyba pri ukladaní klubu: ', error);
-                   alert(`Chyba pri ukladaní klubu! Detail: ${error.message}`);
-                    // Close modal and reset state on error
-                    clubModal.style.display = 'none';
-                    clubForm.reset();
-                    currentClubModalMode = 'add'; editingClubId = null;
-               }
-           });
+                } catch (error) {
+                    console.error('Chyba pri ukladaní klubu: ', error);
+                    alert(`Chyba pri ukladaní klubu! Detail: ${error.message}`);
+                     // Zatvor modál a resetuj stav pri chybe
+                     clubModal.style.display = 'none';
+                     clubForm.reset();
+                     currentClubModalMode = 'add'; editingClubId = null;
+                }
+            });
 
            // --- Event Listener pre zmenu kategórie v modáli klubu (NOVÉ) ---
            clubCategorySelect.addEventListener('change', () => {
