@@ -1812,9 +1812,19 @@ async function openGroupModal(groupId = null, groupData = null) {
                     let successfullyAddedCount = 0; // Counter for successful additions
 
                     for (let i = 1; i <= teamCount; i++) {
-                         const teamName = teamCount > 1 ? `${teamNameBase} ${i}` : teamNameBase;
-                         // Using addDoc will create a document with a random ID.
-                         // If you need predictable composite IDs, use doc(collectionRef, compositeId) and setDoc.
+                         // Stará logika:
+                         // const teamName = teamCount > 1 ? `${teamNameBase} ${i}` : teamNameBase;
+
+                         // NOVÁ LOGIKA: Použi písmená A, B, C... pre počet tímov > 1
+                         let teamName;
+                         if (teamCount > 1) {
+                             // Získaj príslušné písmeno (A=65, B=66, ...)
+                             const letter = String.fromCharCode(65 + (i - 1));
+                             teamName = `${teamNameBase} ${letter}`;
+                         } else {
+                             // Pre jeden tím ostane pôvodný názov
+                             teamName = teamNameBase;
+                         }
 
                          const newTeamRef = doc(clubsCollectionRef); // Get a document reference with an auto-generated ID
                          batch.set(newTeamRef, {
@@ -1823,9 +1833,10 @@ async function openGroupModal(groupId = null, groupData = null) {
                              groupId: null // Initially, no group assigned
                              // optional fields like createdAt: new Date()
                          });
+                         let successfullyAddedCount = 0; // Presunulé sem ak by bol problém so scope, ale malo by byť OK aj mimo cyklu ak je let
                          successfullyAddedCount++; // Increment counter
                     }
-
+                    
                     await batch.commit(); // Commit the batch
 
                     console.log(`Úspešne vytvorených ${successfullyAddedCount} tím(ov).`);
