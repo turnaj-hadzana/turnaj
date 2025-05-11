@@ -1814,7 +1814,7 @@
 
 
             // Spustíme toggleContentDisplay pri načítaní stránky a zmene hašu
-            window.addEventListener('hashchange', toggleContentDisplay);
+            window.addEventListener('hashchange', toggleContentDisplay); // Zachovať
             window.addEventListener('load', async () => { // Made async to ensure cacheAllCategories completes before potential subsequent actions
                  console.log("Window loaded."); // PRIDANÉ LOG
                  // Initial cache of categories on load - moved here and made load listener async
@@ -1824,14 +1824,19 @@
                  // Set initial hash if none is present, e.g., to #kategorie
                  if (!window.location.hash || window.location.hash === '#') { // Also handle empty hash
                       console.log("No hash found, setting to #kategorie."); // PRIDANÉ LOG
-                      window.location.hash = '#kategorie';
+                      window.location.hash = '#kategorie'; // Nastavenie hašu spustí hashchange, ktorý zavolá toggleContentDisplay
                  } else {
-                     console.log("Hash found:", window.location.hash, "Calling toggleContentDisplay."); // PRIDANÉ LOG
+                     console.log("Hash found:", window.location.hash, "Relying on hashchange."); // PRIDANÉ LOG
+                     // === ODSTRÁNENÉ: PREDTÝM TU BOLO toggleContentDisplay(); ===
+                     // Už nevoláme toggleContentDisplay() priamo tu, spoliehame sa na hashchange.
                  }
-                 // Always call toggleContentDisplay on load, regardless of initial hash presence.
-                 // This handles cases where hashchange might not fire consistently.
-                  toggleContentDisplay();
-                  console.log("toggleContentDisplay called on load."); // PRIDANÉ LOG
+                 // Ak bol haš už prítomný, toggleContentDisplay() sa spustí jednorazovo vďaka hashchange event listeneru.
+                 // Ak haš nebol prítomný a bol nastavený, hashchange sa spustí a zavolá toggleContentDisplay().
+                 // Ak v niektorých prehliadačoch hashchange pri existujúcom haši na load nefunguje,
+                 // môžeme to riešiť dodatočným volaním, ale toto je bežnejší prístup.
+                 // Pre istotu necháme jedno volanie vonku z if/else bloku, to by malo zabezpečiť spustenie aj pri existujucom hashi, kde hashchange nemusi vzdy firednut
+                  toggleContentDisplay(); // Zabezpecit spustenie display funkcii aj pri existujucom hashi kde hashchange nemuselo byt firednute
+                  console.log("toggleContentDisplay called (once) after load logic."); // PRIDANÉ LOG
 
 
             });
