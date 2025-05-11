@@ -574,6 +574,22 @@
 
 
     <script type="module">
+             // Spustíme toggleContentDisplay pri načítaní stránky a zmene hašu
+             window.addEventListener('hashchange', toggleContentDisplay);
+             window.addEventListener('load', async () => { // Made async to ensure cacheAllCategories completes before potential subsequent actions
+                  // Initial cache of categories on load - moved here and made load listener async
+                  await cacheAllCategories(); // Ensure categories are cached first
+
+                  // Set initial hash if none is present, e.g., to #kategorie
+                  if (!window.location.hash || window.location.hash === '#') { // Also handle empty hash
+                       window.location.hash = '#kategorie';
+                  }
+                  // Always call toggleContentDisplay on load, regardless of initial hash presence.
+                  // This handles cases where hashchange might not fire consistently.
+                   toggleContentDisplay();
+
+             });        
+        
         // Import potrebných Firebase Firestore funkcií priamo z CDN
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js';
         import { getFirestore, collection, doc, setDoc, getDoc, getDocs, deleteDoc, query, where, addDoc, updateDoc, writeBatch } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js';
