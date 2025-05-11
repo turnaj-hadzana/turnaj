@@ -450,17 +450,14 @@
             <h2 id="teamCreationModalTitle">Vytvoriť tímy</h2>
             <form id="teamCreationForm">
                 <div>
-                    <label for="teamNameInput">Názov tímu:</label>
+                    <label for="teamNameInput">Základný názov tímu (napr. 'MŠK IUVENTA Michalovce'):</label>
                     <input type="text" id="teamNameInput" name="teamName" required>
                 </div>
 
-                <div>
-                    <label for="teamCategorySelect">Kategórie:</label> <select id="teamCategorySelect" name="teamCategory" required multiple> <option value="" disabled>-- Vyberte kategóriu --</option> </select>
-                </div>
+                <div id="teamCategoryCountContainer">
+                     </div>
 
-                <div>
-                    <label for="teamCountInput">Počet tímov v každej vybranej kategórii (A, B, C...):</label> <input type="number" id="teamCountInput" name="teamCount" min="1" value="1" required>
-                </div>
+                 <button type="button" id="addCategoryCountPairButton" class="action-button" style="margin-bottom: 15px;">Pridať ďalšiu kategóriu</button> <button type="submit">Vytvoriť tímy</button> </form>
 
                 <button type="submit">Vytvoriť</button>
             </form>
