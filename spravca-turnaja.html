@@ -1630,6 +1630,154 @@ async function openGroupModal(groupId = null, groupData = null) {
                  }
             }
 
+            // Funkcia na zatvorenie modálu pre správu individuálnych tímov
+             function closeManageTeamsModal() {
+                 manageTeamsModal.style.display = 'none';
+                 teamsListInModalDiv.innerHTML = ''; // Vyčistiť obsah pri zatvorení
+             }
+
+            // Funkcia na otvorenie modálu a zobrazenie individuálnych tímov
+            // baseTeamName: základný názov tímu (string)
+            // individualTeams: pole objektov { id: teamId, data: teamData } pre tímy s týmto názvom
+            async function openManageTeamsModal(baseTeamName, individualTeams) {
+                 manageTeamsModal.style.display = 'block';
+                 baseTeamNameInModalSpan.textContent = baseTeamName; // Nastav základný názov v nadpise modálu
+                 teamsListInModalDiv.innerHTML = ''; // Vyčistiť pred naplnením
+
+                 if (!individualTeams || individualTeams.length === 0) {
+                     teamsListInModalDiv.innerHTML = '<p>Žiadne individuálne tímy nájdené pre tento názov.</p>';
+                     return;
+                 }
+
+                 // Zoskupiť individuálne tímy podľa kategórie pre zobrazenie
+                 const teamsByCategory = {};
+                 individualTeams.forEach(team => {
+                     const category = team.data.categoryId || 'Nepriradená';
+                     if (!teamsByCategory[category]) {
+                         teamsByCategory[category] = [];
+                     }
+                     teamsByCategory[category].push(team);
+                 });
+
+                 // Získaj zotriedené názvy kategórií
+                 const sortedCategories = Object.keys(teamsByCategory).sort();
+
+                 // Pre každú kategóriu vytvoriť menšiu tabuľku alebo zoznam v modáli
+                 sortedCategories.forEach(categoryName => {
+                     const teamsInThisCategory = teamsByCategory[categoryName];
+
+                     const categoryHeading = document.createElement('h3');
+                     categoryHeading.textContent = `Kategória: ${categoryName}`;
+                     teamsListInModalDiv.appendChild(categoryHeading);
+
+                     // Vytvoriť menšiu tabuľku pre tímy v tejto kategórii
+                     const categoryTeamsTable = document.createElement('table');
+                      // Môžete použiť existujúce štýly tabuliek alebo pridať nové
+                     categoryTeamsTable.classList.add('group-clubs-table'); // Re-use class for basic styling
+
+
+                     const thead = document.createElement('thead');
+                     const headerRow = document.createElement('tr');
+                     const teamNameTh = document.createElement('th');
+                     teamNameTh.textContent = 'Názov tímu (celý)'; // Indicate it's the full name
+                      const actionsTh = document.createElement('th');
+                      actionsTh.textContent = 'Akcie';
+                      actionsTh.style.width = '150px';
+
+                      headerRow.appendChild(teamNameTh);
+                      headerRow.appendChild(actionsTh);
+                      thead.appendChild(headerRow);
+                      categoryTeamsTable.appendChild(thead);
+
+
+                     const tbody = document.createElement('tbody');
+
+                     // Zotriediť tímy v kategórii podľa názvu
+                     teamsInThisCategory.sort((a, b) => (a.data.name || '').localeCompare(b.data.name || ''));
+
+
+                     teamsInThisCategory.forEach(team => {
+                         const tr = document.createElement('tr');
+
+                         const nameTd = document.createElement('td');
+                         nameTd.textContent = team.data.name || 'Neznámy názov';
+                         tr.appendChild(nameTd);
+
+                         const actionsTd = document.createElement('td');
+                         actionsTd.style.whiteSpace = 'nowrap';
+
+
+                         // === TLAČIDLO ÚPRAVA INDIVIDUÁLNEHO TÍMU ===
+                          // Toto by malo otvoriť existujúci clubModal, ale v špecifickom režime
+                          // pre úpravu NEPRIRADENÉHO tímu (zmeniť názov, prípadne kategóriu)
+                         const editIndividualTeamButton = document.createElement('button');
+                         editIndividualTeamButton.textContent = 'Upraviť';
+                         editIndividualTeamButton.classList.add('action-button');
+                         editIndividualTeamButton.onclick = () => {
+                             // Pred otvorením clubModal musíme nastaviť jeho stav a dáta
+                             // clubModal je primárne na priradzovanie do skupín/úpravu priradených.
+                             // Potrebujeme režim úpravy nepriradeného tímu.
+                             // Musíme si byť istí, že clubModal formulár a logika to zvládne.
+                             console.log("Pokus o úpravu individuálneho tímu:", team);
+
+                             // Zatvoriť manageTeamsModal pred otvorením clubModal
+                             closeManageTeamsModal();
+
+                             // Otvoríme existujúci clubModal s dátami tohto tímu
+                             // Potrebujeme ho otvoriť v režime, kde sa nedá vybrať skupina, len zmeniť názov/kategória.
+                             // Použijeme režim 'edit-assigned', ale prispôsobíme ho v openClubModal
+                             openClubModal(team.id, team.data); // Zavoláme openClubModal s ID a dátami
+
+                         };
+                         actionsTd.appendChild(editIndividualTeamButton);
+
+
+                         // === TLAČIDLO VYMAZAŤ INDIVIDUÁLNY TÍM ===
+                         const deleteIndividualTeamButton = document.createElement('button');
+                         deleteIndividualTeamButton.textContent = 'Vymazať';
+                         deleteIndividualTeamButton.classList.add('action-button', 'delete-button');
+                         deleteIndividualTeamButton.onclick = async () => {
+                             if (!confirm(`Naozaj chcete vymazať tím "${team.data.name}" z kategórie "${categoryName}"?`)) {
+                                 return;
+                             }
+                             try {
+                                 // Na zmazanie použi auto-generované ID tohto konkrétneho tímu
+                                 await deleteDoc(doc(clubsCollectionRef, team.id));
+                                 console.log(`Individuálny tím "${team.data.name}" (ID: ${team.id}) úspešne zmazaný.`);
+
+                                 // Po zmazaní refreshnúť ZOBRAZENIE v manageTeamsModal
+                                 // a tiež zobrazenie v hlavnej sekcii #vytvorenie-timov
+                                  // A simpler approach: close the modal and force refresh of the main #vytvorenie-timov list
+                                  closeManageTeamsModal(); // Zatvor modál
+
+                                 // Refresh the main 'Created Teams' section display
+                                  if (window.location.hash === '#vytvorenie-timov') {
+                                       displayCreatedTeams();
+                                  }
+                                   // Refresh clubs-in-groups display if visible (shouldn't affect it directly as these are unassigned)
+                                  // if (window.location.hash === '#timy-do-skupin') { displayClubs(); }
+
+
+                             } catch (error) {
+                                 console.error(`Chyba pri mazaní individuálneho tímu "${team.data.name}" (ID: ${team.id}): `, error);
+                                 alert('Chyba pri mazaní tímu!');
+                             }
+                         };
+                         actionsTd.appendChild(deleteIndividualTeamButton);
+
+                         tr.appendChild(actionsTd); // Add actions cell
+
+                         tbody.appendChild(tr);
+                     });
+
+                     categoryTeamsTable.appendChild(tbody);
+                     teamsListInModalDiv.appendChild(categoryTeamsTable);
+                 });
+
+                 // Môžete nastaviť focus na prvé tlačidlo alebo prvý input v modáli, ak je to potrebné
+                 // manageTeamsModalCloseBtn.focus();
+             }
+
              // --- Funkcia na dynamické pridanie dvojice select kategória + input počet tímov ---
              async function addCategoryCountPair(initialCategory = null) { // Optional: pre-select category if provided
                  const container = document.getElementById('teamCategoryCountContainer');
@@ -1698,6 +1846,24 @@ async function openGroupModal(groupId = null, groupData = null) {
 
                  // Asynchrónne naplniť select kategórií
                  await populateCategorySelect(categorySelect, initialCategory); // Reuse populateCategorySelect
+            }
+
+
+            // Funkcia na otvorenie modálu Vytvorenie Tímov - PRESUNUTÁ PRED LISTENERY
+            async function openTeamCreationModal() {
+                 teamCreationModal.style.display = 'block';
+
+                 // Resetuj stav modálu a formulár
+                 currentTeamCreationModalMode = 'add'; // Zatiaľ len 'add'
+                 teamCreationModalTitle.textContent = 'Vytvoriť tímy';
+                 teamCreationForm.reset();
+
+                 // Vyčisti kontajner dynamických polí a pridaj prvú dvojicu
+                 teamCategoryCountContainer.innerHTML = '';
+                 await addCategoryCountPair(); // Pridaj prvú dvojicu select + input
+
+
+                 teamNameInput.focus(); // Nastav focus na názov tímu
             }
 
 
@@ -2373,7 +2539,7 @@ async function openGroupModal(groupId = null, groupData = null) {
                                // Reset selects if the selected team is no longer found
                                unassignedClubSelect.value = "";
                                clubCategorySelect.value = "";
-                               clubGroupSelect.innerHTML = '<option value="">-- Najprv vyberte kategógiu --</option>';
+                               clubGroupSelect.innerHTML = '<option value="">-- Najprv vyberte kategóriu --</option>';
                                clubGroupSelect.disabled = true;
                            }
                        } catch (error) {
@@ -2392,6 +2558,7 @@ async function openGroupModal(groupId = null, groupData = null) {
                   }
                    // If not in add-assign mode, this listener should not trigger changes
              });
+
 
             // --- Obsluha formulára Vytvorenie Tímov - UPRAVENÉ PRE VIAC KATEGÓRIÍ S POČTOM ---
             teamCreationForm.addEventListener('submit', async (e) => {
@@ -2524,159 +2691,10 @@ async function openGroupModal(groupId = null, groupData = null) {
                 }
             });
 
-             // Event listener pre tlačidlo "Pridať ďalšiu kategóriu"
+             // Event listener pre tlačidlo "Pridať ďalšiu kategóriu" - PRIDANÝ KDE SÚ OSTATNÉ LISTENERY
             addCategoryCountPairButton.addEventListener('click', async () => {
                  await addCategoryCountPair(); // Volaj funkciu na pridanie ďalšej dvojice
             });
-
-
-            // Funkcia na zatvorenie modálu pre správu individuálnych tímov
-             function closeManageTeamsModal() {
-                 manageTeamsModal.style.display = 'none';
-                 teamsListInModalDiv.innerHTML = ''; // Vyčistiť obsah pri zatvorení
-             }
-
-            // Funkcia na otvorenie modálu a zobrazenie individuálnych tímov
-            // baseTeamName: základný názov tímu (string)
-            // individualTeams: pole objektov { id: teamId, data: teamData } pre tímy s týmto názvom
-            async function openManageTeamsModal(baseTeamName, individualTeams) {
-                 manageTeamsModal.style.display = 'block';
-                 baseTeamNameInModalSpan.textContent = baseTeamName; // Nastav základný názov v nadpise modálu
-                 teamsListInModalDiv.innerHTML = ''; // Vyčistiť pred naplnením
-
-                 if (!individualTeams || individualTeams.length === 0) {
-                     teamsListInModalDiv.innerHTML = '<p>Žiadne individuálne tímy nájdené pre tento názov.</p>';
-                     return;
-                 }
-
-                 // Zoskupiť individuálne tímy podľa kategórie pre zobrazenie
-                 const teamsByCategory = {};
-                 individualTeams.forEach(team => {
-                     const category = team.data.categoryId || 'Nepriradená';
-                     if (!teamsByCategory[category]) {
-                         teamsByCategory[category] = [];
-                     }
-                     teamsByCategory[category].push(team);
-                 });
-
-                 // Získaj zotriedené názvy kategórií
-                 const sortedCategories = Object.keys(teamsByCategory).sort();
-
-                 // Pre každú kategóriu vytvoriť menšiu tabuľku alebo zoznam v modáli
-                 sortedCategories.forEach(categoryName => {
-                     const teamsInThisCategory = teamsByCategory[categoryName];
-
-                     const categoryHeading = document.createElement('h3');
-                     categoryHeading.textContent = `Kategória: ${categoryName}`;
-                     teamsListInModalDiv.appendChild(categoryHeading);
-
-                     // Vytvoriť menšiu tabuľku pre tímy v tejto kategórii
-                     const categoryTeamsTable = document.createElement('table');
-                      // Môžete použiť existujúce štýly tabuliek alebo pridať nové
-                     categoryTeamsTable.classList.add('group-clubs-table'); // Re-use class for basic styling
-
-
-                     const thead = document.createElement('thead');
-                     const headerRow = document.createElement('tr');
-                     const teamNameTh = document.createElement('th');
-                     teamNameTh.textContent = 'Názov tímu (celý)'; // Indicate it's the full name
-                      const actionsTh = document.createElement('th');
-                      actionsTh.textContent = 'Akcie';
-                      actionsTh.style.width = '150px';
-
-                      headerRow.appendChild(teamNameTh);
-                      headerRow.appendChild(actionsTh);
-                      thead.appendChild(headerRow);
-                      categoryTeamsTable.appendChild(thead);
-
-
-                     const tbody = document.createElement('tbody');
-
-                     // Zotriediť tímy v kategórii podľa názvu
-                     teamsInThisCategory.sort((a, b) => (a.data.name || '').localeCompare(b.data.name || ''));
-
-
-                     teamsInThisCategory.forEach(team => {
-                         const tr = document.createElement('tr');
-
-                         const nameTd = document.createElement('td');
-                         nameTd.textContent = team.data.name || 'Neznámy názov';
-                         tr.appendChild(nameTd);
-
-                         const actionsTd = document.createElement('td');
-                         actionsTd.style.whiteSpace = 'nowrap';
-
-
-                         // === TLAČIDLO ÚPRAVA INDIVIDUÁLNEHO TÍMU ===
-                          // Toto by malo otvoriť existujúci clubModal, ale v špecifickom režime
-                          // pre úpravu NEPRIRADENÉHO tímu (zmeniť názov, prípadne kategóriu)
-                         const editIndividualTeamButton = document.createElement('button');
-                         editIndividualTeamButton.textContent = 'Upraviť';
-                         editIndividualTeamButton.classList.add('action-button');
-                         editIndividualTeamButton.onclick = () => {
-                             // Pred otvorením clubModal musíme nastaviť jeho stav a dáta
-                             // clubModal je primárne na priradzovanie do skupín/úpravu priradených.
-                             // Potrebujeme režim úpravy nepriradeného tímu.
-                             // Musíme si byť istí, že clubModal formulár a logika to zvládne.
-                             console.log("Pokus o úpravu individuálneho tímu:", team);
-
-                             // Zatvoriť manageTeamsModal pred otvorením clubModal
-                             closeManageTeamsModal();
-
-                             // Otvoríme existujúci clubModal s dátami tohto tímu
-                             // Potrebujeme ho otvoriť v režime, kde sa nedá vybrať skupina, len zmeniť názov/kategória.
-                             // Použijeme režim 'edit-assigned', ale prispôsobíme ho v openClubModal
-                             openClubModal(team.id, team.data); // Zavoláme openClubModal s ID a dátami
-
-                         };
-                         actionsTd.appendChild(editIndividualTeamButton);
-
-
-                         // === TLAČIDLO VYMAZAŤ INDIVIDUÁLNY TÍM ===
-                         const deleteIndividualTeamButton = document.createElement('button');
-                         deleteIndividualTeamButton.textContent = 'Vymazať';
-                         deleteIndividualTeamButton.classList.add('action-button', 'delete-button');
-                         deleteIndividualTeamButton.onclick = async () => {
-                             if (!confirm(`Naozaj chcete vymazať tím "${team.data.name}" z kategórie "${categoryName}"?`)) {
-                                 return;
-                             }
-                             try {
-                                 // Na zmazanie použi auto-generované ID tohto konkrétneho tímu
-                                 await deleteDoc(doc(clubsCollectionRef, team.id));
-                                 console.log(`Individuálny tím "${team.data.name}" (ID: ${team.id}) úspešne zmazaný.`);
-
-                                 // Po zmazaní refreshnúť ZOBRAZENIE v manageTeamsModal
-                                 // a tiež zobrazenie v hlavnej sekcii #vytvorenie-timov
-                                  // A simpler approach: close the modal and force refresh of the main #vytvorenie-timov list
-                                  closeManageTeamsModal(); // Zatvor modál
-
-                                 // Refresh the main 'Created Teams' section display
-                                  if (window.location.hash === '#vytvorenie-timov') {
-                                       displayCreatedTeams();
-                                  }
-                                   // Refresh clubs-in-groups display if visible (shouldn't affect it directly as these are unassigned)
-                                  // if (window.location.hash === '#timy-do-skupin') { displayClubs(); }
-
-
-                             } catch (error) {
-                                 console.error(`Chyba pri mazaní individuálneho tímu "${team.data.name}" (ID: ${team.id}): `, error);
-                                 alert('Chyba pri mazaní tímu!');
-                             }
-                         };
-                         actionsTd.appendChild(deleteIndividualTeamButton);
-
-                         tr.appendChild(actionsTd); // Add actions cell
-
-                         tbody.appendChild(tr);
-                     });
-
-                     categoryTeamsTable.appendChild(tbody);
-                     teamsListInModalDiv.appendChild(categoryTeamsTable);
-                 });
-
-                 // Môžete nastaviť focus na prvé tlačidlo alebo prvý input v modáli, ak je to potrebné
-                 // manageTeamsModalCloseBtn.focus();
-             }
 
 
     </script>
