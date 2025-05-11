@@ -1281,15 +1281,10 @@ async function openGroupModal(groupId = null, groupData = null) {
                 }
 
             // Set focus based on mode
-            // Použijeme setTimeout na malé oneskorenie pre správne nastavenie focusu po zmene display
             if (currentClubModalMode === 'add-assign') {
-                 setTimeout(() => {
-                     unassignedClubSelect.focus();
-                 }, 50); // Oneskoríme focus o 50 milisekúnd
+                 unassignedClubSelect.focus();
             } else { // edit-assigned
-                 setTimeout(() => {
-                      clubNameInput.focus();
-                 }, 50); // Oneskoríme focus o 50 milisekúnd
+                 clubNameInput.focus();
             }
                 
             // Funkcia na zobrazenie klubov usporiadaných podľa kategórií a skupín (PRIRADENÉ tímy)
