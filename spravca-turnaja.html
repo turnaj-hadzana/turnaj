@@ -1403,8 +1403,9 @@
             }
         }
 
-        // Funkcia na zobrazenie vytvorených tímov (klubov, ktoré ešte nie sú priradené do skupiny) (používa getBaseTeamName)
+// Funkcia na zobrazenie vytvorených tímov (klubov, ktoré ešte nie sú priradené do skupiny) (používa getBaseTeamName)
         async function displayCreatedTeams() {
+            console.log("displayCreatedTeams called."); // LOG: Funkcia spustená
             createdTeamsTableBody.innerHTML = ''; // Clear existing rows
             createdTeamsTableHead.innerHTML = ''; // Clear existing header
 
@@ -1415,18 +1416,16 @@
                     id: doc.id,
                     data: doc.data()
                 }));
+                 console.log(`Workspaceed ${unassignedTeams.length} unassigned teams.`); // LOG: Počet tímov
 
                 const categoriesToDisplay = allCategories.length > 0 ? allCategories : (await getDocs(categoriesCollectionRef)).docs.map(doc => doc.id).sort();
-                if (allCategories.length === 0 && categoriesToDisplay.length > 0) {
-                    console.log("Populating categories for display from fresh fetch, caching now.");
-                    allCategories = categoriesToDisplay;
-                }
+                 console.log(`Categories for display: ${categoriesToDisplay.join(', ')}`); // LOG: Zobrazované kategórie
 
                 if (unassignedTeams.length === 0) {
                     console.log("Žiadne tímy na priradenie do skupín zatiaľ nenájdené.");
                     const noDataRow = document.createElement('tr');
                     const td = document.createElement('td');
-                    td.colSpan = categoriesToDisplay.length + 1; // Názov tímu + počet kategórií
+                    td.colSpan = categoriesToDisplay.length + 1;
                     td.textContent = "Žiadne tímy na priradenie zatiaľ pridané.";
                     td.style.textAlign = 'center';
                     noDataRow.appendChild(td);
@@ -1461,131 +1460,259 @@
                 });
 
                 const sortedBaseNames = Array.from(teamNames).sort();
+                 console.log(`Sorted base names: ${sortedBaseNames.join(', ')}`); // LOG: Základné názvy
 
 
-                // 4. Vytvoriť hlavičku tabuľky A PRIDAŤ LISTENERY NA KATEGÓRIE
+                // 4. Vytvoriť hlavičku tabuľky
                 const headerRow = document.createElement('tr');
                 const teamNameHeader = document.createElement('th');
                 teamNameHeader.textContent = 'Názov tímu';
+                // NEW: Add click listener to the "Názov tímu" header to toggle all rows
+                 teamNameHeader.classList.add('base-name-header-cell'); // Add class for styling/targeting
+                 teamNameHeader.style.cursor = 'pointer'; // Add cursor style
+                 teamNameHeader.addEventListener('click', function() {
+                      console.log('"Názov tímu" header clicked.'); // LOG: Klik na hlavičku "Názov tímu"
+                       // Toggle visibility of ALL main rows
+                       const allMainRows = createdTeamsTableBody.querySelectorAll('tr[data-base-name]');
+                       const isFirstRowVisible = allMainRows.length > 0 ? allMainRows[0].style.display !== 'none' : false;
+
+                       allMainRows.forEach(mainRow => {
+                            mainRow.style.display = isFirstRowVisible ? 'none' : 'table-row';
+                             // Also ensure sub-rows are hidden when toggling main rows
+                            mainRow.setAttribute('data-sub-rows-visible', 'false');
+                       });
+
+                       // Hide all sub-rows when toggling all main rows
+                       createdTeamsTableBody.querySelectorAll('tr.sub-row').forEach(subRow => {
+                           subRow.style.display = 'none';
+                       });
+
+                       // Clear any active category filter
+                       currentCategoryFilter = null;
+                       console.log(`All rows ${isFirstRowVisible ? 'hidden' : 'shown'}. Category filter cleared.`); // LOG: Stav riadkov
+
+                 });
+
+
                 headerRow.appendChild(teamNameHeader);
 
                 const sortedCategoriesForHeader = categoriesToDisplay.sort();
+                const categoryThElements = []; // Array to store the category TH elements
 
-                // === NAHRAT TENTO CYKLUS V RAMCI displayCreatedTeams ===
-                sortedCategoriesForHeader.forEach((categoryName, index) => { // Loop through category headers
+                sortedCategoriesForHeader.forEach(categoryName => {
                     const th = document.createElement('th');
                     th.textContent = categoryName;
-                    // NEW: Add class and cursor for clickability
                     th.classList.add('category-header-cell');
-                    // Store the category name (index attribute is not strictly needed now)
                     th.setAttribute('data-category-name', categoryName);
-                    // th.setAttribute('data-category-index', index); // Remove or ignore this index
-
-                    // NEW: Click listener for category headers
-                    th.addEventListener('click', function() {
-                         console.log("Category header clicked:", this.textContent); // LOG 1: Potvrdenie kliknutia
-
-                         // Hide all sub-rows and reset base name row visibility state
-                         createdTeamsTableBody.querySelectorAll('tr.sub-row').forEach(subRow => {
-                             subRow.style.display = 'none';
-                         });
-                          createdTeamsTableBody.querySelectorAll('tr[data-base-name]').forEach(mainRow => {
-                              mainRow.setAttribute('data-sub-rows-visible', 'false');
-                          });
-
-
-                         // Find the index of the clicked TH within the entire header row
-                         const headerThs = Array.from(this.parentElement.querySelectorAll('th')); // Get all THs in the header row
-                         const clickedThIndexInFullHeader = headerThs.indexOf(this); // Get index of THIS clicked TH
-
-                         console.log("Clicked TH index in full header row:", clickedThIndexInFullHeader); // LOG 2: Index kliknutej hlavičky
-
-                         const clickedCategory = this.getAttribute('data-category-name');
-
-
-                         if (currentCategoryFilter === clickedCategory) {
-                             // Clicking the active filter again - clear filter and show all main rows
-                             currentCategoryFilter = null;
-                             console.log(`Filter for category "${clickedCategory}" cleared.`); // LOG 3a: Filter zrušený
-                             createdTeamsTableBody.querySelectorAll('tr[data-base-name]').forEach(mainRow => {
-                                 mainRow.style.display = 'table-row'; // Show all main rows
-                             });
-                         } else {
-                             // Clicking a new filter header - set filter and show only relevant rows
-                             currentCategoryFilter = clickedCategory;
-                             console.log(`Filtering by category: "${clickedCategory}".`); // LOG 3b: Nový filter nastavený
-
-                             // Iterate through all main rows and show/hide based on count in the clicked category column
-                             createdTeamsTableBody.querySelectorAll('tr[data-base-name]').forEach(mainRow => {
-                                  // Find the corresponding TD cell in the main row using the index from the header
-                                  // The first TD in a main row is the base team name (index 0).
-                                  // The count TDs start from index 1, corresponding to the 2nd TH (index 1) in the header.
-                                  // So, the index in the TD list matches the index in the TH list.
-                                   const mainRowTds = mainRow.querySelectorAll('td');
-                                   const countTd = mainRowTds[clickedThIndexInFullHeader]; // Use the correct index
-
-                                  // Check if the cell exists and has content (count > 0)
-                                   const countValue = countTd ? parseInt(countTd.textContent.trim(), 10) : 0; // Parse count, default to 0 if no cell or no content
-                                   console.log(`Row: "${mainRow.querySelector('td.base-name-cell').textContent}", Checking category "${clickedCategory}" (TH index ${clickedThIndexInFullHeader}). Count cell content: "${countTd ? countTd.textContent.trim() : 'N/A'}", Parsed count: ${countValue}`); // LOG 4: Kontrola riadku a počtu
-
-                                  if (countTd && countValue > 0) { // Check if countTd exists AND parsed count > 0
-                                      console.log("Showing row:", mainRow); // LOG 5a: Zobrazenie riadku
-                                      mainRow.style.display = 'table-row'; // Show the row
-                                  } else {
-                                      console.log("Hiding row:", mainRow); // LOG 5b: Skrytie riadku
-                                      mainRow.style.display = 'none'; // Hide the row
-                                  }
-                             });
-                         }
-                    });
+                    th.style.cursor = 'pointer'; // Add cursor style
                     headerRow.appendChild(th);
+                    categoryThElements.push(th); // Store reference
                 });
-                
-                createdTeamsTableHead.appendChild(headerRow);
+
+                createdTeamsTableHead.appendChild(headerRow); // Append the header row to thead
 
 
-                // 5. Vytvoriť telo tabuľky (ostáva takmer nezmenené, len zobrazenie/skrytie sa riadi filtrami)
-                sortedBaseNames.forEach(baseName => {
-                    const tr = document.createElement('tr'); // Main row for the base name
-                    tr.setAttribute('data-base-name', baseName);
-                     tr.setAttribute('data-sub-rows-visible', 'false'); // Initially hidden
+                // === ADD LISTENERS TO THE CATEGORY TH ELEMENTS ===
+                // Get all THs in the header row (including the first "Názov tímu") AFTER they are all added
+                const fullHeaderThs = Array.from(headerRow.querySelectorAll('th'));
 
+                categoryThElements.forEach(th => { // Add listener to each category TH
+                     th.addEventListener('click', function() {
+                          console.log("Category header clicked:", this.textContent); // LOG: Klik na hlavičku kategórie
 
-                    const nameTd = document.createElement('td');
-                    nameTd.textContent = baseName;
-                    nameTd.classList.add('base-name-cell');
-
-                    nameTd.addEventListener('click', function() {
-                          const mainRow = this.parentElement;
-                          const currentBaseName = mainRow.getAttribute('data-base-name');
-                          const isVisible = mainRow.getAttribute('data-sub-rows-visible') === 'true';
-
-                          // Hide all sub-rows when toggling base name
+                          // Hide all sub-rows and reset base name row visibility state
                           createdTeamsTableBody.querySelectorAll('tr.sub-row').forEach(subRow => {
                               subRow.style.display = 'none';
                           });
-                           // Reset sub-row visibility state on all main rows
+                           createdTeamsTableBody.querySelectorAll('tr[data-base-name]').forEach(mainRow => {
+                               mainRow.setAttribute('data-sub-rows-visible', 'false');
+                           });
+
+                          const clickedCategory = this.getAttribute('data-category-name');
+
+
+                          if (currentCategoryFilter === clickedCategory) {
+                              // Clicking the active filter again - clear filter and show all main rows
+                              currentCategoryFilter = null;
+                              console.log(`Filter for category "${clickedCategory}" cleared.`); // LOG: Filter zrušený
+                              createdTeamsTableBody.querySelectorAll('tr[data-base-name]').forEach(mainRow => {
+                                  mainRow.style.display = 'table-row'; // Show all main rows
+                              });
+                          } else {
+                              // Clicking a new filter header - set filter and show only relevant rows
+                              currentCategoryFilter = clickedCategory;
+                              console.log(`Filtering by category: "${clickedCategory}".`); // LOG: Nový filter nastavený
+
+                              // Find the index of the clicked TH within the entire header row
+                              const clickedThIndexInFullHeader = fullHeaderThs.indexOf(this); // Correctly get index in full header
+
+                              createdTeamsTableBody.querySelectorAll('tr[data-base-name]').forEach(mainRow => {
+                                   const mainRowTds = mainRow.querySelectorAll('td'); // Get all TDs in the main row
+
+                                   // Ensure the main row has enough cells before trying to access the one by index
+                                   if (clickedThIndexInFullHeader < mainRowTds.length) {
+                                       const countTd = mainRowTds[clickedThIndexInFullHeader];
+
+                                        // Check if the cell exists and has content that parses to a number > 0
+                                        const countText = countTd ? countTd.textContent.trim() : '';
+                                        const countValue = countText !== '' ? parseInt(countText, 10) : 0;
+                                        const baseNameForLog = mainRow.querySelector('td.base-name-cell') ? mainRow.querySelector('td.base-name-cell').textContent : 'Unknown Base Name';
+                                        console.log(`Processing row for base name "${baseNameForLog}", checking category "${clickedCategory}" (TH index ${clickedThIndexInFullHeader}). TD count in row: ${mainRowTds.length}. Target TD content: "${countText}", Parsed count: ${countValue}. Cell exists: ${!!countTd}`); // LOG: Detaily riadku pre filtrovanie
+
+
+                                        if (countTd && countValue > 0) {
+                                            console.log("Condition met (count > 0): Showing row.");
+                                            mainRow.style.display = 'table-row'; // Show the row
+                                        } else {
+                                            console.log("Condition not met: Hiding row.");
+                                            mainRow.style.display = 'none'; // Hide the row
+                                        }
+                                    } else {
+                                        const baseNameForLog = mainRow.querySelector('td.base-name-cell') ? mainRow.querySelector('td.base-name-cell').textContent : 'Unknown Base Name';
+                                        console.warn(`Row for base name "${baseNameForLog}" does not have enough cells (has ${mainRowTds.length}, needs index ${clickedThIndexInFullHeader}) to check category "${clickedCategory}". Hiding row.`); // LOG: Upozornenie na nedostatok buniek
+                                        mainRow.style.display = 'none'; // Hide row if it doesn't have the expected cell count
+                                    }
+                              });
+                           }
+                      });
+                 });
+                 // === END ADD LISTENERS TO CATEGORY THS ===
+
+
+            // 5. Vytvoriť telo tabuľky (ostáva takmer nezmenené, len zobrazenie/skrytie sa riadi filtrami)
+            sortedBaseNames.forEach(baseName => {
+                const tr = document.createElement('tr'); // Main row for the base name
+                tr.setAttribute('data-base-name', baseName);
+                tr.setAttribute('data-sub-rows-visible', 'false');
+
+
+                // First cell: Team Base Name - MAKE IT CLICKABLE
+                const nameTd = document.createElement('td');
+                nameTd.textContent = baseName;
+                nameTd.classList.add('base-name-cell');
+                nameTd.style.cursor = 'pointer'; // Add cursor style
+
+
+                // Click listener for the base name cell (Toggles sub-rows for this base name)
+                nameTd.addEventListener('click', function() {
+                     console.log(`Base name cell clicked: "${this.textContent}"`); // LOG: Klik na názov tímu
+                     const mainRow = this.parentElement;
+                     const currentBaseName = mainRow.getAttribute('data-base-name');
+                     const isVisible = mainRow.getAttribute('data-sub-rows-visible') === 'true';
+
+                     // Hide all sub-rows when toggling base name
+                     createdTeamsTableBody.querySelectorAll('tr.sub-row').forEach(subRow => {
+                         subRow.style.display = 'none';
+                     });
+                      // Reset base name row visibility state on other main rows
+                     createdTeamsTableBody.querySelectorAll('tr[data-base-name]').forEach(row => {
+                         if (row !== mainRow) row.setAttribute('data-sub-rows-visible', 'false');
+                     });
+
+
+                     if (isVisible) {
+                         // Hide sub-rows for this base name
+                         mainRow.setAttribute('data-sub-rows-visible', 'false');
+                         console.log(`Sub-rows for "${currentBaseName}" hidden.`); // LOG: Podriadené riadky skryté
+                     } else {
+                         // Show sub-rows for this base name
+                         // Ensure sub-rows for THIS base name exist in the DOM (create if not)
+                         const existingSubRowsForBaseName = createdTeamsTableBody.querySelectorAll(`tr.sub-row[data-base-name="${currentBaseName}"]`);
+
+                         if (existingSubRowsForBaseName.length === 0) {
+                              const teamsDataForBaseName = allSubRowsData[currentBaseName] || [];
+
+                              teamsDataForBaseName.forEach(team => {
+                                  const subRow = document.createElement('tr');
+                                  subRow.classList.add('sub-row');
+                                  subRow.setAttribute('data-base-name', currentBaseName);
+                                  subRow.setAttribute('data-category', team.data.categoryId || 'Nepriradená');
+
+                                  const subNameTd = document.createElement('td');
+                                  subNameTd.textContent = team.data.name;
+                                  subNameTd.style.paddingLeft = '35px';
+
+                                  sortedCategoriesForHeader.forEach(cat => {
+                                      const categoryCell = document.createElement('td');
+                                       if (team.data.categoryId === cat) {
+                                           categoryCell.textContent = '1';
+                                           categoryCell.style.textAlign = 'center';
+                                       } else {
+                                           categoryCell.textContent = '';
+                                       }
+                                       subRow.appendChild(categoryCell);
+                                   });
+
+
+                                  subRow.insertBefore(subNameTd, subRow.firstChild);
+                                 subRow.style.display = 'table-row'; // Show immediately after creation
+
+                                 mainRow.parentElement.insertBefore(subRow, mainRow.nextSibling);
+                              });
+                               console.log(`Sub-rows for "${currentBaseName}" created and shown.`); // LOG: Podriadené riadky vytvorené
+                         } else {
+                             existingSubRowsForBaseName.forEach(subRow => {
+                                 subRow.style.display = 'table-row';
+                             });
+                              console.log(`Sub-rows for "${currentBaseName}" shown.`); // LOG: Podriadené riadky zobrazené
+                         }
+
+                         mainRow.setAttribute('data-sub-rows-visible', 'true');
+
+                         // Clear any active category filter when base name is clicked
+                         currentCategoryFilter = null;
+                          // Ensure all main rows are visible (clearing filter shows all)
                           createdTeamsTableBody.querySelectorAll('tr[data-base-name]').forEach(row => {
-                              if (row !== mainRow) row.setAttribute('data-sub-rows-visible', 'false');
+                              row.style.display = 'table-row';
                           });
 
+                    });
 
-                          if (isVisible) {
-                              // Hide sub-rows for this base name
+
+                tr.appendChild(nameTd);
+
+                // Cells for each category count (EXISTING CLICK FUNCTIONALITY - MODIFIED)
+                sortedCategoriesForHeader.forEach(categoryName => {
+                    const countTd = document.createElement('td');
+                    const teamsInThisCategory = teamsByBaseNameAndCategory[baseName]?.[categoryName] || [];
+                    const teamCount = teamsInThisCategory.length;
+
+                    countTd.textContent = teamCount > 0 ? teamCount : '';
+                    countTd.setAttribute('data-team-count', teamCount);
+                    countTd.setAttribute('data-category', categoryName);
+
+                    if (teamCount > 0) {
+                        countTd.dataset.teams = JSON.stringify(teamsInThisCategory);
+                         countTd.style.cursor = 'pointer'; // Add cursor style
+
+                        countTd.addEventListener('click', function() {
+                             console.log(`Count cell clicked for category "${categoryName}" on base name "${baseName}".`); // LOG: Klik na bunku s počtom
+                             const clickedCell = this;
+                             const mainRow = clickedCell.parentElement;
+                             const baseName = mainRow.getAttribute('data-base-name');
+                             const category = clickedCell.getAttribute('data-category');
+
+                             // Hide all sub-rows for this base name FIRST
+                             createdTeamsTableBody.querySelectorAll(`tr.sub-row[data-base-name="${baseName}"]`).forEach(subRow => subRow.style.display = 'none');
+                              // Reset base name row visibility state
+                              createdTeamsTableBody.querySelectorAll('tr[data-base-name]').forEach(row => {
+                                  if (row !== mainRow) row.setAttribute('data-sub-rows-visible', 'false');
+                               });
                               mainRow.setAttribute('data-sub-rows-visible', 'false');
-                          } else {
-                              // Show sub-rows for this base name
-                              // We need to CREATE the sub-rows first if they don't exist yet
-                              const existingSubRowsForBaseName = createdTeamsTableBody.querySelectorAll(`tr.sub-row[data-base-name="${currentBaseName}"]`);
 
-                              if (existingSubRowsForBaseName.length === 0) {
-                                   const teamsDataForBaseName = allSubRowsData[currentBaseName] || [];
 
-                                   teamsDataForBaseName.forEach(team => {
+                             // Ensure sub-rows for THIS category exist in the DOM (create if not)
+                             const existingSubRowsForThisCategory = createdTeamsTableBody.querySelectorAll(`tr.sub-row[data-base-name="${baseName}"][data-category="${category}"]`);
+
+                             if (existingSubRowsForThisCategory.length === 0) {
+                                  const teamsDataForCategory = JSON.parse(clickedCell.dataset.teams); // Get data from the cell
+                                  console.log(`Sub-rows for "${baseName}" in category "${category}" not found in DOM, creating.`); // LOG: Vytváranie podriadených riadkov pre kategóriu
+
+                                   teamsDataForCategory.forEach(team => {
                                        const subRow = document.createElement('tr');
                                        subRow.classList.add('sub-row');
-                                       subRow.setAttribute('data-base-name', currentBaseName);
-                                       subRow.setAttribute('data-category', team.data.categoryId || 'Nepriradená');
+                                       subRow.setAttribute('data-base-name', baseName);
+                                       subRow.setAttribute('data-category', category);
 
                                        const subNameTd = document.createElement('td');
                                        subNameTd.textContent = team.data.name;
@@ -1602,214 +1729,71 @@
                                             subRow.appendChild(categoryCell);
                                         });
 
-                                        subRow.insertBefore(subNameTd, subRow.firstChild);
-                                       subRow.style.display = 'table-row'; // Show immediately after creation
+                                       subRow.insertBefore(subNameTd, subRow.firstChild);
+                                        subRow.style.display = 'table-row'; // Show immediately after creation
 
-                                       mainRow.parentElement.insertBefore(subRow, mainRow.nextSibling);
-                                   });
-
-                              } else {
-                                  existingSubRowsForBaseName.forEach(subRow => {
-                                      subRow.style.display = 'table-row';
-                                  });
-                              }
-
-                              mainRow.setAttribute('data-sub-rows-visible', 'true');
-                          }
-
-                          // Clear any active category filter when base name is clicked
-                          currentCategoryFilter = null;
-                          // Ensure all main rows are visible when base name is clicked (unless a category filter is active, which we just cleared)
-                           createdTeamsTableBody.querySelectorAll('tr[data-base-name]').forEach(row => {
-                               row.style.display = 'table-row';
-                           });
-
-                     });
-
-
-                    tr.appendChild(nameTd);
-
-                    // Cells for each category count (EXISTING CLICK FUNCTIONALITY - MODIFIED)
-                    sortedCategoriesForHeader.forEach(categoryName => {
-                        const countTd = document.createElement('td');
-                        const teamsInThisCategory = teamsByBaseNameAndCategory[baseName]?.[categoryName] || [];
-                        const teamCount = teamsInThisCategory.length;
-
-                        countTd.textContent = teamCount > 0 ? teamCount : '';
-                        countTd.setAttribute('data-team-count', teamCount);
-                        countTd.setAttribute('data-category', categoryName);
-
-                        // Add class for styling clickability (already added in previous step)
-                         // countTd.classList.add('clickable-count-cell'); // Using attribute selector in CSS now
-
-                        if (teamCount > 0) {
-                            countTd.dataset.teams = JSON.stringify(teamsInThisCategory);
-
-                            countTd.addEventListener('click', function() {
-                                const clickedCell = this;
-                                const mainRow = clickedCell.parentElement;
-                                const baseName = mainRow.getAttribute('data-base-name');
-                                const category = clickedCell.getAttribute('data-category');
-
-                                // Find sub-rows SPECIFIC to this base name AND category
-                                const subRowsForCategory = createdTeamsTableBody.querySelectorAll(`tr.sub-row[data-base-name="${baseName}"][data-category="${category}"]`);
-
-                                // Find ALL sub-rows for this base name (in case other category sub-rows are open)
-                                const allSubRowsForBaseName = createdTeamsTableBody.querySelectorAll(`tr.sub-row[data-base-name="${baseName}"]`);
-
-                                 // Hide all sub-rows for this base name FIRST
-                                  allSubRowsForBaseName.forEach(subRow => subRow.style.display = 'none');
-                                   // Reset base name row visibility state
-                                   createdTeamsTableBody.querySelectorAll('tr[data-base-name]').forEach(row => {
-                                       if (row !== mainRow) row.setAttribute('data-sub-rows-visible', 'false');
+                                        mainRow.parentElement.insertBefore(subRow, mainRow.nextSibling); // Insert after the main row
                                     });
-                                   mainRow.setAttribute('data-sub-rows-visible', 'false');
+                             } else {
+                                 console.log(`Sub-rows for "${baseName}" in category "${category}" found in DOM, showing.`); // LOG: Zobrazovanie existujúcich podriadených riadkov
+                                 // Sub-rows already exist, just show them
+                                 existingSubRowsForThisCategory.forEach(subRow => subRow.style.display = 'table-row');
+                             }
+
+                             mainRow.setAttribute('data-sub-rows-visible', 'true'); // Mark the main row as having visible sub-rows
+
+                             // Clear any active category filter when a count cell is clicked
+                             currentCategoryFilter = null;
+                              // Ensure all main rows are visible (clicking cell clears filter)
+                              createdTeamsTableBody.querySelectorAll('tr[data-base-name]').forEach(row => {
+                                  row.style.display = 'table-row';
+                              });
+
+                        });
+                    }
 
 
-                                if (subRowsForCategory.length > 0 && subRowsForCategory[0].style.display !== 'none') {
-                                    // Sub-rows for this category were visible (shouldn't happen after hiding all), hide them again
-                                    subRowsForCategory.forEach(subRow => subRow.style.display = 'none');
-                                    // If they are now hidden, check if *all* sub-rows for the base name are hidden
-                                     const areAllHidden = Array.from(allSubRowsForBaseName).every(row => row.style.display === 'none');
-                                      if (areAllHidden) {
-                                          mainRow.setAttribute('data-sub-rows-visible', 'false');
-                                      }
+                    tr.appendChild(countTd);
+                });
 
 
-                                } else {
-                                     // Sub-rows for this category are hidden, SHOW them
+                createdTeamsTableBody.appendChild(tr);
 
-                                    // Get the team data specifically for THIS category
-                                    const teamsDataForCategory = JSON.parse(clickedCell.dataset.teams);
+                // Initially create and hide all sub-rows for this base name (REMOVED THIS BLOCK)
+                // Sub-rows are now created dynamically when base name cell is clicked if they don't exist.
+                // This simplifies the initial DOM structure.
 
-                                    // Ensure sub-rows for THIS category exist in the DOM (create if not)
-                                    const existingSubRowsForThisCategory = createdTeamsTableBody.querySelectorAll(`tr.sub-row[data-base-name="${baseName}"][data-category="${category}"]`);
+            });
 
-                                     if (existingSubRowsForThisCategory.length === 0) {
-                                         // Create and insert sub-rows for this specific category and base name
-                                         teamsDataForCategory.forEach(team => {
-                                             const subRow = document.createElement('tr');
-                                             subRow.classList.add('sub-row');
-                                             subRow.setAttribute('data-base-name', baseName);
-                                             subRow.setAttribute('data-category', category);
+             // NEW: After creating the table, apply the filter if one was active before refreshing
+              if (currentCategoryFilter) {
+                  console.log(`Applying active filter: "${currentCategoryFilter}" after display.`); // LOG: Aplikácia filtra po vytvorení tabuľky
+                  // Find the header cell for the active filter
+                   const activeHeaderCell = createdTeamsTableHead.querySelector(`th[data-category-name="${currentCategoryFilter}"]`);
+                   if (activeHeaderCell) {
+                       // Trigger the click listener on the header to re-apply the filter
+                       // Use setTimeout to ensure the DOM updates are processed before triggering click
+                       setTimeout(() => {
+                            activeHeaderCell.click(); // This will run the filtering logic
+                            console.log("Triggered click on active filter header."); // LOG: Spustené kliknutie na filter
+                       }, 0); // Use 0 delay to run after current execution finishes
 
-                                             const subNameTd = document.createElement('td');
-                                             subNameTd.textContent = team.data.name;
-                                             subNameTd.style.paddingLeft = '35px';
-
-                                             sortedCategoriesForHeader.forEach(cat => {
-                                                 const categoryCell = document.createElement('td');
-                                                  if (team.data.categoryId === cat) {
-                                                      categoryCell.textContent = '1';
-                                                      categoryCell.style.textAlign = 'center';
-                                                  } else {
-                                                      categoryCell.textContent = '';
-                                                  }
-                                                  subRow.appendChild(categoryCell);
-                                              });
-
-                                             subRow.insertBefore(subNameTd, subRow.firstChild);
-                                             subRow.style.display = 'table-row'; // Show immediately after creation
-
-                                             mainRow.parentElement.insertBefore(subRow, mainRow.nextSibling);
-                                         });
-                                     } else {
-                                         // Sub-rows already exist, just show them
-                                         existingSubRowsForThisCategory.forEach(subRow => subRow.style.display = 'table-row');
-                                     }
+                   } else {
+                       // If the previously filtered category no longer exists, clear the filter
+                       currentCategoryFilter = null;
+                        createdTeamsTableBody.querySelectorAll('tr[data-base-name]').forEach(mainRow => {
+                              mainRow.style.display = 'table-row'; // Show all main rows
+                          });
+                        console.log("Active filter category not found after display, filter cleared."); // LOG: Filter zrušený (kategória nenájdená)
+                   }
+              }
 
 
-                                    // Mark the main row as having visible sub-rows (since *some* sub-rows are now visible)
-                                     mainRow.setAttribute('data-sub-rows-visible', 'true');
+            console.log(`Finished displaying created teams table.`); // LOG: Koniec funkcie
 
-
-                                }
-
-                                // Clear any active category filter when a count cell is clicked
-                                currentCategoryFilter = null;
-                                // Ensure all main rows are visible (since we are showing sub-rows for one base name)
-                                // However, if a filter WAS active, clicking a cell should probably just show the sub-rows for *that* row,
-                                // and the filter should remain active, hiding other rows.
-                                // Let's decide: clicking a cell CLEARS the filter and shows sub-rows for that row.
-                                 createdTeamsTableBody.querySelectorAll('tr[data-base-name]').forEach(row => {
-                                     row.style.display = 'table-row';
-                                 });
-
-
-                                // Optional: Add/remove a class on the clicked count cell for visual feedback
-                                // clickedCell.classList.toggle('selected-category-count');
-                            });
-                        }
-
-
-                        tr.appendChild(countTd);
-                    });
-
-
-                    createdTeamsTableBody.appendChild(tr);
-
-                    // Initially create and hide all sub-rows for this base name
-                     const teamsDataForBaseName = allSubRowsData[baseName] || [];
-                      teamsDataForBaseName.forEach(team => {
-                          const subRow = document.createElement('tr');
-                          subRow.classList.add('sub-row');
-                          subRow.setAttribute('data-base-name', baseName);
-                          subRow.setAttribute('data-category', team.data.categoryId || 'Nepriradená');
-
-                           const subNameTd = document.createElement('td');
-                           subNameTd.textContent = team.data.name;
-                           subNameTd.style.paddingLeft = '35px';
-
-                           sortedCategoriesForHeader.forEach(cat => {
-                               const categoryCell = document.createElement('td');
-                                if (team.data.categoryId === cat) {
-                                    categoryCell.textContent = '1';
-                                    categoryCell.style.textAlign = 'center';
-                                } else {
-                                    categoryCell.textContent = '';
-                                }
-                                subRow.appendChild(categoryCell);
-                            });
-
-                           subRow.insertBefore(subNameTd, subRow.firstChild);
-                           subRow.style.display = 'none'; // Initially hidden
-
-                          createdTeamsTableBody.appendChild(subRow); // Append the sub-row (hidden)
-                      });
-                 });
-
-                 // NEW: After creating the table, apply the filter if one was active before refreshing
-                 if (currentCategoryFilter) {
-                     // Find the header cell for the active filter
-                      const activeHeaderCell = createdTeamsTableHead.querySelector(`th[data-category-name="${currentCategoryFilter}"]`);
-                      if (activeHeaderCell) {
-                          // Trigger the click listener on the header to re-apply the filter
-                          activeHeaderCell.click(); // This will run the filtering logic
-                      } else {
-                          // If the previously filtered category no longer exists, clear the filter
-                          currentCategoryFilter = null;
-                           createdTeamsTableBody.querySelectorAll('tr[data-base-name]').forEach(mainRow => {
-                                 mainRow.style.display = 'table-row'; // Show all main rows
-                             });
-                      }
-                 }
-
-
-                console.log(`Načítaných a zoskupených tímov (na priradenie do skupín).`);
-
-            } catch (error) {
-                console.error('Chyba pri načítaní alebo zobrazovaní vytvorených tímov v novom formáte: ', error);
-                const errorMessage = document.createElement('tr');
-                const td = document.createElement('td');
-                td.colSpan = (allCategories.length > 0 ? allCategories.length : 1) + 1;
-                td.textContent = 'Chyba pri načítaní dát tímov.';
-                td.style.textAlign = 'center';
-                errorMessage.appendChild(td);
-                createdTeamsTableBody.appendChild(errorMessage);
-            }
         }
-        // === 8. MODAL OPEN FUNCTIONS (Called by event listeners) ===
 
+            
         // Funkcia na otvorenie modálu kategórie (používa ju addButton listener)
         function openCategoryModal(categoryName = null) { // parameter categoryName je voliteľný pre úpravu
             categoryModal.style.display = 'block';
