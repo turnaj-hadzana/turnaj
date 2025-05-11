@@ -220,21 +220,22 @@
              width: 100%;
         }
 
-        /* Style for number count in the created teams table */
-        #createdTeamsTable td {
-             text-align: center; /* Center the count numbers */
-             width: 50px; /* Give count columns a fixed width */
-        }
-         #createdTeamsTable td:first-child {
-              text-align: left; /* Keep team name left-aligned */
-              width: auto; /* Let team name take available width */
+         /* Style for number count in the created teams table */
+         #createdTeamsTable td {
+              text-align: center; /* Center the count numbers */
+              width: 50px; /* Give count columns a fixed width */
          }
-          #createdTeamsTable th {
-               text-align: center; /* Center header text for categories */
+          #createdTeamsTable td:first-child {
+               text-align: left; /* Keep team name left-aligned */
+               width: auto; /* Let team name take available width */
           }
-          #createdTeamsTable th:first-child {
-               text-align: left; /* Keep team name header left-aligned */
-          }
+           #createdTeamsTable th {
+                text-align: center; /* Center header text for categories */
+                white-space: nowrap; /* Prevent text wrapping in headers */
+           }
+           #createdTeamsTable th:first-child {
+                text-align: left; /* Keep team name header left-aligned */
+           }
 
 
         /* --- Action Button Styles --- */
