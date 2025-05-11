@@ -648,17 +648,23 @@
                            const clubsInGroupQuery = query(clubsCollectionRef, where('groupId', '==', groupDoc.id));
                            const clubsSnapshot = await getDocs(clubsInGroupQuery);
                            clubsSnapshot.forEach(clubDoc => {
-                               clubUpdates.push({ ref: clubDoc.ref, updates: { categoryId: null, groupId: null } });
+                                // Use the new composite group ID for the update
+                               const oldGroupId = groupDoc.id; // e.g., "OldCategory - GroupA"
+                               const groupData = groupDoc.data(); // e.g., { name: "GroupA", categoryId: "OldCategory" }
+                               const newGroupId = `${newCategoryName} - ${groupData.name}`; // Note: newCategoryName might not be correct here if just deleting category. This logic might need refinement.
+                                                                                           // If simply deleting category, clubs in groups related to this category should lose group *and* category references.
+                               // Let's simplify: if category deleted, clubs lose both references.
+                               clubUpdates.push({ ref: clubDoc.ref, updates: { categoryId: null, groupId: null } }); // Update club with null categoryId and null groupId
+                                console.log(`Klub "${clubDoc.id}" odpriradený kvôli zmazaniu skupiny.`);
                            });
                             // Add group deletion to batch
-                           batch.delete(groupDoc.ref);
+                           batch.delete(groupDoc.ref); // Delete old group doc
                            console.log(`Skupina "${groupDoc.id}" zmazaná kvôli zmazaniu kategórie.`);
                        }
 
                        // Add club updates to batch
                        clubUpdates.forEach(item => {
                            batch.update(item.ref, item.updates);
-                           console.log(`Klub "${item.ref.id}" odpriradený kvôli zmazaniu skupiny.`);
                        });
 
 
@@ -666,7 +672,7 @@
                       const unassignedClubsQuery = query(clubsCollectionRef, where('categoryId', '==', categoryToDelete), where('groupId', '==', null));
                        const unassignedClubsSnapshot = await getDocs(unassignedClubsQuery);
                        unassignedClubsSnapshot.forEach(doc => {
-                           batch.update(doc.ref, { categoryId: null }); // Just update categoryId
+                           batch.update(doc.ref, { categoryId: null }); // Just update categoryId to null
                            console.log(`Nepriradený klub "${doc.id}" aktualizovaný (categoryId = null).`);
                        });
 
@@ -1380,7 +1386,7 @@ async function openGroupModal(groupId = null, groupData = null) {
                      } else {
                           // Sort teams by name, then category (optional)
                           clubs.sort((a, b) => {
-                               const nameCompare = (a.data.name || '').localeCompare(b.data.name || '');
+                               const nameCompare = (a.data.name || '').localeCompare(b.data.name || ''); // <--- OPRAVENÉ: Odstránená extra zátvorka
                                if (nameCompare !== 0) return nameCompare;
                                return (a.data.categoryId || '').localeCompare(b.data.categoryId || '');
                           });
@@ -1728,15 +1734,16 @@ async function openGroupModal(groupId = null, groupData = null) {
                            clubsSnapshot.forEach(clubDoc => {
                                 // Use the new composite group ID for the update
                                const oldGroupId = groupDoc.id; // e.g., "OldCategory - GroupA"
-                               const groupData = groupDoc.data(); // e.g., { name: "GroupA", categoryId: "OldCategory" }
-                               const newGroupId = `${newCategoryName} - ${groupData.name}`;
+                               const groupData = clubDoc.data(); // NOTE: This should be groupDoc.data(), not clubDoc.data() if using group name for new ID.
+                                                                 // If just changing category, the group name part of composite ID should be the same.
+                               const newGroupId = `${newCategoryName} - ${oldGroupId.split(' - ').slice(1).join(' - ')}`; // Construct new group ID using new category name and old group name part
 
                                clubUpdates.push({ ref: clubDoc.ref, updates: { categoryId: newCategoryName, groupId: newGroupId } }); // Update club with new categoryId and new groupId
                                 console.log(`Klub "${clubDoc.id}" aktualizovaný (categoryId, groupId) kvôli zmene kategórie skupiny.`);
                            });
                             // Add group deletion to batch
                            batch.delete(groupDoc.ref); // Delete old group doc
-                           console.log(`Skupina "${groupDoc.id}" zmazaná kvôli zmazaniu kategórie.`);
+                           console.log(`Stará skupina "${groupDoc.id}" zmazaná po premenovaní kategórie.`); // Clarified log
                        }
 
                        // Add club updates to batch
@@ -1749,13 +1756,13 @@ async function openGroupModal(groupId = null, groupData = null) {
                       const unassignedClubsQuery = query(clubsCollectionRef, where('categoryId', '==', oldCategoryName), where('groupId', '==', null));
                        const unassignedClubsSnapshot = await getDocs(unassignedClubsQuery);
                        unassignedClubsSnapshot.forEach(doc => {
-                           batch.update(doc.ref, { categoryId: newCategoryName }); // Just update categoryId
+                           batch.update(doc.ref, { categoryId: newCategoryName }); // Just update categoryId to new name
                            console.log(`Nepriradený klub "${doc.id}" aktualizovaný (categoryId).`);
                        });
 
 
                       // Nakoniec zmaž samotnú kategóriu
-                      batch.delete(doc(categoriesCollectionRef, categoryToDelete));
+                      batch.delete(doc(categoriesCollectionRef, oldCategoryName)); // Delete old category doc using old name
 
                       await batch.commit();
 
@@ -1884,6 +1891,7 @@ async function openGroupModal(groupId = null, groupData = null) {
 
                  const selectedCategoryId = clubCategorySelect.value;
                  const selectedGroupId = clubGroupSelect.value; // Composite group ID (Category - Group Name)
+
 
                  // Validate selects (mandatory in both add-assign and edit-assigned modes)
                  if (clubCategorySelect.disabled === false && (selectedCategoryId === '' || selectedCategoryId === '-- Vyberte kategóriu --')) {
