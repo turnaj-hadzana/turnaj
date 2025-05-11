@@ -269,6 +269,25 @@
                 color: #0056b3;
            }
 
+            #createdTeamsTable thead {
+                position: sticky; /* Make the header sticky */
+                top: 0; /* Stick to the top of the scrollable container */
+                z-index: 10; /* Ensure the header is above scrolling content */
+                background-color: #f8f9fa; /* Add a background color so content doesn't scroll behind it */
+                /* You might need to adjust the background color to match your table style */
+            }
+
+            /* Optional: Add borders to sticky header cells for better separation */
+            #createdTeamsTable thead th {
+                border-bottom: 2px solid #dee2e6; /* Example border */
+            }
+
+            /* Ensure the table can be scrolled horizontally if content overflows */
+            /* Apply overflow-x to the container holding the table if the table itself doesn't scroll */
+            #teamCreationContentSection .section-block {
+                 overflow-x: auto; /* Add horizontal scroll if needed */
+            }
+
 
         /* --- Action Button Styles --- */
         .action-button {
