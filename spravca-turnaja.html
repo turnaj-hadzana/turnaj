@@ -1497,10 +1497,7 @@ async function openGroupModal(groupId = null, groupData = null) {
                    }
             }
 
-            // NEW: Funkcia na zobrazenie vytvorených tímov (klubov, ktoré ešte nie sú priradené do skupiny) - UPRAVENÉ PRE TABUĽKOVÉ ZOBRAZENIE PODĽA KATEGÓRIÍ
-
-
-            // NEW: Funkcia na zobrazenie vytvorených tímov (klubov, ktoré ešte nie sú priradené do skupiny) - UPRAVENÉ PRE TABUĽKOVÉ ZOBRAZENIE PODĽA KATEGÓRIÍ A ROZKLIKÁVACÍCH RIADKOV
+// NEW: Funkcia na zobrazenie vytvorených tímov (klubov, ktoré ešte nie sú priradené do skupiny) - UPRAVENÉ PRE TABUĽKOVÉ ZOBRAZENIE PODĽA KATEGÓRIÍ A ROZKLIKÁVACÍCH RIADKOV
             async function displayCreatedTeams() {
                  createdTeamsTableBody.innerHTML = ''; // Clear existing rows
                  createdTeamsTableHead.innerHTML = ''; // Clear existing header
@@ -1626,16 +1623,16 @@ async function openGroupModal(groupId = null, groupData = null) {
 
                               // Add click listener if there are teams to display
                               if (teamCount > 0) {
-                                   countTd.style.cursor = 'pointer'; // Indicate it's clickable
-                                    // Store the team data associated with this cell
-                                   countTd.dataset.teams = JSON.stringify(teamsInThisCategory); // Store team data as a JSON string
-
+                                   // Store the team data associated with this cell (all team instances for this base name and category)
+                                   clickedCell.dataset.teams = JSON.stringify(teamsInThisCategory); // Store team data as a JSON string - Moved inside event listener scope
 
                                    countTd.addEventListener('click', function() {
                                        const clickedCell = this;
                                        const baseName = clickedCell.parentElement.getAttribute('data-base-name'); // Get base name from parent row
                                        const category = clickedCell.getAttribute('data-category'); // Get category from cell
-                                       const teamsData = JSON.parse(clickedCell.dataset.teams); // Parse the stored team data
+                                        // Retrieve and parse team data from the cell's dataset
+                                       const teamsData = JSON.parse(clickedCell.dataset.teams);
+
 
                                         // Find the main row (the one with the base name)
                                         const mainRow = clickedCell.parentElement;
@@ -1656,21 +1653,28 @@ async function openGroupModal(groupId = null, groupData = null) {
                                                 subRow.setAttribute('data-base-name', baseName); // Link to main row
                                                 subRow.setAttribute('data-category', category); // Link to category
 
-                                                // First cell for indented team name
-                                                const subNameTd = document.createElement('td');
-                                                subNameTd.textContent = team.data.name;
-                                                // Apply indentation
-                                                subNameTd.style.paddingLeft = '35px'; // Indent by 20px
+                                                // Create cells for the sub-row
+                                                 const subNameTd = document.createElement('td');
+                                                 subNameTd.textContent = team.data.name; // Display the full team name
+                                                 // Apply indentation to the first cell
+                                                 subNameTd.style.paddingLeft = '35px';
 
 
-                                                // Create empty cells for other categories to maintain column alignment
-                                                sortedCategoriesForHeader.forEach(cat => {
-                                                    const emptyTd = document.createElement('td');
-                                                     // Optional: Add a small indicator if this sub-team belongs to this column's category
-                                                     // if (team.data.categoryId === cat) { emptyTd.textContent = '•'; emptyTd.style.textAlign = 'center'; }
-                                                    subRow.appendChild(emptyTd);
-                                                });
+                                                // Create cells for each category column
+                                                 sortedCategoriesForHeader.forEach(cat => {
+                                                     const categoryCell = document.createElement('td');
+                                                      // Check if this sub-team belongs to the category of the current column
+                                                      if (team.data.categoryId === cat) {
+                                                          categoryCell.textContent = '1'; // Display '1' if it belongs to this category
+                                                      } else {
+                                                          categoryCell.textContent = ''; // Otherwise, leave empty
+                                                      }
+                                                      // Ensure text alignment for the number '1' if needed, or let CSS handle it
+                                                      // categoryCell.style.textAlign = 'center';
 
+
+                                                     subRow.appendChild(categoryCell);
+                                                 });
 
                                                 // Optional: Add an actions cell for the individual team
                                                 // const subActionsTd = document.createElement('td');
@@ -1678,7 +1682,8 @@ async function openGroupModal(groupId = null, groupData = null) {
                                                 // subRow.appendChild(subActionsTd);
 
 
-                                                subRow.appendChild(subNameTd); // Add the name cell to the sub-row
+                                                subRow.insertBefore(subNameTd, subRow.firstChild); // Insert the name cell as the first child
+
 
                                                 // Insert the sub-row immediately after the main row
                                                 mainRow.parentElement.insertBefore(subRow, mainRow.nextSibling);
@@ -1715,7 +1720,7 @@ async function openGroupModal(groupId = null, groupData = null) {
                      createdTeamsTableBody.appendChild(errorMessage);
                  }
             }
-
+        
             // --- Funkcia na prepínanie zobrazenia obsahu ---
 
             function toggleContentDisplay() {
