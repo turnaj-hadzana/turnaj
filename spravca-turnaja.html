@@ -754,12 +754,29 @@
                   groupsContentDiv.style.display = 'flex';
                   displayGroupsByCategory();
                   addButton.title = "Pridať skupinu";
-              } else if (hash === '#vytvorenie-timov') {
-                  addButton.style.display = 'block';
-                  teamCreationContentSection.style.display = 'block';
-                  displayCreatedTeams();
-                  addButton.title = "Vytvoriť tímy";
-              }
+                } else if (hash === '#vytvorenie-timov') {
+                      console.log("Attempting to open team creation modal..."); // PRIDANÉ
+                      // Open team creation modal
+                      currentTeamCreationModalMode = 'add'; // Ensure add mode
+                      teamCreationModalTitle.textContent = 'Vytvoriť tímy';
+                      teamCreationForm.reset();
+
+                      console.log("Populating category select..."); // PRIDANÉ
+                      // Populate category select
+                      // Ensure populateCategorySelect is awaited if it's async
+                      // It is async, so it should be awaited:
+                      await populateCategorySelect(teamCategorySelect, null); // Populate category select
+                      console.log("Category select populated."); // PRIDANÉ
+
+
+                      console.log("Setting modal display to block..."); // PRIDANÉ
+                      teamCreationModal.style.display = 'block'; // <-- Tu sa má modál zobraziť
+                      console.log("Modal display set."); // PRIDANÉ
+
+                      teamNameInput.focus();
+                      console.log("Focus set on team name input."); // PRIDANÉ
+
+                 }
               else if (hash === '#timy-do-skupin') {
                   addButton.style.display = 'block';
                   clubsContentDiv.style.display = 'flex';
