@@ -693,10 +693,35 @@
          // NEW: Cache pre zoznam všetkých kategórií
          let allCategories = [];
 
+        / Premenná príznaku pre debounce toggleContentDisplay
+         let isDisplaying = false; // <<< PRIDANÉ: Príznak pre debounce
+    
 
          // --- Funkcia na prepínanie zobrazenia obsahu ---
          // THIS FUNCTION IS MOVED UP HERE
+Jasné, tu je celá funkcia toggleContentDisplay vrátane debounce logiky, ktorú treba pridať na začiatok vášho <script type="module"> bloku (alebo aspoň pred prvé volanie tejto funkcie a pred event listenery, ktoré ju volajú).
+
+Nezabudnite pridať aj deklaráciu premennej isDisplaying mimo tejto funkcie, ideálne hneď pred ňou.
+
+JavaScript
+
+         // <<< PRIDANÉ: Deklarácia premennej isDisplaying (mimo funkcie toggleContentDisplay)
+         let isDisplaying = false;
+         // <<< KONIEC PRIDANÉ
+
+
+         // --- Funkcia na prepínanie zobrazenia obsahu ---
          function toggleContentDisplay() {
+              // <<< PRIDANÉ: Debounce logika
+              if (isDisplaying) {
+                  console.log("toggleContentDisplay already running, exiting.");
+                  return; // Ak funkcia už beží alebo nedávno bežala, ukončíme ju
+              }
+              isDisplaying = true; // Označíme, že funkcia práve začína bežať
+              console.log("isDisplaying set to true."); // PRIDANÉ LOG pre ladenie
+              // <<< KONIEC PRIDANÉ: Debounce logika
+
+
               const hash = window.location.hash;
               console.log("Navigating to hash:", hash);
 
@@ -740,30 +765,30 @@
                teamCreationForm.reset();
                 // Clear dynamic fields when navigating away
                dynamicCategoryCountContainer.innerHTML = '';
-                // Repopulate the initial category select
-               populateCategorySelect(teamCategorySelect, null, []); // Pass empty array for excluded
+                // Repopulate the initial category select (now handled in the add button listener where it's needed)
+               // populateCategorySelect(teamCategorySelect, null, []); // Removed direct call here
 
 
               if (hash === '#kategorie') {
                   addButton.style.display = 'block';
                   categoriesContentSection.style.display = 'block';
-                  loadCategoriesTable();
+                  loadCategoriesTable(); // Note: This is async but not awaited here. Might need refactoring if load order is crucial.
                   addButton.title = "Pridať kategóriu";
               } else if (hash === '#skupiny') {
                   addButton.style.display = 'block';
                   groupsContentDiv.style.display = 'flex';
-                  displayGroupsByCategory();
+                  displayGroupsByCategory(); // Note: This is async but not awaited here.
                   addButton.title = "Pridať skupinu";
               } else if (hash === '#vytvorenie-timov') {
                   addButton.style.display = 'block';
                   teamCreationContentSection.style.display = 'block';
-                  displayCreatedTeams();
+                  displayCreatedTeams(); // Note: This is async but not awaited here.
                   addButton.title = "Vytvoriť tímy";
               }
               else if (hash === '#timy-do-skupin') {
                   addButton.style.display = 'block';
                   clubsContentDiv.style.display = 'flex';
-                  displayClubs(); // Load and display assigned clubs
+                  displayClubs(); // Note: This is async but not awaited here.
                   // The '+' button in this section is for assigning an UNASSIGNED team
                   addButton.title = "Priradiť tím do skupiny";
               }
@@ -777,6 +802,14 @@
                   addButton.title = "Pridať položku"; // Default title
                   console.log("Neznáma alebo neimplementovaná sekcia, zobrazujem prázdny obsah.");
               }
+
+
+              // <<< PRIDANÉ: Resetovanie príznaku po krátkej chvíli
+               setTimeout(() => {
+                   isDisplaying = false;
+                   console.log("isDisplaying flag reset."); // PRIDANÉ LOG pre ladenie
+               }, 50); // Doba v milisekundách, po ktorej sa príznak resetuje. Upravte podľa potreby.
+               // <<< KONIEC PRIDANÉ: Resetovanie príznaku
          }
 
 
