@@ -1471,66 +1471,76 @@
 
                 const sortedCategoriesForHeader = categoriesToDisplay.sort();
 
-                sortedCategoriesForHeader.forEach((categoryName, index) => {
+                // === NAHRAT TENTO CYKLUS V RAMCI displayCreatedTeams ===
+                sortedCategoriesForHeader.forEach((categoryName, index) => { // Loop through category headers
                     const th = document.createElement('th');
                     th.textContent = categoryName;
                     // NEW: Add class and cursor for clickability
                     th.classList.add('category-header-cell');
-                    // Store the category name and its index relative to *other category headers* (starting from 0)
+                    // Store the category name (index attribute is not strictly needed now)
                     th.setAttribute('data-category-name', categoryName);
-                    th.setAttribute('data-category-index', index); // Index relative to category headers only
+                    // th.setAttribute('data-category-index', index); // Remove or ignore this index
 
-// NEW: Click listener for category headers
+                    // NEW: Click listener for category headers
                     th.addEventListener('click', function() {
-                         const clickedCategory = this.getAttribute('data-category-name');
-                         const clickedCategoryIndex = parseInt(this.getAttribute('data-category-index'), 10);
+                         console.log("Category header clicked:", this.textContent); // LOG 1: Potvrdenie kliknutia
 
-                         // === TÁTO ČASŤ ZABEZPEČUJE SKRYTIE VŠETKÝCH PODRIADENÝCH RIADKOV PRI ZMENE FILTRA ===
-                         // Hide all sub-rows when filtering changes
+                         // Hide all sub-rows and reset base name row visibility state
                          createdTeamsTableBody.querySelectorAll('tr.sub-row').forEach(subRow => {
-                             subRow.style.display = 'none'; // Skryje všetky podriadené riadky
+                             subRow.style.display = 'none';
                          });
-                          // Reset base name row visibility state
                           createdTeamsTableBody.querySelectorAll('tr[data-base-name]').forEach(mainRow => {
                               mainRow.setAttribute('data-sub-rows-visible', 'false');
                           });
-                         // ===============================================================================
+
+
+                         // Find the index of the clicked TH within the entire header row
+                         const headerThs = Array.from(this.parentElement.querySelectorAll('th')); // Get all THs in the header row
+                         const clickedThIndexInFullHeader = headerThs.indexOf(this); // Get index of THIS clicked TH
+
+                         console.log("Clicked TH index in full header row:", clickedThIndexInFullHeader); // LOG 2: Index kliknutej hlavičky
+
+                         const clickedCategory = this.getAttribute('data-category-name');
 
 
                          if (currentCategoryFilter === clickedCategory) {
                              // Clicking the active filter again - clear filter and show all main rows
                              currentCategoryFilter = null;
-                             console.log(`Filter pre kategóriu "${clickedCategory}" zrušený.`);
+                             console.log(`Filter for category "${clickedCategory}" cleared.`); // LOG 3a: Filter zrušený
                              createdTeamsTableBody.querySelectorAll('tr[data-base-name]').forEach(mainRow => {
-                                 mainRow.style.display = 'table-row'; // Zobrazí všetky hlavné riadky
+                                 mainRow.style.display = 'table-row'; // Show all main rows
                              });
                          } else {
                              // Clicking a new filter header - set filter and show only relevant rows
                              currentCategoryFilter = clickedCategory;
-                             console.log(`Filtrovanie podľa kategórie: "${clickedCategory}".`);
+                             console.log(`Filtering by category: "${clickedCategory}".`); // LOG 3b: Nový filter nastavený
 
-                             // === TÁTO ČASŤ FILTRUJE HLAVNÉ RIADKY NA ZÁKLADE POČTU V DANEJ KATEGÓRII ===
                              // Iterate through all main rows and show/hide based on count in the clicked category column
                              createdTeamsTableBody.querySelectorAll('tr[data-base-name]').forEach(mainRow => {
-                                  const thElements = Array.from(headerRow.querySelectorAll('th'));
-                                  const clickedThIndexInHeader = thElements.indexOf(this);
-
-                                   const countTd = mainRow.querySelectorAll('td')[clickedThIndexInHeader];
+                                  // Find the corresponding TD cell in the main row using the index from the header
+                                  // The first TD in a main row is the base team name (index 0).
+                                  // The count TDs start from index 1, corresponding to the 2nd TH (index 1) in the header.
+                                  // So, the index in the TD list matches the index in the TH list.
+                                   const mainRowTds = mainRow.querySelectorAll('td');
+                                   const countTd = mainRowTds[clickedThIndexInFullHeader]; // Use the correct index
 
                                   // Check if the cell exists and has content (count > 0)
-                                  if (countTd && countTd.textContent.trim() !== '' && parseInt(countTd.textContent, 10) > 0) {
-                                      mainRow.style.display = 'table-row'; // Zobrazí hlavný riadok
+                                   const countValue = countTd ? parseInt(countTd.textContent.trim(), 10) : 0; // Parse count, default to 0 if no cell or no content
+                                   console.log(`Row: "${mainRow.querySelector('td.base-name-cell').textContent}", Checking category "${clickedCategory}" (TH index ${clickedThIndexInFullHeader}). Count cell content: "${countTd ? countTd.textContent.trim() : 'N/A'}", Parsed count: ${countValue}`); // LOG 4: Kontrola riadku a počtu
+
+                                  if (countTd && countValue > 0) { // Check if countTd exists AND parsed count > 0
+                                      console.log("Showing row:", mainRow); // LOG 5a: Zobrazenie riadku
+                                      mainRow.style.display = 'table-row'; // Show the row
                                   } else {
-                                      mainRow.style.display = 'none'; // Skryje hlavný riadok
+                                      console.log("Hiding row:", mainRow); // LOG 5b: Skrytie riadku
+                                      mainRow.style.display = 'none'; // Hide the row
                                   }
                              });
-                             // =========================================================================
                          }
                     });
-
                     headerRow.appendChild(th);
                 });
-
+                
                 createdTeamsTableHead.appendChild(headerRow);
 
 
