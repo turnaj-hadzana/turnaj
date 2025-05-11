@@ -331,7 +331,7 @@
          }
 
 
-        .modal-content form button {
+        .modal-content form button[type="submit"] { /* Target the submit button */
             background-color: #28a745;
             color: white;
             padding: 10px 20px;
@@ -342,7 +342,7 @@
             transition: background-color 0.3s ease;
         }
 
-         .modal-content form button:hover {
+         .modal-content form button[type="submit"]:hover { /* Target the submit button */
             background-color: #218838;
          }
 
@@ -359,6 +359,48 @@
           .modal-content form select {
               margin-bottom: 0; /* Remove margin from elements inside the div */
           }
+
+          /* Optional CSS for dynamically added category/count pairs */
+            .category-count-pair {
+                border: 1px solid #eee;
+                padding: 10px;
+                margin-bottom: 15px; /* Space below each pair */
+                border-radius: 5px;
+                background-color: #f9f9f9;
+            }
+
+            .category-count-pair label {
+                display: inline-block; /* Make labels inline */
+                margin-bottom: 5px;
+                margin-right: 10px; /* Space between label and input/select */
+                font-weight: normal; /* Less bold than section titles */
+                min-width: 80px; /* Align labels (adjust as needed) */
+            }
+
+            .category-count-pair select,
+            .category-count-pair input[type="number"] {
+                 display: inline-block; /* Make inputs/selects inline */
+                 width: auto; /* Allow size based on content/min-width */
+                 margin-bottom: 0; /* Remove bottom margin */
+                 margin-right: 10px; /* Space between elements */
+                 padding: 5px; /* Smaller padding */
+            }
+
+            /* Style for the remove button within the pair */
+            .category-count-pair .action-button.delete-button {
+                padding: 3px 8px; /* Smaller padding */
+                font-size: 0.8em; /* Smaller font */
+            }
+
+            /* Adjust spacing within the container div */
+            #teamCategoryCountContainer div {
+                margin-bottom: 10px; /* Space between inner divs (label+element) */
+            }
+
+            /* Ensure remove button is not on a new line if space allows */
+            .category-count-pair div:last-of-type { /* This targets the last div within a pairDiv */
+                 margin-bottom: 0;
+            }
 
 
     </style>
@@ -458,15 +500,12 @@
                      </div>
 
                  <button type="button" id="addCategoryCountPairButton" class="action-button" style="margin-bottom: 15px;">Pridať ďalšiu kategóriu</button> <button type="submit">Vytvoriť tímy</button> </form>
-
-                <button type="submit">Vytvoriť</button>
-            </form>
         </div>
     </div>
 
     <div class="modal" id="manageTeamsModal">
         <div class="modal-content" style="max-width: 700px;"> <span class="close manage-teams-modal-close">&times;</span>
-            <h2 id="manageTeamsModalTitle"><span id="baseTeamNameInModal"></span></h2>
+            <h2 id="manageTeamsModalTitle">Spravovať tímy pre "<span id="baseTeamNameInModal"></span>"</h2>
 
             <div id="teamsListInModal">
                 <p>Načítavam tímy...</p> </div>
@@ -517,7 +556,7 @@
                  <table id="createdTeamsTable">
                      <thead>
                          <tr id="createdTeamsTableHeader"> <th>Názov tímu</th>
-                             <th style="width: 150px;">Upraviť</th>
+                             <th style="width: 150px;">Akcie</th>
                          </tr>
                      </thead>
                      <tbody id="createdTeamsTableBody">
@@ -597,10 +636,12 @@
         const teamCreationModal = document.getElementById('teamCreationModal');
         const teamCreationModalCloseBtn = teamCreationModal.querySelector('.team-creation-modal-close');
         const teamCreationForm = document.getElementById('teamCreationForm');
-        const teamCategorySelect = document.getElementById('teamCategorySelect'); // Select for category
+        // Removed teamCategorySelect and teamCountInput as they are now dynamic
         const teamNameInput = document.getElementById('teamNameInput'); // Input for base team name
-        const teamCountInput = document.getElementById('teamCountInput'); // Input for number of teams
-        const teamCreationModalTitle = document.getElementById('teamCreationModalTitle');
+        // New references for dynamic elements container and add button
+        const teamCategoryCountContainer = document.getElementById('teamCategoryCountContainer');
+        const addCategoryCountPairButton = document.getElementById('addCategoryCountPairButton');
+
 
         // Nový Modal pre správu individuálnych tímov
         const manageTeamsModal = document.getElementById('manageTeamsModal');
@@ -783,12 +824,9 @@
          // Funkcia na načítanie kategórií a naplnenie <select>
          // Použiteľná pre groupModal, clubModal a teamCreationModal
          async function populateCategorySelect(selectElement, selectedCategoryId = null) {
-              // Handle multiple select placeholder differently
-              if (selectElement.multiple) {
-                   selectElement.innerHTML = '<option value="" disabled>-- Vyberte kategóriu --</option>';
-              } else {
-                   selectElement.innerHTML = '<option value="">-- Vyberte kategóriu --</option>';
-              }
+              // Handle multiple select placeholder differently (Removed multiple select logic from here)
+              selectElement.innerHTML = '<option value="">-- Vyberte kategóriu --</option>';
+
 
                selectElement.disabled = true; // Disable while loading
 
@@ -815,30 +853,14 @@
                             selectElement.appendChild(option);
                        });
 
-                       // Select the provided category ID(s)
+                       // Select the provided category ID(s) (Simplified for single select)
                        if (selectedCategoryId) {
-                            // If it's a multiple select and selectedCategoryId is an array
-                            if (selectElement.multiple && Array.isArray(selectedCategoryId)) {
-                                 selectedCategoryId.forEach(catId => {
-                                      const option = selectElement.querySelector(`option[value="${catId}"]`);
-                                      if (option) {
-                                           option.selected = true;
-                                      } else {
-                                           console.warn(`Kategória "${catId}" pre zvolenú položku nenájdená v zozname kategórií.`);
-                                      }
-                                 });
-                             } else if (!selectElement.multiple && typeof selectedCategoryId === 'string') {
-                                 // If it's a single select
-                                 if (selectElement.querySelector(`option[value="${selectedCategoryId}"]`)) {
-                                      selectElement.value = selectedCategoryId;
-                                 } else {
-                                      console.warn(`Kategória "${selectedCategoryId}" pre zvolenú položku nenájdená v zozname kategórií.`);
-                                      selectElement.value = ""; // Reset to default if selected category not found
-                                 }
-                             } else {
-                                  console.warn("Mismatch between select type (multiple/single) and provided selectedCategoryId format.");
-                                  selectElement.value = ""; // Reset if format is wrong
-                             }
+                            if (selectElement.querySelector(`option[value="${selectedCategoryId}"]`)) {
+                                 selectElement.value = selectedCategoryId;
+                            } else {
+                                 console.warn(`Kategória "${selectedCategoryId}" pre zvolenú položku nenájdená v zozname kategórií.`);
+                                 selectElement.value = ""; // Reset to default if selected category not found
+                            }
                        }
                    }
                } catch (error) {
@@ -1023,7 +1045,7 @@ async function openGroupModal(groupId = null, groupData = null) {
                          const groupNameTh = document.createElement('th');
                          groupNameTh.textContent = 'Názov';
                          const actionsTh = document.createElement('th');
-                         actionsTh.textContent = 'Upraviť'; // Changed to Akcie
+                         actionsTh.textContent = 'Akcie'; // Changed to Akcie
                          actionsTh.style.width = '150px';
 
                          headerRow.appendChild(groupNameTh);
@@ -1349,7 +1371,7 @@ async function openGroupModal(groupId = null, groupData = null) {
                             const clubNameTh = document.createElement('th');
                             clubNameTh.textContent = 'Názov klubu';
                              const actionsTh = document.createElement('th');
-                             actionsTh.textContent = 'Upraviť';
+                             actionsTh.textContent = 'Akcie';
                              actionsTh.style.width = '150px';
 
                              headerRow.appendChild(clubNameTh);
@@ -1469,7 +1491,7 @@ async function openGroupModal(groupId = null, groupData = null) {
 
                      // Vytvoriť posledný stĺpec hlavičky
                      const actionsTh = document.createElement('th');
-                     actionsTh.textContent = 'Upraviť';
+                     actionsTh.textContent = 'Akcie';
                      actionsTh.style.width = '150px';
                      createdTeamsTableHeader.appendChild(actionsTh);
 
@@ -1560,7 +1582,7 @@ async function openGroupModal(groupId = null, groupData = null) {
 
                               // Tlačidlo na hromadné vymazanie všetkých tímov s týmto základným názvom
                               const deleteAllButton = document.createElement('button');
-                              deleteAllButton.textContent = 'Vymazať';
+                              deleteAllButton.textContent = 'Vymazať VŠETKY';
                               deleteAllButton.classList.add('action-button', 'delete-button');
                               deleteAllButton.onclick = async () => {
                                   if (!confirm(`Naozaj chcete vymazať VŠETKY tímy s názvom "${baseTeamName}" (${teamSummary.originalTeams.length} ks)?`)) {
@@ -1608,6 +1630,76 @@ async function openGroupModal(groupId = null, groupData = null) {
                  }
             }
 
+             // --- Funkcia na dynamické pridanie dvojice select kategória + input počet tímov ---
+             async function addCategoryCountPair(initialCategory = null) { // Optional: pre-select category if provided
+                 const container = document.getElementById('teamCategoryCountContainer');
+
+                 const pairDiv = document.createElement('div');
+                 pairDiv.classList.add('category-count-pair'); // Optional class for styling
+
+
+                 // Vytvorenie selectboxu pre kategóriu
+                 const categorySelectLabel = document.createElement('label');
+                 // Nemá for atribút, lebo sa dynamicky generuje pre každý select
+                 categorySelectLabel.textContent = 'Kategória:'; // Zmenený text labelu
+                 const categorySelect = document.createElement('select');
+                 // Nemá ID, ale môžeme mu dať triedu na jednoduchšie nájdenie
+                 categorySelect.classList.add('team-category-select-dynamic');
+                 categorySelect.name = 'category'; // Použijeme generické meno pre zber dát
+
+                 // Vytvorenie inputu pre počet tímov
+                 const teamCountLabel = document.createElement('label');
+                 // Nemá for atribút
+                 teamCountLabel.textContent = 'Počet tímov:'; // Zmenený text labelu
+                 const teamCountInput = document.createElement('input');
+                 // Nemá ID, triedu pre jednoduchšie nájdenie
+                 teamCountInput.classList.add('team-count-input-dynamic');
+                 teamCountInput.type = 'number';
+                 teamCountInput.name = 'count'; // Použijeme generické meno pre zber dát
+                 teamCountInput.min = '1';
+                 teamCountInput.value = '1'; // Default value
+
+
+                 // Tlačidlo na odstránenie tejto dvojice
+                 const removeButton = document.createElement('button');
+                 removeButton.textContent = 'Odstrániť';
+                 removeButton.classList.add('action-button', 'delete-button');
+                 removeButton.type = 'button'; // Dôležité: aby sa nespustil submit formulára
+                 removeButton.style.marginLeft = '10px'; // Add some spacing
+                  removeButton.onclick = () => {
+                      // Zmazať nadradený div obsahujúci select a input
+                      pairDiv.remove();
+                       // Voliteľne: skontrolovať, či zostala aspoň jedna dvojica
+                       const remainingPairs = container.querySelectorAll('.category-count-pair');
+                       if (remainingPairs.length === 0) {
+                            // Ak nezostala žiadna, možno pridať prázdnu alebo zablokovať submit
+                            // Pre tento príklad necháme prázdne, submit handler to ošetrí
+                       }
+                  };
+
+
+                 // Poskladať elementy do divu
+                 const selectContainer = document.createElement('div');
+                 selectContainer.style.marginBottom = '10px'; // Spacing between select/input pairs
+                 selectContainer.appendChild(categorySelectLabel);
+                 selectContainer.appendChild(categorySelect);
+
+                  const inputContainer = document.createElement('div');
+                  inputContainer.style.marginBottom = '10px'; // Spacing below input
+                 inputContainer.appendChild(teamCountLabel);
+                 inputContainer.appendChild(teamCountInput);
+
+
+                  pairDiv.appendChild(selectContainer);
+                  pairDiv.appendChild(inputContainer);
+                  pairDiv.appendChild(removeButton); // Pridaj tlačidlo na odstránenie
+
+                 container.appendChild(pairDiv);
+
+                 // Asynchrónne naplniť select kategórií
+                 await populateCategorySelect(categorySelect, initialCategory); // Reuse populateCategorySelect
+            }
+
 
             // --- Funkcia na prepínanie zobrazenia obsahu ---
 
@@ -1636,6 +1728,7 @@ async function openGroupModal(groupId = null, groupData = null) {
                  createdTeamsTableBody.innerHTML = '';
                  createdTeamsTableHeader.innerHTML = ''; // Clear header for dynamic generation
                  teamsListInModalDiv.innerHTML = ''; // Clear manage teams modal content
+                 teamCategoryCountContainer.innerHTML = ''; // Clear dynamic team creation fields
 
 
                  // Reset modal states and forms when navigating away
@@ -1714,13 +1807,7 @@ async function openGroupModal(groupId = null, groupData = null) {
                      openGroupModal(); // Call openGroupModal without arguments for add mode
                 } else if (hash === '#vytvorenie-timov') {
                      // Open team creation modal
-                     currentTeamCreationModalMode = 'add'; // Ensure add mode
-                     teamCreationModalTitle.textContent = 'Vytvoriť tímy';
-                     teamCreationForm.reset();
-                     // Pass the multiple select element to populateCategorySelect
-                     populateCategorySelect(teamCategorySelect, null);
-                     teamCreationModal.style.display = 'block';
-                     teamNameInput.focus();
+                     openTeamCreationModal(); // Call the updated function
                 }
                 else if (hash === '#timy-do-skupin') {
                      // Open club modal in add-assign mode (to assign an unassigned team)
@@ -1758,6 +1845,9 @@ async function openGroupModal(groupId = null, groupData = null) {
                  teamCreationModal.style.display = 'none';
                  currentTeamCreationModalMode = 'add';
                  teamCreationForm.reset();
+                 teamCategoryCountContainer.innerHTML = ''; // Clear dynamic fields on close
+                  // Optional: add back an initial empty pair for next open
+                  // addCategoryCountPair(); // If you want one pair ready on open
              });
 
             // Nový Modal pre správu individuálnych tímov - Zatvorenie na X
@@ -1791,6 +1881,9 @@ async function openGroupModal(groupId = null, groupData = null) {
                      teamCreationModal.style.display = 'none';
                      currentTeamCreationModalMode = 'add';
                      teamCreationForm.reset();
+                      teamCategoryCountContainer.innerHTML = ''; // Clear dynamic fields on close
+                      // Optional: add back an initial empty pair for next open
+                      // addCategoryCountPair(); // If you want one pair ready on open
                  }
                  // Nový Modal pre správu individuálnych tímov - Zatvorenie kliknutím mimo
                  if (e.target === manageTeamsModal) {
@@ -2280,7 +2373,7 @@ async function openGroupModal(groupId = null, groupData = null) {
                                // Reset selects if the selected team is no longer found
                                unassignedClubSelect.value = "";
                                clubCategorySelect.value = "";
-                               clubGroupSelect.innerHTML = '<option value="">-- Najprv vyberte kategóriu --</option>';
+                               clubGroupSelect.innerHTML = '<option value="">-- Najprv vyberte kategógiu --</option>';
                                clubGroupSelect.disabled = true;
                            }
                        } catch (error) {
@@ -2300,36 +2393,67 @@ async function openGroupModal(groupId = null, groupData = null) {
                    // If not in add-assign mode, this listener should not trigger changes
              });
 
-
-            // Obsluha formulára Vytvorenie Tímov - UPRAVENÉ PRE VIAC KATEGÓRIÍ
+            // --- Obsluha formulára Vytvorenie Tímov - UPRAVENÉ PRE VIAC KATEGÓRIÍ S POČTOM ---
             teamCreationForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
 
                 const teamNameBase = teamNameInput.value.trim();
-                // Get all selected category values from the multiple select
-                const selectedCategoryOptions = Array.from(teamCategorySelect.selectedOptions);
-                const selectedCategoryIds = selectedCategoryOptions.map(option => option.value);
-
-                const teamCount = parseInt(teamCountInput.value, 10);
-
                 if (teamNameBase === '') {
-                    alert('Názov tímu nemôže byť prázdny.');
+                    alert('Základný názov tímu nemôže byť prázdny.');
                     return;
                 }
-                 // Validate that at least one category is selected
-                if (selectedCategoryIds.length === 0) {
-                     alert('Prosím, vyberte aspoň jednu kategóriu pre tím.');
-                     return;
+
+                // Získať všetky dynamicky pridané dvojice kategória + počet
+                const categoryCountPairs = teamCategoryCountContainer.querySelectorAll('.category-count-pair');
+
+                if (categoryCountPairs.length === 0) {
+                    alert('Pridajte aspoň jednu kategóriu a počet tímov.');
+                    return;
                 }
-                if (isNaN(teamCount) || teamCount < 1) {
-                     alert('Počet tímov musí byť platné číslo väčšie ako 0.');
-                     return;
+
+                // Zbieranie dát a validácia pre každú dvojicu
+                const teamsToCreate = []; // Pole pre uchovanie { categoryId, count } pre každú platnú dvojicu
+                const seenCategories = new Set(); // Na kontrolu duplicitných kategórií
+
+                for (const pairDiv of categoryCountPairs) {
+                     const categorySelect = pairDiv.querySelector('.team-category-select-dynamic');
+                     const teamCountInput = pairDiv.querySelector('.team-count-input-dynamic');
+
+                     const categoryId = categorySelect.value;
+                     const teamCount = parseInt(teamCountInput.value, 10);
+
+                     // Validácia dvojice
+                     if (categoryId === '' || categorySelect.disabled) {
+                         alert('Prosím, vyberte kategóriu pre každý riadok.');
+                         // Môžete voliteľne pridať označenie chybného riadku
+                         return; // Zastaviť spracovanie pri prvej chybe
+                     }
+                      if (isNaN(teamCount) || teamCount < 1) {
+                         alert('Počet tímov musí byť platné číslo väčšie ako 0 pre každú kategóriu.');
+                         // Môžete voliteľne pridať označenie chybného riadku
+                         return; // Zastaviť spracovanie pri prvej chybe
+                      }
+                      // Kontrola duplicitnej kategórie v rámci formulára
+                       if (seenCategories.has(categoryId)) {
+                           alert(`Kategória "${categoryId}" bola vybraná viackrát. Pre každú kategóriu môžete zadať iba jeden počet.`);
+                            // Môžete voliteľne pridať označenie chybného riadku
+                           return; // Zastaviť spracovanie pri prvej chybe
+                       }
+                       seenCategories.add(categoryId);
+
+                      // Kontrola, či počet tímov neprekročí počet písmen abecedy (A-Z)
+                       if (teamCount > 26) {
+                            alert(`Pre kategóriu "${categoryId}": Pre abecedné označenie je možné vytvoriť maximálne 26 tímov naraz (A-Z).`);
+                             // Môžete voliteľne pridať označenie chybného riadku
+                            return; // Zastaviť spracovanie pri prvej chybe
+                       }
+
+
+                     // Ak je dvojica platná, pridaj ju do zoznamu na vytvorenie
+                     teamsToCreate.push({ categoryId: categoryId, count: teamCount });
                 }
-                 // Kontrola, či počet tímov neprekročí počet písmen abecedy (A-Z)
-                 if (teamCount > 26) {
-                      alert('Pre abecedné označenie je možné vytvoriť maximálne 26 tímov naraz (A-Z).');
-                      return;
-                 }
+
+                console.log("Plánované vytvorenie tímov:", teamNameBase, teamsToCreate);
 
 
                 try {
@@ -2338,71 +2462,71 @@ async function openGroupModal(groupId = null, groupData = null) {
                     let successfullyAddedCount = 0; // Counter for successful additions
 
 
-                    // Iterate through each selected category
-                    for (const categoryId of selectedCategoryIds) {
-                         // For each category, create the specified number of teams
+                    // Iterovať cez plánované tímy na vytvorenie ({ categoryId, count })
+                    for (const teamPlan of teamsToCreate) {
+                         const categoryId = teamPlan.categoryId;
+                         const teamCount = teamPlan.count;
+
+                         // Pre každú kategóriu a počet, vytvoriť špecifikovaný počet tímov
                          for (let i = 1; i <= teamCount; i++) {
-                              // Use letters A, B, C... for team names if count > 1
+                              // Použiť písmená A, B, C... pre názvy tímov, ak počet > 1
                               let teamName;
                               if (teamCount > 1) {
                                    const letter = String.fromCharCode(65 + (i - 1));
                                    teamName = `${teamNameBase} ${letter}`;
                               } else {
-                                   teamName = teamNameBase;
+                                   teamName = teamNameBase; // Ak je počet 1, názov je len základný názov
                               }
 
-                              // Optional: Check if a team with this name already exists in this specific category (unassigned)?
-                              // This query would be outside the batch and more complex.
-                              // For simplicity, we allow creating duplicates with auto-generated IDs.
-                              // Uniqueness check is done when assigning to a group.
-
-
-                              const newTeamRef = doc(clubsCollectionRef); // Get a document reference with an auto-generated ID
+                              // Vytvoriť nový dokument tímu s auto-generovaným ID
+                              const newTeamRef = doc(clubsCollectionRef);
                               batch.set(newTeamRef, {
                                   name: teamName,
-                                  categoryId: categoryId, // Use the current categoryId from the outer loop
-                                  groupId: null // Initially, no group assigned
-                                  // optional fields like createdAt: new Date()
+                                  categoryId: categoryId, // Použiť categoryId z aktuálneho plánu
+                                  groupId: null // Pôvodne nepriradený
+                                  // voliteľné polia
                               });
-                              successfullyAddedCount++; // Increment counter
+                              successfullyAddedCount++; // Inkremetovať počítadlo
                          }
                     }
 
 
-                    await batch.commit(); // Commit the batch
+                    await batch.commit(); // Odoslať batch operácie
 
-                     console.log(`Úspešne vytvorených ${successfullyAddedCount} tím(ov) v ${selectedCategoryIds.length} kategóri(ách).`);
+                     console.log(`Úspešne vytvorených ${successfullyAddedCount} tím(ov) v ${teamsToCreate.length} kategóri(ách).`);
                      alert(`Úspešne vytvorených ${successfullyAddedCount} tím(ov).`);
 
 
-                    // --- Common logic after successful creation ---
+                    // --- Spoločná logika po úspešnom vytvorení ---
                     teamCreationModal.style.display = 'none';
                     teamCreationForm.reset();
-                    // No specific state needed for 'add' mode
+                    // Vyčistiť dynamické polia po úspechu
+                    teamCategoryCountContainer.innerHTML = '';
+                     // Pridať späť prvú prázdnu dvojicu pre ďalšie otvorenie modálu
+                     await addCategoryCountPair();
 
-                    // After successful creation, refresh the list of created teams
+
+                    // Obnoviť zobrazenia, ktoré môžu byť ovplyvnené
                     if (window.location.hash === '#vytvorenie-timov') {
-                         displayCreatedTeams();
+                         displayCreatedTeams(); // Obnoviť zoznam vytvorených tímov
                     }
-                     // Refresh clubs-in-groups display if visible (newly created won't appear unless assigned)
+                     // Zobrazenie priradených klubov (timy-do-skupin) sa nemení, lebo boli vytvorené nepriradené tímy
                      // if (window.location.hash === '#timy-do-skupin') { displayClubs(); }
 
 
                 } catch (error) {
                     console.error('Chyba pri vytváraní tímov: ', error);
                     alert(`Chyba pri vytváraní tímov! Detail: ${error.message}`);
-                     // Close modal and reset state on error
+                     // Close modal and reset state on error (nemusíme čistiť dynamické polia, aby užívateľ videl, čo zadal)
                      teamCreationModal.style.display = 'none';
-                     teamCreationForm.reset();
+                     teamCreationForm.reset(); // Vyčistí aspoň základný názov
+                     // Nečistíme teamCategoryCountContainer, aby užívateľ videl, čo zadal
                 }
             });
 
-            // Event Listener for change in category select in team creation modal - UPRAVENÉ PRE MULTIPLE SELECT
-            teamCategorySelect.addEventListener('change', () => {
-                 // When categories are selected in the multiple select, the 'change' event fires.
-                 // We don't need to populate another select here, just potentially log the selection.
-                 const selectedOptions = Array.from(teamCategorySelect.selectedOptions).map(option => option.value);
-                 console.log("Selected categories in team creation modal:", selectedOptions);
+             // Event listener pre tlačidlo "Pridať ďalšiu kategóriu"
+            addCategoryCountPairButton.addEventListener('click', async () => {
+                 await addCategoryCountPair(); // Volaj funkciu na pridanie ďalšej dvojice
             });
 
 
@@ -2455,9 +2579,9 @@ async function openGroupModal(groupId = null, groupData = null) {
                      const thead = document.createElement('thead');
                      const headerRow = document.createElement('tr');
                      const teamNameTh = document.createElement('th');
-                     teamNameTh.textContent = 'Názov tímu'; // Indicate it's the full name
+                     teamNameTh.textContent = 'Názov tímu (celý)'; // Indicate it's the full name
                       const actionsTh = document.createElement('th');
-                      actionsTh.textContent = 'Upraviť';
+                      actionsTh.textContent = 'Akcie';
                       actionsTh.style.width = '150px';
 
                       headerRow.appendChild(teamNameTh);
