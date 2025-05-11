@@ -1813,32 +1813,26 @@
             });
 
 
-            // Spustíme toggleContentDisplay pri načítaní stránky a zmene hašu
-            window.addEventListener('hashchange', toggleContentDisplay); // Zachovať
-            window.addEventListener('load', async () => { // Made async to ensure cacheAllCategories completes before potential subsequent actions
-                 console.log("Window loaded."); // PRIDANÉ LOG
-                 // Initial cache of categories on load - moved here and made load listener async
+            // Spustíme toggleContentDisplay pri zmene hašu - TOTO ZACHOVAŤ
+            window.addEventListener('hashchange', toggleContentDisplay);
+
+            // Spustíme display logic JEDENKRÁT pri načítaní stránky
+            window.addEventListener('load', async () => { // Made async to use await for cacheAllCategories
+                 console.log("Window loaded.");
                  await cacheAllCategories(); // Ensure categories are cached first
-                 console.log("Categories cached on load."); // PRIDANÉ LOG
+                 console.log("Categories cached on load.");
 
-                 // Set initial hash if none is present, e.g., to #kategorie
-                 if (!window.location.hash || window.location.hash === '#') { // Also handle empty hash
-                      console.log("No hash found, setting to #kategorie."); // PRIDANÉ LOG
-                      window.location.hash = '#kategorie'; // Nastavenie hašu spustí hashchange, ktorý zavolá toggleContentDisplay
+                 // Ak haš nie je nastavený, nastavíme ho na default a spoliehame sa len na hashchange, ktorý sa spustí
+                 if (!window.location.hash || window.location.hash === '#') {
+                      console.log("No hash found, setting to #kategorie. Relying ONLY on hashchange.");
+                      window.location.hash = '#kategorie'; // Nastavenie hašu spustí hashchange, ktorý zavolá toggleContentDisplay (JEDENKRÁT)
                  } else {
-                     console.log("Hash found:", window.location.hash, "Relying on hashchange."); // PRIDANÉ LOG
-                     // === ODSTRÁNENÉ: PREDTÝM TU BOLO toggleContentDisplay(); ===
-                     // Už nevoláme toggleContentDisplay() priamo tu, spoliehame sa na hashchange.
+                     // Ak haš je už nastavený pri načítaní, zavoláme toggleContentDisplay priamo raz a nespustí sa hashchange
+                     console.log("Hash found:", window.location.hash, "Calling toggleContentDisplay directly ONCE on load.");
+                     toggleContentDisplay(); // Zavolať display logiku priamo raz
                  }
-                 // Ak bol haš už prítomný, toggleContentDisplay() sa spustí jednorazovo vďaka hashchange event listeneru.
-                 // Ak haš nebol prítomný a bol nastavený, hashchange sa spustí a zavolá toggleContentDisplay().
-                 // Ak v niektorých prehliadačoch hashchange pri existujúcom haši na load nefunguje,
-                 // môžeme to riešiť dodatočným volaním, ale toto je bežnejší prístup.
-                 // Pre istotu necháme jedno volanie vonku z if/else bloku, to by malo zabezpečiť spustenie aj pri existujucom hashi, kde hashchange nemusi vzdy firednut
-                  toggleContentDisplay(); // Zabezpecit spustenie display funkcii aj pri existujucom hashi kde hashchange nemuselo byt firednute
-                  console.log("toggleContentDisplay called (once) after load logic."); // PRIDANÉ LOG
-
-
+                 // ODSTRÁNENÉ: PREDTÝM TU BOLO toggleContentDisplay(); mimo if/else - toto mohlo spôsobovať duplikáciu
+                 console.log("Load event logic finished.");
             });
 
 
