@@ -401,7 +401,7 @@
             <ul>
                 <li><a href="#kategorie">Vytvorenie kategórií</a></li>
                 <li><a href="#skupiny">Vytvorenie skupín</a></li>
-                <li><a href="#kluby">Kluby do skupín</a></li>
+                <li><a href="#kluby-do-skupin">Kluby do skupín</a></li>
                 <li><a href="#sportove-haly">Športové haly</a></li>
                 <li><a href="#sprava-turnaja">Správa turnaja</a></li>
                 <li><a href="#nastavenia">Nastavenia</a></li>
@@ -567,7 +567,7 @@
 
                       // Refresh displays that might be affected
                       if (window.location.hash === '#skupiny') displayGroupsByCategory();
-                      if (window.location.hash === '#kluby') displayClubs(); // Added clubs display refresh
+                      if (window.location.hash === '#kluby-do-skupin') displayClubs(); // Added clubs display refresh
 
                  } catch (error) {
                      console.error('Chyba pri mazaní kategórie: ', error);
@@ -1156,7 +1156,7 @@ async function displayClubs() {
                 groupsContentDiv.style.display = 'flex'; // Zobrazí obal pre skupiny ako flex
                 displayGroupsByCategory();
                 addButton.title = "Pridať skupinu";
-            } else if (hash === '#kluby') {
+            } else if (hash === '#kluby-do-skupin') {
                 addButton.style.display = 'block';
                 // clubsContentStructuredDiv.style.display = 'block'; // Tento riadok odstráňte alebo zmeňte ID
                 clubsContentDiv.style.display = 'flex'; // <--- ZMENA TU: nastavte na 'flex'
@@ -1187,7 +1187,7 @@ async function displayClubs() {
             } else if (hash === '#skupiny') {
                  // Open group modal in add mode
                  openGroupModal(); // Call openGroupModal without arguments for add mode
-            } else if (hash === '#kluby') { // --- Handle #kluby ---
+            } else if (hash === '#kluby-do-skupin') { // --- Handle #kluby-do-skupin ---
                  // Open club modal in add mode
                  openClubModal(); // Call openClubModal without arguments for add mode
             }
@@ -1260,7 +1260,7 @@ async function displayClubs() {
                      currentCategoryModalMode = 'add'; editingCategoryName = null; editingCategoryRow = null;
                      if (window.location.hash === '#kategorie') loadCategoriesTable(); // Refresh category display
                       if (window.location.hash === '#skupiny') displayGroupsByCategory(); // Added refresh for groups
-                      if (window.location.hash === '#kluby') displayClubs(); // Added refresh for clubs
+                      if (window.location.hash === '#kluby-do-skupin') displayClubs(); // Added refresh for clubs
                  } catch (error) {
                      console.error('Chyba pri pridávaní kategórie: ', error);
                      alert('Chyba pri pridávaní kategórie!');
@@ -1297,7 +1297,7 @@ async function displayClubs() {
 
                        if (window.location.hash === '#kategorie') loadCategoriesTable(); // Refresh category display
                        if (window.location.hash === '#skupiny') displayGroupsByCategory(); // Added refresh for groups
-                       if (window.location.hash === '#kluby') displayClubs(); // Added refresh for clubs
+                       if (window.location.hash === '#kluby-do-skupin') displayClubs(); // Added refresh for clubs
 
                  } catch (error) {
                      console.error('Chyba pri premenovaní kategórie: ', error);
@@ -1372,7 +1372,7 @@ async function displayClubs() {
                   currentGroupModalMode = 'add'; editingGroupId = null;
 
                   if (window.location.hash === '#skupiny') displayGroupsByCategory(); // Refresh group display
-                  if (window.location.hash === '#kluby') displayClubs(); // Added refresh for clubs
+                  if (window.location.hash === '#kluby-do-skupin') displayClubs(); // Added refresh for clubs
 
               } catch (error) {
                   console.error('Chyba pri kontrole unikátnosti alebo zápise skupiny: ', error);
@@ -1500,7 +1500,7 @@ async function displayClubs() {
                     editingClubId = null; // Vymaž ID upravovaného klubu
 
                     // Po úspechu znova načítame a zobrazíme kluby pre aktuálnu sekciu
-                    if (window.location.hash === '#kluby') {
+                    if (window.location.hash === '#kluby-do-skupin') {
                          displayClubs();
                     }
 
