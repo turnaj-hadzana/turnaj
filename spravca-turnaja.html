@@ -220,6 +220,22 @@
              width: 100%;
         }
 
+        /* Style for number count in the created teams table */
+        #createdTeamsTable td {
+             text-align: center; /* Center the count numbers */
+             width: 50px; /* Give count columns a fixed width */
+        }
+         #createdTeamsTable td:first-child {
+              text-align: left; /* Keep team name left-aligned */
+              width: auto; /* Let team name take available width */
+         }
+          #createdTeamsTable th {
+               text-align: center; /* Center header text for categories */
+          }
+          #createdTeamsTable th:first-child {
+               text-align: left; /* Keep team name header left-aligned */
+          }
+
 
         /* --- Action Button Styles --- */
         .action-button {
@@ -514,11 +530,7 @@
                  <h2>Vytvorenie tímov</h2>
                  <table id="createdTeamsTable">
                      <thead>
-                         <tr>
-                             <th>Názov tímu</th>
-                             <th>Kategória</th>
-                             <th style="width: 150px;">Akcie</th> </tr>
-                     </thead>
+                         </thead>
                      <tbody id="createdTeamsTableBody">
                          </tbody>
                  </table>
@@ -624,7 +636,9 @@
         const categoryTable = document.getElementById('categoryTable');
         const categoryTableBody = document.getElementById('categoryTableBody');
 
-        // NEW: Referencia na tbody tabuľky Vytvorenie Tímov
+        // NEW: Referencia na tbody tabuľky Vytvorenie Tímov a thead
+        const createdTeamsTable = document.getElementById('createdTeamsTable'); // Added reference to the table itself
+        const createdTeamsTableHead = createdTeamsTable.querySelector('thead'); // Added reference to thead
         const createdTeamsTableBody = document.getElementById('createdTeamsTableBody');
 
 
@@ -1450,123 +1464,154 @@ async function openGroupModal(groupId = null, groupData = null) {
                    }
             }
 
-            // NEW: Funkcia na zobrazenie vytvorených tímov (klubov, ktoré ešte nie sú priradené do skupiny)
+            // NEW: Funkcia na zobrazenie vytvorených tímov (klubov, ktoré ešte nie sú priradené do skupiny) - UPRAVENÉ PRE TABUĽKOVÉ ZOBRAZENIE PODĽA KATEGÓRIÍ
             async function displayCreatedTeams() {
                  createdTeamsTableBody.innerHTML = ''; // Clear existing rows
+                 createdTeamsTableHead.innerHTML = ''; // Clear existing header
 
                  try {
-                     // Fetch clubs where groupId is null (unassigned teams)
+                     // 1. Načítať všetky nepriradené tímy
                      const q = query(clubsCollectionRef, where('groupId', '==', null));
                      const querySnapshot = await getDocs(q);
+                     const unassignedTeams = querySnapshot.docs.map(doc => ({ id: doc.id, data: doc.data() }));
 
-                     const clubs = querySnapshot.docs.map(doc => ({ id: doc.id, data: doc.data() })); // Get club data with auto-generated ID
+                     // 2. Načítať všetky kategórie (použi kešované, ak sú k dispozícii)
+                     const categoriesToDisplay = allCategories.length > 0 ? allCategories : (await getDocs(categoriesCollectionRef)).docs.map(doc => doc.id).sort();
+                      if (allCategories.length === 0 && categoriesToDisplay.length > 0) {
+                           console.log("Populating categories for display from fresh fetch, caching now.");
+                           allCategories = categoriesToDisplay; // Cache if fetched fresh
+                      }
 
-                     if (clubs.length === 0) {
+
+                     if (unassignedTeams.length === 0) {
                          console.log("Žiadne tímy na priradenie do skupín zatiaľ nenájdené.");
                          const noDataRow = document.createElement('tr');
                          const td = document.createElement('td');
-                         td.colSpan = 3; // name, category, actions
+                         td.colSpan = categoriesToDisplay.length + 1; // Názov tímu + počet kategórií
                          td.textContent = "Žiadne tímy na priradenie zatiaľ pridané.";
                          td.style.textAlign = 'center';
                          noDataRow.appendChild(td);
                          createdTeamsTableBody.appendChild(noDataRow);
-                     } else {
-                          // Sort teams by name, then category (optional)
-                          clubs.sort((a, b) => {
-                               // OPRAVENÉ: Odstránená extra zátvorka
-                               const nameCompare = (a.data.name || '').localeCompare(b.data.name || '');
-                               if (nameCompare !== 0) return nameCompare;
-                               return (a.data.categoryId || '').localeCompare(b.data.categoryId || '');
-                          });
+                         return; // Exit early if no teams
+                     }
 
-                          clubs.forEach(club => {
-                              const tr = document.createElement('tr');
+                    // 3. Vytvoriť zoskupenie tímov podľa základného názvu tímu a kategórie
+                     // Budeme potrebovať funkciu na extrakciu základného názvu, ak používate prípony (napr. "MŠK A A" -> "MŠK A")
+                    // Pre jednoduchosť teraz predpokladám, že základný názov je to, čo ste zadali pri vytváraní,
+                    // a ak je tam prípona (napr. " MŠK A A"), základný názov je "MŠK A".
+                    // Ak je názov bez prípony (napr. "MŠK B"), základný názov je "MŠK B".
 
-                              const nameTd = document.createElement('td');
-                              nameTd.textContent = club.data.name || 'Neznámy názov';
+                    const teamNames = new Set();
+                    const teamsByBaseNameAndCategory = {};
 
-                              const categoryTd = document.createElement('td');
-                              categoryTd.textContent = club.data.categoryId || 'Nepriradená'; // Show category if exists
+                    unassignedTeams.forEach(team => {
+                        const fullTeamName = team.data.name || 'Neznámy názov';
+                        const categoryId = team.data.categoryId || 'Nepriradená'; // Handle teams without category if they exist
 
-                              const actionsTd = document.createElement('td');
-                              actionsTd.style.whiteSpace = 'nowrap';
-
-                              // === TLAČIDLO ÚPRAVA TÍMU (premenovanie, zmena kategórie? Nie skupiny) ===
-                               const editTeamButton = document.createElement('button');
-                               editTeamButton.textContent = 'Upraviť';
-                               editTeamButton.classList.add('action-button');
-                               editTeamButton.onclick = () => {
-                                   // Reuse clubModal but hide group select for editing unassigned teams
-                                   // Set modal state to edit and store the club ID
-                                   currentClubModalMode = 'edit-assigned'; // Use 'edit-assigned' mode
-                                   editingClubId = club.id; // Store the auto-generated ID
-                                   clubModalTitle.textContent = 'Upraviť tím'; // Specific title for editing unassigned
-                                   clubFormSubmitButton.textContent = 'Uložiť zmeny';
-
-                                   // Hide the unassigned clubs select, show the name input
-                                   unassignedClubSelectContainer.style.display = 'none';
-                                   clubNameInputContainer.style.display = 'block';
-                                   clubNameInput.readOnly = false; // Allow editing name
-
-                                   // Populate category select and pre-select
-                                   populateCategorySelect(clubCategorySelect, club.data.categoryId);
-
-                                   // Set name input value
-                                   clubNameInput.value = club.data.name;
-
-                                   // Hide and disable the group select as this team is unassigned
-                                   // Use parentElement to hide both label and select
-                                   clubGroupSelect.parentElement.style.display = 'none';
-                                   clubGroupSelect.disabled = true;
-                                   clubGroupSelect.value = ''; // Clear any previous selection
-
-
-                                   clubModal.style.display = 'block';
-                                   clubNameInput.focus();
-
-                               };
-
-
-                              // === TLAČIDLO VYMAZAŤ TÍM === (Úplne zmaže dokument)
-                               const deleteTeamButton = document.createElement('button');
-                               deleteTeamButton.textContent = 'Vymazať';
-                               deleteTeamButton.classList.add('action-button', 'delete-button');
-                               deleteTeamButton.onclick = async () => {
-                                   if (!confirm(`Naozaj chcete vymazať tím "${club.data.name}"?`)) {
-                                       return;
-                                   }
-                                   // Na zmazanie použi auto-generované ID klubu
-                                   try {
-                                        await deleteDoc(doc(clubsCollectionRef, club.id)); // Delete using the club's ID
-                                        console.log(`Tím "${club.data.name}" (ID: ${club.id}) bol úspešne zmazaný.`);
-                                        displayCreatedTeams(); // Refresh the list
-                                        // Refresh clubs-in-groups display if visible (deleting unassigned won't affect it unless displayClubs is changed)
-                                        // if (window.location.hash === '#timy-do-skupin') displayClubs();
-
-                                   } catch (error) {
-                                        console.error('Chyba pri mazaní tímu: ', error);
-                                        alert('Chyba pri mazaní tímu!');
-                                   }
-                               };
-
-                               actionsTd.appendChild(editTeamButton); // Add edit button
-                               actionsTd.appendChild(deleteTeamButton); // Corrected variable name
-
-                               tr.appendChild(nameTd);
-                               tr.appendChild(categoryTd); // Add category column
-                               tr.appendChild(actionsTd);
-
-                               createdTeamsTableBody.appendChild(tr);
-                           });
+                        // Simple logic to find base name: Assume base name is everything before the last space if it ends with Letter.
+                        // This might need refinement based on your exact naming convention.
+                        let baseName = fullTeamName;
+                        const parts = fullTeamName.split(' ');
+                        if (parts.length > 1) {
+                             const lastPart = parts[parts.length - 1];
+                              // Check if the last part is a single uppercase letter
+                             if (lastPart.length === 1 && lastPart >= 'A' && lastPart <= 'Z') {
+                                baseName = parts.slice(0, -1).join(' '); // Base name is everything except the last part
+                             }
                         }
 
-                     console.log(`Načítaných tímov (na priradenie do skupín): ${clubs.length}`);
+
+                        teamNames.add(baseName); // Collect unique base names
+
+                        if (!teamsByBaseNameAndCategory[baseName]) {
+                             teamsByBaseNameAndCategory[baseName] = {};
+                        }
+                         if (!teamsByBaseNameAndCategory[baseName][categoryId]) {
+                              // Store the list of teams with this base name and category
+                              teamsByBaseNameAndCategory[baseName][categoryId] = [];
+                         }
+                         teamsByBaseNameAndCategory[baseName][categoryId].push(team); // Store the full team object
+
+                    });
+
+                    // Sort unique base names
+                    const sortedBaseNames = Array.from(teamNames).sort();
+
+
+                    // 4. Vytvoriť hlavičku tabuľky
+                     const headerRow = document.createElement('tr');
+                     const teamNameHeader = document.createElement('th');
+                     teamNameHeader.textContent = 'Názov tímu';
+                     headerRow.appendChild(teamNameHeader);
+
+                     // Sort categories alphabetically for header
+                     const sortedCategoriesForHeader = categoriesToDisplay.sort();
+
+                     sortedCategoriesForHeader.forEach(categoryName => {
+                         const th = document.createElement('th');
+                         th.textContent = categoryName;
+                         headerRow.appendChild(th);
+                     });
+
+                     // You can optionally add an 'Akcie' header here if you decide how to handle actions
+                     // const actionsHeader = document.createElement('th');
+                     // actionsHeader.textContent = 'Akcie';
+                     // headerRow.appendChild(actionsHeader);
+
+
+                     createdTeamsTableHead.appendChild(headerRow);
+
+
+                    // 5. Vytvoriť telo tabuľky
+                    sortedBaseNames.forEach(baseName => {
+                        const tr = document.createElement('tr');
+
+                         // First cell: Team Base Name
+                        const nameTd = document.createElement('td');
+                        nameTd.textContent = baseName;
+                        tr.appendChild(nameTd);
+
+                        // Cells for each category count
+                         sortedCategoriesForHeader.forEach(categoryName => {
+                             const countTd = document.createElement('td');
+                             // Get the array of teams for this base name and category, or empty array if none
+                              const teamsInThisCategory = teamsByBaseNameAndCategory[baseName]?.[categoryName] || [];
+                             // Display the count
+                             countTd.textContent = teamsInThisCategory.length > 0 ? teamsInThisCategory.length : ''; // Display count or empty string if 0
+
+                              // Optional: Add a click listener to the cell to show details or actions for these specific teams
+                              if (teamsInThisCategory.length > 0) {
+                                   countTd.style.cursor = 'pointer'; // Indicate it's clickable
+                                    countTd.title = `Kliknutím zobrazíte tímy s názvom "${baseName}" v kategórii "${categoryName}".`; // Add tooltip
+                                   countTd.addEventListener('click', () => {
+                                       console.log(`Tímy s názvom "${baseName}" v kategórii "${categoryName}":`, teamsInThisCategory);
+                                        // Here you could implement logic to open a small modal or list
+                                        // showing the exact names and IDs of these teams, with edit/delete buttons for each.
+                                        alert(`Tímy s názvom "${baseName}" v kategórii "${categoryName}":\n\n${teamsInThisCategory.map(t => t.data.name).join('\n')}\n\n(Akcie pre jednotlivé tímy zatiaľ nie sú v tomto zobrazení priamo dostupné.)`);
+                                   });
+                              }
+
+
+                             tr.appendChild(countTd);
+                         });
+
+                         // Optional: Add an 'Akcie' cell if you add the header back
+                         // const actionsTd = document.createElement('td');
+                         // actionsTd.style.whiteSpace = 'nowrap';
+                         // Add buttons here if needed, considering how they apply to the summarized view
+                         // tr.appendChild(actionsTd);
+
+
+                        createdTeamsTableBody.appendChild(tr);
+                    });
+
+                     console.log(`Načítaných a zoskupených tímov (na priradenie do skupín).`);
 
                  } catch (error) {
-                     console.error('Chyba pri načítaní alebo zobrazovaní vytvorených tímov: ', error);
+                     console.error('Chyba pri načítaní alebo zobrazovaní vytvorených tímov v novom formáte: ', error);
                      const errorMessage = document.createElement('tr'); // Use tr to fit in table body
                      const td = document.createElement('td');
-                     td.colSpan = 3; // name, category, actions
+                     td.colSpan = (allCategories.length > 0 ? allCategories.length : 1) + 1; // Estimate colspan
                      td.textContent = 'Chyba pri načítaní dát tímov.';
                      td.style.textAlign = 'center';
                      errorMessage.appendChild(td);
@@ -1598,6 +1643,8 @@ async function openGroupModal(groupId = null, groupData = null) {
                  groupsContentDiv.innerHTML = '';
                  clubsContentDiv.innerHTML = '';
                  createdTeamsTableBody.innerHTML = '';
+                 createdTeamsTableHead.innerHTML = ''; // Clear table header too
+
 
                  // Clear dynamic category/count fields in team creation modal
                  dynamicCategoryCountContainer.innerHTML = '';
@@ -1638,7 +1685,7 @@ async function openGroupModal(groupId = null, groupData = null) {
                  } else if (hash === '#vytvorenie-timov') {
                      addButton.style.display = 'block';
                      teamCreationContentSection.style.display = 'block';
-                     displayCreatedTeams();
+                     displayCreatedTeams(); // Call the updated display function
                      addButton.title = "Vytvoriť tímy";
                  }
                  else if (hash === '#timy-do-skupin') {
@@ -2223,17 +2270,28 @@ async function openGroupModal(groupId = null, groupData = null) {
                 const initialCategoryId = teamCategorySelect.value;
                 const initialTeamCount = parseInt(teamCountInput.value, 10);
 
-                if (initialCategoryId !== '' && !isNaN(initialTeamCount) && initialTeamCount >= 1) {
+                 // Validate initial entry separately
+                 if (teamNameBase === '') {
+                      alert('Názov tímu nemôže byť prázdny.');
+                       // Do not return yet, allow adding dynamic entries even if initial name is missing
+                 }
+                 if (initialCategoryId !== '' && !isNaN(initialTeamCount) && initialTeamCount >= 1) {
+                     if (initialTeamCount > 26) {
+                         alert(`Počet tímov pre kategóriu "${initialCategoryId}" (${initialTeamCount}) v prvom zadaní prekračuje limit pre abecedné označenie (26). Prosím, znížte počet.`);
+                         return; // Stop submission if initial entry count is invalid
+                     }
                      teamEntries.push({ categoryId: initialCategoryId, count: initialTeamCount });
-                } else if (teamNameBase !== '') { // Only alert if a team name was entered but no valid initial entry
-                     alert('Prosím, zadajte platnú kategóriu a počet tímov pre prvú položku.');
-                     return; // Stop submission if initial entry is invalid
-                }
+                 } else if (initialCategoryId !== '' || (teamNameBase !== '' && (isNaN(initialTeamCount) || initialTeamCount < 1))) {
+                     // Alert if category was selected but count is invalid, or name is entered but initial count is invalid
+                      alert('Prosím, zadajte platný počet tímov (väčší ako 0) pre prvú kategóriu.');
+                       return; // Stop submission
+                 }
 
 
                 // 2. Get data from dynamically added category/count fields
                 const dynamicGroups = dynamicCategoryCountContainer.querySelectorAll('.category-count-group');
                 dynamicGroups.forEach(groupDiv => {
+                     // Find the select and input within THIS specific group div
                      const categorySelect = groupDiv.querySelector('select');
                      const countInput = groupDiv.querySelector('input[type="number"]');
 
@@ -2241,10 +2299,15 @@ async function openGroupModal(groupId = null, groupData = null) {
                      const teamCount = parseInt(countInput.value, 10);
 
                      if (categoryId !== '' && !isNaN(teamCount) && teamCount >= 1) {
+                          if (teamCount > 26) {
+                              alert(`Počet tímov pre kategóriu "${categoryId}" (${teamCount}) v jednom zo zadaní prekračuje limit pre abecedné označenie (26). Prosím, znížte počet.`);
+                               return; // Stop submission if any dynamic entry count is invalid
+                          }
                           teamEntries.push({ categoryId: categoryId, count: teamCount });
-                     } else {
-                         // Optional: Alert or log invalid dynamic entries? For now, just skip them.
-                         console.warn("Skipping invalid dynamic category/count entry.");
+                     } else if (categoryId !== '' || (!isNaN(teamCount) && teamCount >= 1)) {
+                         // Alert if category was selected but count is invalid, or count is valid but category is missing
+                          alert('Prosím, zadajte platnú kategóriu a počet tímov (väčší ako 0) pre dynamickú položku.');
+                           return; // Stop submission
                      }
                 });
 
@@ -2254,8 +2317,8 @@ async function openGroupModal(groupId = null, groupData = null) {
                       return;
                  }
 
-
-                if (teamNameBase === '') {
+                // Re-check base name after checking entries, just in case
+                 if (teamNameBase === '') {
                     alert('Názov tímu nemôže byť prázdny.');
                     return;
                 }
@@ -2272,24 +2335,10 @@ async function openGroupModal(groupId = null, groupData = null) {
                         const categoryId = entry.categoryId;
                         const teamCount = entry.count;
 
-                        // Basic check for team count limit per category (if using letters A-Z)
-                         if (teamCount > 26) {
-                             console.warn(`Počet tímov pre kategóriu "${categoryId}" (${teamCount}) prekračuje limit pre abecedné označenie (26). Vytváram len 26 tímov.`);
-                              // Decide whether to truncate or skip, for now, let's just warn and create up to 26.
-                              // Or, better, add a validation upfront. Let's add it to initial validation.
-                         }
-
-                         // Check if a team with the exact base name and category already exists as unassigned?
-                          // This check is complex and not strictly required if duplicate names are allowed as unassigned.
-                          // Uniqueness is enforced when assigning to a group.
-
                         // For each category and count, create the specified number of teams
                         for (let i = 1; i <= teamCount; i++) {
                              let teamName;
-                             // Apply letter suffix only if count > 1 AND if it's the first entry for this category base name
-                             // This naming convention (Base Name A, Base Name B) might be tricky if adding the same base name
-                             // to the same category multiple times via the dynamic fields.
-                             // Let's stick to the simple logic: apply suffix if the 'count' for *this specific entry* is > 1.
+                             // Apply letter suffix only if count > 1 FOR THIS SPECIFIC ENTRY
                              if (teamCount > 1) {
                                   const letter = String.fromCharCode(65 + (i - 1));
                                   teamName = `${teamNameBase} ${letter}`;
@@ -2326,7 +2375,7 @@ async function openGroupModal(groupId = null, groupData = null) {
 
                     // After successful creation, refresh the list of created teams
                     if (window.location.hash === '#vytvorenie-timov') {
-                         displayCreatedTeams();
+                         displayCreatedTeams(); // Call the updated display function
                     }
                      // Refresh clubs-in-groups display if visible (newly created won't appear unless assigned)
                      // if (window.location.hash === '#timy-do-skupin') { displayClubs(); }
@@ -2363,7 +2412,7 @@ async function openGroupModal(groupId = null, groupData = null) {
                  });
 
                  // Now update options for each select
-                 // Update initial select (it should only exclude categories selected IN OTHER dynamic selects)
+                 // Update initial select (it should exclude categories selected IN OTHER dynamic selects)
                  const otherSelectedCategoryIdsForInitial = selectedCategoryIds.filter(id => id !== initialSelect.value);
                  populateCategorySelect(initialSelect, initialSelect.value, otherSelectedCategoryIdsForInitial); // Pass current value and excluded IDs
 
@@ -2395,11 +2444,8 @@ async function openGroupModal(groupId = null, groupData = null) {
                  const groupDiv = document.createElement('div');
                  groupDiv.classList.add('category-count-group'); // Use the same class for styling
 
-                 // Create Category select
+                 // Create Category label and select
                  const categoryLabel = document.createElement('label');
-                 // Generate a unique ID or use a generic class
-                 // For simplicity, let's use a class and rely on DOM structure
-                 // categoryLabel.setAttribute('for', 'dynamicCategorySelect_'); // Consider unique IDs if needed for accessibility
                  categoryLabel.textContent = 'Kategória:';
 
                  const categorySelect = document.createElement('select');
@@ -2407,7 +2453,7 @@ async function openGroupModal(groupId = null, groupData = null) {
                  categorySelect.required = true;
 
 
-                 // Create Count input
+                 // Create Count label and input
                  const countLabel = document.createElement('label');
                  countLabel.textContent = 'Počet tímov:';
 
