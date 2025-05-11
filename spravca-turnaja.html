@@ -991,18 +991,18 @@
                             deleteClubButton.classList.add('action-button', 'delete-button');
                             deleteClubButton.onclick = async () => {
                                  if (!confirm(`Naozaj chcete vymazať klub "${clubData.name}"?`)) {
-                                     return;
+                                    return;
                                  }
-                                 try {
-                                      // Use the auto-generated club ID to delete
-                                     await deleteDoc(doc(clubsCollectionRef, clubId));
-                                     console.log(`Klub "${clubData.name}" (ID: ${clubId}) bol úspešne zmazaný.`);
-                                      displayClubs(); // Reload display
-                                 } catch (error) {
-                                     console.error('Chyba pri mazaní klubu: ', error);
-                                     alert('Chyba pri mazaní klubu!');
-                                 }
-                             };
+                                try {
+                                    // Use the auto-generated club ID to delete
+                                    await deleteDoc(doc(clubsCollectionRef, clubId));
+                                    console.log(`Klub "${clubData.name}" (ID: ${clubId}) bol úspešne zmazaný.`);
+                                    displayClubs(); // Reload display
+                                } catch (error) {
+                                    console.error('Chyba pri mazaní klubu: ', error);
+                                    alert('Chyba pri mazaní klubu!');
+                                }
+                            };
 
                             actionsTd.appendChild(editClubButton);
                             actionsTd.appendChild(deleteClubButton);
