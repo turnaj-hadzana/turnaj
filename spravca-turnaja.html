@@ -1467,8 +1467,8 @@
                 const headerRow = document.createElement('tr');
                 const teamNameHeader = document.createElement('th');
                 teamNameHeader.textContent = 'Názov tímu';
-                teamNameHeader.classList.add('base-name-header-cell'); // Add class for styling/targeting
-                teamNameHeader.style.cursor = 'pointer'; // Add cursor style
+                teamNameHeader.classList.add('base-name-header-cell');
+                teamNameHeader.style.cursor = 'pointer';
                  teamNameHeader.addEventListener('click', function() {
                       console.log('"Názov tímu" header clicked.');
                        const allMainRows = createdTeamsTableBody.querySelectorAll('tr[data-base-name]');
@@ -1507,7 +1507,7 @@
 
 
                 // === ADD LISTENERS TO THE CATEGORY TH ELEMENTS ===
-                const fullHeaderThs = Array.from(headerRow.querySelectorAll('th')); // Get all THs in the header row (including the first)
+                const fullHeaderThs = Array.from(headerRow.querySelectorAll('th'));
 
                 categoryThElements.forEach(th => {
                      th.addEventListener('click', function() {
@@ -1535,13 +1535,12 @@
 
                               // Find the index of the clicked TH within the entire header row
                               const clickedThIndexInFullHeader = fullHeaderThs.indexOf(this);
-                               console.log(`Clicked TH index in full header: ${clickedThIndexInFullHeader}`); // LOG: Index v plnej hlavičke
+                               console.log(`Clicked TH index in full header: ${clickedThIndexInFullHeader}`);
 
 
                               createdTeamsTableBody.querySelectorAll('tr[data-base-name]').forEach(mainRow => {
                                    const mainRowTds = mainRow.querySelectorAll('td');
 
-                                   // Ensure the main row has enough cells before trying to access the one by index
                                    if (clickedThIndexInFullHeader < mainRowTds.length) {
                                        const countTd = mainRowTds[clickedThIndexInFullHeader];
 
@@ -1549,27 +1548,30 @@
                                         const countValue = countText !== '' ? parseInt(countText, 10) : 0;
                                         const baseNameForLog = mainRow.querySelector('td.base-name-cell') ? mainRow.querySelector('td.base-name-cell').textContent : 'Unknown Base Name';
 
-                                        console.log(`--- Row: "${baseNameForLog}" ---`); // LOG: Riadok
-                                        console.log(`    Checking category "${clickedCategory}" (TH index ${clickedThIndexInFullHeader}).`); // LOG: Kontrola kategórie/indexu
-                                        console.log(`    Row has ${mainRowTds.length} TD cells.`); // LOG: Počet buniek v riadku
-                                        console.log(`    Target TD content: "${countText}". Parsed count: ${countValue}.`); // LOG: Obsah cieľovej bunky
-                                        console.log(`    Condition (countValue > 0): ${countValue > 0}`); // LOG: Výsledok podmienky
+                                        console.group(`--- Processing row: "${baseNameForLog}" ---`);
+                                        console.log(`    Checking category "${clickedCategory}" (TH index ${clickedThIndexInFullHeader}).`);
+                                        console.log(`    Row has ${mainRowTds.length} TD cells.`);
+                                        console.log(`    Target TD content: "${countText}". Parsed count: ${countValue}.`);
+                                        const showRowCondition = countTd && countValue > 0;
+                                        console.log(`    Condition (countTd && countValue > 0): ${showRowCondition}`);
 
 
-                                        if (countTd && countValue > 0) {
-                                            console.log("    Condition met: Showing row.");
+                                        if (showRowCondition) {
+                                            console.log("    Condition met: Setting display to 'table-row'.");
                                             mainRow.style.display = 'table-row';
                                         } else {
-                                            console.log("    Condition not met: Hiding row.");
+                                            console.log("    Condition not met: Setting display to 'none'.");
                                             mainRow.style.display = 'none';
                                         }
+                                        console.log(`    Current display style after setting: ${mainRow.style.display}`);
+
+                                        console.groupEnd();
                                    } else {
                                        const baseNameForLog = mainRow.querySelector('td.base-name-cell') ? mainRow.querySelector('td.base-name-cell').textContent : 'Unknown Base Name';
                                        console.warn(`--- Row: "${baseNameForLog}" ---`);
                                        console.warn(`    Does not have enough cells (has ${mainRowTds.length}, needs index ${clickedThIndexInFullHeader}) for category "${clickedCategory}". Hiding row.`);
                                        mainRow.style.display = 'none';
                                    }
-                                   console.log(`--- End Row: "${baseNameForLog}" ---`); // LOG: Koniec riadku
                               });
                            }
                       });
@@ -1636,6 +1638,7 @@
                                        subRow.appendChild(categoryCell);
                                    });
 
+
                                   subRow.insertBefore(subNameTd, subRow.firstChild);
                                  subRow.style.display = 'table-row';
 
@@ -1692,7 +1695,7 @@
 
                              if (existingSubRowsForThisCategory.length === 0) {
                                   const teamsDataForCategory = JSON.parse(clickedCell.dataset.teams);
-                                   console.log(`Sub-rows for "${baseName}" in category "${category}" not found in DOM, creating and showing.`);
+                                   console.log(`Sub-rows for "${baseName}" in category "${category}" not found in DOM, creating.`);
 
                                    teamsDataForCategory.forEach(team => {
                                        const subRow = document.createElement('tr');
@@ -1713,7 +1716,7 @@
                                                 categoryCell.textContent = '';
                                             }
                                             subRow.appendChild(categoryCell);
-                                        });
+                                       });
 
                                        subRow.insertBefore(subNameTd, subRow.firstChild);
                                         subRow.style.display = 'table-row';
