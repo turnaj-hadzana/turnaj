@@ -1804,17 +1804,20 @@ async function openGroupModal(groupId = null, groupData = null) {
                      alert('Počet tímov musí byť platné číslo väčšie ako 0.');
                      return;
                 }
+                 // Kontrola, či počet tímov neprekročí počet písmen abecedy (A-Z)
+                 if (teamCount > 26) {
+                      alert('Pre abecedné označenie je možné vytvoriť maximálne 26 tímov naraz (A-Z).');
+                      return;
+                 }
+
 
                 try {
                     // Use a batch write for multiple documents for efficiency
                     const batch = writeBatch(db);
-                    // ZMENA: Zmeň const na let
-                    let successfullyAddedCount = 0; // Counter for successful additions
+                    let successfullyAddedCount = 0; // Counter for successful additions - Deklarované PRED cyklom
+
 
                     for (let i = 1; i <= teamCount; i++) {
-                         // Stará logika:
-                         // const teamName = teamCount > 1 ? `${teamNameBase} ${i}` : teamNameBase;
-
                          // NOVÁ LOGIKA: Použi písmená A, B, C... pre počet tímov > 1
                          let teamName;
                          if (teamCount > 1) {
@@ -1826,6 +1829,13 @@ async function openGroupModal(groupId = null, groupData = null) {
                              teamName = teamNameBase;
                          }
 
+                         // Voliteľné: Pred vytvorením skontrolovať, či tím s takýmto menom a kategóriou už neexistuje?
+                         // Pri automaticky generovanom ID to nie je problém z hľadiska unikátnosti dokumentu,
+                         // ale z hľadiska biznis logiky by si možno nechcel mať duplicitné názvy v rovnakej kategórii.
+                         // Táto kontrola by ale vyžadovala dodatočné query v cykle alebo pred ním, čo môže byť zložitejšie/pomalejšie.
+                         // Pre jednoduchosť zatiaľ predpokladajme, že unikátnosť názvov v kategórii budeme riešiť inak,
+                         // alebo sa spoliehať na to, že používateľ zadá unikátny základný názov.
+
                          const newTeamRef = doc(clubsCollectionRef); // Get a document reference with an auto-generated ID
                          batch.set(newTeamRef, {
                              name: teamName,
@@ -1833,13 +1843,15 @@ async function openGroupModal(groupId = null, groupData = null) {
                              groupId: null // Initially, no group assigned
                              // optional fields like createdAt: new Date()
                          });
-                         let successfullyAddedCount = 0; // Presunulé sem ak by bol problém so scope, ale malo by byť OK aj mimo cyklu ak je let
                          successfullyAddedCount++; // Increment counter
                     }
-                    
+
                     await batch.commit(); // Commit the batch
 
-                    console.log(`Úspešne vytvorených ${successfullyAddedCount} tím(ov).`);
+                    console.log(`Úspešne vytvorených ${successfullyAddedCount} tím(ov):`, Array.from({ length: successfullyAddedCount }).map((_, i) => {
+                         const base = teamNameInput.value.trim();
+                         return successfullyAddedCount > 1 ? `${base} ${String.fromCharCode(65 + i)}` : base;
+                    }).join(', ')); // Log created names
                     alert(`Úspešne vytvorených ${successfullyAddedCount} tím(ov).`);
 
 
@@ -1854,7 +1866,8 @@ async function openGroupModal(groupId = null, groupData = null) {
                     }
                      // Also refresh clubs-in-groups display if visible, as new teams might appear as assignable
                      if (window.location.hash === '#timy-do-skupin') {
-                          displayClubs();
+                          // displayClubs(); // Refreshing here doesn't show the new teams unless they are assigned to a group.
+                                           // Only refresh if you change the logic of displayClubs to show unassigned teams.
                      }
 
 
