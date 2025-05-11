@@ -994,6 +994,14 @@
                                     return;
                                  }
                                 try {
+                                    // === PRIDAJ TIETO RIADKY ZMENY ===
+                                    console.log("Debug mazanie klubu:");
+                                    console.log("Typ doc:", typeof doc);
+                                    console.log("Typ deleteDoc:", typeof deleteDoc);
+                                    console.log("Typ clubsCollectionRef:", typeof clubsCollectionRef);
+                                    console.log("Hodnota clubId:", clubId);
+                                    // === KONIEC PRIDANÝCH RIADKOV ===                                    
+                                    
                                     // Use the auto-generated club ID to delete
                                     await deleteDoc(doc(clubsCollectionRef, clubId));
                                     console.log(`Klub "${clubData.name}" (ID: ${clubId}) bol úspešne zmazaný.`);
