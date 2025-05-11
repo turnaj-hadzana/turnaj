@@ -1522,7 +1522,7 @@ async function displayCreatedTeams() {
 
                  // Tlačidlo na hromadné vymazanie všetkých tímov s týmto základným názvom
                  const deleteAllButton = document.createElement('button');
-                 deleteAllButton.textContent = 'Vymazať VŠETKY';
+                 deleteAllButton.textContent = 'Vymazať';
                  deleteAllButton.classList.add('action-button', 'delete-button');
                  deleteAllButton.onclick = async () => {
                      if (!confirm(`Naozaj chcete vymazať VŠETKY tímy s názvom "${baseTeamName}" (${Object.keys(teamSummary.categories).join(', ')})?`)) {
