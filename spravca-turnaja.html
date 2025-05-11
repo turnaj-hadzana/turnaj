@@ -1275,37 +1275,48 @@ async function openGroupModal(groupId = null, groupData = null) {
 
                     // Populate the unassigned clubs select
                     await populateUnassignedClubsSelect(unassignedClubSelect, null); // Pass select element
-
                     // Populate the category select (no category pre-selected initially for assignment)
                     await populateCategorySelect(clubCategorySelect, null);
                 }
 
-                // Set focus based on mode
-            // Použijeme setTimeout na malé oneskorenie A skontrolujeme viditeľnosť pred nastavením focusu
-            if (currentClubModalMode === 'add-assign') {
+                // Set focus based on mode with timeout and visibility check
+                // Použijeme setTimeout na malé oneskorenie A skontrolujeme viditeľnosť pred nastavením focusu
+                if (currentClubModalMode === 'add-assign') {
                      setTimeout(() => {
                           // Skontrolujeme, či je kontajner výberového poľa viditeľný
                           if (unassignedClubSelectContainer.offsetParent !== null) {
-                               unassignedClubSelect.focus();
+                               // Kontrola, či je select povolený a nie je disabled
+                               if (!unassignedClubSelect.disabled) {
+                                   unassignedClubSelect.focus();
+                               } else {
+                                   console.warn("openClubModal: Nemôžem nastaviť focus na unassignedClubSelect, je disabled.");
+                                   clubModalCloseBtn.focus(); // Fallback focus
+                               }
                           } else {
                                console.warn("openClubModal: Nemôžem nastaviť focus na unassignedClubSelect, jeho kontajner nie je viditeľný.");
                                // Núdzové riešenie: nastavíme focus na tlačidlo zatvorenia modálu
                                clubModalCloseBtn.focus();
                           }
-                     }, 100); // Oneskoríme focus o 50 milisekúnd
+                     }, 100); // Zväčšené oneskorenie na 100ms
                 } else { // edit-assigned
                      setTimeout(() => {
                           // Skontrolujeme, či je kontajner textového poľa viditeľný
                           if (clubNameInputContainer.offsetParent !== null) {
-                               clubNameInput.focus();
+                              // Kontrola, či je input povolený a nie je disabled/readOnly
+                               if (!clubNameInput.disabled && !clubNameInput.readOnly) {
+                                   clubNameInput.focus();
+                               } else {
+                                   console.warn("openClubModal: Nemôžem nastaviť focus na clubNameInput, je disabled alebo readOnly.");
+                                    clubModalCloseBtn.focus(); // Fallback focus
+                               }
                            } else {
                                console.warn("openClubModal: Nemôžem nastaviť focus na clubNameInput, jeho kontajner nie je viditeľný.");
                                 // Núdzové riešenie: nastavíme focus na tlačidlo zatvorenia modálu
                                clubModalCloseBtn.focus();
                            }
-                     }, 100); // Oneskoríme focus o 50 milisekúnd
+                     }, 100); // Zväčšené oneskorenie na 100ms
                 }
-        }
+           }
 
             // Funkcia na zobrazenie klubov usporiadaných podľa kategórií a skupín (PRIRADENÉ tímy)
             // fetchuje kluby s groupId != null
