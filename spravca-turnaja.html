@@ -1283,28 +1283,28 @@ async function openGroupModal(groupId = null, groupData = null) {
                 // Set focus based on mode
             // Použijeme setTimeout na malé oneskorenie A skontrolujeme viditeľnosť pred nastavením focusu
             if (currentClubModalMode === 'add-assign') {
-                 setTimeout(() => {
-                      // Skontrolujeme, či je kontajner výberového poľa viditeľný
-                      if (unassignedClubSelectContainer.offsetParent !== null) {
-                           unassignedClubSelect.focus();
-                      } else {
-                           console.warn("openClubModal: Nemôžem nastaviť focus na unassignedClubSelect, jeho kontajner nie je viditeľný.");
-                           // Núdzové riešenie: nastavíme focus na tlačidlo zatvorenia modálu
-                           clubModalCloseBtn.focus();
-                      }
-                 }, 50); // Oneskoríme focus o 50 milisekúnd
-            } else { // edit-assigned
-                 setTimeout(() => {
-                      // Skontrolujeme, či je kontajner textového poľa viditeľný
-                      if (clubNameInputContainer.offsetParent !== null) {
-                           clubNameInput.focus();
-                       } else {
-                           console.warn("openClubModal: Nemôžem nastaviť focus na clubNameInput, jeho kontajner nie je viditeľný.");
-                            // Núdzové riešenie: nastavíme focus na tlačidlo zatvorenia modálu
-                           clubModalCloseBtn.focus();
-                       }
-                 }, 50); // Oneskoríme focus o 50 milisekúnd
-            }
+                     setTimeout(() => {
+                          // Skontrolujeme, či je kontajner výberového poľa viditeľný
+                          if (unassignedClubSelectContainer.offsetParent !== null) {
+                               unassignedClubSelect.focus();
+                          } else {
+                               console.warn("openClubModal: Nemôžem nastaviť focus na unassignedClubSelect, jeho kontajner nie je viditeľný.");
+                               // Núdzové riešenie: nastavíme focus na tlačidlo zatvorenia modálu
+                               clubModalCloseBtn.focus();
+                          }
+                     }, 50); // Oneskoríme focus o 50 milisekúnd
+                } else { // edit-assigned
+                     setTimeout(() => {
+                          // Skontrolujeme, či je kontajner textového poľa viditeľný
+                          if (clubNameInputContainer.offsetParent !== null) {
+                               clubNameInput.focus();
+                           } else {
+                               console.warn("openClubModal: Nemôžem nastaviť focus na clubNameInput, jeho kontajner nie je viditeľný.");
+                                // Núdzové riešenie: nastavíme focus na tlačidlo zatvorenia modálu
+                               clubModalCloseBtn.focus();
+                           }
+                     }, 50); // Oneskoríme focus o 50 milisekúnd
+                }
         }
 
             // Funkcia na zobrazenie klubov usporiadaných podľa kategórií a skupín (PRIRADENÉ tímy)
