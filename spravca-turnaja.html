@@ -520,7 +520,7 @@
                  <table id="createdTeamsTable">
                      <thead>
                          <tr id="createdTeamsTableHeader"> <th>Názov tímu</th>
-                             <th style="width: 150px;">Akcie</th>
+                             <th style="width: 150px;">Upraviť</th>
                          </tr>
                      </thead>
                      <tbody id="createdTeamsTableBody">
@@ -1026,7 +1026,7 @@ async function openGroupModal(groupId = null, groupData = null) {
                          const groupNameTh = document.createElement('th');
                          groupNameTh.textContent = 'Názov';
                          const actionsTh = document.createElement('th');
-                         actionsTh.textContent = 'Akcie'; // Changed to Akcie
+                         actionsTh.textContent = 'Upraviť'; // Changed to Upraviť
                          actionsTh.style.width = '150px';
 
                          headerRow.appendChild(groupNameTh);
@@ -1352,7 +1352,7 @@ async function openGroupModal(groupId = null, groupData = null) {
                             const clubNameTh = document.createElement('th');
                             clubNameTh.textContent = 'Názov klubu';
                              const actionsTh = document.createElement('th');
-                             actionsTh.textContent = 'Akcie';
+                             actionsTh.textContent = 'Upraviť';
                              actionsTh.style.width = '150px';
 
                              headerRow.appendChild(clubNameTh);
@@ -1472,7 +1472,7 @@ async function openGroupModal(groupId = null, groupData = null) {
 
                      // Vytvoriť posledný stĺpec hlavičky
                      const actionsTh = document.createElement('th');
-                     actionsTh.textContent = 'Akcie';
+                     actionsTh.textContent = 'Upraviť';
                      actionsTh.style.width = '150px';
                      createdTeamsTableHeader.appendChild(actionsTh);
 
@@ -1501,7 +1501,7 @@ async function openGroupModal(groupId = null, groupData = null) {
                          if (!teamsByBaseName[baseTeamName]) {
                              teamsByBaseName[baseTeamName] = {
                                  categories: {},
-                                 originalTeams: [] // Uložíme originálne dokumenty pre akcie
+                                 originalTeams: [] // Uložíme originálne dokumenty pre Upraviť
                              };
                          }
 
@@ -1521,7 +1521,7 @@ async function openGroupModal(groupId = null, groupData = null) {
                      if (sortedBaseNames.length === 0) {
                          const noDataRow = document.createElement('tr');
                          const td = document.createElement('td');
-                         td.colSpan = 2 + categories.length; // Názov + Počet kategórií + Akcie
+                         td.colSpan = 2 + categories.length; // Názov + Počet kategórií + Upraviť
                          td.textContent = "Žiadne tímy na priradenie zatiaľ pridané.";
                          td.style.textAlign = 'center';
                          noDataRow.appendChild(td);
@@ -1546,11 +1546,11 @@ async function openGroupModal(groupId = null, groupData = null) {
                                  tr.appendChild(countTd);
                              });
 
-                             // Bunka pre akcie
+                             // Bunka pre Upraviť
                              const actionsTd = document.createElement('td');
                              actionsTd.style.whiteSpace = 'nowrap';
 
-                             // === Akcie (Spravovať tímy / Vymazať VŠETKY) ===
+                             // === Upraviť (Spravovať tímy / Vymazať VŠETKY) ===
                               const manageTeamsButton = document.createElement('button');
                               manageTeamsButton.textContent = 'Spravovať tímy';
                               manageTeamsButton.classList.add('action-button');
@@ -1602,7 +1602,7 @@ async function openGroupModal(groupId = null, groupData = null) {
                      console.error('Chyba pri načítaní alebo zobrazovaní vytvorených tímov: ', error);
                      const errorMessage = document.createElement('tr'); // Use tr to fit in table body
                      const td = document.createElement('td');
-                     // Výpočet colspan: 1 (Názov tímu) + počet kategórií + 1 (Akcie)
+                     // Výpočet colspan: 1 (Názov tímu) + počet kategórií + 1 (Upraviť)
                      td.colSpan = 2 + categories.length;
                      td.textContent = 'Chyba pri načítaní dát tímov.';
                      td.style.textAlign = 'center';
@@ -2460,7 +2460,7 @@ async function openGroupModal(groupId = null, groupData = null) {
                      const teamNameTh = document.createElement('th');
                      teamNameTh.textContent = 'Názov tímu'; // Indicate it's the full name
                       const actionsTh = document.createElement('th');
-                      actionsTh.textContent = 'Akcie';
+                      actionsTh.textContent = 'Upraviť';
                       actionsTh.style.width = '150px';
 
                       headerRow.appendChild(teamNameTh);
