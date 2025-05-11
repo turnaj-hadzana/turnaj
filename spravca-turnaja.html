@@ -926,14 +926,15 @@ async function openGroupModal(groupId = null, groupData = null) {
                     const groupsByCategory = {};
                     groupsSnapshot.forEach(doc => {
                          const groupData = doc.data();
-                         const groupId = doc.id; // This is the composite ID
+                         const groupId = doc.id; // This je kompozitné ID
                          const categoryId = groupData.categoryId;
 
                          if (categoryId) {
                              if (!groupsByCategory[categoryId]) {
-                                 groupsByCategory[categoryId] = {};
+                                 // OPRAVENÉ: Inicializuj ako prázdne POLE
+                                 groupsByCategory[categoryId] = [];
                              }
-                             // Store ID and data
+                             // Uložíme ID a dáta do poľa
                              groupsByCategory[categoryId].push({ id: groupId, data: groupData });
                          } else {
                              console.warn(`Skupina ${groupId} nemá priradenú categoryId.`);
