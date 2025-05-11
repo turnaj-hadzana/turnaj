@@ -213,11 +213,14 @@
 
         /* Style for container divs that wrap club sections when inside #clubsContent */
         #clubsContent .section-block {
-             /* Inherits background, padding, radius, shadow from .section-block */
-            min-width: 300px; /* Allow sections to shrink but not below this */
-            flex-grow: 1; /* Allow sections to grow */
-            flex-basis: 0; /* Start from a base size of 0 before growing */
+            /* Inherits background, padding, radius, shadow from .section-block */
+            min-width: 300px; /* Zachovaj minimálnu šírku */
+            flex-grow: 1; /* Stále sa môžu roztiahnuť, ak je na riadku menej ako 3 */
+            flex-basis: calc(33.33% - 20px); /* Preferovaná šírka: ~1/3 mínus medzera (upravte 20px ak máte iný gap) */
             margin-bottom: 0; /* Override the default .section-block margin when inside flex */
+
+            /* Voliteľné: Ak by ste chceli presne 3 a žiadne roztiahnutie, použite: */
+            /* flex: 0 0 calc(33.33% - 20px); */
         }
 
         /* --- Action Button Styles --- - ZOSTÁVAJÚ ROVNAKÉ */
