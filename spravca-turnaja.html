@@ -1280,14 +1280,18 @@ async function openGroupModal(groupId = null, groupData = null) {
                     await populateCategorySelect(clubCategorySelect, null);
                 }
 
-                // Set focus based on mode
-                if (currentClubModalMode === 'add-assign') {
+            // Set focus based on mode
+            // Použijeme setTimeout na malé oneskorenie pre správne nastavenie focusu po zmene display
+            if (currentClubModalMode === 'add-assign') {
+                 setTimeout(() => {
                      unassignedClubSelect.focus();
-                } else { // edit-assigned
-                     clubNameInput.focus();
-                }
-           }
-
+                 }, 50); // Oneskoríme focus o 50 milisekúnd
+            } else { // edit-assigned
+                 setTimeout(() => {
+                      clubNameInput.focus();
+                 }, 50); // Oneskoríme focus o 50 milisekúnd
+            }
+                
             // Funkcia na zobrazenie klubov usporiadaných podľa kategórií a skupín (PRIRADENÉ tímy)
             // fetchuje kluby s groupId != null
             async function displayClubs() {
