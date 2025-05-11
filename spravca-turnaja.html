@@ -519,13 +519,13 @@
              };
 
              const deleteButton = document.createElement('button');
-             deleteButton.textContent = 'Zmazať';
+             deleteButton.textContent = 'Vymazať';
              deleteButton.classList.add('action-button', 'delete-button');
              deleteButton.onclick = async function() {
                  const row = this.closest('tr');
                  const categoryToDelete = row.querySelector('td:first-child').textContent;
 
-                 if (!confirm(`Naozaj chcete zmazať kategóriu "${categoryToDelete}"? Skupiny a kluby priradené k tejto kategórii/skupinám zostanú bez priradenia!`)) { // Updated confirmation message
+                 if (!confirm(`Naozaj chcete vymazať kategóriu "${categoryToDelete}"? Skupiny a kluby priradené k tejto kategórii/skupinám zostanú bez priradenia!`)) { // Updated confirmation message
                      return;
                  }
 
@@ -969,12 +969,12 @@
                               openClubModal(clubId, clubData);
                          };
 
-                         // === TLAČIDLO ZMAZAŤ KLUBU ===
+                         // === TLAČIDLO VYMAZAŤ KLUBU ===
                          const deleteClubButton = document.createElement('button');
-                         deleteClubButton.textContent = 'Zmazať Klub';
+                         deleteClubButton.textContent = 'Vymazať';
                          deleteClubButton.classList.add('action-button', 'delete-button');
                          deleteClubButton.onclick = async () => {
-                              if (!confirm(`Naozaj chcete zmazať klub "${clubData.name}"?`)) {
+                              if (!confirm(`Naozaj chcete vymazať klub "${clubData.name}"?`)) {
                                   return;
                               }
                               try {
