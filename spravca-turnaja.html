@@ -1280,13 +1280,14 @@ async function openGroupModal(groupId = null, groupData = null) {
                     await populateCategorySelect(clubCategorySelect, null);
                 }
 
-            // Set focus based on mode
-            if (currentClubModalMode === 'add-assign') {
-                 unassignedClubSelect.focus();
-            } else { // edit-assigned
-                 clubNameInput.focus();
-            }
-                
+                // Set focus based on mode
+                if (currentClubModalMode === 'add-assign') {
+                     unassignedClubSelect.focus();
+                } else { // edit-assigned
+                     clubNameInput.focus();
+                }
+           }
+
             // Funkcia na zobrazenie klubov usporiadaných podľa kategórií a skupín (PRIRADENÉ tímy)
             // fetchuje kluby s groupId != null
             async function displayClubs() {
@@ -2398,7 +2399,7 @@ async function openGroupModal(groupId = null, groupData = null) {
                           if (window.location.hash === '#timy-do-skupin') {
                                displayClubs(); // Refresh assigned clubs display
                           }
-                         
+
                      } else if (currentClubModalMode === 'edit-assigned') {
                          // === LOGIKA ÚPRAVY PRIRADENÉHO ALEBO NEPRIRADENÉHO KLUBU ===
                          // editingClubId holds the auto-generated ID of the club being edited
