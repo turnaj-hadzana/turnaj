@@ -705,25 +705,24 @@
         const createdTeamsTableBody = document.getElementById('createdTeamsTableBody');
 
 
-        // === 5. STATE VARIABLES ===
+// === 5. STATE VARIABLES ===
         let currentCategoryModalMode = 'add';
         let editingCategoryName = null;
 
         let currentGroupModalMode = 'add';
-        let editingGroupId = null; // Kompozitné ID upravovanej skupiny
+        let editingGroupId = null;
 
-        // NEW: Premenné stavu pre modál Kluby (Priradenie/Úprava)
-        let currentClubModalMode = 'add-assign'; // Default mode: 'add-assign' or 'edit-assigned'
-        let editingClubId = null; // Auto-generated ID of the club document being edited
+        let currentClubModalMode = 'add-assign';
+        let editingClubId = null;
 
-        // NEW: Premenné stavu pre modál Vytvorenie Tímov (zatiaľ len 'add')
         let currentTeamCreationModalMode = 'add';
 
-        // NEW: Cache pre zoznam všetkých kategórií
         let allCategories = [];
 
-        // Premenná príznaku pre debounce toggleContentDisplay
         let isDisplaying = false; // DEBOUNCE FLAG
+
+        // Premenná na sledovanie aktívneho filtra kategórie pre tabuľku vytvorených tímov
+        let currentCategoryFilter = null; // <<< TOTO JE JEDINÁ SPRÁVNA DEKLARÁCIA
 
         // === 6. HELPER FUNCTIONS (called by display/modal functions) ===
 
