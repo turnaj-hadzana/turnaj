@@ -985,7 +985,7 @@ async function displayClubs() {
 
                 const sectionHeading = document.createElement('h2');
                 // Nadpis bude obsahovať názov kategórie a názov skupiny
-                sectionHeading.textContent = `Kategória: ${categoryId} - Skupina: ${groupName}`;
+                sectionHeading.textContent = `${categoryId} - ${groupName}`;
                 groupClubSectionDiv.appendChild(sectionHeading);
 
                 // Vytvor tabuľku pre kluby v tejto skupine
@@ -1445,9 +1445,6 @@ async function displayClubs() {
                                   name: clubName,
                                   categoryId: selectedCategoryId,
                                   groupId: selectedGroupId
-                                  // Ak máš v dokumente klubu aj iné polia, ktoré formulár neupravuje,
-                                  // musel by si ich načítať zo starého dokumentu a pridať sem.
-                                  // Napr.: ...oldDocSnapshot.data(), name: clubName, ...
                              });
 
                              // Zmažeme starý dokument
