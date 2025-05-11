@@ -202,6 +202,24 @@
              white-space: nowrap;
         }
 
+        #clubsContent {
+            display: flex; /* Make this a flex container */
+            flex-wrap: wrap; /* Allow items to wrap */
+            gap: 20px; /* Space between sections */
+            align-items: flex-start; /* Align items to the top */
+            padding: 0; /* Odsadenie riadi content-wrapper */
+            margin-bottom: 20px; /* Odsadenie pod celou flex oblasťou */
+        }
+
+        /* Style for container divs that wrap club sections when inside #clubsContent */
+        #clubsContent .section-block {
+             /* Inherits background, padding, radius, shadow from .section-block */
+            min-width: 300px; /* Allow sections to shrink but not below this */
+            flex-grow: 1; /* Allow sections to grow */
+            flex-basis: 0; /* Start from a base size of 0 before growing */
+            margin-bottom: 0; /* Override the default .section-block margin when inside flex */
+        }
+
         /* --- Action Button Styles --- - ZOSTÁVAJÚ ROVNAKÉ */
         .action-button {
             padding: 5px 10px;
@@ -1138,7 +1156,7 @@ async function displayClubs() {
             } else if (hash === '#kluby') {
                 addButton.style.display = 'block';
                 // clubsContentStructuredDiv.style.display = 'block'; // Tento riadok odstráňte alebo zmeňte ID
-                clubsContentDiv.style.display = 'block'; // Pridajte tento riadok
+                clubsContentDiv.style.display = 'flex'; // <--- ZMENA TU: nastavte na 'flex'
                 displayClubs(); // Zavolanie upravenej funkcie
                 addButton.title = "Pridať klub";
             } else {
