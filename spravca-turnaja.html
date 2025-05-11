@@ -272,26 +272,37 @@
 
         
 
+/* === Fixed table header for Team Creation table === */
 #createdTeamsTable thead {
     position: fixed; /* Fix to the viewport */
     top: 0; /* Position at the top */
 
-    /* NASTAVTE TIETO HODNOTY PODĽA PADDINGOV/MARGINOV VÁŠHO HLAVNÉHO OBSAHU */
-    /* Príklad: Ak váš hlavný kontajner má padding: 0 20px; */
-    left: 20px;  /* Vzdialenosť od ľavého okraja viewportu */
-    right: 20px; /* Vzdialenosť od pravého okraja viewportu */
-
-    /* Ak nemáte bočné medzery, použite 0px */
-    /* left: 0; */
-    /* right: 0; */
-
-
-    /* Výpočet šírky na základe nastavených left a right - obvykle nie je potrebné nastavovať width: 100% k left/right */
-    /* Ak nastavíte left a right, šírka sa vypočíta automaticky */
+    /* Nastavenie šírky na 100% KONTÁJNERA (potrebujeme, aby mal kontajner definovanú šírku/pozíciu) */
+    /* Ak je .section-block priamo v body bez ďalších kontajnerov,
+       šírka 100% bude šírka viewportu (alebo body).
+       Ak má .section-block nejakú pevnú šírku a margin: auto, je to lepšie.
+    */
+     width: 100%; /* Šírka na 100% rodiča (viewportu) */
+     left: 0; /* Zarovnáme na ľavý okraj */
 
 
-    z-index: 10; /* Ensure the header is above scrolling content */
-    background-color: #f8f9fa; /* Add a background color */
+    /* Pre horizontálne centrovanie fixovaného elementu s DEFINOVANOU ŠÍRKOU použite: */
+    /* left: 50%; */
+    /* transform: translateX(-50%); */
+    /* Alebo ak chceme šírku kontajnera a je kontajner centrovaný s paddingom, pouzijeme left/right podla paddingu */
+    /* left: 20px; */ /* Prispôsobiť paddingu/marginu hlavného kontajnera */
+    /* right: 20px; */ /* Prispôsobiť paddingu/marginu hlavného kontajnera */
+
+    /* AK VAŠA HLAVIČKA MÁ ZODPOVEDAŤ ŠÍRKE SCROLLOVATEĽNÉHO OBSAHU TABUĽKY: */
+    /* Toto sa s position: fixed a čistým CSS ťažko robí presne bez JS alebo pevných šírok stĺpcov */
+    /* Jedna z možností (nie vždy presná) je nastaviť jej šírku na šírku rodiča,
+       ktorý má overflow-x: auto, a pokúsiť sa zladiť posúvanie.
+       Ale position: fixed je relatívne k viewportu, nie k scrollujúcemu rodičovi.
+    */
+
+
+    z-index: 10;
+    background-color: #f8f9fa;
 
     padding-top: 10px;
     padding-bottom: 10px;
@@ -300,22 +311,31 @@
     white-space: nowrap;
     overflow: hidden;
     box-sizing: border-box;
+
+    /* Vizualne centrovanie v ramci viewportu AK MÁ FIXOVANA HLAVIČKA MENŠIU ŠÍRKU AKO VIEWPORT */
+     /* Ak nastavíte explicitnú šírku, môžete ju centrovať takto: */
+     /* width: 800px; // Príklad pevnej šírky */
+     /* left: 50%; */
+     /* transform: translateX(-50%); */
+     /* Zrušte vtedy left: 0; */
+
 }
 
 /* Adjust the table's padding-top to prevent content from being hidden under the fixed header */
-/* Výška hlavičky + nejaká medzera. Zmerajte výšku hlavičky alebo odhadnite. */
 #createdTeamsTable {
-     margin-top: 60px; /* Nastavte túto hodnotu vhodne */
+     margin-top: 60px; /* Prispôsobte výške hlavičky */
 }
-
 
 /* Ensure the table can be scrolled horizontally if content overflows */
 #teamCreationContentSection .section-block {
-     overflow-x: auto; /* Add horizontal scroll if needed */
-     /* Ak chcete aj vertikálne posúvanie V RÁMCI TOHTO BLOKU, nastavte height a overflow-y: auto */
+     overflow-x: auto;
+     /* Pridajte pre lepšie centrovanie aj na rodičovský kontajner tabuľky (napr. body, alebo wrapujúci div) */
+     /* margin: 0 auto; */ /* Ak má rodič pevnú max-width */
+     /* max-width: 1200px; */ /* Príklad */
 }
 
-/* Setting fixed widths for columns is ALMOST ALWAYS necessary for fixed headers with horizontal scrolling */
+/* Setting fixed widths for columns is ALMOST ALWAYS necessary for fixed headers with horizontal scrolling and correct alignment */
+/* Musíte manuálne nastaviť šírky pre TH a zodpovedajúce TD, aby sa zladili */
 /* Example (adjust widths as needed):
 #createdTeamsTable th:first-child,
 #createdTeamsTable td:first-child {
