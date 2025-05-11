@@ -1220,6 +1220,10 @@ async function openGroupModal(groupId = null, groupData = null) {
                  clubGroupSelect.parentElement.style.display = 'block'; // Default to showing group select
                  clubGroupSelect.disabled = true;
 
+                 // *** Pridaná logika pre atribút 'required' na clubNameInput ***
+                 clubNameInput.required = false; // Nastav defaultne na false
+                 // ***********************************************************
+
 
                  if (clubId && clubData) {
                     // Edit mode (Editing an ALREADY ASSIGNED club OR an UNASSIGNED club from Manage Modal)
@@ -1232,6 +1236,10 @@ async function openGroupModal(groupId = null, groupData = null) {
                     unassignedClubSelectContainer.style.display = 'none';
                     clubNameInputContainer.style.display = 'block';
                     clubNameInput.readOnly = false; // Allow editing name
+
+                    // *** V režime úpravy nastavíme clubNameInput ako povinný ***
+                    clubNameInput.required = true;
+                    // ********************************************************
 
                     // Populate the category select and then set the value
                     await populateCategorySelect(clubCategorySelect, clubData.categoryId); // Pass select element first
@@ -1248,6 +1256,8 @@ async function openGroupModal(groupId = null, groupData = null) {
                          clubGroupSelect.parentElement.style.display = 'none';
                          clubGroupSelect.disabled = true;
                          clubGroupSelect.value = ''; // Clear any previous selection
+                         // Note: In 'edit-assigned' mode for an UNASSIGNED club, the group select is hidden.
+                         // This is correct behavior based on the current logic.
                     }
 
 
@@ -1266,6 +1276,9 @@ async function openGroupModal(groupId = null, groupData = null) {
                     unassignedClubSelectContainer.style.display = 'block';
                     clubNameInputContainer.style.display = 'none';
                     clubNameInput.value = ''; // Clear the name input just in case
+
+                     // *** V režime priradenia clubNameInput NIE JE povinný ***
+                     clubNameInput.required = false; // Toto sme už nastavili na začiatku, ale pre istotu
 
                      // Show and disable the group select initially
                      clubGroupSelect.parentElement.style.display = 'block';
