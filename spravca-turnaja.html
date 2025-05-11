@@ -269,17 +269,25 @@
                 color: #0056b3;
            }
 
-            #createdTeamsTable tbody td[data-team-count] {
-                color: #333; /* Nastaví farbu textu na tmavošedú (alebo akúkoľvek inú farbu, ktorú preferujete) */
-                text-decoration: none; /* Odstráni podčiarknutie */
-                cursor: pointer; /* Voliteľné: Zmení kurzor myši na ručičku (pointer), aby bolo jasné, že sa na element dá kliknúť */
-            }
+/* Štýly pre klikateľné bunky v tabuľke Vytvorenie Tímov (počet tímov) */
+#createdTeamsTable tbody td[data-team-count] {
+    color: #333 !important; /* Nastaví farbu textu na tmavošedú a !important zabezpečí prepísanie iných pravidiel */
+    text-decoration: none !important; /* Odstráni podčiarknutie a !important zabezpečí prepísanie */
+    cursor: pointer; /* Zmení kurzor myši */
 
-            /* Voliteľné: Pridajte efekt pri nabehnutí myšou, ak chcete vizuálne naznačiť, že je to klikateľné */
-            #createdTeamsTable tbody td[data-team-count]:hover {
-                color: #007bff; /* Príklad: Zmení farbu textu na modrú pri nabehnutí myšou */
-                /* text-decoration: underline; */ /* Alebo pridajte podčiarknutie pri nabehnutí myšou */
-            }
+    /* Zabezpečí, že text v bunke nemá žiadne špeciálne štýly odkazov */
+    font-weight: normal; /* Zabezpečí normálnu hrúbku písma */
+    font-style: normal;  /* Zabezpečí normálny štýl písma (nie kurzívu, ktorá sa niekedy používa pre linky) */
+
+    /* Potlačiť focus outline, ktorý sa môže zobraziť pri kliknutí/tabulovaní a pripomínať link */
+    outline: none !important;
+}
+
+/* Voliteľné: Pridajte efekt pri nabehnutí myšou, ak chcete vizuálne naznačiť, že je to klikateľné */
+#createdTeamsTable tbody td[data-team-count]:hover {
+    color: #007bff; /* Príklad: Zmení farbu textu na modrú pri nabehnutí myšou */
+    /* text-decoration: underline; */ /* Alebo pridajte podčiarknutie pri nabehnutí myšou */
+}
 
         /* --- Action Button Styles --- */
         .action-button {
