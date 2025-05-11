@@ -1970,6 +1970,7 @@ async function openGroupModal(groupId = null, groupData = null) {
                  } else if (hash === '#skupiny') {
                      addButton.style.display = 'block';
                      groupsContentDiv.style.display = 'flex';
+                     groupsContentDiv.innerHTML = '';
                      displayGroupsByCategory();
                      addButton.title = "Pridať skupinu";
                  } else if (hash === '#vytvorenie-timov') {
