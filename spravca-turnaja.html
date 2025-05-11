@@ -1119,7 +1119,7 @@
      }
 
 
-            // Funkcia na zobrazenie skupín usporiadaných podľa kategórií
+// Funkcia na zobrazenie skupín usporiadaných podľa kategórií
             async function displayGroupsByCategory() {
                  groupsContentDiv.innerHTML = ''; // Clear container
 
@@ -1222,10 +1222,10 @@
 
 
                                   // TLAČIDLO VYMAZAŤ SKUPINU
-                                   const deleteGroupButton = document.createElement('button'); // Corrected variable name
+                                   const deleteGroupButton = document.createElement('button'); // Correct variable name
                                    deleteGroupButton.textContent = 'Vymazať';
                                    deleteGroupButton.classList.add('action-button', 'delete-button');
-                                   deleteGroupButton.onclick = async () => {
+                                   deleteGroupButton.onclick = async () => { // THIS is where the error likely occurred
                                         if (!confirm(`Naozaj chcete vymazať skupinu "${group.data.name}" z kategórie "${group.data.categoryId}"? Tímy priradené k tejto skupine prídu o priradenie (groupId sa nastaví na null)!`)) { // Updated warning
                                              return;
                                         }
@@ -1260,7 +1260,7 @@
                                      };
 
                                      groupActionsTd.appendChild(editGroupButton);
-                                     groupActionsTd.appendChild(deleteButton); // Corrected variable name
+                                     groupActionsTd.appendChild(deleteGroupButton); // <<<<< OPRAVA TU: Použiť deleteGroupButton
 
                                      groupRow.appendChild(groupNameTd);
                                      groupRow.appendChild(groupActionsTd);
@@ -1281,7 +1281,6 @@
                           groupsContentDiv.appendChild(errorMessage);
                       }
              }
-
 
              // --- Funkcie pre Kluby (Priradenie do skupín & Správa priradených) ---
 
