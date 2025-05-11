@@ -512,20 +512,20 @@
                  currentCategoryModalMode = 'edit';
                  editingCategoryName = categoryName;
                  editingCategoryRow = this.closest('tr');
-                 categoryModalTitle.textContent = 'Upraviť kategóriu';
+                 categoryModalTitle.textContent = 'Premenovať';
                  categoryNameInput.value = categoryName;
                  categoryModal.style.display = 'block';
                  categoryNameInput.focus();
              };
 
              const deleteButton = document.createElement('button');
-             deleteButton.textContent = 'Zmazať';
+             deleteButton.textContent = 'Vymazať';
              deleteButton.classList.add('action-button', 'delete-button');
              deleteButton.onclick = async function() {
                  const row = this.closest('tr');
                  const categoryToDelete = row.querySelector('td:first-child').textContent;
 
-                 if (!confirm(`Naozaj chcete zmazať kategóriu "${categoryToDelete}"? Skupiny a kluby priradené k tejto kategórii/skupinám zostanú bez priradenia!`)) { // Updated confirmation message
+                 if (!confirm(`Naozaj chcete vymazať kategóriu "${categoryToDelete}"? Skupiny a kluby priradené k tejto kategórii/skupinám zostanú bez priradenia!`)) { // Updated confirmation message
                      return;
                  }
 
@@ -703,7 +703,7 @@
                 // Edit mode
                 currentGroupModalMode = 'edit';
                 editingGroupId = groupId; // Store the composite ID of the group being edited
-                groupModalTitle.textContent = 'Upraviť skupinu';
+                groupModalTitle.textContent = 'Premenovať';
                 groupFormSubmitButton.textContent = 'Uložiť zmeny'; // Change button text
 
                 // Populate the category select and then set the value
@@ -822,19 +822,19 @@
 
                              // TLAČIDLO ÚPRAVA SKUPINY - VOLÁ openGroupModal
                              const editGroupButton = document.createElement('button');
-                             editGroupButton.textContent = 'Upraviť Skupinu';
+                             editGroupButton.textContent = 'Premenovať';
                              editGroupButton.classList.add('action-button');
                              editGroupButton.onclick = () => {
                                   openGroupModal(group.id, group.data); // Pass the composite group ID and its data
                              };
 
 
-                             // TLAČIDLO ZMAZAŤ SKUPINU
+                             // TLAČIDLO VYMAZAŤ SKUPINU
                              const deleteGroupButton = document.createElement('button');
-                             deleteGroupButton.textContent = 'Zmazať Skupinu';
+                             deleteGroupButton.textContent = 'Vymazať';
                              deleteGroupButton.classList.add('action-button', 'delete-button');
                              deleteGroupButton.onclick = async () => {
-                                  if (!confirm(`Naozaj chcete zmazať skupinu "${group.data.name}" z kategórie "${group.data.categoryId}"?`)) {
+                                  if (!confirm(`Naozaj chcete vymazať skupinu "${group.data.name}" z kategórie "${group.data.categoryId}"?`)) {
                                       return;
                                   }
                                   try {
@@ -894,7 +894,7 @@
                  // Edit mode
                  currentClubModalMode = 'edit';
                  editingClubId = clubId; // Store the auto-generated ID of the club being edited
-                 clubModalTitle.textContent = 'Upraviť klub';
+                 clubModalTitle.textContent = 'Premenovať';
                  clubFormSubmitButton.textContent = 'Uložiť zmeny';
 
                  // Populate the category select and then set the value
@@ -962,19 +962,19 @@
 
                          // === TLAČIDLO ÚPRAVA KLUBU ===
                          const editClubButton = document.createElement('button');
-                         editClubButton.textContent = 'Upraviť Klub';
+                         editClubButton.textContent = 'Premenovať';
                          editClubButton.classList.add('action-button');
                          editClubButton.onclick = () => {
                               // Pass the auto-generated club ID and its data
                               openClubModal(clubId, clubData);
                          };
 
-                         // === TLAČIDLO ZMAZAŤ KLUBU ===
+                         // === TLAČIDLO VYMAZAŤ KLUBU ===
                          const deleteClubButton = document.createElement('button');
-                         deleteClubButton.textContent = 'Zmazať Klub';
+                         deleteClubButton.textContent = 'Vymazať';
                          deleteClubButton.classList.add('action-button', 'delete-button');
                          deleteClubButton.onclick = async () => {
-                              if (!confirm(`Naozaj chcete zmazať klub "${clubData.name}"?`)) {
+                              if (!confirm(`Naozaj chcete vymazať klub "${clubData.name}"?`)) {
                                   return;
                               }
                               try {
