@@ -28,6 +28,14 @@
             color: #555;
         }
 
+        h3 { /* NOVÝ štýl pre nadpis skupiny v štruktúrovaných kluboch */
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: #555;
+            font-size: 1.1em; /* Menší ako h2 */
+        }
+
+
         .add-button {
             display: block;
             margin: 20px auto;
@@ -97,49 +105,24 @@
 
         main {
             flex-grow: 1;
-            padding: 0; /* Padding moved to content containers */
+            padding: 0; /* Padding moved to content containers like #groupsContent, #clubsContentStructured */
             box-shadow: none; /* Shadow moved to content containers */
             background-color: transparent; /* Ensure main background is transparent */
         }
 
 
         /* --- Table Styles --- */
-        #categoryTable, #clubsTable { /* Apply to category and clubs tables */
+        /* Spoločné štýly pre hlavné tabuľky a nové tabuľky klubov */
+        #categoryTable, .category-group-table, .group-clubs-table { /* Pridané .group-clubs-table */
             border-collapse: collapse;
             width: 100%;
-            margin-top: 20px; /* Add margin below heading/container */
-            border: none;
-            overflow: hidden;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            background-color: #fff; /* White background for the table itself */
-             border-radius: 8px; /* Rounded corners for the table */
-             padding: 15px; /* Inner padding for the table */
-             box-sizing: border-box; /* Include padding in width */
+            margin-top: 20px; /* Add margin below heading/container - adjusted below for nested tables */
+            border: none; /* Tabuľky v sekciách majú border a shadow na kontajneri */
+            overflow: hidden; /* Pre zaoblené rohy kontajnera */
+             /* Box-shadow a background sa presúva na .category-group-section a .category-clubs-section */
         }
 
-         /* Style for the section wrapping category heading and group table */
-         .category-group-section {
-             background-color: #fff; /* White background for section */
-             padding: 15px; /* Add padding inside the section */
-             border-radius: 8px; /* Rounded corners for the section */
-             box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* Shadow for the section */
-             margin-bottom: 0; /* Gap handles spacing between sections */
-
-             /* Flex properties for the section */
-             min-width: 300px; /* Minimum width before wrapping */
-             flex-grow: 1; /* Allow sections to grow */
-             flex-basis: 0; /* Distribute space based on grow factor */
-             /* Optional: max-width: 500px; */
-         }
-
-        /* Remove margin-top from the first element inside a section */
-        .category-group-section h2:first-child,
-        .category-group-section .category-group-table:first-child {
-            margin-top: 0;
-        }
-
-
-        #categoryTable th, #clubsTable th, .category-group-table th { /* Apply to headers in all tables */
+        #categoryTable th, #clubsTable th, .category-group-table th, .group-clubs-table th { /* Pridané .group-clubs-table */
             background-color: #f2f2f2;
             color: #333;
             font-weight: bold;
@@ -148,21 +131,23 @@
             border-bottom: 2px solid #ddd;
         }
 
-        #categoryTable td, #clubsTable td, .category-group-table td { /* Apply to data cells in all tables */
+        #categoryTable td, #clubsTable td, .category-group-table td, .group-clubs-table td { /* Pridané .group-clubs-table */
             text-align: left;
             padding: 10px 15px;
             border-bottom: 1px solid #eee;
         }
 
         #categoryTable tbody tr:last-child td,
-        #clubsTable tbody tr:last-child td,
-        .category-group-table tbody tr:last-child td {
+        #clubsTable tbody tr:last-child td, /* Toto sa už nebude používať, ale môže zostať */
+        .category-group-table tbody tr:last-child td,
+        .group-clubs-table tbody tr:last-child td { /* Pridané .group-clubs-table */
              border-bottom: none;
         }
 
         #categoryTable tbody tr:hover,
-        #clubsTable tbody tr:hover,
-        .category-group-table tbody tr:hover {
+        #clubsTable tbody tr:hover, /* Toto sa už nebude používať, ale môže zostať */
+        .category-group-table tbody tr:hover,
+        .group-clubs-table tbody tr:hover { /* Pridané .group-clubs-table */
             background-color: #f9f9f9;
             cursor: pointer;
         }
@@ -190,14 +175,100 @@
         .action-button:not(.delete-button):hover { background-color: #0056b3; }
         .action-button.delete-button:hover { background-color: #c82333; }
 
+        /* Akcie v TD - aplikuj aj na nové tabuľky */
         #categoryTable td:last-child,
-        #clubsTable td:last-child,
-        .category-group-table td:last-child {
+        #clubsTable td:last-child, /* Toto sa už nebude používať, ale môže zostať */
+        .category-group-table td:last-child,
+        .group-clubs-table td:last-child { /* Pridané .group-clubs-table */
              white-space: nowrap;
         }
 
+        /* --- Section/Container Styles --- */
+
+        /* Style for the section wrapping category heading and group tables */
+        .category-group-section { /* Štýl pre sekcie skupín */
+            background-color: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin-bottom: 20px; /* Pridaj margin, aby sa sekcie oddeľovali */
+
+            /* Flex properties for the section */
+            min-width: 300px;
+            flex-grow: 1;
+            flex-basis: 0;
+        }
+
+        /* Style for the section wrapping a category's clubs groups/tables (NEW) */
+        .category-clubs-section { /* NOVÝ štýl pre sekcie klubov */
+            background-color: #fff; /* Biely podklad */
+            padding: 15px; /* Vnútorné odsadenie */
+            border-radius: 8px; /* Zaoblené rohy */
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* Tieň */
+            margin-bottom: 20px; /* Medzera medzi sekciami kategórií */
+
+            /* Flex properties pre sekcie - ak ich chces vedľa seba */
+            min-width: 300px;
+            flex-grow: 1;
+            flex-basis: 0;
+        }
+
+        /* Style for the container wrapping a group's table inside a category section (NEW) */
+        .group-clubs-container { /* NOVÝ štýl pre kontajner skupiny v sekcii klubov */
+             margin-top: 20px; /* Medzera nad každou tabuľkou skupiny (okrem prvej v sekcii) */
+             /* Background a shadow sú na .category-clubs-section */
+        }
+
+        /* Remove margin-top from the first element inside sections */
+        .category-group-section h2:first-child,
+        .category-group-section .category-group-table:first-child {
+            margin-top: 0;
+        }
+        /* Remove margin-top from the first element inside NEW sections */
+        .category-clubs-section h2:first-child { /* Pre nadpis kategórie */
+            margin-top: 0;
+        }
+        .category-clubs-section .group-clubs-container:first-child { /* Pre prvý kontajner skupiny v kategórii */
+             margin-top: 0;
+        }
+
+
+        /* --- Specific Layout Containers --- */
+        #groupsContent { /* Kontajner pre sekcie skupín - zostáva flex */
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: flex-start;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        /* Starý kontajner pre jednu tabuľku klubov - teraz sa nepoužíva pre zobrazenie */
+        /* #clubsContent {
+             padding: 20px;
+             background-color: #fff;
+             border-radius: 8px;
+             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+             box-sizing: border-box;
+        } */
+
+        /* NOVÝ kontajner pre štruktúrované kluby */
+        #clubsContentStructured { /* Rovnaké štýly ako #groupsContent pre konzistentný vzhľad */
+            display: flex; /* Make this a flex container */
+            flex-wrap: wrap; /* Allow items to wrap */
+            gap: 20px; /* Space between sections */
+            align-items: flex-start; /* Align items to the top */
+            padding: 20px; /* Padding around flex items */
+            background-color: #f8f9fa; /* Background for the whole flex area */
+            border-radius: 8px; /* Rounded corners for the flex area */
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* Shadow for the flex area */
+        }
+
+
         /* --- Modal Styles --- */
-         .modal {
+        .modal {
             display: none;
             position: fixed;
             z-index: 1;
@@ -208,7 +279,7 @@
             overflow: auto;
             background-color: rgba(0,0,0,0.4);
             padding-top: 60px;
-         }
+        }
 
         .modal-content {
             background-color: #fefefe;
@@ -243,17 +314,17 @@
             font-weight: bold;
         }
 
-         .modal-content form input[type="text"],
-         .modal-content form select {
+        .modal-content form input[type="text"],
+        .modal-content form select {
             width: calc(100% - 22px);
             padding: 10px;
             margin-bottom: 20px;
             border: 1px solid #ccc;
             border-radius: 4px;
             box-sizing: border-box;
-         }
+        }
 
-         .modal-content form button {
+        .modal-content form button {
             background-color: #28a745;
             color: white;
             padding: 10px 20px;
@@ -262,34 +333,11 @@
             cursor: pointer;
             font-size: 1em;
             transition: background-color 0.3s ease;
-         }
-
-         .modal-content form button:hover {
-            background-color: #218838;
-         }
-
-        /* --- Specific Layout Containers --- */
-        #groupsContent {
-             display: flex; /* Make this a flex container */
-             flex-wrap: wrap; /* Allow items to wrap */
-             gap: 20px; /* Space between sections */
-             align-items: flex-start; /* Align items to the top */
-             padding: 20px; /* Padding around flex items */
-             background-color: #f8f9fa; /* Background for the whole flex area */
-             border-radius: 8px; /* Rounded corners for the flex area */
-             box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* Shadow for the flex area */
         }
 
-         #clubsContent {
-              /* Simple block layout for clubs table */
-             padding: 20px; /* Padding around the table */
-             background-color: #fff; /* White background */
-             border-radius: 8px; /* Rounded corners */
-             box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* Shadow */
-             /* width: 100%; // flex-grow: 1; if in flex context */
-             box-sizing: border-box; /* Include padding in width */
-         }
-
+        .modal-content form button:hover {
+            background-color: #218838;
+        }
 
     </style>
 </head>
@@ -298,16 +346,14 @@
         // Basic check for admin, redirect if not
         const userName = localStorage.getItem('username');
         if (userName !== 'admin') {
-             window.location.href = 'login.html';
+            window.location.href = 'login.html';
         }
     </script>
 
     <h1>Správca turnaja</h1>
 
-    <!-- This button is used for adding Categories or Groups depending on the page -->
     <button class="add-button" id="addButton" title="Pridať položku">+</button>
 
-    <!-- Modal for adding/editing Categories -->
     <div class="modal" id="categoryModal">
         <div class="modal-content">
             <span class="close category-modal-close">&times;</span>
@@ -320,7 +366,6 @@
         </div>
     </div>
 
-     <!-- Modal for adding/editing Groups -->
      <div class="modal" id="groupModal">
          <div class="modal-content">
               <span class="close group-modal-close">&times;</span>
@@ -329,8 +374,7 @@
                   <label for="groupCategory">Kategória:</label>
                   <select id="groupCategory" name="groupCategory" required>
                        <option value="">-- Vyberte kategóriu --</option>
-                       <!-- Options will be populated by JavaScript -->
-                  </select>
+                       </select>
 
                   <label for="groupName">Názov skupiny:</label>
                   <input type="text" id="groupName" name="groupName" required>
@@ -340,39 +384,35 @@
          </div>
      </div>
 
-    <!-- Modal for adding/editing Clubs -->
-     <div class="modal" id="clubModal">
-         <div class="modal-content">
-              <span class="close club-modal-close">&times;</span>
-              <h2 id="clubModalTitle">Pridať klub</h2>
-              <form id="clubForm">
-                  <label for="clubName">Názov klubu:</label>
-                  <input type="text" id="clubName" name="clubName" required>
+    <div class="modal" id="clubModal">
+          <div class="modal-content">
+               <span class="close club-modal-close">&times;</span>
+               <h2 id="clubModalTitle">Pridať klub</h2>
+               <form id="clubForm">
+                    <label for="clubName">Názov klubu:</label>
+                    <input type="text" id="clubName" name="clubName" required>
 
-                  <label for="clubCategory">Kategória:</label>
-                  <select id="clubCategory" name="clubCategory" required>
-                       <option value="">-- Vyberte kategóriu --</option>
-                       <!-- Options will be populated by JavaScript -->
-                  </select>
+                    <label for="clubCategory">Kategória:</label>
+                    <select id="clubCategory" name="clubCategory" required>
+                         <option value="">-- Vyberte kategóriu --</option>
+                         </select>
 
-                   <label for="clubGroup">Skupina:</label>
-                  <select id="clubGroup" name="clubGroup" required disabled> <!-- Disabled until category is selected -->
-                       <option value="">-- Najprv vyberte kategóriu --</option>
-                       <!-- Options will be populated by JavaScript after category selection -->
-                  </select>
+                     <label for="clubGroup">Skupina:</label>
+                     <select id="clubGroup" name="clubGroup" required disabled> <option value="">-- Najprv vyberte kategóriu --</option>
+                          </select>
 
-                  <button type="submit">Uložiť</button>
-              </form>
-         </div>
+                     <button type="submit">Uložiť</button>
+               </form>
+          </div>
      </div>
 
 
     <div class="content-wrapper">
         <nav class="left-menu">
             <ul>
+                <li><a href="#kluby">Kluby</a></li>
                 <li><a href="#kategorie">Kategórie</a></li>
                 <li><a href="#skupiny">Skupiny</a></li>
-                <li><a href="#kluby">Kluby</a></li>
                 <li><a href="#sportove-haly">Športové haly</a></li>
                 <li><a href="#sprava-turnaja">Správa turnaja</a></li>
                 <li><a href="#nastavenia">Nastavenia</a></li>
@@ -380,45 +420,25 @@
         </nav>
 
         <main>
-            <!-- Table for displaying Categories -->
-             <table id="categoryTable" style="display: none;">
+            <table id="categoryTable" style="display: none;">
                  <thead>
-                     <tr>
-                         <th>Názov kategórie</th>
-                         <th style="width: 150px;">Upraviť</th>
-                     </tr>
+                      <tr>
+                           <th>Názov kategórie</th>
+                           <th style="width: 150px;">Upraviť</th>
+                      </tr>
                  </thead>
                  <tbody id="categoryTableBody">
-                     <!-- Category rows will be added here by JavaScript -->
-                 </tbody>
+                      </tbody>
              </table>
 
-             <!-- Container for generated Group tables (one table per category) -->
-             <!-- This div is now a flex container -->
              <div id="groupsContent" style="display: none;">
-                 <!-- Category sections (div.category-group-section) will be added here by JavaScript -->
-             </div>
+                  </div>
 
-             <!-- Table for displaying Clubs -->
-             <table id="clubsTable" style="display: none;">
-                 <thead>
-                     <tr>
-                         <th>Názov klubu</th>
-                         <th>Kategória</th>
-                         <th>Skupina</th>
-                         <th style="width: 150px;">Upraviť</th>
-                     </tr>
-                 </thead>
-                 <tbody id="clubsTableBody">
-                     <!-- Club rows will be added here by JavaScript -->
-                 </tbody>
-             </table>
-
-             <!-- Add other content areas for Haly, Správa turnaja, Nastavenia if needed -->
-             <!-- <div id="halyContent" style="display: none;">...</div> -->
+             <div id="clubsContentStructured" style="display: none;">
+                 </div>
 
 
-         </main>
+             </main>
     </div>
 
 
@@ -443,9 +463,10 @@
         const db = getFirestore(app);
 
         // Referencia na kolekcie
-        const categoriesCollectionRef = collection(db, 'tournamentData', 'mainTournamentData', 'categories');
-        const groupsCollectionRef = collection(db, 'tournamentData', 'mainTournamentData', 'groups'); // Groups now have composite IDs
-        const clubsCollectionRef = collection(db, 'tournamentData', 'mainTournamentData', 'clubs'); // New collection for Clubs
+        const tournamentDataRef = doc(db, 'tournamentData', 'mainTournamentData'); // Reference to the parent document
+        const categoriesCollectionRef = collection(tournamentDataRef, 'categories');
+        const groupsCollectionRef = collection(tournamentDataRef, 'groups');
+        const clubsCollectionRef = collection(tournamentDataRef, 'clubs'); // New collection for Clubs
 
 
         // Získame referencie na DOM elementy
@@ -473,16 +494,18 @@
         const clubForm = document.getElementById('clubForm');
         const clubNameInput = document.getElementById('clubName');
         const clubCategorySelect = document.getElementById('clubCategory');
-        const clubGroupSelect = document.getElementById('clubGroup');
+        const clubGroupSelect = document.getElementById('clubGroup'); // Toto je select skupiny v modáli klubu
         const clubModalTitle = document.getElementById('clubModalTitle');
         const clubFormSubmitButton = clubForm.querySelector('button[type="submit"]');
+
 
         // Zobrazované sekcie
         const categoryTable = document.getElementById('categoryTable');
         const categoryTableBody = document.getElementById('categoryTableBody');
         const groupsContentDiv = document.getElementById('groupsContent'); // Flex container for group tables
-        const clubsTable = document.getElementById('clubsTable'); // Table for clubs
-        const clubsTableBody = document.getElementById('clubsTableBody');
+        const clubsTable = document.getElementById('clubsTable'); // OLD Table for clubs - will be hidden
+        const clubsTableBody = document.getElementById('clubsTableBody'); // OLD Table body - will be cleared but not used
+        const clubsContentStructured = document.getElementById('clubsContentStructured'); // NEW container for structured clubs
 
 
         // Premenné stavu modálov
@@ -497,107 +520,111 @@
         let editingClubId = null; // Club's auto-generated ID
 
 
-        // --- Funkcie pre Kategórie (bez zmien v logike) ---
-        function addCategoryRowToTable(categoryName) { /* ... (unchanged) ... */
-             const tr = document.createElement('tr');
-             const nameTd = document.createElement('td');
-             nameTd.textContent = categoryName;
-             const actionsTd = document.createElement('td');
-             actionsTd.style.whiteSpace = 'nowrap';
+        // --- Funkcie pre Kategórie ---
 
-             const renameButton = document.createElement('button');
-             renameButton.textContent = 'Premenovať';
-             renameButton.classList.add('action-button');
-             renameButton.onclick = function() {
-                 currentCategoryModalMode = 'edit';
-                 editingCategoryName = categoryName;
-                 editingCategoryRow = this.closest('tr');
-                 categoryModalTitle.textContent = 'Premenovať';
-                 categoryNameInput.value = categoryName;
-                 categoryModal.style.display = 'block';
-                 categoryNameInput.focus();
-             };
+        function addCategoryRowToTable(categoryName) {
+            const tr = document.createElement('tr');
+            const nameTd = document.createElement('td');
+            nameTd.textContent = categoryName;
+            const actionsTd = document.createElement('td');
+            actionsTd.style.whiteSpace = 'nowrap';
 
-             const deleteButton = document.createElement('button');
-             deleteButton.textContent = 'Vymazať';
-             deleteButton.classList.add('action-button', 'delete-button');
-             deleteButton.onclick = async function() {
-                 const row = this.closest('tr');
-                 const categoryToDelete = row.querySelector('td:first-child').textContent;
+            const renameButton = document.createElement('button');
+            renameButton.textContent = 'Premenovať';
+            renameButton.classList.add('action-button');
+            renameButton.onclick = function() {
+                currentCategoryModalMode = 'edit';
+                editingCategoryName = categoryName;
+                editingCategoryRow = this.closest('tr');
+                categoryModalTitle.textContent = 'Premenovať';
+                categoryNameInput.value = categoryName;
+                categoryModal.style.display = 'block';
+                categoryNameInput.focus();
+            };
 
-                 if (!confirm(`Naozaj chcete vymazať kategóriu "${categoryToDelete}"? Skupiny a kluby priradené k tejto kategórii/skupinám zostanú bez priradenia!`)) { // Updated confirmation message
-                     return;
-                 }
+            const deleteButton = document.createElement('button');
+            deleteButton.textContent = 'Vymazať';
+            deleteButton.classList.add('action-button', 'delete-button');
+            deleteButton.onclick = async function() {
+                const row = this.closest('tr');
+                const categoryToDelete = row.querySelector('td:first-child').textContent;
 
-                 try {
-                     await deleteDoc(doc(categoriesCollectionRef, categoryToDelete));
-                     row.remove();
-                     console.log(`Kategória "${categoryToDelete}" bola úspešne zmazaná.`);
+                if (!confirm(`Naozaj chcete vymazať kategóriu "${categoryToDelete}"? Skupiny a kluby priradené k tejto kategórii/skupinám zostanú bez priradenia!`)) {
+                    return;
+                }
 
-                      // Refresh displays that might be affected
-                      if (window.location.hash === '#skupiny') displayGroupsByCategory();
-                      if (window.location.hash === '#kluby') displayClubs(); // Added clubs display refresh
+                try {
+                    await deleteDoc(doc(categoriesCollectionRef, categoryToDelete));
+                    row.remove();
+                    console.log(`Kategória "${categoryToDelete}" bola úspešne zmazaná.`);
 
-                 } catch (error) {
-                     console.error('Chyba pri mazaní kategórie: ', error);
-                     alert('Chyba pri mazaní kategórie!');
-                 }
-             };
+                    // Refresh displays that might be affected
+                    if (window.location.hash === '#skupiny') displayGroupsByCategory();
+                    // Zmeniť displayClubs() na displayClubsStructured()
+                    if (window.location.hash === '#kluby') displayClubsStructured();
 
-             actionsTd.appendChild(renameButton);
-             actionsTd.appendChild(deleteButton);
-             tr.appendChild(nameTd);
-             tr.appendChild(actionsTd);
-             categoryTableBody.appendChild(tr);
-         }
+                } catch (error) {
+                    console.error('Chyba pri mazaní kategórie: ', error);
+                    alert('Chyba pri mazaní kategórie!');
+                }
+            };
 
-        async function loadCategoriesTable() { /* ... (unchanged logic) ... */
-             try {
-                 categoryTableBody.innerHTML = '';
+            actionsTd.appendChild(renameButton);
+            actionsTd.appendChild(deleteButton);
+            tr.appendChild(nameTd);
+            tr.appendChild(actionsTd);
+            categoryTableBody.appendChild(tr);
+        }
+
+        async function loadCategoriesTable() {
+            try {
+                categoryTableBody.innerHTML = '';
+                const querySnapshot = await getDocs(categoriesCollectionRef);
+                if (querySnapshot.empty) {
+                    console.log("Žiadne kategórie nenájdené.");
+                    const noDataRow = document.createElement('tr');
+                    const td = document.createElement('td');
+                    td.colSpan = 2;
+                    td.textContent = "Žiadne kategórie zatiaľ pridané.";
+                    td.style.textAlign = 'center';
+                    noDataRow.appendChild(td);
+                    categoryTableBody.appendChild(noDataRow);
+                } else {
+                    // Sort categories by name before displaying
+                    const sortedCategories = querySnapshot.docs.map(doc => doc.id).sort();
+                    sortedCategories.forEach((categoryName) => {
+                         addCategoryRowToTable(categoryName);
+                    });
+                    console.log("Kategórie boli načítané a zobrazené.");
+                }
+            } catch (error) {
+                console.error('Chyba pri načítaní kategórií: ', error);
+                alert('Chyba pri načítaní kategórií!');
+                 const errorRow = document.createElement('tr');
+                 const td = document.createElement('td');
+                 td.colSpan = 2;
+                 td.textContent = "Chyba pri načítaní kategórií.";
+                 td.style.textAlign = 'center';
+                 errorRow.appendChild(td);
+                 categoryTableBody.appendChild(errorRow);
+            }
+        }
+
+
+        // --- Funkcie pre Skupiny ---
+
+        // Funkcia na načítanie kategórií a naplnenie <select> (používa sa v modáloch pre skupiny a kluby)
+        async function populateCategorySelect(selectedCategoryId = null, selectElement) {
+            selectElement.innerHTML = '<option value="">-- Vyberte kategóriu --</option>';
+
+            try {
                  const querySnapshot = await getDocs(categoriesCollectionRef);
                  if (querySnapshot.empty) {
-                     console.log("Žiadne kategórie nenájdené.");
-                     const noDataRow = document.createElement('tr');
-                     const td = document.createElement('td');
-                     td.colSpan = 2;
-                     td.textContent = "Žiadne kategórie zatiaľ pridané.";
-                     td.style.textAlign = 'center';
-                     noDataRow.appendChild(td);
-                     categoryTableBody.appendChild(noDataRow);
+                     console.log("Žiadne kategórie pre naplnenie selectu.");
                  } else {
-                     querySnapshot.forEach((doc) => {
-                         const categoryName = doc.id;
-                         addCategoryRowToTable(categoryName);
-                     });
-                     console.log("Kategórie boli načítané a zobrazené.");
-                 }
-             } catch (error) {
-                 console.error('Chyba pri načítaní kategórií: ', error);
-                 alert('Chyba pri načítaní kategórií!');
-                  const errorRow = document.createElement('tr');
-                  const td = document.createElement('td');
-                  td.colSpan = 2;
-                  td.textContent = "Chyba pri načítaní kategórií.";
-                  td.style.textAlign = 'center';
-                  errorRow.appendChild(td);
-                  categoryTableBody.appendChild(errorRow);
-             }
-         }
-
-
-         // --- Funkcie pre Skupiny (logika zápisu používa kompozitné ID) ---
-
-         // Funkcia na načítanie kategórií a naplnenie <select> v modáli skupiny
-         async function populateCategorySelect(selectedCategoryId = null, selectElement) { // Added selectElement parameter
-             selectElement.innerHTML = '<option value="">-- Vyberte kategóriu --</option>';
-
-             try {
-                  const querySnapshot = await getDocs(categoriesCollectionRef);
-                  if (querySnapshot.empty) {
-                      console.log("Žiadne kategórie pre naplnenie selectu.");
-                  } else {
-                      querySnapshot.forEach((doc) => {
-                          const categoryName = doc.id;
+                      // Sort categories by name before populating select
+                      const sortedCategories = querySnapshot.docs.map(doc => doc.id).sort();
+                      sortedCategories.forEach((categoryName) => {
                           const option = document.createElement('option');
                           option.value = categoryName;
                           option.textContent = categoryName;
@@ -611,115 +638,116 @@
                                 console.warn(`Kategória "${selectedCategoryId}" pre zvolenú položku nenájdená v zozname kategórií.`);
                            }
                       }
-                  }
-             } catch (error) {
+                 }
+            } catch (error) {
                  console.error('Chyba pri načítaní kategórií pre select: ', error);
-                  const option = document.createElement('option');
-                  option.value = "";
-                  option.textContent = "Chyba pri načítaní kategórií";
-                  option.disabled = true;
-                  selectElement.appendChild(option);
-             }
-         }
+                 const option = document.createElement('option');
+                 option.value = "";
+                 option.textContent = "Chyba pri načítaní kategórií";
+                 option.disabled = true;
+                 selectElement.appendChild(option);
+            }
+        }
 
-         // Funkcia na načítanie skupín pre danú kategóriu a naplnenie <select> (používa kompozitné ID)
-         async function populateGroupSelect(categoryId, selectElement, selectedGroupId = null) { // Added selectElement, selectedGroupId
-             selectElement.innerHTML = '<option value="">-- Vyberte skupinu --</option>';
-             selectElement.disabled = true; // Disable until category is selected
+        // Funkcia na načítanie skupín pre danú kategóriu a naplnenie <select> (používa sa v modáli pre kluby)
+        async function populateGroupSelect(categoryId, selectElement, selectedGroupId = null) {
+            selectElement.innerHTML = '<option value="">-- Vyberte skupinu --</option>';
+            selectElement.disabled = true; // Disable until category is selected
 
-             if (!categoryId) {
-                 return; // No category selected, cannot load groups
-             }
+            if (!categoryId) {
+                return; // No category selected, cannot load groups
+            }
 
-             selectElement.disabled = false; // Enable the select
+            selectElement.disabled = false; // Enable the select
 
-             try {
-                  // Query groups that belong to the selected category
-                  const q = query(groupsCollectionRef, where('categoryId', '==', categoryId));
-                  const querySnapshot = await getDocs(q);
+            try {
+                // Query groups that belong to the selected category
+                const q = query(groupsCollectionRef, where('categoryId', '==', categoryId));
+                const querySnapshot = await getDocs(q);
 
-                  if (querySnapshot.empty) {
-                      console.log(`Žiadne skupiny nájdené pre kategóriu "${categoryId}".`);
-                      const option = document.createElement('option');
-                      option.value = "";
-                      option.textContent = "-- Žiadne skupiny v kategórii --";
-                      option.disabled = true;
-                      selectElement.appendChild(option);
+                if (querySnapshot.empty) {
+                    console.log(`Žiadne skupiny nájdené pre kategóriu "${categoryId}".`);
+                    const option = document.createElement('option');
+                    option.value = "";
+                    option.textContent = "-- Žiadne skupiny v kategórii --";
+                    option.disabled = true;
+                    selectElement.appendChild(option);
 
-                  } else {
-                      console.log(`Načítané skupiny pre kategóriu "${categoryId}".`);
-                      querySnapshot.forEach((doc) => {
-                          const groupData = doc.data();
-                           // The group ID is the composite ID "Category - Group Name"
-                          const groupId = doc.id; // This is the composite ID
-                          const groupName = groupData.name; // Get the actual group name field
+                } else {
+                    console.log(`Načítané skupiny pre kategóriu "${categoryId}".`);
+                    // Sort groups by name before populating select
+                    const sortedGroups = querySnapshot.docs.map(doc => ({ id: doc.id, data: doc.data() })).sort((a, b) => (a.data.name || '').localeCompare(b.data.name || ''));
 
-                          const option = document.createElement('option');
-                           // Use the composite ID as the option value
-                          option.value = groupId;
-                          // Display the group name
-                          option.textContent = groupName;
-                          selectElement.appendChild(option);
-                      });
+                    sortedGroups.forEach((group) => {
+                         const groupId = group.id; // This is the composite ID
+                         const groupName = group.data.name; // Get the actual group name field
 
-                      // Select the provided group ID if in edit mode and it exists
-                      if (selectedGroupId) {
-                           if (selectElement.querySelector(`option[value="${selectedGroupId}"]`)) {
-                                selectElement.value = selectedGroupId;
-                           } else {
-                                console.warn(`Skupina "${selectedGroupId}" pre zvolenú položku nenájdená v zozname skupín pre túto kategóriu.`);
-                                // Optionally keep the "-- Vyberte skupinu --" selected
-                           }
-                      }
-                  }
-             } catch (error) {
-                 console.error('Chyba pri načítaní skupín pre select: ', error);
-                  const option = document.createElement('option');
-                  option.value = "";
-                  option.textContent = "Chyba pri načítaní skupín";
-                  option.disabled = true;
-                  selectElement.appendChild(option);
-             }
-         }
+                         const option = document.createElement('option');
+                         // Use the composite ID as the option value
+                         option.value = groupId;
+                         // Display the group name
+                         option.textContent = groupName;
+                         selectElement.appendChild(option);
+                    });
+
+                    // Select the provided group ID if in edit mode and it exists
+                    if (selectedGroupId) {
+                         if (selectElement.querySelector(`option[value="${selectedGroupId}"]`)) {
+                              selectElement.value = selectedGroupId;
+                         } else {
+                              console.warn(`Skupina "${selectedGroupId}" pre zvolenú položku nenájdená v zozname skupín pre túto kategóriu.`);
+                              // Optionally keep the "-- Vyberte skupinu --" selected
+                         }
+                    }
+                }
+            } catch (error) {
+                console.error('Chyba pri načítaní skupín pre select: ', error);
+                 const option = document.createElement('option');
+                 option.value = "";
+                 option.textContent = "Chyba pri načítaní skupín";
+                 option.disabled = true;
+                 selectElement.appendChild(option);
+            }
+        }
 
 
-// Funkcia na otvorenie modálu skupiny (pre pridanie alebo úpravu)
-        async function openGroupModal(groupId = null, groupData = null) { // groupId je kompozitné ID, groupData má name, categoryId
-            groupModal.style.display = 'block';
+        // Funkcia na otvorenie modálu skupiny (pre pridanie alebo úpravu) - OPRAVENÁ
+        async function openGroupModal(groupId = null, groupData = null) { // groupId je kompozitné ID, groupData má name, categoryId
+            groupModal.style.display = 'block';
 
-            // Resetuj stav modálu a formulár
-            currentGroupModalMode = 'add';
-            editingGroupId = null; // Vymaž ID upravovanej skupiny
-            groupForm.reset(); // Vyčisti polia formulára
-            groupNameInput.disabled = false; // Uisti sa, že vstup pre názov je povolený
+            // Resetuj stav modálu a formulár
+            currentGroupModalMode = 'add';
+            editingGroupId = null; // Vymaž ID upravovanej skupiny
+            groupForm.reset(); // Vyčisti polia formulára
+            groupNameInput.disabled = false; // Uisti sa, že vstup pre názov je povolený
 
-            // Naplň select kategórií pre modál skupiny
-            groupCategorySelect.value = ""; // Resetuj výber kategórie
+            // Naplň select kategórií pre modál skupiny
+            groupCategorySelect.value = ""; // Resetuj výber kategórie
 
-            if (groupId && groupData) {
-                // Režim úpravy
-                currentGroupModalMode = 'edit';
-                editingGroupId = groupId; // Ulož kompozitné ID skupiny, ktorá sa upravuje
-                groupModalTitle.textContent = 'Premenovať';
-                groupFormSubmitButton.textContent = 'Uložiť zmeny'; // Zmeň text tlačidla
+            if (groupId && groupData) {
+                // Režim úpravy
+                currentGroupModalMode = 'edit';
+                editingGroupId = groupId; // Ulož kompozitné ID skupiny, ktorá sa upravuje
+                groupModalTitle.textContent = 'Premenovať';
+                groupFormSubmitButton.textContent = 'Uložiť zmeny'; // Zmeň text tlačidla
 
-                // Naplň select kategórií a potom nastav zvolenú hodnotu
-                await populateCategorySelect(groupData.categoryId, groupCategorySelect);
+                // Naplň select kategórií a potom nastav zvolenú hodnotu
+                await populateCategorySelect(groupData.categoryId, groupCategorySelect);
 
-                // Vyplň polia formulára
-                groupNameInput.value = groupData.name; // Použi pole 'name' z dát
-                // Hodnota groupCategorySelect sa nastaví funkciou populateCategorySelect
+                // Vyplň polia formulára
+                groupNameInput.value = groupData.name; // Použi pole 'name' z dát
+                // Hodnota groupCategorySelect sa nastaví funkciou populateCategorySelect
 
-            } else {
-                // Režim pridania (počiatočný stav už nastavený vyššie)
-                groupModalTitle.textContent = 'Pridať skupinu';
-                groupFormSubmitButton.textContent = 'Uložiť';
+            } else {
+                // Režim pridania (počiatočný stav už nastavený vyššie)
+                groupModalTitle.textContent = 'Pridať skupinu';
+                groupFormSubmitButton.textContent = 'Uložiť';
 
-                await populateCategorySelect(null, groupCategorySelect); // Naplň select kategórií
-            }
+                await populateCategorySelect(null, groupCategorySelect); // Naplň select kategórií
+            }
 
-            groupNameInput.focus(); // Nastav focus na pole pre názov
-        }
+            groupNameInput.focus(); // Nastav focus na pole pre názov
+        }
 
 
         // Funkcia na zobrazenie skupín usporiadaných podľa kategórií
@@ -729,13 +757,15 @@
              try {
                  // 1. Načítať všetky kategórie
                  const categoriesSnapshot = await getDocs(categoriesCollectionRef);
-                 const categories = categoriesSnapshot.docs.map(doc => doc.id);
+                 // Sort categories by name before displaying
+                 const sortedCategories = categoriesSnapshot.docs.map(doc => doc.id).sort();
 
-                 if (categories.length === 0) {
-                     const message = document.createElement('p');
-                     message.textContent = "Pridajte kategórie v sekcii 'Kategórie' pre zobrazenie skupín.";
-                     groupsContentDiv.appendChild(message);
-                     return;
+
+                 if (sortedCategories.length === 0) {
+                      const message = document.createElement('p');
+                      message.textContent = "Pridajte kategórie v sekcii 'Kategórie' pre zobrazenie skupín.";
+                      groupsContentDiv.appendChild(message);
+                      return;
                  }
 
                  // 2. Načítať všetky skupiny
@@ -744,112 +774,117 @@
                  // 3. Zoskupiť skupiny podľa categoryId
                  const groupsByCategory = {};
                  groupsSnapshot.forEach(doc => {
-                     const groupData = doc.data();
-                     const groupId = doc.id; // This is now the composite ID
-                     const categoryId = groupData.categoryId;
+                      const groupData = doc.data();
+                      const groupId = doc.id; // This is now the composite ID
+                      const categoryId = groupData.categoryId;
 
-                     if (categoryId) {
-                         if (!groupsByCategory[categoryId]) {
-                             groupsByCategory[categoryId] = [];
-                         }
-                         // Store ID and data
-                         groupsByCategory[categoryId].push({ id: groupId, data: groupData });
-                     } else {
-                         console.warn(`Skupina ${groupId} nemá priradenú categoryId.`);
-                         // Optional: Handle groups without a category
-                     }
+                      if (categoryId) {
+                           if (!groupsByCategory[categoryId]) {
+                                groupsByCategory[categoryId] = [];
+                           }
+                           // Store ID and data
+                           groupsByCategory[categoryId].push({ id: groupId, data: groupData });
+                      } else {
+                           console.warn(`Skupina ${groupId} nemá priradenú categoryId.`);
+                           // Optional: Handle groups without a category
+                      }
                  });
 
                  // 4. Pre každú kategóriu vytvoriť sekciu (div) s nadpisom a tabuľkou so skupinami
-                 categories.forEach(categoryName => {
-                     const groupsForThisCategory = groupsByCategory[categoryName] || [];
+                 sortedCategories.forEach(categoryName => {
+                      const groupsForThisCategory = groupsByCategory[categoryName] || [];
 
-                     const categorySectionDiv = document.createElement('div');
-                     categorySectionDiv.classList.add('category-group-section');
+                      // Only create a section if there are groups (or you want to show empty categories)
+                      // Let's show empty categories with a message
+                      const categorySectionDiv = document.createElement('div');
+                      categorySectionDiv.classList.add('category-group-section');
 
-                     const categoryHeading = document.createElement('h2');
-                     categoryHeading.textContent = `Skupiny - ${categoryName}`;
-                     categorySectionDiv.appendChild(categoryHeading);
+                      const categoryHeading = document.createElement('h2');
+                      categoryHeading.textContent = `Skupiny - ${categoryName}`;
+                      categorySectionDiv.appendChild(categoryHeading);
 
-                     const categoryGroupsTable = document.createElement('table');
-                     categoryGroupsTable.classList.add('category-group-table');
+                      const categoryGroupsTable = document.createElement('table');
+                      categoryGroupsTable.classList.add('category-group-table');
 
-                     const thead = document.createElement('thead');
-                     const headerRow = document.createElement('tr');
-                     const groupNameTh = document.createElement('th');
-                     groupNameTh.textContent = 'Názov skupiny';
-                     const actionsTh = document.createElement('th');
-                     actionsTh.textContent = 'Upraviť';
-                     actionsTh.style.width = '150px';
+                      const thead = document.createElement('thead');
+                      const headerRow = document.createElement('tr');
+                      const groupNameTh = document.createElement('th');
+                      groupNameTh.textContent = 'Názov skupiny';
+                      const actionsTh = document.createElement('th');
+                      actionsTh.textContent = 'Upraviť';
+                      actionsTh.style.width = '150px';
 
-                     headerRow.appendChild(groupNameTh);
-                     headerRow.appendChild(actionsTh);
-                     thead.appendChild(headerRow);
-                     categoryGroupsTable.appendChild(thead);
+                      headerRow.appendChild(groupNameTh);
+                      headerRow.appendChild(actionsTh);
+                      thead.appendChild(headerRow);
+                      categoryGroupsTable.appendChild(thead);
 
-                     const tbody = document.createElement('tbody');
+                      const tbody = document.createElement('tbody');
 
-                     if (groupsForThisCategory.length === 0) {
-                         const noGroupsRow = document.createElement('tr');
-                         const td = document.createElement('td');
-                         td.colSpan = 2;
-                         td.textContent = `V kategórii "${categoryName}" zatiaľ nie sú žiadne skupiny.`;
-                         td.style.textAlign = 'center';
-                         noGroupsRow.appendChild(td);
-                         tbody.appendChild(noGroupsRow);
-                     } else {
-                         // Sort groups by name before displaying (optional)
-                         groupsForThisCategory.sort((a, b) => (a.data.name || '').localeCompare(b.data.name || ''));
+                      if (groupsForThisCategory.length === 0) {
+                           const noGroupsRow = document.createElement('tr');
+                           const td = document.createElement('td');
+                           td.colSpan = 2;
+                           td.textContent = `V kategórii "${categoryName}" zatiaľ nie sú žiadne skupiny.`;
+                           td.style.textAlign = 'center';
+                           noGroupsRow.appendChild(td);
+                           tbody.appendChild(noGroupsRow);
+                      } else {
+                           // Sort groups by name before displaying
+                           groupsForThisCategory.sort((a, b) => (a.data.name || '').localeCompare(b.data.name || ''));
 
-                         groupsForThisCategory.forEach(group => {
-                             const groupRow = document.createElement('tr');
-                             const groupNameTd = document.createElement('td');
-                             groupNameTd.textContent = group.data.name; // Use the 'name' field for display
-
-
-                             const groupActionsTd = document.createElement('td');
-                             groupActionsTd.style.whiteSpace = 'nowrap';
-
-                             // TLAČIDLO ÚPRAVA SKUPINY - VOLÁ openGroupModal
-                             const editGroupButton = document.createElement('button');
-                             editGroupButton.textContent = 'Premenovať';
-                             editGroupButton.classList.add('action-button');
-                             editGroupButton.onclick = () => {
-                                  openGroupModal(group.id, group.data); // Pass the composite group ID and its data
-                             };
+                           groupsForThisCategory.forEach(group => {
+                                const groupRow = document.createElement('tr');
+                                const groupNameTd = document.createElement('td');
+                                groupNameTd.textContent = group.data.name; // Use the 'name' field for display
 
 
-                             // TLAČIDLO VYMAZAŤ SKUPINU
-                             const deleteGroupButton = document.createElement('button');
-                             deleteGroupButton.textContent = 'Vymazať';
-                             deleteGroupButton.classList.add('action-button', 'delete-button');
-                             deleteGroupButton.onclick = async () => {
-                                  if (!confirm(`Naozaj chcete vymazať skupinu "${group.data.name}" z kategórie "${group.data.categoryId}"?`)) {
-                                      return;
-                                  }
-                                  try {
-                                       // Use the composite group ID to delete
-                                      await deleteDoc(doc(groupsCollectionRef, group.id));
-                                      console.log(`Skupina "${group.data.name}" (ID: ${group.id}) bola úspešne zmazaná.`);
-                                       displayGroupsByCategory(); // Reload display
-                                  } catch (error) {
-                                      console.error('Chyba pri mazaní skupiny: ', error);
-                                      alert('Chyba pri mazaní skupiny!');
-                                  }
-                              };
+                                const groupActionsTd = document.createElement('td');
+                                groupActionsTd.style.whiteSpace = 'nowrap';
 
-                             groupActionsTd.appendChild(editGroupButton);
-                             groupActionsTd.appendChild(deleteGroupButton);
+                                // TLAČIDLO ÚPRAVA SKUPINY - VOLÁ openGroupModal
+                                const editGroupButton = document.createElement('button');
+                                editGroupButton.textContent = 'Premenovať';
+                                editGroupButton.classList.add('action-button');
+                                editGroupButton.onclick = () => {
+                                     openGroupModal(group.id, group.data); // Pass the composite group ID and its data
+                                };
 
-                             groupRow.appendChild(groupNameTd);
-                             groupRow.appendChild(groupActionsTd);
-                             tbody.appendChild(groupRow);
-                         });
-                     }
 
-                     categoryGroupsTable.appendChild(tbody);
-                     categorySectionDiv.appendChild(categoryGroupsTable);
-                     groupsContentDiv.appendChild(categorySectionDiv); // Append the section div to the main container
+                                // TLAČIDLO VYMAZAŤ SKUPINU
+                                const deleteGroupButton = document.createElement('button');
+                                deleteGroupButton.textContent = 'Vymazať';
+                                deleteGroupButton.classList.add('action-button', 'delete-button');
+                                deleteGroupButton.onclick = async () => {
+                                     if (!confirm(`Naozaj chcete vymazať skupinu "${group.data.name}" z kategórie "${group.data.categoryId}"?`)) {
+                                          return;
+                                     }
+                                     try {
+                                          // Use the composite group ID to delete
+                                          await deleteDoc(doc(groupsCollectionRef, group.id));
+                                          console.log(`Skupina "${group.data.name}" (ID: ${group.id}) bola úspešne zmazaná.`);
+                                           displayGroupsByCategory(); // Reload display
+                                           // Zmeniť displayClubs() na displayClubsStructured()
+                                           if (window.location.hash === '#kluby') displayClubsStructured();
+                                     } catch (error) {
+                                          console.error('Chyba pri mazaní skupiny: ', error);
+                                          alert('Chyba pri mazaní skupiny!');
+                                     }
+                                 };
+
+                                 groupActionsTd.appendChild(editGroupButton);
+                                 groupActionsTd.appendChild(deleteGroupButton);
+
+                                 groupRow.appendChild(groupNameTd);
+                                 groupRow.appendChild(groupActionsTd);
+                                 tbody.appendChild(groupRow);
+                           });
+                      }
+
+                      categoryGroupsTable.appendChild(tbody);
+                      categorySectionDiv.appendChild(categoryGroupsTable);
+                      groupsContentDiv.appendChild(categorySectionDiv); // Append the section div to the main container
+
                  });
 
 
@@ -859,149 +894,252 @@
                  errorMessage.textContent = 'Chyba pri načítaní dát skupín.';
                  groupsContentDiv.appendChild(errorMessage);
              }
-         }
+        }
 
 
-         // --- Funkcie pre Kluby (NOVÉ) ---
+        // --- Funkcie pre Kluby (ŠTRUKTÚROVANÉ ZOBRAZENIE) ---
 
-         // Funkcia na otvorenie modálu klubu
-         async function openClubModal(clubId = null, clubData = null) {
-             clubModal.style.display = 'block';
+        // Funkcia na otvorenie modálu klubu
+        async function openClubModal(clubId = null, clubData = null) {
+            clubModal.style.display = 'block';
 
-             // Reset modal state and form first
-             currentClubModalMode = 'add';
-             editingClubId = null; // Clear editing ID
-             clubForm.reset(); // Clear form fields
-             clubNameInput.disabled = false; // Ensure name input is enabled
+            // Reset modal state and form first
+            currentClubModalMode = 'add';
+            editingClubId = null; // Clear editing ID
+            clubForm.reset(); // Clear form fields
+            clubNameInput.disabled = false; // Ensure name input is enabled
 
-             // Disable group select initially and clear it
-             clubCategorySelect.value = ""; // Reset category select
-             clubGroupSelect.innerHTML = '<option value="">-- Najprv vyberte kategóriu --</option>';
-             clubGroupSelect.disabled = true;
+            // Disable group select initially and clear it
+            clubCategorySelect.value = ""; // Reset category select
+            clubGroupSelect.innerHTML = '<option value="">-- Najprv vyberte kategóriu --</option>';
+            clubGroupSelect.disabled = true;
 
 
-             if (clubId && clubData) {
-                 // Edit mode
-                 currentClubModalMode = 'edit';
-                 editingClubId = clubId; // Store the auto-generated ID of the club being edited
-                 clubModalTitle.textContent = 'Premenovať';
-                 clubFormSubmitButton.textContent = 'Uložiť zmeny';
+            if (clubId && clubData) {
+                // Edit mode
+                currentClubModalMode = 'edit';
+                editingClubId = clubId; // Store the auto-generated ID of the club being edited
+                clubModalTitle.textContent = 'Upraviť klub';
+                clubFormSubmitButton.textContent = 'Uložiť zmeny';
 
-                 // Populate the category select and then set the value
-                 await populateCategorySelect(clubData.categoryId, clubCategorySelect);
+                // Populate the category select and then set the value
+                await populateCategorySelect(clubData.categoryId, clubCategorySelect);
 
-                 // Populate the group select based on the selected category and then set the group value
-                 if(clubData.categoryId) {
-                      // Pass the composite group ID (clubData.groupId) to select
-                      await populateGroupSelect(clubData.categoryId, clubGroupSelect, clubData.groupId);
+                // Populate the group select based on the selected category and then set the group value
+                if(clubData.categoryId) {
+                     // Pass the composite group ID (clubData.groupId) to select
+                     await populateGroupSelect(clubData.categoryId, clubGroupSelect, clubData.groupId);
+                }
+
+                // Fill the form fields
+                clubNameInput.value = clubData.name;
+                // Category and Group selects are set by populate functions
+
+            } else {
+                // Add mode
+                clubModalTitle.textContent = 'Pridať klub';
+                clubFormSubmitButton.textContent = 'Uložiť';
+
+                await populateCategorySelect(null, clubCategorySelect); // Populate category select
+            }
+
+            clubNameInput.focus(); // Set focus
+        }
+
+        // Funkcia na zobrazenie klubov (štruktúrované podľa kategórií a skupín) - NOVÁ IMPLEMENTÁCIA
+        async function displayClubsStructured() {
+            clubsContentStructured.innerHTML = ''; // Vyčisti hlavný štruktúrovaný kontajner
+
+            try {
+                // 1. Načítať všetky kategórie a kluby
+                const categoriesSnapshot = await getDocs(categoriesCollectionRef);
+                const clubsSnapshot = await getDocs(clubsCollectionRef);
+
+                if (categoriesSnapshot.empty) {
+                    const message = document.createElement('p');
+                    message.textContent = "Pridajte kategórie v sekcii 'Kategórie' pre zobrazenie klubov.";
+                    clubsContentStructured.appendChild(message);
+                    return;
+                }
+
+                if (clubsSnapshot.empty) {
+                     // Aj keď existujú kategórie, ak nie sú žiadne kluby, zobraz správu
+                     const message = document.createElement('p');
+                     message.textContent = "Žiadne kluby zatiaľ pridané.";
+                     clubsContentStructured.appendChild(message);
+                     return;
+                }
+
+
+                // 2. Zoskupiť kluby podľa kategórie a potom podľa skupiny
+                const clubsByCategoryAndGroup = {};
+                clubsSnapshot.forEach(doc => {
+                    const clubData = doc.data();
+                    const clubId = doc.id;
+                    const categoryId = clubData.categoryId;
+                    const groupId = clubData.groupId; // Toto je kompozitné ID skupiny
+
+                    // Spracovať len kluby, ktoré majú priradenú kategóriu A skupinu
+                    if (categoryId && groupId) {
+                        if (!clubsByCategoryAndGroup[categoryId]) {
+                            clubsByCategoryAndGroup[categoryId] = {};
+                        }
+                        if (!clubsByCategoryAndGroup[categoryId][groupId]) {
+                            clubsByCategoryAndGroup[categoryId][groupId] = [];
+                        }
+                        clubsByCategoryAndGroup[categoryId][groupId].push({ id: clubId, data: clubData });
+                    } else {
+                        console.warn(`Klub ${clubId} ('${clubData.name}') nemá priradenú categoryId alebo groupId a nebude zobrazený v štruktúrovanom zobrazení.`);
+                        // Optional: Handle clubs without assignment? Maybe display them in a separate "Unassigned" section?
+                        // For now, we skip them.
+                    }
+                });
+
+                // Zoradiť kategórie abecedne podľa ID (názvu)
+                const sortedCategories = categoriesSnapshot.docs.map(doc => doc.id).sort();
+
+                // 3. Pre každú zoradenú kategóriu a skupinu vytvoriť DOM štruktúru
+                let anyClubsDisplayed = false; // Flag to check if any clubs were displayed in structured view
+
+                sortedCategories.forEach(categoryName => {
+                    const groupsInThisCategory = clubsByCategoryAndGroup[categoryName] || {};
+                    const groupIds = Object.keys(groupsInThisCategory).sort(); // Zoradiť ID skupín abecedne
+
+                    // Vytvoriť sekciu kategórie, len ak obsahuje aspoň jednu skupinu s klubmi ALEBO ak chceme zobraziť prázdne kategórie
+                    // Aktuálna logika vytvára sekciu, ak sú v nej skupiny s klubmi.
+                     const categorySectionDiv = document.createElement('div');
+                     categorySectionDiv.classList.add('category-clubs-section');
+
+                     const categoryHeading = document.createElement('h2');
+                     categoryHeading.textContent = `Kategória: ${categoryName}`;
+                     categorySectionDiv.appendChild(categoryHeading);
+
+                     let hasClubsInThisCategory = false; // Flag to check if this category section gets any group containers
+
+                    groupIds.forEach(compositeGroupId => {
+                        const clubsInThisGroup = groupsInThisCategory[compositeGroupId];
+
+                        if (clubsInThisGroup && clubsInThisGroup.length > 0) { // Vytvoriť sekciu skupiny, len ak obsahuje kluby
+                            hasClubsInThisCategory = true; // This category has clubs
+                            anyClubsDisplayed = true; // Overall clubs displayed
+
+                            const groupContainerDiv = document.createElement('div');
+                            groupContainerDiv.classList.add('group-clubs-container');
+
+                            // Extrahovať názov skupiny z kompozitného ID (formát "Kategória - Názov Skupiny")
+                            const groupNameMatch = compositeGroupId.match(/^[^ -]+ - (.*)$/);
+                            const groupDisplayName = groupNameMatch ? groupNameMatch[1] : compositeGroupId; // Ak sa nezhoduje, použi celé ID
+
+
+                            const groupHeading = document.createElement('h3');
+                            groupHeading.textContent = `Skupina: ${groupDisplayName}`;
+                            groupContainerDiv.appendChild(groupHeading);
+
+                            const groupClubsTable = document.createElement('table');
+                            groupClubsTable.classList.add('group-clubs-table'); // Použi novú triedu
+
+                            // Hlavička tabuľky
+                            const thead = document.createElement('thead');
+                            const headerRow = document.createElement('tr');
+                            const clubNameTh = document.createElement('th');
+                            clubNameTh.textContent = 'Názov klubu';
+                            const actionsTh = document.createElement('th');
+                            actionsTh.textContent = 'Akcie';
+                            actionsTh.style.width = '150px';
+
+                            headerRow.appendChild(clubNameTh);
+                            headerRow.appendChild(actionsTh);
+                            thead.appendChild(headerRow);
+                            groupClubsTable.appendChild(thead);
+
+                            const tbody = document.createElement('tbody');
+
+                            // Zoradiť kluby abecedne podľa názvu
+                            clubsInThisGroup.sort((a, b) => (a.data.name || '').localeCompare(b.data.name || ''));
+
+                            // Telo tabuľky (riadky klubov)
+                            clubsInThisGroup.forEach(club => {
+                                const clubRow = document.createElement('tr');
+
+                                const clubNameTd = document.createElement('td');
+                                clubNameTd.textContent = club.data.name;
+
+                                const clubActionsTd = document.createElement('td');
+                                clubActionsTd.style.whiteSpace = 'nowrap';
+
+                                // === TLAČIDLO ÚPRAVA KLUBU ===
+                                const editClubButton = document.createElement('button');
+                                editClubButton.textContent = 'Upraviť';
+                                editClubButton.classList.add('action-button');
+                                editClubButton.onclick = () => {
+                                    openClubModal(club.id, club.data); // Odovzdaj auto-generované ID klubu a jeho dáta
+                                };
+
+                                // === TLAČIDLO VYMAZAŤ KLUBU ===
+                                const deleteClubButton = document.createElement('button');
+                                deleteClubButton.textContent = 'Vymazať';
+                                deleteClubButton.classList.add('action-button', 'delete-button');
+                                deleteClubButton.onclick = async () => {
+                                    if (!confirm(`Naozaj chcete vymazať klub "${club.data.name}"?`)) {
+                                        return;
+                                    }
+                                    try {
+                                        await deleteDoc(doc(clubsCollectionRef, club.id));
+                                        console.log(`Klub "${club.data.name}" (ID: ${club.id}) bol úspešne zmazaný.`);
+                                        // Po úspešnom zmazaní znova načítame štruktúrované zobrazenie klubov
+                                        displayClubsStructured();
+                                    } catch (error) {
+                                        console.error('Chyba pri mazaní klubu: ', error);
+                                        alert('Chyba pri mazaní klubu!');
+                                    }
+                                };
+
+                                clubActionsTd.appendChild(editClubButton);
+                                clubActionsTd.appendChild(deleteClubButton);
+
+                                clubRow.appendChild(clubNameTd);
+                                clubRow.appendChild(clubActionsTd);
+
+                                tbody.appendChild(clubRow);
+                            });
+
+                            groupClubsTable.appendChild(tbody);
+                            groupContainerDiv.appendChild(groupClubsTable);
+                            categorySectionDiv.appendChild(groupContainerDiv); // Pridaj kontajner skupiny do sekcie kategórie
+                        }
+                    });
+
+                    // Pridaj sekciu kategórie, ak obsahuje aspoň jeden kontajner skupiny (s klubmi)
+                     if (hasClubsInThisCategory) {
+                         clubsContentStructured.appendChild(categorySectionDiv); // Pridaj sekciu kategórie do hlavného kontajnera
+                     } else {
+                        // Kategória existuje, ale nemá žiadne skupiny S KLUBMI
+                        // Môžeš pridať správu priamo do sekcie kategórie a pridať sekciu
+                         const noClubsMessage = document.createElement('p');
+                         noClubsMessage.textContent = `V kategórii "${categoryName}" zatiaľ nie sú žiadne kluby priradené do skupín, alebo v priradených skupinách nie sú žiadne kluby.`;
+                         noClubsMessage.style.textAlign = 'center';
+                         categorySectionDiv.appendChild(noClubsMessage);
+                         clubsContentStructured.appendChild(categorySectionDiv); // Pridaj sekciu kategórie so správou
+                     }
+                });
+
+                // Ak aj napriek existujúcim kategóriám a klubom nebol zobrazený ani jeden klub (lebo nemali priradenú kategóriu/skupinu)
+                 if (!anyClubsDisplayed && !clubsSnapshot.empty) {
+                     const message = document.createElement('p');
+                     message.textContent = "Existujúce kluby nemajú priradenú kategóriu a/alebo skupinu a preto nie sú zobrazené v štruktúrovanom zobrazení.";
+                     clubsContentStructured.appendChild(message);
                  }
 
-                 // Fill the form fields
-                 clubNameInput.value = clubData.name;
-                 // Category and Group selects are set by populate functions
 
-             } else {
-                 // Add mode
-                 clubModalTitle.textContent = 'Pridať klub';
-                 clubFormSubmitButton.textContent = 'Uložiť';
+                console.log("Kluby boli načítané a zobrazené v štruktúrovanom formáte.");
 
-                 await populateCategorySelect(null, clubCategorySelect); // Populate category select
-             }
-
-             clubNameInput.focus(); // Set focus
-         }
-
-         // Funkcia na zobrazenie klubov
-         async function displayClubs() {
-             clubsTableBody.innerHTML = ''; // Clear table body
-
-             try {
-                 const clubsSnapshot = await getDocs(clubsCollectionRef);
-
-                 if (clubsSnapshot.empty) {
-                     console.log("Žiadne kluby nenájdené.");
-                     const noDataRow = document.createElement('tr');
-                     const td = document.createElement('td');
-                     td.colSpan = 4; // Span across all columns
-                     td.textContent = "Žiadne kluby zatiaľ pridané.";
-                     td.style.textAlign = 'center';
-                     noDataRow.appendChild(td);
-                     clubsTableBody.appendChild(noDataRow);
-                 } else {
-                     console.log("Načítavam kluby.");
-                     clubsSnapshot.forEach((doc) => {
-                         const clubData = doc.data();
-                         const clubId = doc.id; // This is the auto-generated club ID
-
-                         const tr = document.createElement('tr');
-
-                         const nameTd = document.createElement('td');
-                         nameTd.textContent = clubData.name;
-
-                         const categoryTd = document.createElement('td');
-                         categoryTd.textContent = clubData.categoryId || 'Nezaradené'; // Display category name
-
-                         const groupTd = document.createElement('td');
-                         // Get group name from composite ID "Category - GroupName"
-                          const groupNameFromId = clubData.groupId ? clubData.groupId.split(' - ')[1] || clubData.groupId : 'Nezaradená';
-                          groupTd.textContent = groupNameFromId;
-
-
-                         const actionsTd = document.createElement('td');
-                         actionsTd.style.whiteSpace = 'nowrap';
-
-                         // === TLAČIDLO ÚPRAVA KLUBU ===
-                         const editClubButton = document.createElement('button');
-                         editClubButton.textContent = 'Premenovať';
-                         editClubButton.classList.add('action-button');
-                         editClubButton.onclick = () => {
-                              // Pass the auto-generated club ID and its data
-                              openClubModal(clubId, clubData);
-                         };
-
-                         // === TLAČIDLO VYMAZAŤ KLUBU ===
-                         const deleteClubButton = document.createElement('button');
-                         deleteClubButton.textContent = 'Vymazať';
-                         deleteClubButton.classList.add('action-button', 'delete-button');
-                         deleteClubButton.onclick = async () => {
-                              if (!confirm(`Naozaj chcete vymazať klub "${clubData.name}"?`)) {
-                                  return;
-                              }
-                              try {
-                                   // Use the auto-generated club ID to delete
-                                  await deleteDoc(doc(clubsCollectionRef, clubId));
-                                  console.log(`Klub "${clubData.name}" (ID: ${clubId}) bol úspešne zmazaný.`);
-                                   displayClubs(); // Reload display
-                              } catch (error) {
-                                  console.error('Chyba pri mazaní klubu: ', error);
-                                  alert('Chyba pri mazaní klubu!');
-                              }
-                          };
-
-                         actionsTd.appendChild(editClubButton);
-                         actionsTd.appendChild(deleteClubButton);
-
-                         tr.appendChild(nameTd);
-                         tr.appendChild(categoryTd);
-                         tr.appendChild(groupTd);
-                         tr.appendChild(actionsTd);
-
-                         clubsTableBody.appendChild(tr);
-                     });
-                     console.log("Kluby boli načítané a zobrazené.");
-                 }
-
-             } catch (error) {
-                 console.error('Chyba pri načítaní alebo zobrazovaní klubov: ', error);
-                 const errorMessage = document.createElement('tr');
-                 const td = document.createElement('td');
-                 td.colSpan = 4; // Span across all columns
-                 td.textContent = 'Chyba pri načítaní dát klubov.';
-                 td.style.textAlign = 'center';
-                 errorMessage.appendChild(td);
-                 clubsTableBody.appendChild(errorMessage);
-             }
-         }
+            } catch (error) {
+                console.error('Chyba pri načítaní alebo zobrazovaní klubov: ', error);
+                const errorMessage = document.createElement('p');
+                errorMessage.textContent = 'Chyba pri načítaní dát klubov.';
+                clubsContentStructured.appendChild(errorMessage);
+            }
+        }
 
 
         // --- Funkcia na prepínanie zobrazenia obsahu ---
@@ -1013,29 +1151,31 @@
 
             // Skryť všetky dynamické oblasti a modály
             addButton.style.display = 'none';
-            categoryTable.style.display = 'none'; // Hide category table
-            groupsContentDiv.style.display = 'none'; // Hide groups flex container
-            clubsTable.style.display = 'none'; // Hide clubs table
+            categoryTable.style.display = 'none'; // Skryť tabuľku kategórií
+            groupsContentDiv.style.display = 'none'; // Skryť kontajner skupín
+            clubsTable.style.display = 'none'; // Skryť STARÚ tabuľku klubov
+            clubsContentStructured.style.display = 'none'; // Skryť NOVÝ štruktúrovaný obsah klubov
 
-            categoryModal.style.display = 'none'; // Hide modals
+            categoryModal.style.display = 'none'; // Skryť modály
             groupModal.style.display = 'none';
-            clubModal.style.display = 'none'; // Hide club modal
+            clubModal.style.display = 'none'; // Skryť modál klubu
 
             // Vyčistiť obsah dynamických oblastí
             categoryTableBody.innerHTML = '';
-            groupsContentDiv.innerHTML = ''; // Clear groups flex container
-            clubsTableBody.innerHTML = ''; // Clear clubs table body
+            groupsContentDiv.innerHTML = ''; // Vyčistiť kontajner skupín
+            clubsTableBody.innerHTML = ''; // Vyčistiť telo STAREJ tabuľky klubov (aj keď je skrytá)
+            clubsContentStructured.innerHTML = ''; // Vyčistiť NOVÝ štruktúrovaný kontajner klubov
 
 
-            // Reset modal states and forms when navigating away
+            // Resetuj stavy modálov a formuláre pri navigácii preč
             currentCategoryModalMode = 'add'; editingCategoryName = null; editingCategoryRow = null;
             categoryForm.reset();
 
             currentGroupModalMode = 'add'; editingGroupId = null;
-            groupForm.reset(); // Reset group form
+            groupForm.reset(); // Resetuj formulár skupiny
 
-            currentClubModalMode = 'add'; editingClubId = null; // Reset club state
-            clubForm.reset(); // Reset club form
+            currentClubModalMode = 'add'; editingClubId = null; // Resetuj stav klubu
+            clubForm.reset(); // Resetuj formulár klubu
 
 
             if (hash === '#kategorie') {
@@ -1045,16 +1185,16 @@
                 addButton.title = "Pridať kategóriu";
             } else if (hash === '#skupiny') {
                 addButton.style.display = 'block';
-                groupsContentDiv.style.display = 'flex'; // Show groups as flex container
+                groupsContentDiv.style.display = 'flex'; // Zobraziť skupiny ako flex kontajner
                 displayGroupsByCategory();
                 addButton.title = "Pridať skupinu";
-            } else if (hash === '#kluby') { // --- Handle #kluby ---
-                 addButton.style.display = 'block'; // Show + button for clubs
-                 clubsTable.style.display = 'table'; // Show clubs table
-                 displayClubs(); // Load and display clubs
-                 addButton.title = "Pridať klub"; // Change button title
+            } else if (hash === '#kluby') { // --- Obsluha #kluby ---
+                addButton.style.display = 'block'; // Zobraziť tlačidlo + pre kluby
+                clubsContentStructured.style.display = 'flex'; // Zobraziť NOVÝ štruktúrovaný kontajner klubov ako flex
+                displayClubsStructured(); // Načítať a zobraziť kluby štruktúrovane
+                addButton.title = "Pridať klub"; // Zmeniť titulok tlačidla
             } else {
-                // For other sections
+                // Pre ostatné sekcie
                 addButton.style.display = 'none';
                 addButton.title = "Pridať položku";
                 console.log("Neznáma sekcia, zobrazujem prázdny obsah.");
@@ -1100,161 +1240,202 @@
             groupForm.reset();
         });
 
-         clubModalCloseBtn.addEventListener('click', () => { // --- New Club Modal Close ---
-            clubModal.style.display = 'none';
-            // Reset state on close
-            currentClubModalMode = 'add'; editingClubId = null;
-            clubForm.reset();
+        clubModalCloseBtn.addEventListener('click', () => { // --- Club Modal Close ---
+             clubModal.style.display = 'none';
+             // Reset state on close
+             currentClubModalMode = 'add'; editingClubId = null;
+             clubForm.reset();
         });
 
 
         // Obsluha zatvorenia modálov (kliknutie mimo modal)
         window.addEventListener('click', (e) => {
-            if (e.target === categoryModal) {
-                 categoryModal.style.display = 'none';
-                 currentCategoryModalMode = 'add'; editingCategoryName = null; editingCategoryRow = null;
-                 categoryForm.reset();
-            }
-            if (e.target === groupModal) {
-                 groupModal.style.display = 'none';
-                 currentGroupModalMode = 'add'; editingGroupId = null;
-                 groupForm.reset();
-            }
-             if (e.target === clubModal) { // --- New Club Modal Close ---
-                 clubModal.style.display = 'none';
-                 currentClubModalMode = 'add'; editingClubId = null;
-                 clubForm.reset();
+             if (e.target === categoryModal) {
+                  categoryModal.style.display = 'none';
+                  currentCategoryModalMode = 'add'; editingCategoryName = null; editingCategoryRow = null;
+                  categoryForm.reset();
              }
+             if (e.target === groupModal) {
+                  groupModal.style.display = 'none';
+                  currentGroupModalMode = 'add'; editingGroupId = null;
+                  groupForm.reset();
+             }
+              if (e.target === clubModal) { // --- Club Modal Close ---
+                   clubModal.style.display = 'none';
+                   currentClubModalMode = 'add'; editingClubId = null;
+                   clubForm.reset();
+              }
         });
 
 
         // Spustíme toggleContentDisplay pri načítaní stránky a zmene hašu
         window.addEventListener('hashchange', toggleContentDisplay);
-        window.addEventListener('load', toggleContentDisplay);
-
-
-        // Obsluha formulára na pridanie/úpravu kategórie (zostáva rovnaká v logike)
-        categoryForm.addEventListener('submit', async (e) => { /* ... (unchanged logic) ... */
-            e.preventDefault();
-            const categoryName = categoryNameInput.value.trim();
-            if (categoryName === '') { alert('Názov kategórie nemôže byť prázdny.'); return; }
-
-            if (currentCategoryModalMode === 'add') {
-                 const categoryDocRef = doc(categoriesCollectionRef, categoryName);
-                 try {
-                     const existingDoc = await getDoc(categoryDocRef);
-                     if (existingDoc.exists()) { alert(`Kategória "${categoryName}" už existuje!`); return; }
-                     await setDoc(categoryDocRef, { createdAt: new Date() });
-                     addCategoryRowToTable(categoryName);
-                     console.log(`Kategória "${categoryName}" bola úspešne pridaná.`);
-                     categoryModal.style.display = 'none'; categoryForm.reset();
-                     currentCategoryModalMode = 'add'; editingCategoryName = null; editingCategoryRow = null;
-                      if (window.location.hash === '#skupiny') displayGroupsByCategory();
-                      if (window.location.hash === '#kluby') displayClubs(); // Added refresh for clubs
-                 } catch (error) {
-                     console.error('Chyba pri pridávaní kategórie: ', error);
-                     alert('Chyba pri pridávaní kategórie!');
-                 }
-            } else if (currentCategoryModalMode === 'edit') {
-                 const oldCategoryName = editingCategoryName;
-                 const rowToUpdate = editingCategoryRow;
-                 const newCategoryName = categoryName;
-                 if (!oldCategoryName || !rowToUpdate) { /* ... error ... */ return; }
-                 if (newCategoryName === oldCategoryName) { /* ... no change ... */ return; }
-                 const newCategoryDocRef = doc(categoriesCollectionRef, newCategoryName);
-                 try {
-                      const existingDoc = await getDoc(newCategoryDocRef);
-                      if (existingDoc.exists()) { alert(`Kategória s názvom "${newCategoryName}" už existuje!`); return; }
-                      const oldCategoryDocRef = doc(categoriesCollectionRef, oldCategoryName);
-                      const oldDocSnapshot = await getDoc(oldCategoryDocRef);
-                       if (!oldDocSnapshot.exists()) { /* ... error ... */ return; }
-                      const oldDocData = oldDocSnapshot.data();
-                      const batch = writeBatch(db);
-                      batch.set(newCategoryDocRef, oldDocData);
-                      batch.delete(oldCategoryDocRef);
-                      await batch.commit();
-                      rowToUpdate.querySelector('td:first-child').textContent = newCategoryName;
-                      console.warn(`Premenovanie kategórie "${oldCategoryName}" na "${newCategoryName}" bolo úspešné.`);
-                      console.warn(`POZNÁMKA: Skupiny s categoryId "${oldCategoryName}" NEBOLI automaticky aktualizované na "${newCategoryName}".`);
-                      currentCategoryModalMode = 'add'; editingCategoryName = null; editingCategoryRow = null;
-                      categoryModal.style.display = 'none'; form.reset();
-                       if (window.location.hash === '#skupiny') displayGroupsByCategory();
-                       if (window.location.hash === '#kluby') displayClubs(); // Added refresh for clubs
-                 } catch (error) {
-                     console.error('Chyba pri premenovaní kategórie: ', error);
-                     alert('Chyba pri premenovaní kategórie! Prosím, skúste znova.');
-                     currentCategoryModalMode = 'add'; editingCategoryName = null; editingCategoryRow = null;
-                     categoryModal.style.display = 'none'; form.reset();
-                 }
-            }
-         });
-
-
-         // --- Obsluha formulára Skupiny (používa kompozitné ID) ---
-         groupForm.addEventListener('submit', async (e) => { /* ... (unchanged logic) ... */
-             e.preventDefault();
-             const selectedCategoryId = groupCategorySelect.value;
-             const groupName = groupNameInput.value.trim();
-
-             if (selectedCategoryId === '' || selectedCategoryId === '-- Vyberte kategóriu --') { alert('Prosím, vyberte platnú kategóriu pre skupinu.'); return; }
-             if (groupName === '') { alert('Názov skupiny nemôže byť prázdny.'); return; }
-
-             const compositeGroupId = `${selectedCategoryId} - ${groupName}`;
-             const groupDocRef = doc(groupsCollectionRef, compositeGroupId);
-
-             try {
-                 const existingDoc = await getDoc(groupDocRef);
-
-                 if (currentGroupModalMode === 'add') {
-                     if (existingDoc.exists()) {
-                         alert(`Skupina s názvom "${groupName}" už v kategórii "${selectedCategoryId}" existuje! Názvy skupín musia byť unikátne v rámci kategórie.`);
-                         return;
-                     }
-                     await setDoc(groupDocRef, { name: groupName, categoryId: selectedCategoryId });
-                     console.log(`Skupina "${groupName}" (ID: ${compositeGroupId}) bola úspešne pridaná do kategórie "${selectedCategoryId}".`);
-
-                 } else if (currentGroupModalMode === 'edit') {
-                     const oldGroupId = editingGroupId;
-                     if (!oldGroupId) { /* ... error ... */ return; }
-
-                     if (oldGroupId !== compositeGroupId) {
-                          console.log(`Premenovanie/presun skupiny z "${oldGroupId}" na "${compositeGroupId}".`);
-                          if (existingDoc.exists()) { // Check if new composite ID exists
-                               alert(`Skupina s názvom "${groupName}" už v kategórii "${selectedCategoryId}" existuje (iná skupina)! Názvy skupín musia byť unikátne v rámci kategórie.`);
-                               return;
-                          }
-                           // Get old data if needed for other fields - omitted for simplicity
-                          const oldGroupDocRef = doc(groupsCollectionRef, oldGroupId);
-                           const batch = writeBatch(db);
-                           batch.set(groupDocRef, { name: groupName, categoryId: selectedCategoryId }); // Set new doc with new ID
-                           batch.delete(oldGroupDocRef); // Delete old doc with old ID
-                           await batch.commit();
-                           console.log(`Skupina úspešne premenovaná/presunutá z ID "${oldGroupId}" na "${compositeGroupId}".`);
-                           console.warn("POZNÁMKA: Premenovaním/presunom skupiny sa zmenilo jej ID vo Firestore. Ak iné dáta odkazujú na túto skupinu pomocou jej ID, musia byť aktualizované manuálne!");
-
-                     } else {
-                         console.log(`Úprava údajov pre skupinu s ID "${oldGroupId}". Kompozitné ID sa nemení.`);
-                         await updateDoc(groupDocRef, { name: groupName, categoryId: selectedCategoryId }); // Update existing doc
-                         console.log(`Skupina s ID "${oldGroupId}" úspešne upravená.`);
-                     }
-                 }
-
-                 groupModal.style.display = 'none'; groupForm.reset();
-                 currentGroupModalMode = 'add'; editingGroupId = null;
-
-                 if (window.location.hash === '#skupiny') displayGroupsByCategory();
-                 if (window.location.hash === '#kluby') displayClubs(); // Added refresh for clubs
-
-             } catch (error) {
-                 console.error('Chyba pri kontrole unikátnosti alebo zápise skupiny: ', error);
-                 alert(`Chyba pri ukladaní skupiny! Detail: ${error.message}`);
-                 groupModal.style.display = 'none'; groupForm.reset();
-                 currentGroupModalMode = 'add'; editingGroupId = null;
+        window.addEventListener('load', () => {
+             // Nastav predvolený hash na #kluby, ak nie je žiadny hash
+             if (!window.location.hash) {
+                 window.location.hash = '#kluby';
+             } else {
+                 toggleContentDisplay(); // Spusti zobrazenie pre existujúci hash
              }
-         });
+        });
 
-         // --- Obsluha formulára Kluby (NOVÉ) ---
-         clubForm.addEventListener('submit', async (e) => {
+
+        // Obsluha formulára na pridanie/úpravu kategórie
+        categoryForm.addEventListener('submit', async (e) => {
+             e.preventDefault();
+             const categoryName = categoryNameInput.value.trim();
+             if (categoryName === '') { alert('Názov kategórie nemôže byť prázdny.'); return; }
+
+             if (currentCategoryModalMode === 'add') {
+                  const categoryDocRef = doc(categoriesCollectionRef, categoryName);
+                  try {
+                       const existingDoc = await getDoc(categoryDocRef);
+                       if (existingDoc.exists()) { alert(`Kategória "${categoryName}" už existuje!`); return; }
+                       await setDoc(categoryDocRef, { /* Optional data like createdAt: new Date() */ });
+                       // loadCategoriesTable(); // Reload the whole table to maintain sort order
+                       console.log(`Kategória "${categoryName}" bola úspešne pridaná.`);
+                       categoryModal.style.display = 'none'; categoryForm.reset();
+                       currentCategoryModalMode = 'add'; editingCategoryName = null; editingCategoryRow = null;
+
+                       // Refresh displays that might be affected
+                       if (window.location.hash === '#kategorie') loadCategoriesTable();
+                       if (window.location.hash === '#skupiny') displayGroupsByCategory();
+                       // Zmeniť displayClubs() na displayClubsStructured()
+                       if (window.location.hash === '#kluby') displayClubsStructured();
+
+                  } catch (error) {
+                       console.error('Chyba pri pridávaní kategórie: ', error);
+                       alert('Chyba pri pridávaní kategórie!');
+                  }
+             } else if (currentCategoryModalMode === 'edit') {
+                  const oldCategoryName = editingCategoryName;
+                  const rowToUpdate = editingCategoryRow;
+                  const newCategoryName = categoryName;
+                  if (!oldCategoryName || !rowToUpdate) { console.error("Chyba: Chýbajú dáta pre úpravu kategórie."); return; }
+                  if (newCategoryName === oldCategoryName) { console.log("Názov kategórie sa nezmenil."); categoryModal.style.display = 'none'; categoryForm.reset(); currentCategoryModalMode = 'add'; editingCategoryName = null; editingCategoryRow = null; return; } // Close and reset if no change
+
+                  const newCategoryDocRef = doc(categoriesCollectionRef, newCategoryName);
+                  try {
+                       const existingDoc = await getDoc(newCategoryDocRef);
+                       if (existingDoc.exists()) { alert(`Kategória s názvom "${newCategoryName}" už existuje!`); return; }
+
+                       // Premenovanie dokumentu vo Firestore vyžaduje vytvorenie nového a zmazanie starého
+                       const oldCategoryDocRef = doc(categoriesCollectionRef, oldCategoryName);
+                       // Optional: Fetch old data if you had other fields besides the ID
+                       // const oldDocSnapshot = await getDoc(oldCategoryDocRef);
+                       // if (!oldDocSnapshot.exists()) { console.error("Chyba: Pôvodná kategória neexistuje."); return; }
+                       // const oldDocData = oldDocSnapshot.data(); // Use oldDocData in batch.set if needed
+
+                       const batch = writeBatch(db);
+                       batch.set(newCategoryDocRef, { /* ... oldDocData if fetched ... */ }); // Vytvor nový dokument s novým ID (názvom)
+                       batch.delete(oldCategoryDocRef); // Zmaž starý dokument s pôvodným ID
+                       await batch.commit();
+
+                       // Aktualizovať zobrazenie v tabuľke bez potreby plného načítania
+                       // rowToUpdate.querySelector('td:first-child').textContent = newCategoryName; // Toto už nemusí stačiť kvôli zoradeniu
+
+                       console.warn(`Premenovanie kategórie "${oldCategoryName}" na "${newCategoryName}" bolo úspešné.`);
+                       console.warn(`POZNÁMKA: Skupiny a kluby odkazujúce na túto kategóriu pomocou categoryId "${oldCategoryName}" NEBOLI automaticky aktualizované na "${newCategoryName}". Bude potrebné ich upraviť manuálne, aby odkazovali na novú kategóriu, ak je to potrebné.`); // Updated warning
+
+                       currentCategoryModalMode = 'add'; editingCategoryName = null; editingCategoryRow = null;
+                       categoryModal.style.display = 'none'; categoryForm.reset();
+
+                       // Refresh displays that might be affected (full reload is safer after rename)
+                       if (window.location.hash === '#kategorie') loadCategoriesTable(); // Reload category table
+                       if (window.location.hash === '#skupiny') displayGroupsByCategory(); // Reload group display
+                       // Zmeniť displayClubs() na displayClubsStructured()
+                       if (window.location.hash === '#kluby') displayClubsStructured(); // Reload club display
+
+                  } catch (error) {
+                       console.error('Chyba pri premenovaní kategórie: ', error);
+                       alert('Chyba pri premenovaní kategórie! Prosím, skúste znova.');
+                       // Reset state even on error
+                       currentCategoryModalMode = 'add'; editingCategoryName = null; editingCategoryRow = null;
+                       categoryModal.style.display = 'none'; categoryForm.reset();
+                  }
+             }
+        });
+
+
+        // --- Obsluha formulára Skupiny (používa kompozitné ID) ---
+        groupForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const selectedCategoryId = groupCategorySelect.value;
+            const groupName = groupNameInput.value.trim();
+
+            if (selectedCategoryId === '' || selectedCategoryId === '-- Vyberte kategóriu --') { alert('Prosím, vyberte platnú kategóriu pre skupinu.'); return; }
+            if (groupName === '') { alert('Názov skupiny nemôže byť prázdny.'); return; }
+
+            const compositeGroupId = `${selectedCategoryId} - ${groupName}`;
+            const groupDocRef = doc(groupsCollectionRef, compositeGroupId);
+
+            try {
+                const existingDoc = await getDoc(groupDocRef);
+
+                if (currentGroupModalMode === 'add') {
+                    if (existingDoc.exists()) {
+                        alert(`Skupina s názvom "${groupName}" už v kategórii "${selectedCategoryId}" existuje! Názvy skupín musia byť unikátne v rámci kategórie.`);
+                        return;
+                    }
+                    await setDoc(groupDocRef, { name: groupName, categoryId: selectedCategoryId });
+                    console.log(`Skupina "${groupName}" (ID: ${compositeGroupId}) bola úspešne pridaná do kategórie "${selectedCategoryId}".`);
+
+                } else if (currentGroupModalMode === 'edit') {
+                    const oldGroupId = editingGroupId; // Composite ID of the group being edited
+                    if (!oldGroupId) { console.error("Chyba: Chýbajú dáta pre úpravu skupiny."); return; }
+
+                    // Check if the composite ID has changed (either category or name)
+                    if (oldGroupId !== compositeGroupId) {
+                         console.log(`Premenovanie/presun skupiny z "${oldGroupId}" na "${compositeGroupId}".`);
+                         if (existingDoc.exists()) { // Check if new composite ID exists
+                              alert(`Skupina s názvom "${groupName}" už v kategórii "${selectedCategoryId}" existuje (iná skupina)! Názvy skupín musia byť unikátne v rámci kategórie.`);
+                              return;
+                         }
+                         // Premenovanie/presun vyžaduje vytvorenie nového dokumentu a zmazanie starého
+                         const oldGroupDocRef = doc(groupsCollectionRef, oldGroupId);
+                         // Optional: Fetch old data if you had other fields
+                         // const oldDocSnapshot = await getDoc(oldGroupDocRef);
+                         // if (!oldDocSnapshot.exists()) { console.error("Chyba: Pôvodná skupina neexistuje."); return; }
+                         // const oldDocData = oldDocSnapshot.data(); // Use oldDocData in batch.set
+
+                         const batch = writeBatch(db);
+                         // Vytvor nový dokument s novým kompozitným ID a aktuálnymi údajmi
+                         batch.set(groupDocRef, { name: groupName, categoryId: selectedCategoryId /*, ...oldDocData if fetched... */ });
+                         batch.delete(oldGroupDocRef); // Zmaž starý dokument s pôvodným kompozitným ID
+                         await batch.commit();
+
+                         console.log(`Skupina úspešne premenovaná/presunutá z ID "${oldGroupId}" na "${compositeGroupId}".`);
+                         console.warn("POZNÁMKA: Premenovaním/presunom skupiny sa zmenilo jej ID vo Firestore. Ak iné dáta (napr. kluby) odkazujú na túto skupinu pomocou jej ID, musia byť aktualizované manuálne!"); // Warning about broken club references
+
+                    } else {
+                         // Len úprava údajov (napr. zmena categoryId pri zachovaní mena, ak by to Firestore dovolilo ID)
+                         // V našom prípade kompozitné ID znamená, že zmena kategórie alebo mena MENÍ ID.
+                         // Táto vetva sa spustí, len ak sa nezmenilo ani categoryId ani groupName.
+                         console.log(`Úprava údajov pre skupinu s ID "${oldGroupId}". Údaje (meno, kategória) sa nezmenili.`);
+                         // await updateDoc(groupDocRef, { name: groupName, categoryId: selectedCategoryId }); // Toto by bolo zbytočné, ak sa nič nezmenilo
+                    }
+                }
+
+                groupModal.style.display = 'none'; groupForm.reset();
+                currentGroupModalMode = 'add'; editingGroupId = null;
+
+                // Refresh displays that might be affected
+                if (window.location.hash === '#skupiny') displayGroupsByCategory();
+                // Zmeniť displayClubs() na displayClubsStructured()
+                if (window.location.hash === '#kluby') displayClubsStructured();
+
+            } catch (error) {
+                console.error('Chyba pri kontrole unikátnosti alebo zápise skupiny: ', error);
+                alert(`Chyba pri ukladaní skupiny! Detail: ${error.message}`);
+                // Close modal and reset state on error
+                 groupModal.style.display = 'none';
+                 groupForm.reset();
+                 currentGroupModalMode = 'add'; editingGroupId = null;
+            }
+        });
+
+        // --- Obsluha formulára Kluby ---
+        clubForm.addEventListener('submit', async (e) => {
              e.preventDefault();
 
              const clubName = clubNameInput.value.trim();
@@ -1262,88 +1443,106 @@
              const selectedGroupId = clubGroupSelect.value; // This is the composite group ID
 
              if (clubName === '') {
-                 alert('Názov klubu nemôže byť prázdny.');
-                 return;
+                  alert('Názov klubu nemôže byť prázdny.');
+                  return;
              }
               // Category and Group are required if selects are not disabled
-             if (clubCategorySelect.disabled === false && (selectedCategoryId === '' || selectedCategoryId === '-- Vyberte kategóriu --')) {
+              if (clubCategorySelect.disabled === false && (selectedCategoryId === '' || selectedCategoryId === '-- Vyberte kategóriu --')) {
                   alert('Prosím, vyberte platnú kategóriu pre klub.');
                   return;
-             }
+              }
+              // Check if group select is enabled and if a valid group is selected
               if (clubGroupSelect.disabled === false && (selectedGroupId === '' || selectedGroupId === '-- Vyberte skupinu --' || selectedGroupId === '-- Žiadne skupiny v kategórii --')) {
-                  alert('Prosím, vyberte platnú skupinu pre klub.');
-                  return;
-             }
+                   // If group select is enabled but no valid group is selected, show alert UNLESS there were truly no groups for that category
+                   // Let's refine this: check if the text content indicates no groups exist, rather than just an empty value.
+                   const selectedOptionText = clubGroupSelect.options[clubGroupSelect.selectedIndex].textContent;
+                   if (selectedOptionText === '-- Najprv vyberte kategóriu --' || selectedOptionText === '-- Vyberte skupinu --' || selectedOptionText === "Chyba pri načítaní skupín") {
+                       alert('Prosím, vyberte platnú skupinu pre klub.');
+                       return;
+                   }
+                   // If text is "-- Žiadne skupiny v kategórii --" and value is empty, that's acceptable if no groups exist
+                   if (selectedOptionText === '-- Žiadne skupiny v kategórii --' && selectedGroupId === "") {
+                       // This case is okay - user couldn't select a group because none exist
+                       // But we still need to decide if clubs MUST have a group.
+                       // Based on the prompt, they are displayed *by* group, suggesting they need one.
+                       // Let's enforce that a group must be selected *if* groups are available.
+                       // The check above handles cases where select is empty/disabled or invalid option.
+                       // If select is enabled and has options, but user picked default empty, the first check covers it.
+                   } else if (selectedGroupId === "") { // If value is empty for any other reason
+                        alert('Prosím, vyberte platnú skupinu pre klub.');
+                        return;
+                   }
+              }
 
 
              try {
-                 if (currentClubModalMode === 'add') {
-                     // === LOGIKA PRIDÁVANIA KLUBU ===
-                      // Klubu dáme automaticky generované ID pre jednoduchosť a flexibilitu
-                     const newClubRef = await addDoc(clubsCollectionRef, {
-                         name: clubName,
-                         categoryId: selectedCategoryId, // Store category ID
-                         groupId: selectedGroupId // Store composite group ID
-                         // Optional: createdAt: new Date()
-                     });
+                  if (currentClubModalMode === 'add') {
+                       // === LOGIKA PRIDÁVANIA KLUBU ===
+                       // Klubu dáme automaticky generované ID pre jednoduchosť a flexibilitu
+                       const newClubRef = await addDoc(clubsCollectionRef, {
+                            name: clubName,
+                            categoryId: selectedCategoryId, // Store category ID
+                            groupId: selectedGroupId, // Store composite group ID
+                            createdAt: new Date() // Optional timestamp
+                       });
 
-                     console.log(`Klub "${clubName}" (ID: ${newClubRef.id}) úspešne pridaný do kategórie "${selectedCategoryId}" a skupiny "${selectedGroupId}".`);
+                       console.log(`Klub "${clubName}" (ID: ${newClubRef.id}) úspešne pridaný do kategórie "${selectedCategoryId}" a skupiny "${selectedGroupId}".`);
 
-                 } else if (currentClubModalMode === 'edit') {
-                     // === LOGIKA ÚPRAVY KLUBU ===
-                     const clubId = editingClubId; // Auto-generated ID of the club being edited
+                  } else if (currentClubModalMode === 'edit') {
+                       // === LOGIKA ÚPRAVY KLUBU ===
+                       const clubId = editingClubId; // Auto-generated ID of the club being edited
 
-                     if (!clubId) {
-                         console.error("Chyba: Režim úpravy klubu bez platného editingClubId.");
-                         alert("Chyba pri úprave klubu. Prosím, obnovte stránku.");
-                          // Close modal and reset
-                           clubModal.style.display = 'none';
-                           clubForm.reset();
-                           currentClubModalMode = 'add'; editingClubId = null;
-                         return;
-                     }
+                       if (!clubId) {
+                            console.error("Chyba: Režim úpravy klubu bez platného editingClubId.");
+                            alert("Chyba pri úprave klubu. Prosím, obnovte stránku.");
+                            // Close modal and reset
+                             clubModal.style.display = 'none';
+                             clubForm.reset();
+                             currentClubModalMode = 'add'; editingClubId = null;
+                           return;
+                       }
 
-                     const clubDocRef = doc(clubsCollectionRef, clubId);
+                       const clubDocRef = doc(clubsCollectionRef, clubId);
 
-                     // Update the existing club document
-                     await updateDoc(clubDocRef, {
-                         name: clubName,
-                         categoryId: selectedCategoryId,
-                         groupId: selectedGroupId
-                         // Other fields remain unchanged
-                     });
+                       // Update the existing club document
+                       await updateDoc(clubDocRef, {
+                            name: clubName,
+                            categoryId: selectedCategoryId,
+                            groupId: selectedGroupId
+                            // Other fields remain unchanged
+                       });
 
-                     console.log(`Klub s ID "${clubId}" úspešne upravený (názov "${clubName}", kategória "${selectedCategoryId}", skupina "${selectedGroupId}").`);
-                 }
+                       console.log(`Klub s ID "${clubId}" úspešne upravený (názov "${clubName}", kategória "${selectedCategoryId}", skupina "${selectedGroupId}").`);
+                  }
 
-                 // --- Spoločná logika po úspešnom pridaní alebo úprave klubu ---
-                 clubModal.style.display = 'none';
-                 clubForm.reset();
-                 currentClubModalMode = 'add';
-                 editingClubId = null;
-
-                 // Po úspechu znova načítame a zobrazíme kluby
-                 if (window.location.hash === '#kluby') {
-                     displayClubs();
-                 }
-
-             } catch (error) {
-                 console.error('Chyba pri ukladaní klubu: ', error);
-                 alert(`Chyba pri ukladaní klubu! Detail: ${error.message}`);
-                 // Close modal and reset state on error
+                  // --- Spoločná logika po úspešnom pridaní alebo úprave klubu ---
                   clubModal.style.display = 'none';
                   clubForm.reset();
-                  currentClubModalMode = 'add'; editingClubId = null;
-             }
-         });
+                  currentClubModalMode = 'add';
+                  editingClubId = null;
 
-         // --- Event Listener pre zmenu kategórie v modáli klubu (NOVÉ) ---
-         clubCategorySelect.addEventListener('change', () => {
+                  // Po úspechu znova načítame a zobrazíme kluby (použi novú funkciu)
+                  if (window.location.hash === '#kluby') {
+                       displayClubsStructured();
+                  }
+
+             } catch (error) {
+                  console.error('Chyba pri ukladaní klubu: ', error);
+                  alert(`Chyba pri ukladaní klubu! Detail: ${error.message}`);
+                  // Close modal and reset state on error
+                   clubModal.style.display = 'none';
+                   clubForm.reset();
+                   currentClubModalMode = 'add'; editingClubId = null;
+             }
+        });
+
+        // --- Event Listener pre zmenu kategórie v modáli klubu ---
+        clubCategorySelect.addEventListener('change', () => {
              const selectedCategoryId = clubCategorySelect.value;
              // Populate the group select based on the newly selected category
              // Pass the select element reference
              populateGroupSelect(selectedCategoryId, clubGroupSelect);
-         });
+        });
 
 
     </script>
