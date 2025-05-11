@@ -2377,7 +2377,29 @@ async function openGroupModal(groupId = null, groupData = null) {
                          console.log(`Tím "${clubDataToAssign.name}" (ID: ${selectedUnassignedClubId}) úspešne priradený do skupiny "${selectedGroupId}".`);
                          alert(`Tím "${clubDataToAssign.name}" úspešne priradený.`);
 
+                         // --- Common logic after successful add/assign ---
+                         clubModal.style.display = 'none';
+                         clubForm.reset();
+                         currentClubModalMode = 'add-assign'; // Reset state to add-assign
+                         editingClubId = null; // Clear editing ID
 
+                         // Reset visibility of name input vs select for next time
+                          unassignedClubSelectContainer.style.display = 'block';
+                          clubNameInputContainer.style.display = 'none';
+                          // Reset group select visibility for club modal
+                          clubGroupSelect.parentElement.style.display = 'block';
+
+    
+                         // Refresh displays that might be affected
+                         // Refresh main 'Created Teams' display because an unassigned team was edited (name/category)
+                          if (window.location.hash === '#vytvorenie-timov') {
+                               displayCreatedTeams(); // Obnoviť zoznam vytvorených tímov
+                          }
+                         // Refresh clubs-in-groups display if visible, as an assigned team was edited/assigned
+                          if (window.location.hash === '#timy-do-skupin') {
+                               displayClubs(); // Refresh assigned clubs display
+                          }
+                         
                      } else if (currentClubModalMode === 'edit-assigned') {
                          // === LOGIKA ÚPRAVY PRIRADENÉHO ALEBO NEPRIRADENÉHO KLUBU ===
                          // editingClubId holds the auto-generated ID of the club being edited
