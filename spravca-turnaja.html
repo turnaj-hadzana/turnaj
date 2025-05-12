@@ -582,7 +582,8 @@
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js';
         import { getFirestore, collection, doc, setDoc, getDoc, getDocs, deleteDoc, query, where, addDoc, updateDoc, writeBatch } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js';
         // Import FieldPath pre query podľa ID dokumentu v clubForm submit handleri
-        import { FieldPath } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js';
+        // ODSTRÁNENÝ IMPORT FieldPath PRETOŽE SPÔSOBOVAL CHYBU
+        // import { FieldPath } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js';
 
 
         // Tvoja Firebase konfigurácia
@@ -1109,7 +1110,7 @@
                                               const clubsInGroupQuery = query(clubsCollectionRef, where('groupId', '==', group.id));
                                               const clubsSnapshot = await getDocs(clubsInGroupQuery); // Use await here
                                               clubsSnapshot.forEach(doc => {
-                                                   batch.update(doc.ref, { groupId: null }); // Nastav groupId na null
+                                                   batch.update(doc.ref, { groupId: null, orderInGroup: null }); // Nastav groupId a orderInGroup na null
                                                    console.log(`Klub "${doc.id}" odpriradený zo skupiny "${group.id}".`);
                                               });
 
@@ -1138,12 +1139,12 @@
                                      groupRow.appendChild(groupNameTd);
                                      groupRow.appendChild(groupActionsTd);
                                      tbody.appendChild(groupRow);
-                                });
-                             }
+                               });
+                            }
 
-                             categoryGroupsTable.appendChild(tbody);
-                             categorySectionDiv.appendChild(categoryGroupsTable);
-                             groupsContentDiv.appendChild(categorySectionDiv); // Append the section div to the main container
+                            categoryGroupsTable.appendChild(tbody);
+                            categorySectionDiv.appendChild(categoryGroupsTable);
+                            groupsContentDiv.appendChild(categorySectionDiv); // Append the section div to the main container
                          });
 
 
@@ -1198,7 +1199,7 @@
                                       selectElement.value = selectedClubId;
                                  } else {
                                       console.warn(`Nepriradený tím s ID "${selectedClubId}" nenájdený.`);
-                                      selectElement.value = ""; // Reset to default
+                                      selectElement.value = ""; // Reset to default if selected club not found
                                  }
                             }
                          }
@@ -1232,9 +1233,9 @@
                   clubGroupSelect.parentElement.style.display = 'block'; // Default to showing group select
                   clubGroupSelect.disabled = true;
 
-                  // *** Pridaná logika pre atribút 'required' na clubNameInput ***
+                  // *** Pridaná logika pre atribút 'required' na clubNameInput a orderInGroupInput ***
                   clubNameInput.required = false; // Nastav defaultne na false
-                   orderInGroupInput.required = false; // Order input is not required by default
+                  orderInGroupInput.required = false; // Order input is not required by default
                   // ***********************************************************
 
 
@@ -1515,20 +1516,20 @@
                                        };
 
 
-                                     // === TLAČIDLO VYMAZAŤ KLUBU (ZMAZAŤ ÚPLNE) ===
-                                     // Mazanie klubu z tejto sekcie by malo asi znamenať úplné zmazanie dokumentu z Firestore.
-                                      const deleteClubButton = document.createElement('button');
-                                      deleteClubButton.textContent = 'Vymazať';
-                                      deleteClubButton.classList.add('action-button', 'delete-button');
-                                      deleteClubButton.onclick = async () => {
-                                          if (!confirm(`Naozaj chcete vymazať klub "${club.data.name}" zo skupiny "${groupName}" v kategórii "${categoryId}"?`)) {
-                                              return;
-                                          }
-                                          // Na zmazanie použi auto-generované ID klubu
-                                          try {
-                                               await deleteDoc(doc(clubsCollectionRef, club.id)); // Delete using the club's auto-generated ID
-                                               console.log(`Klub "${club.data.name}" (ID: ${club.id}) bol úspešne zmazaný.`);
-                                               displayClubs(); // Obnov zobrazenie klubov po zmazaní
+                                      // === TLAČIDLO VYMAZAŤ KLUBU (ZMAZAŤ ÚPLNE) ===
+                                      // Mazanie klubu z tejto sekcie by malo asi znamenať úplné zmazanie dokumentu z Firestore.
+                                       const deleteClubButton = document.createElement('button');
+                                       deleteClubButton.textContent = 'Vymazať';
+                                       deleteClubButton.classList.add('action-button', 'delete-button');
+                                       deleteClubButton.onclick = async () => {
+                                           if (!confirm(`Naozaj chcete vymazať klub "${club.data.name}" zo skupiny "${groupName}" v kategórii "${categoryId}"?`)) {
+                                               return;
+                                           }
+                                           // Na zmazanie použi auto-generované ID klubu
+                                           try {
+                                                await deleteDoc(doc(clubsCollectionRef, club.id)); // Delete using the club's auto-generated ID
+                                                console.log(`Klub "${club.data.name}" (ID: ${club.id}) bol úspešne zmazaný.`);
+                                                displayClubs(); // Obnov zobrazenie klubov po zmazaní
                                                 // Refresh created teams display if visible, as deleting an assigned team makes it disappear from both lists
                                                  if (window.location.hash === '#vytvorenie-timov') displayCreatedTeams();
 
@@ -2017,6 +2018,7 @@
                   clubGroupSelect.parentElement.style.display = 'block';
                    // Reset order input visibility for club modal
                   orderInputContainer.style.display = 'none';
+                  orderInGroupInput.required = false; // Ensure required is false by default
 
 
                   // Reset team creation modal state
@@ -2066,7 +2068,7 @@
             // Spoločná obsluha kliknutia na tlačidlo Pridať (+)
             addButton.addEventListener('click', () => {
                 const hash = window.location.hash;
-                if (hash === '#kategórie') {
+                if (hash === '#kategorie') {
                      // Open category modal in add mode
                      currentCategoryModalMode = 'add';
                      editingCategoryName = null;
@@ -2112,6 +2114,7 @@
                   clubGroupSelect.parentElement.style.display = 'block';
                    // Reset order input visibility for club modal
                   orderInputContainer.style.display = 'none';
+                  orderInGroupInput.required = false; // Ensure required is false by default
              });
 
              // Team Creation Modal Close
@@ -2151,6 +2154,7 @@
                      clubGroupSelect.parentElement.style.display = 'block';
                       // Reset order input visibility for club modal
                      orderInputContainer.style.display = 'none';
+                     orderInGroupInput.required = false; // Ensure required is false by default
                  }
                  // Team Creation Modal Close
                  if (e.target === teamCreationModal) {
@@ -2349,6 +2353,7 @@
                                const clubsSnapshot = await getDocs(clubsInGroupQuery); // Use await here
                                clubsSnapshot.forEach(clubDoc => {
                                     // Update the club's groupId to the new composite ID
+                                    // Keep the original orderInGroup if it exists, only update groupId and categoryId
                                     batch.update(clubDoc.ref, { groupId: compositeGroupId, categoryId: selectedCategoryId }); // Ensure categoryId is also updated on club
                                     console.log(`Klub "${clubDoc.id}" aktualizovaný (groupId, categoryId) kvôli zmene skupiny.`);
                                });
@@ -2454,6 +2459,7 @@
                              clubNameInputContainer.style.display = 'none';
                              clubGroupSelect.parentElement.style.display = 'block'; // Reset group visibility
                              orderInputContainer.style.display = 'none'; // Reset order visibility
+                             orderInGroupInput.required = false;
                              return;
                          }
 
@@ -2461,7 +2467,7 @@
                          if (clubDataToAssign.groupId !== null) {
                              alert(`Tím "${clubDataToAssign.name}" je už priradený do skupiny "${clubDataToAssign.groupId}".`);
                              // Refresh the unassigned list and close modal
-                             populateUnassignedClignedClubSelect(unassignedClubSelect, null);
+                             populateUnassignedClubsSelect(unassignedClubSelect, null);
                              clubModal.style.display = 'none';
                              clubForm.reset();
                               // Reset visibility
@@ -2469,6 +2475,7 @@
                              clubNameInputContainer.style.display = 'none';
                              clubGroupSelect.parentElement.style.display = 'block'; // Reset group visibility
                              orderInputContainer.style.display = 'none'; // Reset order visibility
+                             orderInGroupInput.required = false;
                              return;
                          }
 
@@ -2526,6 +2533,7 @@
                                clubNameInputContainer.style.display = 'none';
                                clubGroupSelect.parentElement.style.display = 'block'; // Reset group visibility
                                 orderInputContainer.style.display = 'none'; // Reset order visibility
+                                orderInGroupInput.required = false;
                                return;
                           }
                           if (updatedClubName === '') {
@@ -2565,8 +2573,8 @@
                                      const existingClubInTargetGroupQuery = query(clubsCollectionRef,
                                           where('groupId', '==', targetGroupIdForCheck), // Cieľová skupina (môže byť rovnaká ako pôvodná)
                                           where('name', '==', updatedClubName),     // Nový názov
-                                          // Ak cieľová skupina je rovnaká ako pôvodná, vylúčime aktuálny dokument ID
-                                          ...(targetGroupIdForCheck === originalGroupId ? [where(FieldPath.documentId(), '!=', clubIdToEdit)] : [])
+                                          // POUŽITIE '__name__' MIESTO FieldPath.documentId()
+                                          ...(targetGroupIdForCheck === originalGroupId ? [where('__name__', '!=', clubIdToEdit)] : [])
                                      );
                                      const existingClubInTargetGroupSnapshot = await getDocs(existingClubInTargetGroupQuery);
                                      if (!existingClubInTargetGroupSnapshot.empty) {
@@ -2582,8 +2590,8 @@
                                            const existingOrderQuery = query(clubsCollectionRef,
                                                 where('groupId', '==', targetGroupIdForCheck), // Cieľová skupina (môže byť rovnaká ako pôvodná)
                                                 where('orderInGroup', '==', orderInGroup),
-                                                // Ak cieľová skupina je rovnaká ako pôvodná, vylúčime aktuálny dokument ID
-                                                ...(targetGroupIdForCheck === originalGroupId ? [where(FieldPath.documentId(), '!=', clubIdToEdit)] : [])
+                                                // POUŽITIE '__name__' MIESTO FieldPath.documentId()
+                                                ...(targetGroupIdForCheck === originalGroupId ? [where('__name__', '!=', clubIdToEdit)] : [])
                                            );
                                            const existingOrderSnapshot = await getDocs(existingOrderQuery);
                                            if (!existingOrderSnapshot.empty) {
@@ -2602,7 +2610,8 @@
                                        const existingUnassignedClubQuery = query(clubsCollectionRef,
                                             where('groupId', '==', null),
                                             where('name', '==', updatedClubName),
-                                            where(FieldPath.documentId(), '!=', clubIdToEdit)
+                                            // POUŽITIE '__name__' MIESTO FieldPath.documentId() - Ak by sa to používalo
+                                            // where('__name__', '!=', clubIdToEdit)
                                        );
                                        const existingUnassignedClubSnapshot = await getDocs(existingUnassignedClubQuery);
                                        if (!existingUnassignedClubSnapshot.empty) {
