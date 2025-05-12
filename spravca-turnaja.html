@@ -2226,7 +2226,7 @@
                   addCategoryCountPairButton.style.display = 'none';
 
 
-                 if (hash === '#kategórie') { // Opravený hash pre kategórie
+                 if (hash === '#kategorie') { // Opravený hash pre kategórie
                      addButton.style.display = 'block';
                      categoriesContentSection.style.display = 'block';
                      loadCategoriesTable();
@@ -2270,7 +2270,7 @@
             // Spoločná obsluha kliknutia na tlačidlo Pridať (+)
             addButton.addEventListener('click', () => {
                 const hash = window.location.hash;
-                if (hash === '#kategórie') { // Opravený hash pre kategórie
+                if (hash === '#kategorie') { // Opravený hash pre kategórie
                      // Open category modal in add mode
                      currentCategoryModalMode = 'add';
                      editingCategoryName = null;
@@ -2391,7 +2391,7 @@
             window.addEventListener('load', () => {
                  // Set initial hash if none is present, e.g., to #kategorie
                  if (!window.location.hash || window.location.hash === '#') { // Also handle empty hash
-                      window.location.hash = '#kategórie'; // Opravený hash pre počiatočnú stránku
+                      window.location.hash = '#kategorie'; // Opravený hash pre počiatočnú stránku
                  } else {
                      // If hash is present, call toggleContentDisplay
                      toggleContentDisplay();
