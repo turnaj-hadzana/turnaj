@@ -690,6 +690,13 @@
         const baseTeamNameInModalSpan = document.getElementById('baseTeamNameInModal');
         const teamsListInModalDiv = document.getElementById('teamsListInModal');
 
+        // --- DEBUG LOG: Check element references on script load ---
+        console.log('clubModalTitle element reference:', clubModalTitle);
+        console.log('unassignedClubSelectContainer element reference:', unassignedClubSelectContainer);
+        console.log('clubNameInputContainer element reference:', clubNameInputContainer);
+        console.log('orderInputContainer element reference:', orderInputContainer);
+        // --- END DEBUG LOG ---
+
 
         // Zobrazované sekcie (obalové divy)
         const categoriesContentSection = document.getElementById('categoriesContentSection'); // Obalový div pre kategórie
@@ -888,6 +895,9 @@
                        selectElement.disabled = false; // Enable the select
                        // Sort categories alphabetically by name (doc.id)
                        const sortedDocs = querySnapshot.docs.sort((a, b) => a.id.localeCompare(b.id));
+                       allAvailableCategories = sortedDocs.map(doc => doc.id); // Store for dynamic selects
+                       console.log("Načítané kategórie pre všetky selecty:", allAvailableCategories); // Log here
+
                        sortedDocs.forEach((doc) => {
                             const categoryName = doc.id;
                             const option = document.createElement('option');
@@ -914,6 +924,7 @@
                     option.disabled = true;
                     selectElement.appendChild(option);
                     selectElement.disabled = true; // Keep disabled on error
+                    allAvailableCategories = []; // Clear on error
                }
             }
 
@@ -1249,6 +1260,10 @@
              // Funkcia na otvorenie modálu klubu (pre priradenie do skupiny ALEBO úpravu priradeného/nepriradeného)
              // clubId je auto-generované ID dokumentu
              async function openClubModal(clubId = null, clubData = null) { // clubId is auto-generated ID
+                 // --- DEBUG LOG: Check function call arguments ---
+                 console.log('openClubModal called. clubId:', clubId, 'clubData:', clubData);
+                 // --- END DEBUG LOG ---
+
                   clubModal.style.display = 'block';
 
                   // Reset form fields including the new select and order input
@@ -1376,7 +1391,7 @@
                                console.warn("openClubModal: Nemôžem nastaviť focus na unassignedClubSelect, jeho kontajner nie je viditeľný.");
                                // Núdzové riešenie: nastavíme focus na tlačidlo zatvorenia modálu
                                clubModalCloseBtn.focus();
-                          }
+                           }
                      }, 200); // Zväčšené oneskorenie na 100ms
                 } else { // edit-assigned
                      setTimeout(() => {
