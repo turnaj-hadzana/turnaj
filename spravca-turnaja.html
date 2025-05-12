@@ -2625,6 +2625,7 @@
                });
 
             // --- Obsluha formulára Kluby (Priradenie do skupín & Úprava priradených/nepriradených) ---
+// --- Obsluha formulára Kluby (Priradenie do skupín & Úprava priradených/nepriradených) ---
              clubForm.addEventListener('submit', async (e) => {
                  e.preventDefault();
 
@@ -2740,7 +2741,8 @@
                          });
 
                          console.log(`Tím "${clubDataToAssign.name}" (ID: ${selectedUnassignedClubId}) úspešne priradený do skupiny "${selectedGroupId}" s poradím ${orderInGroup}.`);
-                         alert(`Tím "${clubDataToassign.name}" úspešne priradený.`);
+                         // OPRAVENÝ PREKLEP: ZMENENÉ clubDataToassign NA clubDataToAssign
+                         alert(`Tím "${clubDataToAssign.name}" úspešne priradený.`);
 
 
                      } else if (currentClubModalMode === 'edit-assigned') {
@@ -2882,7 +2884,7 @@
 
                       // Refresh displays that might be affected
                       // Refresh main 'Created Teams' display because an unassigned team was edited (name/category)
-                       if (window.location.hash === '#zoznam-timov') {
+                       if (window.location.hash === '#vytvorenie-timov') {
                             displayCreatedTeams(); // Refresh main list
                              // Ak sa upravoval/priraďoval tím, môže to ovplyvniť dostupné kategórie
                             // pre dynamické selecty vo Team Creation Modale
@@ -3110,7 +3112,7 @@
                          resultMessage += " Všetky plánované tímy boli úspešne vytvorené.";
                      }
 
-                     // alert(resultMessage); // Zachováme alert pre spätnú väzbu
+                     alert(resultMessage); // Zachováme alert pre spätnú väzbu
 
 
                     // --- Spoločná logika po úspešnom vytvorení ---
@@ -3124,7 +3126,7 @@
 
 
                     // Obnoviť zobrazenia, ktoré môžu byť ovplyvnené
-                    if (window.location.hash === '#zoznam-timov') {
+                    if (window.location.hash === '#vytvorenie-timov') {
                          displayCreatedTeams(); // Obnoviť zoznam vytvorených tímov
                     }
                      // Zobrazenie priradených klubov (timy-do-skupin) sa nemení, lebo boli vytvorené nepriradené tímy
