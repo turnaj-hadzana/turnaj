@@ -565,7 +565,7 @@
                  <table id="createdTeamsTable">
                      <thead>
                          <tr id="createdTeamsTableHeader"> <th>Názov tímu</th>
-                             <th style="width: 150px;">Akcie</th>
+                             <th style="width: 150px;"></th>
                          </tr>
                      </thead>
                      <tbody id="createdTeamsTableBody">
@@ -1448,7 +1448,7 @@
                             const clubNameTh = document.createElement('th');
                             clubNameTh.textContent = 'Názov klubu';
                              const actionsTh = document.createElement('th');
-                             actionsTh.textContent = 'Akcie'; // Changed header to Akcie
+                             actionsTh.textContent = ''; // Changed header to Akcie
                              actionsTh.style.width = '150px'; // Ensure width for 2 buttons
 
                              headerRow.appendChild(orderTh); // Add order header
@@ -1597,7 +1597,7 @@
 
                       // Vytvoriť posledný stĺpec hlavičky
                       const actionsTh = document.createElement('th');
-                      actionsTh.textContent = 'Akcie'; // Changed header to Akcie
+                      actionsTh.textContent = ''; // Changed header to Akcie
                       actionsTh.style.width = '150px';
                       createdTeamsTableHeader.appendChild(actionsTh);
 
@@ -1802,7 +1802,7 @@
                       const teamNameTh = document.createElement('th');
                       teamNameTh.textContent = 'Názov tímu (celý)'; // Indicate it's the full name
                        const actionsTh = document.createElement('th');
-                       actionsTh.textContent = 'Akcie'; // Changed header to Akcie
+                       actionsTh.textContent = ''; // Changed header to Akcie
                        actionsTh.style.width = '150px'; // Ensure width for buttons
 
                        headerRow.appendChild(teamNameTh);
