@@ -546,7 +546,7 @@
                     <thead>
                         <tr>
                             <th>Názov</th>
-                            <th style="width: 150px;">Upraviť</th>
+                            <th style="width: 150px;"></th>
                         </tr>
                     </thead>
                     <tbody id="categoryTableBody">
@@ -565,7 +565,7 @@
                  <table id="createdTeamsTable">
                      <thead>
                          <tr id="createdTeamsTableHeader"> <th>Názov tímu</th>
-                             <th style="width: 150px;">Upraviť</th>
+                             <th style="width: 150px;"></th>
                          </tr>
                      </thead>
                      <tbody id="createdTeamsTableBody">
@@ -1055,7 +1055,7 @@
                           const groupNameTh = document.createElement('th');
                           groupNameTh.textContent = 'Názov';
                           const actionsTh = document.createElement('th');
-                          actionsTh.textContent = 'Upraviť'; // Changed to Akcie
+                          actionsTh.textContent = ''; // Changed to Akcie
                           actionsTh.style.width = '150px';
 
                           headerRow.appendChild(groupNameTh);
@@ -1243,7 +1243,7 @@
                      // Edit mode (Editing an ALREADY ASSIGNED club OR an UNASSIGNED club from Manage Modal)
                      currentClubModalMode = 'edit-assigned'; // Stále použijeme 'edit-assigned' režim
                      editingClubId = clubId; // Store the auto-generated ID of the club being edited
-                      clubModalTitle.textContent = 'Upraviť tím'; // Zmeníme nadpis, je to všeobecnejšie pre editáciu
+                     clubModalTitle.textContent = 'Upraviť tím'; // Zmeníme nadpis, je to všeobecnejšie pre editáciu
                      clubFormSubmitButton.textContent = 'Uložiť zmeny';
 
                      // Hide the unassigned clubs select, show the name input
@@ -1449,7 +1449,7 @@
                             const clubNameTh = document.createElement('th');
                             clubNameTh.textContent = 'Názov klubu';
                              const actionsTh = document.createElement('th');
-                             actionsTh.textContent = 'Akcie'; // Changed header to Akcie
+                             actionsTh.textContent = ''; // Changed header to Akcie
                              actionsTh.style.width = '150px'; // Ensure width for 2 buttons
 
                              headerRow.appendChild(orderTh); // Add order header
@@ -1598,7 +1598,7 @@
 
                       // Vytvoriť posledný stĺpec hlavičky
                       const actionsTh = document.createElement('th');
-                      actionsTh.textContent = 'Akcie'; // Changed header to Akcie
+                      actionsTh.textContent = ''; // Changed header to Akcie
                       actionsTh.style.width = '150px';
                       createdTeamsTableHeader.appendChild(actionsTh);
 
