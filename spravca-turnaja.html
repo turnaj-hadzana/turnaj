@@ -1571,7 +1571,7 @@
                     }
              }
 
-             // Funkcia na zobrazenie vytvorených tímov (klubov, ktoré ešte nie sú priradené do skupiny)
+// Funkcia na zobrazenie vytvorených tímov (klubov, ktoré ešte nie sú priradené do skupiny)
              async function displayCreatedTeams() {
                   createdTeamsTableBody.innerHTML = ''; // Clear existing rows
                   createdTeamsTableHeader.innerHTML = ''; // Clear existing header (except first and last columns)
@@ -1610,27 +1610,20 @@
                       const teamsByBaseName = {};
                       querySnapshot.docs.forEach(doc => {
                           const clubData = doc.data();
-                           // OPRAVA: Pri vytvárani tímov už nepoužívame suffix A, B, C v názve, ale len v ID.
-                          // Preto na zoskupenie použijeme priamo hodnotu teamNameBase uloženú pri vytváraní.
-                          // Ak ale už máte v databáze tímy vytvorené so suffixom v názve,
-                          // táto logika ich nemusí správne zoskupiť.
-                          // Predpokladáme, že teamNameBase sa ukladá ako samostatné pole, ale kód ho zatiaľ neukladá.
-                          // Alternatíva: skúsiť extrahovať základný názov z plného názvu (doc.data().name).
-                          // POUŽIJEME EXTRAKCIU Z PLNEHO NAZVU pre kompatibilitu s existujúcimi dátami.
-                           const fullTeamName = clubData.name || 'Neznámy názov';
-                          // Skúsiť extrahovať základný názov (napr. "MŠK IUVENTA Michalovce" z "MŠK IUVENTA Michalovce A")
-                          // A predpokladáme, že základný názov končí pred poslednou mezerou a písmenom/číslom,
-                          // alebo pred mezerou a pomlčkou a názvom kategórie (podľa nového ID formátu)
-                          let baseTeamName = fullTeamName;
-                          // Prvý pokus: odstrániť suffix " - KATEGORIA XX A" alebo " - KATEGORIA XX" z konca ID
-                          const idParts = doc.id.split(' - '); // ID je v tvare "Kategoria [Suffix] - BaseName"
-                          if (idParts.length >= 2) {
-                              baseTeamName = idParts.slice(1).join(' - '); // Všetko za prvou pomlčkou a mezerou je BaseName
-                          } else {
-                              // Ak ID neobsahuje " - ", fallback na pôvodný názov tímu
-                               // Druhý pokus: odstrániť suffix A, B, C z konca názvu (pre staršie dáta alebo iné konvencie)
-                              const nameSuffixMatch = fullTeamName.match(/^(.*)\s[A-Z]$/);
-                               baseTeamName = nameSuffixMatch ? nameSuffixMatch[1] : fullTeamName;
+                           // OPRAVENÁ LOGIKA EXTRAKCIE ZÁKLADNÉHO NÁZVU PRE ZOSKUPENIE
+                           // Pre nový formát ID "Kategória - Základný Názov Tímu [Suffix]"
+                          let baseTeamName = 'Neznámy názov'; // Default
+                           const idParts = doc.id.split(' - ');
+                           if (idParts.length >= 2) {
+                               const secondPart = idParts.slice(1).join(' - '); // Get the part after the first ' - ' (e.g., "HC Tatran Stupava A")
+                                // Attempt to remove trailing space + single uppercase letter (like " A")
+                               const suffixMatch = secondPart.match(/^(.*)\s[A-Z]$/);
+                                baseTeamName = suffixMatch ? suffixMatch[1] : secondPart; // Use the part before suffix if found, otherwise use the whole second part
+                           } else {
+                                // Fallback pre staré ID formáty alebo neočakávané ID: skús extrahovať suffix z názvu tímu
+                               const fullTeamName = clubData.name || 'Neznámy názov';
+                               const nameSuffixMatch = fullTeamName.match(/^(.*)\s[A-Z]$/);
+                                baseTeamName = nameSuffixMatch ? nameSuffixMatch[1] : fullTeamName;
                            }
 
 
