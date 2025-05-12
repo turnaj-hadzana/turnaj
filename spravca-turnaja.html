@@ -2766,7 +2766,7 @@
              });
 
 
-            // --- Obsluha formulára Vytvorenie Tímov - UPRAVENÉ PRE VIAC KATEGÓRIÍ S POČTOM ---
+// --- Obsluha formulára Vytvorenie Tímov - UPRAVENÉ PRE VIAC KATEGÓRIÍ S POČTOM ---
             teamCreationForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
 
@@ -2852,9 +2852,14 @@
                               }
 
                               // *** KONŠTRUKCIA ID DOKUMENTU PODĽA POŽIADAVKY ***
-                              // Formát: "Kategória [Suffix] - Základný Názov Tímu"
-                              const teamSuffix = teamCount > 1 ? ' ' + String.fromCharCode(65 + (i - 1)) : ''; // " A", " B", ... alebo ""
-                              const documentId = `${categoryId}${teamSuffix} - ${teamNameBase}`;
+                              // Pôvodný formát: "Kategória [Suffix] - Základný Názov Tímu"
+                              // const teamSuffix = teamCount > 1 ? ' ' + String.fromCharCode(65 + (i - 1)) : ''; // " A", " B", ... alebo ""
+                              // const documentId = `${categoryId}${teamSuffix} - ${teamNameBase}`;
+
+                              // *** NOVÝ FORMÁT: "Kategória - Základný Názov Tímu [Suffix]" ***
+                              const teamSuffixForId = teamCount > 1 ? ' ' + String.fromCharCode(65 + (i - 1)) : ''; // " A", " B", ... alebo ""
+                              const documentId = `${categoryId} - ${teamNameBase}${teamSuffixForId}`;
+
 
                               const teamDocRef = doc(clubsCollectionRef, documentId);
 
