@@ -804,15 +804,10 @@
                            groupsContentDiv.innerHTML = '';
                            displayGroupsByCategory();
                        }
+                       // Refresh created teams list regardless of hash, as categories affect its header and grouping
+                       displayCreatedTeams();
+
                        if (window.location.hash === '#timy-do-skupin') displayClubs();
-                       if (window.location.hash === '#zoznam-timov') {
-                           // Refresh created teams list, which depends on categories
-                           displayCreatedTeams();
-                           // Aj po zmazaní kategórie treba aktualizovať ponuky v Team Creation Modale
-                           if (teamCreationModal.style.display === 'block') {
-                                loadAllCategoriesForDynamicSelects();
-                           }
-                       }
 
 
                   } catch (error) {
@@ -1162,8 +1157,9 @@
 
                                               // Refresh displays that might be affected
                                               displayGroupsByCategory(); // Reload display
+                                               // Refresh created teams list regardless of hash, as removing groups can affect assignments
+                                               displayCreatedTeams();
                                               if (window.location.hash === '#timy-do-skupin') displayClubs();
-                                              if (window.location.hash === '#zoznam-timov') displayCreatedTeams();
 
 
                                           } catch (error) {
@@ -1236,7 +1232,7 @@
                             if (selectedClubId) {
                                  if (selectElement.querySelector(`option[value="${selectedClubId}"]`)) {
                                       selectElement.value = selectedClubId;
-                                 } else {
+                                  } else {
                                       console.warn(`Nepriradený tím s ID "${selectedClubId}" nenájdený.`);
                                       selectElement.value = ""; // Reset to default if selected club not found
                                   }
@@ -1580,7 +1576,8 @@
                                                 // Refresh displays that might be affected
                                                 displayClubs(); // Refresh assigned clubs display (this team will disappear)
                                                 // Refresh main 'Created Teams' display because an unassigned team was created (it will reappear there)
-                                                if (window.location.hash === '#zoznam-timov') displayCreatedTeams();
+                                                // Always refresh created teams list regardless of hash, as assignments change which teams are unassigned
+                                                displayCreatedTeams();
 
 
                                            } catch (error) {
@@ -1616,7 +1613,7 @@
                     }
              }
 
-             // Funkcia na zobrazenie vytvorených tímov (klubov, ktoré ešte nie sú priradené do skupiny)
+             // Funkcia na zobrazenie vytvorených tímov (klubov) - teraz zobrazuje VŠETKY tímy, zoskupené podľa základného názvu a kategórie
              async function displayCreatedTeams() {
                   createdTeamsTableBody.innerHTML = ''; // Clear existing rows
                   createdTeamsTableHeader.innerHTML = ''; // Clear existing header (except first and last columns)
@@ -1647,8 +1644,8 @@
                       createdTeamsTableHeader.appendChild(actionsTh);
 
 
-                      // 2. Načítať všetky nepriradené tímy (groupId == null)
-                      const q = query(clubsCollectionRef, where('groupId', '==', null));
+                      // 2. Načítať VŠETKY tímy (kluby), nie len nepriradené
+                      const q = query(clubsCollectionRef); // Removed where('groupId', '==', null)
                       const querySnapshot = await getDocs(q);
 
                       // 3. Zoskupiť tímy podľa základného názvu a spočítať pre kategórie
@@ -1689,7 +1686,7 @@
                           teamsByBaseName[baseTeamName].originalTeams.push({ id: doc.id, data: clubData }); // Uložíme info o pôvodnom tíme
                       });
 
-                       console.log("Zoskupené tímy:", teamsByBaseName);
+                       console.log("Zoskupené tímy (všetky):", teamsByBaseName);
 
 
                       // 4. Vygenerovať riadky tabuľky na základe zoskupených dát
@@ -1700,7 +1697,7 @@
                           const noDataRow = document.createElement('tr');
                           const td = document.createElement('td');
                           td.colSpan = 2 + categories.length; // Názov + Počet kategórií + Akcie
-                          td.textContent = "Žiadne tímy na priradenie zatiaľ pridané.";
+                          td.textContent = "Žiadne tímy zatiaľ pridané.";
                           td.style.textAlign = 'center';
                           noDataRow.appendChild(td);
                           createdTeamsTableBody.appendChild(noDataRow);
@@ -1757,8 +1754,8 @@
                                        await batch.commit();
                                        console.log(`Všetky tímy s názvom "${baseTeamName}" (${teamSummary.originalTeams.length} ks) boli úspešne zmazané.`);
                                        displayCreatedTeams(); // Refresh the list
-                                        // Refresh clubs-in-groups display if visible (shouldn't affect it directly as these are unassigned)
-                                       // if (window.location.hash === '#timy-do-skupin') { displayClubs(); }
+                                        // Refresh clubs-in-groups display if visible, as some assigned teams might have been deleted
+                                       if (window.location.hash === '#timy-do-skupin') { displayClubs(); }
 
                                         // Po zmazaní tímov môže byť potrebné aktualizovať aj ponuky kategórií
                                         if (teamCreationModal.style.display === 'block') {
@@ -1779,7 +1776,7 @@
                           });
                       }
 
-                      console.log(`Načítaných základných názvov tímov (na priradenie do skupín): ${sortedBaseNames.length}`);
+                      console.log(`Načítaných základných názvov tímov (všetky): ${sortedBaseNames.length}`);
 
                   } catch (error) {
                       console.error('Chyba pri načítaní alebo zobrazovaní vytvorených tímov: ', error);
@@ -1844,11 +1841,17 @@
                       const headerRow = document.createElement('tr');
                       const teamNameTh = document.createElement('th');
                       teamNameTh.textContent = 'Názov tímu (celý)'; // Indicate it's the full name
+                       const groupTh = document.createElement('th'); // New header for Group
+                       groupTh.textContent = 'Skupina';
+                        const orderTh = document.createElement('th'); // New header for Order
+                        orderTh.textContent = 'Poradie';
                        const actionsTh = document.createElement('th');
                        actionsTh.textContent = ''; // Changed header to Akcie
                        actionsTh.style.width = '150px'; // Ensure width for buttons
 
                        headerRow.appendChild(teamNameTh);
+                       headerRow.appendChild(groupTh); // Add Group header
+                       headerRow.appendChild(orderTh); // Add Order header
                        headerRow.appendChild(actionsTh);
                        thead.appendChild(headerRow);
                        categoryTeamsTable.appendChild(thead);
@@ -1857,7 +1860,19 @@
                       const tbody = document.createElement('tbody');
 
                       // Zotriediť tímy v kategórii podľa názvu
-                      teamsInThisCategory.sort((a, b) => (a.data.name || '').localeCompare(b.data.name || ''));
+                       // Zotriediť tímy WITHIN THIS CATEGORY najprv podľa stavu priradenia (nepriradené prvé), potom podľa názvu
+                       teamsInThisCategory.sort((a, b) => {
+                            const isAssignedA = a.data.groupId !== null;
+                            const isAssignedB = b.data.groupId !== null;
+
+                            // Nepriradené tímy (groupId === null) idú prvé
+                            if (isAssignedA !== isAssignedB) {
+                                 return isAssignedA ? 1 : -1; // Ak je A priradené a B nepriradené, A ide po B (+1)
+                            }
+
+                             // Ak sú oba priradené alebo oba nepriradené, zoradiť podľa názvu
+                             return (a.data.name || '').localeCompare(b.data.name || '');
+                       });
 
 
                       teamsInThisCategory.forEach(team => {
@@ -1866,6 +1881,20 @@
                           const nameTd = document.createElement('td');
                           nameTd.textContent = team.data.name || 'Neznámy názov';
                           tr.appendChild(nameTd);
+
+                           const groupTd = document.createElement('td'); // New cell for Group
+                           // Display group name if assigned, otherwise 'Nepriradené'
+                           const groupNameParts = (team.data.groupId || '').split(' - ');
+                           groupTd.textContent = team.data.groupId ? (groupNameParts.length > 1 ? groupNameParts.slice(1).join(' - ') : team.data.groupId) : 'Nepriradené';
+                           tr.appendChild(groupTd);
+
+
+                           const orderTd = document.createElement('td'); // New cell for Order
+                            // Display order number if assigned, otherwise '-'
+                           orderTd.textContent = team.data.groupId !== null && typeof team.data.orderInGroup === 'number' ? team.data.orderInGroup : '-';
+                           orderTd.style.textAlign = 'center';
+                           tr.appendChild(orderTd);
+
 
                           const actionsTd = document.createElement('td');
                           actionsTd.style.whiteSpace = 'nowrap';
@@ -1915,17 +1944,10 @@
                                    // A simpler approach: close the modal and force refresh of the main #zoznam-timov list
                                    closeManageTeamsModal(); // Zatvor modál
 
-                                  // Refresh the main 'Created Teams' section display
-                                   if (window.location.hash === '#zoznam-timov') {
-                                        displayCreatedTeams();
-                                         // Aj po zmazaní individuálneho tímu je možné, že sa uvoľnila kategória
-                                         // pre ostatné dynamické selecty
-                                         if (teamCreationModal.style.display === 'block') {
-                                            loadAllCategoriesForDynamicSelects(); // Načítaj znovu kategórie, čo zavolá aj updateDynamicSelects a checkIfAddCategoryButtonShouldBeVisible
-                                         }
-                                   }
-                                    // Refresh clubs-in-groups display if visible (shouldn't affect it directly as these are unassigned)
-                                   // if (window.location.hash === '#timy-do-skupin') { displayClubs(); }
+                                  // Refresh the main 'Created Teams' section display (shows all teams now)
+                                   displayCreatedTeams();
+                                   // Refresh clubs-in-groups display if visible, as some assigned teams might have been deleted
+                                  if (window.location.hash === '#timy-do-skupin') { displayClubs(); }
 
 
                               } catch (error) {
@@ -2271,7 +2293,7 @@
                  } else if (hash === '#zoznam-timov') {
                      addButton.style.display = 'block';
                      teamCreationContentSection.style.display = 'block';
-                     displayCreatedTeams();
+                     displayCreatedTeams(); // This now loads all teams
                      addButton.title = "Vytvoriť tímy";
                      // Načítaj kategórie pri vstupe do sekcie "Vytvorenie tímov"
                      loadAllCategoriesForDynamicSelects(); // Volá updateDynamicCategorySelects a checkIfAddCategoryButtonShouldBeVisible
@@ -2301,6 +2323,7 @@
             // Spoločná obsluha kliknutia na tlačidlo Pridať (+)
             addButton.addEventListener('click', () => {
                 const hash = window.location.hash;
+                console.log("Add button clicked in hash:", hash); // Added log
                 if (hash === '#kategorie') { // Opravený hash pre kategórie
                      // Open category modal in add mode
                      currentCategoryModalMode = 'add';
@@ -2309,16 +2332,20 @@
                      categoryForm.reset();
                      categoryModal.style.display = 'block';
                      categoryNameInput.focus();
+                     console.log("Opening category modal (add mode)."); // Added log
                 } else if (hash === '#skupiny') {
                      // Open group modal in add mode
                      openGroupModal(); // Call openGroupModal without arguments for add mode
+                     console.log("Opening group modal (add mode)."); // Added log
                 } else if (hash === '#zoznam-timov') {
                      // Open team creation modal
                      openTeamCreationModal(); // Call the updated function
+                     console.log("Opening team creation modal."); // Added log
                 }
                 else if (hash === '#timy-do-skupin') {
-                     // Open club modal in add-assign mode (to assign an unassigned team)
+                     // Open club modal in add-assign mode (to assign an UNASSIGNED team)
                      openClubModal(); // Call openClubModal without arguments for add-assign mode
+                     console.log("Opening club modal (add-assign mode)."); // Added log
                 }
             });
 
@@ -2328,6 +2355,7 @@
                  categoryModal.style.display = 'none';
                  currentCategoryModalMode = 'add'; editingCategoryName = null;
                  categoryForm.reset();
+                 console.log("Closing category modal."); // Added log
                  // Ak sa zatvára kategória modál a bol otvorený Team Creation Modal, aktualizuj jeho selecty
                   if (teamCreationModal.style.display === 'block') {
                       loadAllCategoriesForDynamicSelects(); // Pre istotu znovu načítaj kategórie (volá updateDynamicCategorySelects a checkIfAddCategoryButtonShouldBeVisible)
@@ -2338,12 +2366,14 @@
                  groupModal.style.display = 'none';
                  currentGroupModalMode = 'add'; editingGroupId = null;
                  groupForm.reset();
+                 console.log("Closing group modal."); // Added log
             });
 
              clubModalCloseBtn.addEventListener('click', () => { // Club Modal Close
                  clubModal.style.display = 'none';
                  currentClubModalMode = 'add-assign'; editingClubId = null; // Reset club modal state
                  clubForm.reset();
+                 console.log("Closing club modal."); // Added log
                   // Reset visibility of name input vs select
                   unassignedClubSelectContainer.style.display = 'block';
                   clubNameInputContainer.style.display = 'none';
@@ -2360,6 +2390,7 @@
                  currentTeamCreationModalMode = 'add';
                  teamCreationForm.reset();
                  teamCategoryCountContainer.innerHTML = ''; // Clear dynamic fields on close
+                 console.log("Closing team creation modal."); // Added log
                   // Skryť tlačidlo Pridať ďalšiu kategóriu pri zatvorení modálu
                  addCategoryCountPairButton.style.display = 'none';
                   // Optional: add back an initial empty pair for next open
@@ -2376,6 +2407,7 @@
                      categoryModal.style.display = 'none';
                      currentCategoryModalMode = 'add'; editingCategoryName = null;
                      categoryForm.reset();
+                     console.log("Clicked outside, closing category modal."); // Added log
                      // Ak sa zatvára kategória modál a bol otvorený Team Creation Modal, aktualizuj jeho selecty
                       if (teamCreationModal.style.display === 'block') {
                           loadAllCategoriesForDynamicSelects(); // Pre istotu znovu načítaj kategórie (volá updateDynamicCategorySelects a checkIfAddCategoryButtonShouldBeVisible)
@@ -2385,11 +2417,13 @@
                      groupModal.style.display = 'none';
                      currentGroupModalMode = 'add'; editingGroupId = null;
                      groupForm.reset();
+                      console.log("Clicked outside, closing group modal."); // Added log
                 }
                  if (e.target === clubModal) { // Club Modal Close
                      clubModal.style.display = 'none';
                      currentClubModalMode = 'add-assign'; editingClubId = null; // Reset club modal state
                      clubForm.reset();
+                      console.log("Clicked outside, closing club modal."); // Added log
                       // Reset visibility of name input vs select
                      unassignedClubSelectContainer.style.display = 'block';
                      clubNameInputContainer.style.display = 'none';
@@ -2405,6 +2439,7 @@
                      currentTeamCreationModalMode = 'add';
                      teamCreationForm.reset();
                       teamCategoryCountContainer.innerHTML = ''; // Clear dynamic fields on close
+                       console.log("Clicked outside, closing team creation modal."); // Added log
                        // Skryť tlačidlo Pridať ďalšiu kategóriu pri zatvorení modálu
                       addCategoryCountPairButton.style.display = 'none';
                       // Optional: add back an initial empty pair for next open
@@ -2413,6 +2448,7 @@
                  // Nový Modal pre správu individuálnych tímov - Zatvorenie kliknutím mimo
                  if (e.target === manageTeamsModal) {
                       closeManageTeamsModal();
+                       console.log("Clicked outside, closing manage teams modal."); // Added log
                  }
             });
 
@@ -2451,15 +2487,9 @@
                                groupsContentDiv.innerHTML = '';
                                displayGroupsByCategory();
                            }
+                           // Refresh created teams list regardless of hash, as categories affect its header and grouping
+                           displayCreatedTeams();
                            if (window.location.hash === '#timy-do-skupin') displayClubs();
-                           if (window.location.hash === '#zoznam-timov') {
-                                // Refresh created teams list, which depends on categories
-                                displayCreatedTeams();
-                                // Aj po pridaní kategórie treba aktualizovať ponuky v Team Creation Modale
-                                if (teamCreationModal.style.display === 'block') {
-                                     loadAllCategoriesForDynamicSelects(); // Načítaj znovu kategórie, čo zavolá aj updateDynamicCategorySelects a checkIfAddCategoryButtonShouldBeVisible
-                                }
-                           }
 
 
                       } catch (error) {
@@ -2536,14 +2566,9 @@
                        // Refresh displays that might be affected
                        loadCategoriesTable();
                        if (window.location.hash === '#skupiny') displayGroupsByCategory();
+                       // Refresh created teams list regardless of hash, as categories affect its header and grouping
+                       displayCreatedTeams();
                        if (window.location.hash === '#timy-do-skupin') displayClubs();
-                       if (window.location.hash === '#zoznam-timov') {
-                            displayCreatedTeams();
-                             // Aj po premenovaní kategórie treba aktualizovať ponuky v Team Creation Modale
-                             if (teamCreationModal.style.display === 'block') {
-                                loadAllCategoriesForDynamicSelects(); // Načítaj znovu kategórie, čo zavolá aj updateDynamicCategorySelects a checkIfAddCategoryButtonShouldBeVisible
-                            }
-                       }
 
 
                        } catch (error) {
@@ -2643,8 +2668,9 @@
 
                       // Refresh displays that might be affected
                       if (window.location.hash === '#skupiny') displayGroupsByCategory();
+                      // Refresh created teams list regardless of hash, as modifying groups can affect team display in manage teams modal
+                      displayCreatedTeams();
                       if (window.location.hash === '#timy-do-skupin') displayClubs();
-                      if (window.location.hash === '#zoznam-timov') displayCreatedTeams();
 
 
                    } catch (error) {
@@ -2914,22 +2940,13 @@
 
 
                       // Refresh displays that might be affected
-                      // Refresh main 'Created Teams' display because an unassigned team was edited (name/category)
-                       if (window.location.hash === '#zoznam-timov') {
-                            displayCreatedTeams(); // Refresh main list
-                             // Ak sa upravoval/priraďoval tím, môže to ovplyvniť dostupné kategórie
-                            // pre dynamické selecty vo Team Creation Modale
-                             if (teamCreationModal.style.display === 'block') {
-                                loadAllCategoriesForDynamicSelects(); // Načítaj znovu kategórie, čo zavolá aj updateDynamicCategorySelects a checkIfAddCategoryButtonShouldBeVisible
-                             }
-                       }
-                      // Refresh clubs-in-groups display if visible, as an assigned team was edited/assigned
+                      // Refresh main 'Created Teams' display (shows all teams now)
+                       displayCreatedTeams();
+                       // Refresh clubs-in-groups display if visible, as an assigned team was edited/assigned/unassigned
                        if (window.location.hash === '#timy-do-skupin') {
                             displayClubs(); // Refresh assigned clubs display
                        }
 
-                       // If coming from manage teams modal, re-open it? Or just refresh the main lists?
-                       // For now, just refresh the main lists.
 
                   } catch (error) {
                       console.error('Chyba pri ukladaní alebo priradzovaní klubu: ', error);
@@ -3150,16 +3167,18 @@
                     teamCreationModal.style.display = 'none';
                     teamCreationForm.reset();
                     teamCategoryCountContainer.innerHTML = '';
-                    await addCategoryCountPair(); // Toto už volá updateDynamicCategorySelects a updateRemoveButtonVisibility vo vnútri
+                    // loadAllCategoriesForDynamicSelects(); // No longer needed here, called on modal open
+                    // addCategoryCountPair(); // No longer needed here, called on modal open
+                    // updateDynamicCategorySelects(); // No longer needed here
+                    // updateRemoveButtonVisibility(); // No longer needed here
 
                     // --- NOVÁ LOGIKA: Zabrániť dialógovému oknu "Správa z webu" ---
                     history.replaceState({}, '', window.location.href); // Nahradí aktuálny záznam v histórii
 
 
                     // Obnoviť zobrazenia, ktoré môžu byť ovplyvnené
-                    if (window.location.hash === '#zoznam-timov') {
-                         displayCreatedTeams(); // Obnoviť zoznam vytvorených tímov
-                    }
+                    // Always refresh created teams list after creation (shows all teams now)
+                    displayCreatedTeams();
                      // Zobrazenie priradených klubov (timy-do-skupin) sa nemení, lebo boli vytvorené nepriradené tímy
                      // if (window.location.hash === '#timy-do-skupin') { displayClubs(); }
 
