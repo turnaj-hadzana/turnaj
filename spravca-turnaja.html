@@ -124,11 +124,22 @@
 
         /* --- Table Styles --- */
         /* Styles for the table element itself, regardless of the wrapper */
-        #categoryTable, .category-group-table, .group-clubs-table, #clubsTable, #createdTeamsTable {
+        #categoryTable, .category-group-table, #clubsTable, #createdTeamsTable {
             border-collapse: collapse;
-            width: 100%;
+            width: 100%; /* Keep 100% width for these tables */
             border: none;
             overflow: hidden;
+        }
+
+         /* Specific style for tables in #timy-do-skupin and manage teams modal */
+        .group-clubs-table {
+            border-collapse: collapse;
+             /* Allow width to be flexible within its flex container parent */
+             /* width: 100%; /* Removed 100% width */
+            border: none;
+            overflow: hidden;
+             /* Added table-layout: auto to make columns fit content */
+            table-layout: auto;
         }
 
 
@@ -164,11 +175,14 @@
          /* Style for tables within the manage teams modal */
          #manageTeamsModal .group-clubs-table {
              margin-bottom: 15px; /* Space below each category table in the modal */
+             width: 100%; /* Set 100% width inside modal for these tables */
          }
 
 
-        /* Table Header and Cell Styles - apply to all tables */
-        #categoryTable th, #clubsTable th, .category-group-table th, .group-clubs-table th, #createdTeamsTable th {
+        /* Table Header and Cell Styles - apply to all relevant table types */
+        #categoryTable th, #clubsTable th, .category-group-table th, .group-clubs-table th, #createdTeamsTable th,
+         #manageTeamsModal .group-clubs-table th /* Also apply to modal tables */
+         {
             background-color: #f2f2f2;
             color: #333;
             font-weight: bold;
@@ -177,7 +191,9 @@
             border-bottom: 2px solid #ddd;
         }
 
-        #categoryTable td, #clubsTable td, .category-group-table td, .group-clubs-table td, #createdTeamsTable td {
+        #categoryTable td, #clubsTable td, .category-group-table td, .group-clubs-table td, #createdTeamsTable td,
+         #manageTeamsModal .group-clubs-table td /* Also apply to modal tables */
+         {
             text-align: left;
             padding: 10px 15px;
             border-bottom: 1px solid #eee;
@@ -188,13 +204,23 @@
               text-align: center;
          }
 
+         /* Center align order column in group-clubs-table */
+         .group-clubs-table tbody td:first-child {
+              text-align: center;
+         }
+         #manageTeamsModal .group-clubs-table tbody td:first-child {
+             text-align: center; /* Also for modal tables */
+         }
+
 
         /* Remove bottom border from last row in tbody for all tables */
         #categoryTable tbody tr:last-child td,
         #clubsTable tbody tr:last-child td,
         .category-group-table tbody tr:last-child td,
         .group-clubs-table tbody tr:last-child td,
-        #createdTeamsTable tbody tr:last-child td {
+        #createdTeamsTable tbody tr:last-child td,
+         #manageTeamsModal .group-clubs-table tbody tr:last-child td
+         {
              border-bottom: none;
         }
 
@@ -203,7 +229,9 @@
         #clubsTable tbody tr:hover,
         .category-group-table tbody tr:hover,
         .group-clubs-table tbody tr:hover,
-        #createdTeamsTable tbody tr:hover {
+        #createdTeamsTable tbody tr:hover,
+         #manageTeamsModal .group-clubs-table tbody tr:hover
+         {
             background-color: #f9f9f9;
             cursor: pointer;
         }
@@ -231,9 +259,10 @@
         /* Style for container divs that wrap club sections when inside #clubsContent */
         #clubsContent .section-block {
             /* Inherits background, padding, radius, shadow from .section-block */
-            min-width: 300px;
-            flex-grow: 1;
-            flex-basis: calc(33.33% - 20px);
+             /* Remove min-width and flex-basis to allow content to dictate width better */
+            /* min-width: 300px; */
+            flex-grow: 1; /* Allow growing to fill space */
+            flex-basis: 0; /* Reset flex-basis */
             margin-bottom: 0; /* Override the default .section-block margin when inside flex */
         }
 
@@ -624,7 +653,7 @@
         const groupCategorySelect = document.getElementById('groupCategory');
         const groupNameInput = document.getElementById('groupName');
         const groupModalTitle = document.getElementById('groupModalTitle');
-        const groupFormSubmitButton = groupForm.querySelector('button[type="submit"]');
+        const groupFormSubmitButton = groupForm.querySelector('button[type="submit]');
 
         // Modál Kluby (pre priradenie do skupín / úpravu priradených)
         const clubModal = document.getElementById('clubModal');
@@ -634,7 +663,7 @@
         const clubCategorySelect = document.getElementById('clubCategory');
         const clubGroupSelect = document.getElementById('clubGroup');
         const clubModalTitle = document.getElementById('clubModalTitle');
-        const clubFormSubmitButton = clubForm.querySelector('button[type="submit"]');
+        const clubFormSubmitButton = clubForm.querySelector('button[type="submit]');
 
         // REFERENCES FOR CLUB MODAL CHANGES (add/edit assigned)
         const unassignedClubSelectContainer = document.getElementById('unassignedClubSelectContainer');
@@ -1459,12 +1488,12 @@
                             const headerRow = document.createElement('tr');
                             const orderTh = document.createElement('th'); // New header for order
                             orderTh.textContent = 'Poradie';
-                            orderTh.style.width = '80px'; // Adjust width as needed
+                            // Removed explicit width: orderTh.style.width = '80px';
                             const clubNameTh = document.createElement('th');
                             clubNameTh.textContent = 'Názov klubu';
                              const actionsTh = document.createElement('th');
                              actionsTh.textContent = ''; // Changed header to Akcie
-                             actionsTh.style.width = '150px'; // Ensure width for 2 buttons
+                             // Removed explicit width: actionsTh.style.width = '150px';
 
                              headerRow.appendChild(orderTh); // Add order header
                              headerRow.appendChild(clubNameTh);
@@ -1510,7 +1539,8 @@
                                      const orderTd = document.createElement('td'); // New cell for order
                                       // Display order number, or '-' if not set
                                      orderTd.textContent = typeof club.data.orderInGroup === 'number' ? club.data.orderInGroup : '-';
-                                     orderTd.style.textAlign = 'center';
+                                     // orderTd.style.textAlign = 'center'; /* This style is now handled by CSS rule .group-clubs-table tbody td:first-child */
+
 
                                      const nameTd = document.createElement('td');
                                      nameTd.textContent = club.data.name; // Zobraz názov klubu z dát
@@ -1924,7 +1954,7 @@
                      const querySnapshot = await getDocs(categoriesCollectionRef);
                      allAvailableCategories = querySnapshot.docs.map(doc => doc.id).sort((a, b) => a.localeCompare(b, 'sk-SK')); // Sort alphabetically
                      console.log("Načítané kategórie pre dynamické selecty:", allAvailableCategories);
-                     // Po načítaní, ak je modál otvorený, aktualizovať selecty
+                     // Po načítaní, ak je modál otvorený, aktualizuj selecty
                       if (teamCreationModal.style.display === 'block') {
                            updateDynamicCategorySelects();
                            checkIfAddCategoryButtonShouldBeVisible(); // Aj po načítaní kategórií treba skontrolovať viditeľnosť tlačidla
@@ -2107,6 +2137,7 @@
                   pairDiv.appendChild(inputContainer);
                   pairDiv.appendChild(removeButton); // Pridáme tlačidlo, jeho viditeľnosť sa nastaví neskôr
 
+
                  container.appendChild(pairDiv);
 
                  // Naplň nový select s ohľadom na už vybraté kategórie v ostatných selectoch
@@ -2149,7 +2180,7 @@
                  teamCategoryCountContainer.innerHTML = '';
                  // Zabezpeč, že všetky kategórie sú načítané pred pridaním prvej dvojice
                  if (allAvailableCategories.length === 0) {
-                      await loadAllCategoriesForDynamicSelects(); // Načítaj kategórie ak ešte nie sú (volá updateDynamicSelects a checkIfAddCategoryButtonShouldBeVisible)
+                      await loadAllCategoriesForDynamicSelects(); // Načítaj kategórie ak ešte nie sú (volá updateDynamicCategorySelects a checkIfAddCategoryButtonShouldBeVisible)
                  } else {
                        // Ak už sú kategórie načítané, len aktualizuj selecty a tlačidlá
                        updateDynamicCategorySelects(); // Volá checkIfAddCategoryButtonShouldBeVisible
@@ -2157,7 +2188,7 @@
                    }
 
                  // Vždy pridaj prvú dvojicu pri otvorení modálu
-                 await addCategoryCountPair(); // Táto funkcia volá updateDynamicSelects a updateRemoveButtonVisibility na konci
+                 await addCategoryCountPair(); // Táto funkcia volá updateDynamicCategorySelects a updateRemoveButtonVisibility na konci
 
                  teamNameInput.focus(); // Nastav focus na názov tímu
             }
@@ -2243,7 +2274,7 @@
                      displayCreatedTeams();
                      addButton.title = "Vytvoriť tímy";
                      // Načítaj kategórie pri vstupe do sekcie "Vytvorenie tímov"
-                     loadAllCategoriesForDynamicSelects(); // Volá updateDynamicSelects a checkIfAddCategoryButtonShouldBeVisible
+                     loadAllCategoriesForDynamicSelects(); // Volá updateDynamicCategorySelects a checkIfAddCategoryButtonShouldBeVisible
                  }
                  else if (hash === '#timy-do-skupin') {
                      addButton.style.display = 'block';
@@ -2299,7 +2330,7 @@
                  categoryForm.reset();
                  // Ak sa zatvára kategória modál a bol otvorený Team Creation Modal, aktualizuj jeho selecty
                   if (teamCreationModal.style.display === 'block') {
-                      loadAllCategoriesForDynamicSelects(); // Pre istotu znovu načítaj kategórie (volá updateDynamicSelects a checkIfAddCategoryButtonShouldBeVisible)
+                      loadAllCategoriesForDynamicSelects(); // Pre istotu znovu načítaj kategórie (volá updateDynamicCategorySelects a checkIfAddCategoryButtonShouldBeVisible)
                   }
             });
 
@@ -2347,7 +2378,7 @@
                      categoryForm.reset();
                      // Ak sa zatvára kategória modál a bol otvorený Team Creation Modal, aktualizuj jeho selecty
                       if (teamCreationModal.style.display === 'block') {
-                          loadAllCategoriesForDynamicSelects(); // Pre istotu znovu načítaj kategórie (volá updateDynamicSelects a checkIfAddCategoryButtonShouldBeVisible)
+                          loadAllCategoriesForDynamicSelects(); // Pre istotu znovu načítaj kategórie (volá updateDynamicCategorySelects a checkIfAddCategoryButtonShouldBeVisible)
                       }
                 }
                 if (e.target === groupModal) {
@@ -2426,7 +2457,7 @@
                                 displayCreatedTeams();
                                 // Aj po pridaní kategórie treba aktualizovať ponuky v Team Creation Modale
                                 if (teamCreationModal.style.display === 'block') {
-                                     loadAllCategoriesForDynamicSelects(); // Načítaj znovu kategórie, čo zavolá aj updateDynamicSelects a checkIfAddCategoryButtonShouldBeVisible
+                                     loadAllCategoriesForDynamicSelects(); // Načítaj znovu kategórie, čo zavolá aj updateDynamicCategorySelects a checkIfAddCategoryButtonShouldBeVisible
                                 }
                            }
 
@@ -2510,7 +2541,7 @@
                             displayCreatedTeams();
                              // Aj po premenovaní kategórie treba aktualizovať ponuky v Team Creation Modale
                              if (teamCreationModal.style.display === 'block') {
-                                loadAllCategoriesForDynamicSelects(); // Načítaj znovu kategórie, čo zavolá aj updateDynamicSelects a checkIfAddCategoryButtonShouldBeVisible
+                                loadAllCategoriesForDynamicSelects(); // Načítaj znovu kategórie, čo zavolá aj updateDynamicCategorySelects a checkIfAddCategoryButtonShouldBeVisible
                             }
                        }
 
@@ -2889,7 +2920,7 @@
                              // Ak sa upravoval/priraďoval tím, môže to ovplyvniť dostupné kategórie
                             // pre dynamické selecty vo Team Creation Modale
                              if (teamCreationModal.style.display === 'block') {
-                                loadAllCategoriesForDynamicSelects(); // Načítaj znovu kategórie, čo zavolá aj updateDynamicSelects a checkIfAddCategoryButtonShouldBeVisible
+                                loadAllCategoriesForDynamicSelects(); // Načítaj znovu kategórie, čo zavolá aj updateDynamicCategorySelects a checkIfAddCategoryButtonShouldBeVisible
                              }
                        }
                       // Refresh clubs-in-groups display if visible, as an assigned team was edited/assigned
@@ -3141,7 +3172,7 @@
                      teamCreationForm.reset(); // Vyčistí aspoň základný názov
                      // Nečistíme teamCategoryCountContainer, aby užívateľ videl, čo zadal
                      // Ak nastane chyba, môžeme znova načítat kategórie a aktualizovať selecty
-                     loadAllCategoriesForDynamicSelects(); // Pre istotu znovu načítaj kategórie (volá updateDynamicSelects a checkIfAddCategoryButtonShouldBeVisible)
+                     loadAllCategoriesForDynamicSelects(); // Pre istotu znovu načítaj kategórie (volá updateDynamicCategorySelects a checkIfAddCategoryButtonShouldBeVisible)
                 }
             });
 
@@ -3149,12 +3180,12 @@
             addCategoryCountPairButton.addEventListener('click', async () => {
                  // Pred pridaním novej dvojice zabezpečiť, že kategórie sú načítané
                  if (allAvailableCategories.length === 0) {
-                      await loadAllCategoriesForDynamicSelects(); // Načítaj kategórie ak ešte nie sú (volá updateDynamicSelects a checkIfAddCategoryButtonShouldBeVisible)
+                      await loadAllCategoriesForDynamicSelects(); // Načítaj kategórie ak ešte nie sú (volá updateDynamicCategorySelects a checkIfAddCategoryButtonShouldBeVisible)
                  }
-                 await addCategoryCountPair(); // Volaj funkciu na pridanie ďalšej dvojice (volá updateDynamicSelects a updateRemoveButtonVisibility)
+                 await addCategoryCountPair(); // Volaj funkciu na pridanie ďalšej dvojice (volá updateDynamicCategorySelects a updateRemoveButtonVisibility)
             });
 
     </script>
-    
+
 </body>
 </html>
