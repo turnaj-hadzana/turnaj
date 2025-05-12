@@ -1730,7 +1730,7 @@
 
                                         // Po zmazaní tímov môže byť potrebné aktualizovať aj ponuky kategórií
                                         if (teamCreationModal.style.display === 'block') {
-                                            loadAllCategoriesForDynamicSelects(); // Načítaj znovu kategórie, čo zavolá aj updateDynamicSelects
+                                             loadAllCategoriesForDynamicSelects(); // Načítaj znovu kategórie, čo zavolá aj updateDynamicSelects a checkIfAddCategoryButtonShouldBeVisible
                                         }
 
 
@@ -1811,7 +1811,7 @@
                       const thead = document.createElement('thead');
                       const headerRow = document.createElement('tr');
                       const teamNameTh = document.createElement('th');
-                      teamNameTh.textContent = 'Názov tímu'; // Indicate it's the full name
+                      teamNameTh.textContent = 'Názov tímu (celý)'; // Indicate it's the full name
                        const actionsTh = document.createElement('th');
                        actionsTh.textContent = ''; // Changed header to Akcie
                        actionsTh.style.width = '150px'; // Ensure width for buttons
@@ -1889,7 +1889,7 @@
                                          // Aj po zmazaní individuálneho tímu je možné, že sa uvoľnila kategória
                                          // pre ostatné dynamické selecty
                                          if (teamCreationModal.style.display === 'block') {
-                                             loadAllCategoriesForDynamicSelects(); // Načítaj znovu kategórie, čo zavolá aj updateDynamicSelects
+                                            loadAllCategoriesForDynamicSelects(); // Načítaj znovu kategórie, čo zavolá aj updateDynamicSelects a checkIfAddCategoryButtonShouldBeVisible
                                          }
                                    }
                                     // Refresh clubs-in-groups display if visible (shouldn't affect it directly as these are unassigned)
@@ -2268,7 +2268,7 @@
             // Spoločná obsluha kliknutia na tlačidlo Pridať (+)
             addButton.addEventListener('click', () => {
                 const hash = window.location.hash;
-                if (hash === '#kategorie') {
+                if (hash === '#kategórie') { // Opravený hash pre kategórie
                      // Open category modal in add mode
                      currentCategoryModalMode = 'add';
                      editingCategoryName = null;
@@ -2389,7 +2389,7 @@
             window.addEventListener('load', () => {
                  // Set initial hash if none is present, e.g., to #kategorie
                  if (!window.location.hash || window.location.hash === '#') { // Also handle empty hash
-                      window.location.hash = '#kategorie';
+                      window.location.hash = '#kategórie'; // Opravený hash pre počiatočnú stránku
                  } else {
                      // If hash is present, call toggleContentDisplay
                      toggleContentDisplay();
@@ -3110,17 +3110,17 @@
                          resultMessage += " Všetky plánované tímy boli úspešne vytvorené.";
                      }
 
-                     console.log(resultMessage);
-                     alert(resultMessage);
+                     alert(resultMessage); // Zachováme alert pre spätnú väzbu
 
 
                     // --- Spoločná logika po úspešnom vytvorení ---
                     teamCreationModal.style.display = 'none';
                     teamCreationForm.reset();
-                    // Vyčistiť dynamické polia po úspechu
                     teamCategoryCountContainer.innerHTML = '';
-                     // Pridať späť prvú prázdnu dvojicu pre ďalšie otvorenie modálu
-                     await addCategoryCountPair(); // Toto už volá updateDynamicCategorySelects a updateRemoveButtonVisibility vo vnútri
+                    await addCategoryCountPair(); // Toto už volá updateDynamicCategorySelects a updateRemoveButtonVisibility vo vnútri
+
+                    // --- NOVÁ LOGIKA: Zabrániť dialógovému oknu "Správa z webu" ---
+                    history.replaceState({}, '', window.location.href); // Nahradí aktuálny záznam v histórii
 
 
                     // Obnoviť zobrazenia, ktoré môžu byť ovplyvnené
