@@ -742,7 +742,7 @@
                            const clubsSnapshot = await getDocs(clubsInGroupQuery);
                            clubsSnapshot.forEach(clubDoc => {
                                 // Let's simplify: if category deleted, clubs lose both references.
-                               batch.update(clubDoc.ref, { categoryId: null, groupId: null }); // Update club with null categoryId and null groupId
+                               batch.update(clubDoc.ref, { categoryId: null, groupId: null, orderInGroup: null }); // Update club with null references
                                 console.log(`Klub "${clubDoc.id}" odpriradený kvôli zmazaniu skupiny "${groupDoc.id}".`); // Clarified log
                            });
                             // Add group deletion to batch
@@ -770,8 +770,8 @@
                        loadCategoriesTable(); // Always refresh category table
                        if (window.location.hash === '#skupiny') {
                            groupsContentDiv.innerHTML = '';
-                           displayGroupsByCategory(); // Call displayGroupsByCategory after successful save
-                      }
+                           displayGroupsByCategory();
+                       }
                        if (window.location.hash === '#timy-do-skupin') displayClubs();
                        if (window.location.hash === '#vytvorenie-timov') displayCreatedTeams();
 
@@ -1100,7 +1100,7 @@
                                     deleteGroupButton.textContent = 'Vymazať';
                                     deleteGroupButton.classList.add('action-button', 'delete-button');
                                     deleteGroupButton.onclick = async () => {
-                                         if (!confirm(`Naozaj chcete vymazať skupinu "${group.data.name}" z kategórie "${group.data.categoryId}"? Tímy priradené k tejto skupine prídu o priradenie (groupId sa nastaví na null)!`)) { // Updated warning
+                                         if (!confirm(`Naozaj chcete vymazať skupinu "${group.data.name}" z kategórie "${group.data.categoryId}"? Tímy priradené k tejto skupine prídu o priradenie (groupId a orderInGroup sa nastavia na null)!`)) { // Updated warning
                                               return;
                                          }
                                          try {
@@ -1139,12 +1139,12 @@
                                      groupRow.appendChild(groupNameTd);
                                      groupRow.appendChild(groupActionsTd);
                                      tbody.appendChild(groupRow);
-                               });
-                            }
+                                });
+                             }
 
-                            categoryGroupsTable.appendChild(tbody);
-                            categorySectionDiv.appendChild(categoryGroupsTable);
-                            groupsContentDiv.appendChild(categorySectionDiv); // Append the section div to the main container
+                             categoryGroupsTable.appendChild(tbody);
+                             categorySectionDiv.appendChild(categoryGroupsTable);
+                             groupsContentDiv.appendChild(categorySectionDiv); // Append the section div to the main container
                          });
 
 
@@ -1449,8 +1449,8 @@
                             const clubNameTh = document.createElement('th');
                             clubNameTh.textContent = 'Názov klubu';
                              const actionsTh = document.createElement('th');
-                             actionsTh.textContent = 'Upraviť';
-                             actionsTh.style.width = '150px';
+                             actionsTh.textContent = 'Akcie'; // Changed header to Akcie
+                             actionsTh.style.width = '150px'; // Ensure width for 2 buttons
 
                              headerRow.appendChild(orderTh); // Add order header
                              headerRow.appendChild(clubNameTh);
@@ -1516,31 +1516,37 @@
                                        };
 
 
-                                      // === TLAČIDLO VYMAZAŤ KLUBU (ZMAZAŤ ÚPLNE) ===
-                                      // Mazanie klubu z tejto sekcie by malo asi znamenať úplné zmazanie dokumentu z Firestore.
-                                       const deleteClubButton = document.createElement('button');
-                                       deleteClubButton.textContent = 'Vymazať';
-                                       deleteClubButton.classList.add('action-button', 'delete-button');
-                                       deleteClubButton.onclick = async () => {
-                                           if (!confirm(`Naozaj chcete vymazať klub "${club.data.name}" zo skupiny "${groupName}" v kategórii "${categoryId}"?`)) {
+                                     // === TLAČIDLO ODPRIRADIŤ KLUBU (ZMAZAŤ PRIRADENIE) ===
+                                     // ZMENENÉ SPRÁVANIE: NEMAŽE DOKUMENT, IBA ODSTRÁNI PRIRADENIE K SKUPINE
+                                       const unassignClubButton = document.createElement('button');
+                                       unassignClubButton.textContent = 'Odpriradiť'; // Changed text
+                                       unassignClubButton.classList.add('action-button', 'delete-button'); // Reusing delete-button style
+                                       unassignClubButton.onclick = async () => {
+                                           if (!confirm(`Naozaj chcete odpriradiť klub "${club.data.name}" zo skupiny "${groupName}" v kategórii "${categoryId}"? Tím sa vráti medzi nepriradené tímy.`)) { // Updated confirmation
                                                return;
                                            }
-                                           // Na zmazanie použi auto-generované ID klubu
                                            try {
-                                                await deleteDoc(doc(clubsCollectionRef, club.id)); // Delete using the club's auto-generated ID
-                                                console.log(`Klub "${club.data.name}" (ID: ${club.id}) bol úspešne zmazaný.`);
-                                                displayClubs(); // Obnov zobrazenie klubov po zmazaní
-                                                // Refresh created teams display if visible, as deleting an assigned team makes it disappear from both lists
-                                                 if (window.location.hash === '#vytvorenie-timov') displayCreatedTeams();
+                                                // Update the existing club document to remove group and order assignment
+                                                await updateDoc(doc(clubsCollectionRef, club.id), {
+                                                    groupId: null, // Set groupId to null
+                                                    orderInGroup: null // Set orderInGroup to null
+                                                });
+                                                console.log(`Klub "${club.data.name}" (ID: ${club.id}) úspešne odpriradený.`); // Updated log message
+
+                                                // Refresh displays that might be affected
+                                                displayClubs(); // Refresh assigned clubs display (this team will disappear)
+                                                // Refresh main 'Created Teams' display because an unassigned team was created (it will reappear there)
+                                                if (window.location.hash === '#vytvorenie-timov') displayCreatedTeams();
+
 
                                            } catch (error) {
-                                                console.error('Chyba pri mazaní klubu: ', error);
-                                                alert('Chyba pri mazaní klubu!');
+                                                console.error('Chyba pri odpriradzovaní klubu: ', error); // Updated error message
+                                                alert('Chyba pri odpriradzovaní klubu! Prosím, skúste znova.'); // Updated alert
                                            }
                                        };
 
                                         actionsTd.appendChild(editClubButton);
-                                        actionsTd.appendChild(deleteClubButton); // Corrected variable name
+                                        actionsTd.appendChild(unassignClubButton); // Use the new unassign button
 
                                        tr.appendChild(orderTd); // Add order cell
                                        tr.appendChild(nameTd);
@@ -1592,7 +1598,7 @@
 
                       // Vytvoriť posledný stĺpec hlavičky
                       const actionsTh = document.createElement('th');
-                      actionsTh.textContent = 'Upraviť';
+                      actionsTh.textContent = 'Akcie'; // Changed header to Akcie
                       actionsTh.style.width = '150px';
                       createdTeamsTableHeader.appendChild(actionsTh);
 
@@ -1783,8 +1789,8 @@
                       const teamNameTh = document.createElement('th');
                       teamNameTh.textContent = 'Názov tímu (celý)'; // Indicate it's the full name
                        const actionsTh = document.createElement('th');
-                       actionsTh.textContent = 'Upraviť';
-                       actionsTh.style.width = '150px';
+                       actionsTh.textContent = 'Akcie'; // Changed header to Akcie
+                       actionsTh.style.width = '150px'; // Ensure width for buttons
 
                        headerRow.appendChild(teamNameTh);
                        headerRow.appendChild(actionsTh);
@@ -1835,11 +1841,12 @@
 
 
                           // === TLAČIDLO VYMAZAŤ INDIVIDUÁLNY TÍM ===
+                          // Tento button v tomto modali ZMAŽE dokument úplne
                           const deleteIndividualTeamButton = document.createElement('button');
                           deleteIndividualTeamButton.textContent = 'Vymazať';
                           deleteIndividualTeamButton.classList.add('action-button', 'delete-button');
                           deleteIndividualTeamButton.onclick = async () => {
-                              if (!confirm(`Naozaj chcete vymazať tím "${team.data.name}" z kategórie "${categoryName}"?`)) {
+                              if (!confirm(`Naozaj chcete vymazať tím "${team.data.name}" z kategórie "${categoryName}"? Táto akcia vymaže tím úplne.`)) { // Clarified confirmation
                                   return;
                               }
                               try {
