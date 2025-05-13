@@ -55,7 +55,7 @@
             transition: background-color 0.3s ease;
             position: sticky;
             top: 20px;
-            z-index: 10;
+            z-index: 1000; /* Nechal som vysoký z-index pre tlačidlo */
         }
 
         .add-button:hover {
@@ -80,7 +80,7 @@
             align-self: flex-start;
             max-height: calc(100vh - 110px);
             overflow-y: auto;
-            z-index: 500;
+            z-index: 500; /* Zvýšený z-index, aby bolo menu nad obsahom */
         }
 
         .left-menu ul {
@@ -258,7 +258,7 @@
             gap: 20px; /* Space between flex items */
             justify-content: flex-start; /* Align items to the start */
             /* padding: 20px; */ /* Pôvodné padding */
-            padding: 20px 20px 20px 100px; /* Zväčšený ľavý padding: top, right, bottom, left */
+            padding: 20px 20px 20px 30px; /* Zväčšený ľavý padding: top, right, bottom, left */
             margin-bottom: 20px; /* Keep space below the section */
         }
 
