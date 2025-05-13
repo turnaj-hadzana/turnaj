@@ -606,7 +606,7 @@
     </div>
 
 
-    <script type="module">
+<script type="module">
         // Import potrebných Firebase Firestore funkcií priamo z CDN
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js';
         import { getFirestore, collection, doc, setDoc, getDoc, getDocs, deleteDoc, query, where, addDoc, updateDoc, writeBatch } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js';
@@ -653,7 +653,7 @@
         const groupCategorySelect = document.getElementById('groupCategory');
         const groupNameInput = document.getElementById('groupName');
         const groupModalTitle = document.getElementById('groupModalTitle');
-        const groupFormSubmitButton = groupForm.querySelector('button[type="submit]');
+        const groupFormSubmitButton = groupForm.querySelector('button[type="submit"]'); // Corrected selector
 
         // Modál Kluby (pre priradenie do skupín / úpravu priradených)
         const clubModal = document.getElementById('clubModal');
@@ -663,7 +663,7 @@
         const clubCategorySelect = document.getElementById('clubCategory');
         const clubGroupSelect = document.getElementById('clubGroup');
         const clubModalTitle = document.getElementById('clubModalTitle');
-        const clubFormSubmitButton = clubForm.querySelector('button[type="submit]');
+        const clubFormSubmitButton = clubForm.querySelector('button[type="submit"]'); // Corrected selector
 
         // Modál Vytvorenie Tímov
         const teamCreationModal = document.getElementById('teamCreationModal');
@@ -688,6 +688,7 @@
         console.log('unassignedClubSelectContainer element reference:', unassignedClubSelectContainer);
         console.log('clubNameInputContainer element reference:', clubNameInputContainer);
         console.log('orderInputContainer element reference:', orderInputContainer);
+        console.log('orderInGroupInput element reference:', orderInGroupInput);
         // --- END DEBUG LOG ---
 
 
@@ -744,9 +745,9 @@
                  editingCategoryName = categoryName;
                  if (!categoryModalTitle) { console.error('FATAL ERROR: categoryModalTitle is null in edit mode!'); return; } // Safety check
                  categoryModalTitle.textContent = 'Premenovať kategóriu';
-                 categoryNameInput.value = categoryName;
-                 categoryModal.style.display = 'block';
-                 categoryNameInput.focus();
+                 if(categoryNameInput) categoryNameInput.value = categoryName;
+                 if(categoryModal) categoryModal.style.display = 'block';
+                 if(categoryNameInput) categoryNameInput.focus();
              };
 
 
@@ -769,7 +770,7 @@
                       const groupsSnapshot = await getDocs(groupsQuery);
 
                        // Fetch clubs related to groups being deleted *before* starting the batch queries within the loop
-                       const clubUpdates = [];
+                       const clubUpdates = []; // This array is not used, can be removed or ignored
                        for (const groupDoc of groupsSnapshot.docs) {
                            const clubsInGroupQuery = query(clubsCollectionRef, where('groupId', '==', groupDoc.id));
                            const clubsSnapshot = await getDocs(clubsInGroupQuery);
@@ -802,7 +803,7 @@
                       // Refresh displays that might be affected
                        loadCategoriesTable(); // Always refresh category table
                        if (window.location.hash === '#skupiny') {
-                           groupsContentDiv.innerHTML = '';
+                           if(groupsContentDiv) groupsContentDiv.innerHTML = '';
                            displayGroupsByCategory();
                        }
                        // Refresh created teams list regardless of hash, as categories affect its header and grouping
@@ -815,7 +816,7 @@
                       console.error('Chyba pri mazaní kategórie a súvisiacich dát: ', error);
                       alert('Chyba pri mazaní kategórie! Prosím, skúste znova.');
                       // Close modal and reset state on error
-                      categoryModal.style.display = 'none'; categoryForm.reset();
+                      if(categoryModal) categoryModal.style.display = 'none'; if (categoryForm) categoryForm.reset();
                       currentCategoryModalMode = 'add'; editingCategoryName = null;
                   }
              };
@@ -824,12 +825,12 @@
              actionsTd.appendChild(deleteButton);
              tr.appendChild(nameTd);
              tr.appendChild(actionsTd);
-             categoryTableBody.appendChild(tr); // Append directly to tbody
+             if(categoryTableBody) categoryTableBody.appendChild(tr); // Append directly to tbody
          }
 
          async function loadCategoriesTable() {
              try {
-                 categoryTableBody.innerHTML = ''; // Clear existing rows
+                 if(categoryTableBody) categoryTableBody.innerHTML = ''; // Clear existing rows
                  const querySnapshot = await getDocs(categoriesCollectionRef);
                  if (querySnapshot.empty) {
                      console.log("Žiadne kategórie nenájdené.");
@@ -839,7 +840,7 @@
                      td.textContent = "Žiadne kategórie zatiaľ pridané.";
                      td.style.textAlign = 'center';
                      noDataRow.appendChild(td);
-                     categoryTableBody.appendChild(noDataRow);
+                     if(categoryTableBody) categoryTableBody.appendChild(noDataRow);
                  } else {
                      // Sort categories alphabetically by name (doc.id)
                      const sortedDocs = querySnapshot.docs.sort((a, b) => a.id.localeCompare(b.id));
@@ -858,7 +859,7 @@
                   td.textContent = "Chyba pri načítaní kategórií.";
                   td.style.textAlign = 'center';
                   errorRow.appendChild(td);
-                  categoryTableBody.appendChild(errorRow);
+                  if(categoryTableBody) categoryTableBody.appendChild(errorRow);
              }
          }
 
@@ -869,10 +870,10 @@
          // Použiteľná pre groupModal, clubModal a teamCreationModal
          async function populateCategorySelect(selectElement, selectedCategoryId = null) {
               // Handle multiple select placeholder differently (Removed multiple select logic from here)
-              selectElement.innerHTML = '<option value="">-- Vyberte kategóriu --</option>';
+              if(selectElement) selectElement.innerHTML = '<option value="">-- Vyberte kategóriu --</option>';
 
 
-               selectElement.disabled = true; // Disable while loading
+              if(selectElement) selectElement.disabled = true; // Disable while loading
 
 
               try {
@@ -883,10 +884,10 @@
                       option.value = "";
                       option.textContent = "-- Žiadne kategórie --";
                       option.disabled = true;
-                      selectElement.appendChild(option);
-                       selectElement.disabled = false; // Re-enable even if empty, unless truly errored
+                      if(selectElement) selectElement.appendChild(option);
+                       if(selectElement) selectElement.disabled = false; // Re-enable even if empty, unless truly errored
                   } else {
-                       selectElement.disabled = false; // Enable the select
+                       if(selectElement) selectElement.disabled = false; // Enable the select
                        // Sort categories alphabetically by name (doc.id)
                        const sortedDocs = querySnapshot.docs.sort((a, b) => a.id.localeCompare(b.id));
                        allAvailableCategories = sortedDocs.map(doc => doc.id); // Store for dynamic selects
@@ -897,11 +898,11 @@
                             const option = document.createElement('option');
                             option.value = categoryName;
                             option.textContent = categoryName;
-                            selectElement.appendChild(option);
+                            if(selectElement) selectElement.appendChild(option);
                        });
 
                        // Select the provided category ID(s) (Simplified for single select)
-                       if (selectedCategoryId) {
+                       if (selectedCategoryId && selectElement) {
                             if (selectElement.querySelector(`option[value="${selectedCategoryId}"]`)) {
                                  selectElement.value = selectedCategoryId;
                             } else {
@@ -916,8 +917,8 @@
                     option.value = "";
                     option.textContent = "Chyba pri načítaní kategórií";
                     option.disabled = true;
-                    selectElement.appendChild(option);
-                    selectElement.disabled = true; // Keep disabled on error
+                    if(selectElement) selectElement.appendChild(option);
+                    if(selectElement) selectElement.disabled = true; // Keep disabled on error
                     allAvailableCategories = []; // Clear on error
                }
             }
@@ -926,17 +927,17 @@
              // Funkcia na načítanie skupín pre danú kategóriu a naplnenie <select> (používa kompozitné ID)
              // Použiteľná pre clubModal
              async function populateGroupSelect(categoryId, selectElement, selectedGroupId = null) { // selectElement, selectedGroupId
-                 selectElement.innerHTML = '<option value="">-- Vyberte skupinu --</option>';
-                 selectElement.disabled = true; // Disable until category is selected or loading is complete
+                 if(selectElement) selectElement.innerHTML = '<option value="">-- Vyberte skupinu --</option>';
+                 if(selectElement) selectElement.disabled = true; // Disable until category is selected or loading is complete
 
 
                  if (!categoryId || categoryId === '-- Vyberte kategóriu --') { // Also check placeholder value
-                     selectElement.innerHTML = '<option value="">-- Najprv vyberte kategóriu --</option>';
-                     selectElement.disabled = true;
+                     if(selectElement) selectElement.innerHTML = '<option value="">-- Najprv vyberte kategóriu --</option>';
+                     if(selectElement) selectElement.disabled = true;
                      return; // No category selected, cannot load groups
                  }
 
-                  selectElement.disabled = true; // Re-disable during loading
+                  if(selectElement) selectElement.disabled = true; // Re-disable during loading
 
                  try {
                      // Query groups that belong to the selected category
@@ -949,7 +950,7 @@
                          option.value = "";
                          option.textContent = "-- Žiadne skupiny v kategórii --";
                          option.disabled = true;
-                         selectElement.appendChild(option);
+                         if(selectElement) selectElement.appendChild(option);
 
                      } else {
                          console.log(`Načítané skupín pre kategóriu "${categoryId}".`);
@@ -967,11 +968,11 @@
                               option.value = groupId;
                                // Display the group name
                               option.textContent = groupName;
-                              selectElement.appendChild(option);
+                              if(selectElement) selectElement.appendChild(option);
                            });
 
                             // Select the provided group ID if in edit mode and it exists
-                            if (selectedGroupId) {
+                            if (selectedGroupId && selectElement) {
                                   if (selectElement.querySelector(`option[value="${selectedGroupId}"]`)) {
                                        selectElement.value = selectedGroupId;
                                   } else {
@@ -980,12 +981,12 @@
                                   }
                             }
                      }
-                     selectElement.disabled = false; // Enable after loading (even if empty)
+                     if(selectElement) selectElement.disabled = false; // Enable after loading (even if empty)
 
                  } catch (error) {
                      console.error('Chyba pri načítaní skupín pre select: ', error);
-                      selectElement.innerHTML = '<option value="">Chyba pri načítaní skupín</option>'; // Indicate error
-                      selectElement.disabled = true; // Keep disabled on error
+                      if(selectElement) selectElement.innerHTML = '<option value="">Chyba pri načítaní skupín</option>'; // Indicate error
+                      if(selectElement) selectElement.disabled = true; // Keep disabled on error
                 }
              }
 
@@ -993,18 +994,18 @@
  // Funkcia na otvorenie modálu skupiny (pre pridanie alebo úpravu)
   //groupId je kompozitné ID, groupData má name, categoryId
  async function openGroupModal(groupId = null, groupData = null) {
-      groupModal.style.display = 'block';
+      if(groupModal) groupModal.style.display = 'block';
 
       // Resetuj stav modálu a formulár
       currentGroupModalMode = 'add';
       editingGroupId = null; // Vymaž ID upravovanej skupiny
-      groupForm.reset(); // Vyčisti polia formulára
-      groupNameInput.disabled = false; // Uisti sa, že vstup pre názov je povolený
-      groupFormSubmitButton.textContent = 'Uložiť'; // Default button text
+      if (groupForm) groupForm.reset(); // Vyčisti polia formulára
+      if(groupNameInput) groupNameInput.disabled = false; // Uisti sa, že vstup pre názov je povolený
+      if(groupFormSubmitButton) groupFormSubmitButton.textContent = 'Uložiť'; // Default button text
 
 
       // Naplň select kategórií pre modál skupiny
-      groupCategorySelect.value = ""; // Resetuj výber kategórie
+      if(groupCategorySelect) groupCategorySelect.value = ""; // Resetuj výber kategórie
 
 
       if (groupId && groupData) {
@@ -1013,13 +1014,13 @@
           editingGroupId = groupId; // Ulož kompozitné ID skupiny, ktorá sa upravuje
           if (!groupModalTitle) { console.error('FATAL ERROR: groupModalTitle is null in edit mode!'); return; } // Safety check
           groupModalTitle.textContent = 'Premenovať skupinu';
-          groupFormSubmitButton.textContent = 'Uložiť zmeny';
+          if(groupFormSubmitButton) groupFormSubmitButton.textContent = 'Uložiť zmeny';
 
           // Naplň select kategórií a potom nastav zvolenú hodnotu
-          await populateCategorySelect(groupCategorySelect, groupData.categoryId); // Pass select element first
+          if(groupCategorySelect) await populateCategorySelect(groupCategorySelect, groupData.categoryId); // Pass select element first
 
           // Vyplň polia formulára
-          groupNameInput.value = groupData.name; // Použi pole 'name' z dát
+          if(groupNameInput) groupNameInput.value = groupData.name; // Použi pole 'name' z dát
           // Hodnota groupCategorySelect sa nastaví funkciou populateCategorySelect
 
       } else {
@@ -1027,16 +1028,16 @@
           if (!groupModalTitle) { console.error('FATAL ERROR: groupModalTitle is null in add mode!'); return; } // Safety check
           groupModalTitle.textContent = 'Pridať skupinu';
 
-          await populateCategorySelect(groupCategorySelect, null); // Naplň select kategórií
+          if(groupCategorySelect) await populateCategorySelect(groupCategorySelect, null); // Naplň select kategórií
       }
 
-      groupNameInput.focus(); // Nastav focus na pole pre názov
+      if(groupNameInput) groupNameInput.focus(); // Nastav focus na pole pre názov
      }
 
 
              // Funkcia na zobrazenie skupín usporiadaných podľa kategórií
              async function displayGroupsByCategory() {
-                  groupsContentDiv.innerHTML = ''; // Clear container
+                  if(groupsContentDiv) groupsContentDiv.innerHTML = ''; // Clear container
 
                   try {
                      // 1. Načítať všetky kategórie
@@ -1049,7 +1050,7 @@
                      if (categories.length === 0) {
                           const message = document.createElement('p');
                           message.textContent = "Pridajte kategórie v sekcii 'Kategórie' pre zobrazenie skupín.";
-                          groupsContentDiv.appendChild(message);
+                          if(groupsContentDiv) groupsContentDiv.appendChild(message);
                           return;
                      }
 
@@ -1186,8 +1187,8 @@
                             }
 
                             categoryGroupsTable.appendChild(tbody);
-                            categorySectionDiv.appendChild(categoryGroupsTable);
-                            groupsContentDiv.appendChild(categorySectionDiv); // Append the section div to the main container
+                            categorySectionDiv.appendChild(categoryGroupsTable); // OPRAVENÝ PREKLEP
+                            if(groupsContentDiv) groupsContentDiv.appendChild(categorySectionDiv); // Append the section div to the main container
                          });
 
 
@@ -1195,7 +1196,7 @@
                           console.error('Chyba pri načítaní alebo zobrazovaní skupín: ', error);
                           const errorMessage = document.createElement('p');
                           errorMessage.textContent = 'Chyba pri načítaní dát skupín.';
-                          groupsContentDiv.appendChild(errorMessage);
+                          if(groupsContentDiv) groupsContentDiv.appendChild(errorMessage);
                       }
              }
 
@@ -1204,8 +1205,8 @@
 
              // Funkcia na načítanie nepriradených tímov a naplnenie selectu v modáli klubu
              async function populateUnassignedClubsSelect(selectElement, selectedClubId = null) {
-                  selectElement.innerHTML = '<option value="">-- Vyberte tím na priradenie --</option>';
-                  selectElement.disabled = true; // Disable until clubs are loaded
+                  if(selectElement) selectElement.innerHTML = '<option value="">-- Vyberte tím na priradenie --</option>';
+                  if(selectElement) selectElement.disabled = true; // Disable until clubs are loaded
 
 
                   try {
@@ -1219,10 +1220,10 @@
                           option.value = "";
                           option.textContent = "-- Žiadne tímy na priradenie --";
                           option.disabled = true;
-                          selectElement.appendChild(option);
-                          selectElement.disabled = false; // Re-enable even if empty
+                          if(selectElement) selectElement.appendChild(option);
+                          if(selectElement) selectElement.disabled = false; // Re-enable even if empty
                       } else {
-                           selectElement.disabled = false; // Enable the select
+                           if(selectElement) selectElement.disabled = false; // Enable the select
                            // Sort unassigned teams alphabetically by name
                             const sortedDocs = querySnapshot.docs.sort((a, b) => (a.data().name || '').localeCompare(b.data().name || ''));
 
@@ -1233,23 +1234,23 @@
                                  const option = document.createElement('option');
                                  option.value = clubId; // Use the auto-generated ID as value
                                  option.textContent = clubData.name; // Display the club name
-                                 selectElement.appendChild(option);
+                                 if(selectElement) selectElement.appendChild(option);
                             });
 
                             // Select the provided club ID if needed (e.g., if modal is reused for something like re-assigning)
-                            if (selectedClubId) {
+                            if (selectedClubId && selectElement) {
                                  if (selectElement.querySelector(`option[value="${selectedClubId}"]`)) {
-                                      selectElement.value = selectedClubId;
-                                  } else {
-                                      console.warn(`Nepriradený tím s ID "${selectedClubId}" nenájdený.`);
-                                      selectElement.value = ""; // Reset to default if selected club not found
-                                  }
+                                       selectElement.value = selectedClubId;
+                                   } else {
+                                       console.warn(`Nepriradený tím s ID "${selectedClubId}" nenájdený.`);
+                                       selectElement.value = ""; // Reset to default if selected club not found
+                                   }
                             }
                          }
                      } catch (error) {
                          console.error('Chyba pri načítaní nepriradených tímov pre select: ', error);
-                         selectElement.innerHTML = '<option value="">Chyba pri načítaní tímov</option>'; // Indicate error
-                         selectElement.disabled = true; // Keep disabled on error
+                         if(selectElement) selectElement.innerHTML = '<option value="">Chyba pri načítaní tímov</option>'; // Indicate error
+                         if(selectElement) selectElement.disabled = true; // Keep disabled on error
                     }
                  }
 
@@ -1262,7 +1263,7 @@
                  console.log('Checking clubModalTitle at start of function. Value:', clubModalTitle); // Added safety check log 1
                  // --- END DEBUG LOG ---
 
-                  clubModal.style.display = 'block';
+                  if(clubModal) clubModal.style.display = 'block';
 
                   // Reset form fields
                   // Uistiť sa, že formulár existuje predtým, ako ho resetujeme
@@ -1276,13 +1277,16 @@
 
 
                   // Reset visibility of name input vs select and order input
-                  unassignedClubSelectContainer.style.display = 'block'; // Default to showing select for add-assign
-                  clubNameInputContainer.style.display = 'none';
-                  orderInputContainer.style.display = 'none'; // Hide order input by default
+                  if(unassignedClubSelectContainer) unassignedClubSelectContainer.style.display = 'block'; // Default to showing select for add-assign
+                  if(clubNameInputContainer) clubNameInputContainer.style.display = 'none';
+                  // orderInputContainer.style.display = 'none'; // Hide order input by default - ZMENENÉ, ZOBRAZÍ SA VŽDY AK JE SKUPINA VIDITEĽNÁ
+                  // Nastav povinnosť pre orderInGroupInput na false by default
+                  if (orderInGroupInput) orderInGroupInput.required = false;
+
 
                   // Reset group select visibility and disabled state
-                  clubGroupSelect.parentElement.style.display = 'block'; // Default to showing group select
-                  clubGroupSelect.disabled = true;
+                  if(clubGroupSelect && clubGroupSelect.parentElement) clubGroupSelect.parentElement.style.display = 'block'; // Default to showing group select
+                  if(clubGroupSelect) clubGroupSelect.disabled = true;
 
                   // Reset any previous validation messages
                   const validationMessages = clubForm.querySelectorAll('.validation-message');
@@ -1291,42 +1295,49 @@
 
                    // Načítame kategórie a skupiny pre selecty (ak ešte nie sú načítané)
                    // Funkcie populateCategorySelect a populateGroupSelect by mali kontrolovať, či select existuje
-                   await populateCategorySelect(clubCategorySelect, true); // Populate category select for the club modal, include default option
-                   clubGroupSelect.disabled = true; // Group select is disabled until a category is chosen
+                   if(clubCategorySelect) await populateCategorySelect(clubCategorySelect, true); // Populate category select for the club modal, include default option
+                   if(clubGroupSelect) clubGroupSelect.disabled = true; // Group select is disabled until a category is chosen
 
 
                   if (clubId && clubData) {
                      // Edit mode
-                     currentClubModalMode = 'edit';
+                     currentClubModalMode = 'edit-assigned'; // Changed mode name for clarity
                      editingClubId = clubId;
 
                       // Fill the form with existing data
                       // Assuming clubData contains: name, categoryId, groupId, orderInGroup
-                      clubNameInputContainer.style.display = 'block'; // Show name input
-                      unassignedClubSelectContainer.style.display = 'none'; // Hide select for unassigned clubs
-                      clubNameInput.value = clubData.name || '';
+                      if(clubNameInputContainer) clubNameInputContainer.style.display = 'block'; // Show name input
+                      if(unassignedClubSelectContainer) unassignedClubSelectContainer.style.display = 'none'; // Hide select for unassigned clubs
+                      if(clubNameInput) clubNameInput.value = clubData.name || '';
                       // Uistíme sa, že select pre kategóriu existuje
                       if (clubCategorySelect) {
-                           clubCategorySelect.value = clubData.categoryId || '';
-                            // Keďže sme nastavili kategóriu, povolíme a naplníme select skupín
-                            await populateGroupSelect(clubGroupSelect, clubData.categoryId, true); // Populate group select for the club modal, include default option
-                            clubGroupSelect.disabled = false; // Enable group select
-                            // Uistíme sa, že select pre skupiny existuje a má hodnotu
-                            if (clubGroupSelect && clubData.groupId) {
-                                 clubGroupSelect.value = clubData.groupId;
-                            } else {
-                                 // Ak sa skupina nenašla alebo nebola nastavená, zablokujeme select skupín
-                                 clubGroupSelect.disabled = true;
-                                 clubGroupSelect.value = ""; // Reset value
-                            }
+                           if (clubData.categoryId) { // Only set value if categoryId exists in data
+                                clubCategorySelect.value = clubData.categoryId;
+                                // Keďže sme nastavili kategóriu, povolíme a naplníme select skupín
+                                // Pre edit mód pošli aj selectedGroupId
+                                 if (clubGroupSelect) await populateGroupSelect(clubCategorySelect.value, clubGroupSelect, clubData.groupId); // Pass category ID, select element, and selected group ID
+                                 if (clubGroupSelect) clubGroupSelect.disabled = false; // Enable group select
+                                 // Ak sa skupina nenašla v populateGroupSelect, selectValue zostane prázdny
+                           } else {
+                                // Ak kategória chýba, resetuj select kategórií a skupín
+                                if(clubCategorySelect) clubCategorySelect.value = "";
+                                 if (clubGroupSelect) { clubGroupSelect.innerHTML = '<option value="">-- Najprv vyberte kategóriu --</option>'; clubGroupSelect.disabled = true; }
+                           }
                       } else {
                          console.error("FATAL ERROR: clubCategorySelect not found in edit mode!");
                       }
 
-
                       // Set the order input value
-                      orderInputContainer.style.display = 'block'; // Show order input
-                      orderInGroupInput.value = clubData.orderInGroup || '';
+                      // Order input is always visible in edit-assigned mode
+                      if (orderInputContainer) orderInputContainer.style.display = 'block'; // Show order input
+                      if (orderInGroupInput) {
+                           // Ensure orderInGroupInput is not disabled if container is visible
+                           orderInGroupInput.disabled = false;
+                           // Set value to existing order or empty string if null/undefined
+                           orderInGroupInput.value = typeof clubData.orderInGroup === 'number' ? clubData.orderInGroup : '';
+                           // Order input je povinný len ak je vybraná skupina
+                           orderInGroupInput.required = !!clubData.groupId;
+                       }
 
 
                      if (!clubModalTitle) { console.error('FATAL ERROR: clubModalTitle is null in edit mode!'); return; } // Safety check
@@ -1338,21 +1349,39 @@
                      }
                      clubFormSubmitButton.textContent = 'Uložiť zmeny'; // Specific button text
 
+                     // V edit móde skry skupinový select ak tím nie je priradený (groupId je null)
+                      if (clubData.groupId === null && clubGroupSelect && clubGroupSelect.parentElement) {
+                           clubGroupSelect.parentElement.style.display = 'none';
+                           // Ak je skupina skrytá, skry aj pole pre poradie a zruš povinnosť
+                           if (orderInputContainer) orderInputContainer.style.display = 'none';
+                           if (orderInGroupInput) orderInGroupInput.required = false;
+                       }
+
 
                   } else { // Add mode (Assigning an UNASSIGNED club to a group)
                      currentClubModalMode = 'add-assign';
                      editingClubId = null;
 
                      // V add-assign móde zobrazujeme select pre výber nepriradeného klubu
-                     unassignedClubSelectContainer.style.display = 'block';
-                     clubNameInputContainer.style.display = 'none'; // Názov sa vezme zo selectu
-
-                     // Order input by default hidden in add-assign mode, only shown when category/group is chosen
-                     orderInputContainer.style.display = 'none';
+                     if(unassignedClubSelectContainer) unassignedClubSelectContainer.style.display = 'block';
+                     if(clubNameInputContainer) clubNameInputContainer.style.display = 'none'; // Názov sa vezme zo selectu
 
                      // Populate the unassigned clubs select
                      // Funkcia populateUnassignedClubsSelect by mala kontrolovať, či select existuje
-                     await populateUnassignedClubsSelect(unassignedClubSelect);
+                     if(unassignedClubSelect) await populateUnassignedClubsSelect(unassignedClubSelect);
+
+                     // Skupinový select je predvolene zapnutý, ale disabled - ZOSTÁVA ZOBRAZENÝ
+                      if (clubGroupSelect && clubGroupSelect.parentElement) clubGroupSelect.parentElement.style.display = 'block';
+                      if (clubGroupSelect) clubGroupSelect.disabled = true;
+
+
+                      // Order input by default hidden in add-assign mode, only shown when category/group is chosen
+                      if (orderInputContainer) orderInputContainer.style.display = 'block'; // ZMENENÉ: ZOBRAZÍME AJ V ADD-ASSIGN MÓDE
+                      if (orderInGroupInput) {
+                           orderInGroupInput.value = ''; // Clear previous value
+                           orderInGroupInput.disabled = true; // Disabled initially until group is selected
+                           orderInGroupInput.required = false; // Not required initially
+                       }
 
 
                      if (!clubModalTitle) {
@@ -1377,16 +1406,12 @@
                      console.log('DEBUG: Value of clubFormSubmitButton right before setting textContent:', clubFormSubmitButton); // Pridana logovacia sprava pre submit button
                      clubFormSubmitButton.textContent = 'Priradiť'; // Tento riadok bol problemový
 
-                     // Skupinový select je predvolene zapnutý, ale disabled
-                     clubGroupSelect.parentElement.style.display = 'block';
-                     clubGroupSelect.disabled = true;
-
                      // Category select is used to filter groups - must be enabled
                       if (clubCategorySelect) {
                             clubCategorySelect.disabled = false;
                             // Ak uz boli kategorie nacitane, mozeme select rovno naplnit
                             // Populate category select for the club modal in add-assign mode (re-populate to include default option and reset)
-                            await populateCategorySelect(clubCategorySelect, true);
+                            await populateCategorySelect(clubCategorySelect, null); // Null as no category is pre-selected initially
                        } else {
                             console.error("FATAL ERROR: clubCategorySelect not found in add mode!");
                        }
@@ -1395,18 +1420,26 @@
                   }
 
                   // Uistíme sa, že modál je viditeľný (ak nebol vrátený kvôli chybe)
-                  clubModal.style.display = 'block';
+                  if(clubModal) clubModal.style.display = 'block';
 
 
                   // Set focus to the first relevant input/select
                   // Priorita: unassignedClubSelect (add-assign) -> clubNameInput (edit) -> clubCategorySelect
                    if (currentClubModalMode === 'add-assign' && unassignedClubSelect) {
                        unassignedClubSelect.focus();
-                   } else if (currentClubModalMode === 'edit' && clubNameInput) {
+                   } else if (currentClubModalMode === 'edit-assigned' && clubNameInputContainer && clubNameInputContainer.style.display !== 'none' && clubNameInput) { // Focus on name input if visible in edit mode
                        clubNameInput.focus();
-                   } else if (clubCategorySelect) { // Fallback focus
+                   }
+                   else if (clubCategorySelect && clubCategorySelect.style.display !== 'none' && !clubCategorySelect.disabled) { // Fallback focus on category select if visible and enabled
                        clubCategorySelect.focus();
-                   } else {
+                   }
+                    else if (clubGroupSelect && clubGroupSelect.style.display !== 'none' && !clubGroupSelect.disabled) { // Fallback focus on group select if visible and enabled
+                       clubGroupSelect.focus();
+                   }
+                    else if (orderInGroupInput && orderInputContainer && orderInputContainer.style.display !== 'none' && !orderInGroupInput.disabled) { // Fallback focus on order input if visible and enabled
+                       orderInGroupInput.focus();
+                   }
+                   else {
                         // Ak sa nepodarilo nastaviť focus, zalogujeme to
                         console.warn("Could not set focus in club modal.");
                    }
@@ -1415,13 +1448,12 @@
              } // Koniec openClubModal
 
 
-        
             // Funkcia na zobrazenie klubov usporiadaných podľa kategórií a skupín (PRIRADENÉ tímy)
             // fetchuje kluby s groupId != null
              // Funkcia na zobrazenie klubov usporiadaných podľa kategórií a skupín (PRIRADENÉ tímy)
              // fetchuje kluby s groupId != null
              async function displayClubs() {
-                clubsContentDiv.innerHTML = ''; // Vyčistiť kontajner
+                if(clubsContentDiv) clubsContentDiv.innerHTML = ''; // Vyčistiť kontajner
 
                 try {
                     // Načítať všetky kluby, ktoré SÚ priradené do skupín (groupId != null)
@@ -1434,7 +1466,7 @@
                         console.log("Žiadne kluby priradené do skupín nenájdené.");
                         const message = document.createElement('p');
                         message.textContent = "Žiadne kluby zatiaľ neboli priradené do skupín.";
-                        clubsContentDiv.appendChild(message); // Správu pridáme do kontajnera div
+                        if(clubsContentDiv) clubsContentDiv.appendChild(message); // Správu pridáme do kontajnera div
                         return;
                     }
 
@@ -1466,7 +1498,7 @@
                           console.warn("Kluby boli nájdené, ale žiadne nemajú platné categoryId/groupId na zobrazenie v skupinách.");
                           const message = document.createElement('p');
                           message.textContent = "Existujú kluby, ale žiadne nemajú priradenú kategóriu a skupinu pre zobrazenie tu.";
-                          clubsContentDiv.appendChild(message);
+                          if(clubsContentDiv) clubsContentDiv.appendChild(message);
                           return;
                      }
 
@@ -1506,7 +1538,7 @@
                             const clubNameTh = document.createElement('th');
                             clubNameTh.textContent = 'Názov klubu';
                              const actionsTh = document.createElement('th');
-                             actionsTh.textContent = ''; // Changed header to Akcie
+                             actionsTh.textContent = ''; // Changed to Akcie
                              // Removed explicit width: actionsTh.style.width = '150px';
 
                              headerRow.appendChild(orderTh); // Add order header
@@ -1617,7 +1649,7 @@
 
                                  clubTable.appendChild(tbody);
                                  groupClubSectionDiv.appendChild(clubTable); // OPRAVENÝ PREKLEP
-                                 clubsContentDiv.appendChild(groupClubSectionDiv);
+                                 if(clubsContentDiv) clubsContentDiv.appendChild(groupClubSectionDiv);
                               });
                          });
 
@@ -1627,39 +1659,39 @@
                         console.error('Chyba pri načítaní alebo zobrazovaní klubov: ', error);
                         const errorMessage = document.createElement('p');
                         errorMessage.textContent = 'Chyba pri načítaní dát klubov priradených do skupín.';
-                        clubsContentDiv.appendChild(errorMessage);
+                        if(clubsContentDiv) clubsContentDiv.appendChild(errorMessage);
                     }
              }
 
              // Funkcia na zobrazenie vytvorených tímov (klubov) - teraz zobrazuje VŠETKY tímy, zoskupené podľa základného názvu a kategórie
              async function displayCreatedTeams() {
-                  createdTeamsTableBody.innerHTML = ''; // Clear existing rows
-                  createdTeamsTableHeader.innerHTML = ''; // Clear existing header (except first and last columns)
+                  if(createdTeamsTableBody) createdTeamsTableBody.innerHTML = ''; // Clear existing rows
+                  if(createdTeamsTableHeader) createdTeamsTableHeader.innerHTML = ''; // Clear existing header (except first and last columns)
 
 
                   try {
                       // 1. Načítať všetky kategórie pre dynamickú hlavičku
                       const categoriesSnapshot = await getDocs(categoriesCollectionRef);
-                      const categories = categoriesSnapshot.docs.map(doc => doc.id).sort(); // Získaj a zotried názvy kategórií
+                      const categories = categoriesSnapshot.docs.map(doc => doc.id).sort((a, b) => a.localeCompare(b, 'sk-SK')); // Získaj a zotried názvy kategórií
 
                       // Vytvoriť prvý stĺpec hlavičky
                       const teamNameTh = document.createElement('th');
                       teamNameTh.textContent = 'Názov tímu';
-                      createdTeamsTableHeader.appendChild(teamNameTh);
+                      if(createdTeamsTableHeader) createdTeamsTableHeader.appendChild(teamNameTh);
 
                       // Vytvoriť stĺpce hlavičky pre každú kategóriu
                       categories.forEach(categoryName => {
                           const categoryTh = document.createElement('th');
                           categoryTh.textContent = categoryName;
                           categoryTh.style.textAlign = 'center'; // Zarovnanie pre počty
-                          createdTeamsTableHeader.appendChild(categoryTh);
+                          if(createdTeamsTableHeader) createdTeamsTableHeader.appendChild(categoryTh);
                       });
 
                       // Vytvoriť posledný stĺpec hlavičky
                       const actionsTh = document.createElement('th');
                       actionsTh.textContent = ''; // Changed header to Akcie
                       actionsTh.style.width = '150px';
-                      createdTeamsTableHeader.appendChild(actionsTh);
+                      if(createdTeamsTableHeader) createdTeamsTableHeader.appendChild(actionsTh);
 
 
                       // 2. Načítať VŠETKY tímy (kluby), nie len nepriradené
@@ -1718,7 +1750,7 @@
                           td.textContent = "Žiadne tímy zatiaľ pridané.";
                           td.style.textAlign = 'center';
                           noDataRow.appendChild(td);
-                          createdTeamsTableBody.appendChild(noDataRow);
+                          if(createdTeamsTableBody) createdTeamsTableBody.appendChild(noDataRow);
                       } else {
                           sortedBaseNames.forEach(baseTeamName => {
                               const teamSummary = teamsByBaseName[baseTeamName];
@@ -1758,6 +1790,7 @@
                                const deleteAllButton = document.createElement('button');
                                deleteAllButton.textContent = 'Vymazať';
                                deleteAllButton.classList.add('action-button', 'delete-button');
+                               deleteAllButton.type = 'button'; // Ensure it doesn't submit the form
                                deleteAllButton.onclick = async () => {
                                    if (!confirm(`Naozaj chcete vymazať VŠETKY tímy s názvom "${baseTeamName}" (${teamSummary.originalTeams.length} ks)?`)) {
                                        return;
@@ -1776,7 +1809,7 @@
                                        if (window.location.hash === '#timy-do-skupin') { displayClubs(); }
 
                                         // Po zmazaní tímov môže byť potrebné aktualizovať aj ponuky kategórií
-                                        if (teamCreationModal.style.display === 'block') {
+                                        if (teamCreationModal && teamCreationModal.style.display === 'block') {
                                              loadAllCategoriesForDynamicSelects(); // Načítaj znovu kategórie, čo zavolá aj updateDynamicCategorySelects a checkIfAddCategoryButtonShouldBeVisible
                                         }
 
@@ -1790,7 +1823,7 @@
 
 
                               tr.appendChild(actionsTd);
-                              createdTeamsTableBody.appendChild(tr);
+                              if(createdTeamsTableBody) createdTeamsTableBody.appendChild(tr);
                           });
                       }
 
@@ -1801,32 +1834,32 @@
                       const errorMessage = document.createElement('tr'); // Use tr to fit in table body
                       const td = document.createElement('td');
                       // Výpočet colspan: 1 (Názov tímu) + počet kategórií + 1 (Akcie)
-                      td.colSpan = 2 + categories.length;
+                      td.colSpan = (categories ? categories.length : 0) + 2; // Ensure categories is defined
                       td.textContent = 'Chyba pri načítaní dát tímov.';
                       td.style.textAlign = 'center';
                       errorMessage.appendChild(td);
-                      createdTeamsTableBody.appendChild(errorMessage);
+                      if(createdTeamsTableBody) createdTeamsTableBody.appendChild(errorMessage);
                   }
              }
 
              // Funkcia na zatvorenie modálu pre správu individuálnych tímov
               function closeManageTeamsModal() {
-                  manageTeamsModal.style.display = 'none';
-                  teamsListInModalDiv.innerHTML = ''; // Vyčistiť obsah pri zatvorení
+                  if(manageTeamsModal) manageTeamsModal.style.display = 'none';
+                  if(teamsListInModalDiv) teamsListInModalDiv.innerHTML = ''; // Vyčistiť obsah pri zatvorení
               }
 
              // Funkcia na otvorenie modálu a zobrazenie individuálnych tímov
              // baseTeamName: základný názov tímu (string)
              // individualTeams: pole objektov { id: teamId, data: teamData } pre tímy s týmto názvom
              async function openManageTeamsModal(baseTeamName, individualTeams) {
-                  manageTeamsModal.style.display = 'block';
+                  if(manageTeamsModal) manageTeamsModal.style.display = 'block';
                   if (!baseTeamNameInModalSpan) { console.error('FATAL ERROR: baseTeamNameInModalSpan is null!'); return; } // Safety check
                   baseTeamNameInModalSpan.textContent = baseTeamName; // Nastav základný názov v nadpise modálu
                   if (!teamsListInModalDiv) { console.error('FATAL ERROR: teamsListInModalDiv is null!'); return; } // Safety check
                   teamsListInModalDiv.innerHTML = ''; // Vyčistiť pred naplnením
 
                   if (!individualTeams || individualTeams.length === 0) {
-                      teamsListInModalDiv.innerHTML = '<p>Žiadne individuálne tímy nájdené pre tento názov.</p>';
+                      if(teamsListInModalDiv) teamsListInModalDiv.innerHTML = '<p>Žiadne individuálne tímy nájdené pre tento názov.</p>';
                       return;
                   }
 
@@ -1849,7 +1882,7 @@
 
                       const categoryHeading = document.createElement('h3');
                       categoryHeading.textContent = `${categoryName}`;
-                      teamsListInModalDiv.appendChild(categoryHeading);
+                      if(teamsListInModalDiv) teamsListInModalDiv.appendChild(categoryHeading);
 
                       // Vytvoriť menšiu tabuľku pre tímy v tejto kategórii
                       const categoryTeamsTable = document.createElement('table');
@@ -1983,11 +2016,11 @@
                       });
 
                       categoryTeamsTable.appendChild(tbody); // Toto je v modáli pre správu individuálnych tímov - tu je názov categoryTeamsTable správny
-                      teamsListInModalDiv.appendChild(categoryTeamsTable); // Toto je v modáli pre správu individuálnych tímov - tu je názov categoryTeamsTable správny
+                      if(teamsListInModalDiv) teamsListInModalDiv.appendChild(categoryTeamsTable); // Toto je v modáli pre správu individuálnych tímov - tu je názov categoryTeamsTable správny
                   });
 
                   // Môžete nastaviť focus na prvé tlačidlo alebo prvý input v modáli, ak je to potrebné
-                  // manageTeamsModalCloseBtn.focus();
+                  // if(manageTeamsModalCloseBtn) manageTeamsModalCloseBtn.focus();
              }
 
              // --- Funkcia na načítanie všetkých kategórií pre dynamické selecty v modáli Vytvorenie Tímov ---
@@ -1997,7 +2030,7 @@
                      allAvailableCategories = querySnapshot.docs.map(doc => doc.id).sort((a, b) => a.localeCompare(b, 'sk-SK')); // Sort alphabetically
                      console.log("Načítané kategórie pre dynamické selecty:", allAvailableCategories);
                      // Po načítaní, ak je modál otvorený, aktualizuj selecty
-                      if (teamCreationModal.style.display === 'block') {
+                      if (teamCreationModal && teamCreationModal.style.display === 'block') {
                            updateDynamicCategorySelects();
                            checkIfAddCategoryButtonShouldBeVisible(); // Aj po načítaní kategórií treba skontrolovať viditeľnosť tlačidla
                       }
@@ -2012,8 +2045,8 @@
             // Pomocná funkcia na naplnenie jedného dynamického selectu kategórií
             // s vylúčením kategórií, ktoré sú už vybraté v iných selectoch
             function populateDynamicCategorySelect(selectElement, currentSelectedId, allCategories, categoriesToExclude) {
-                 selectElement.innerHTML = '<option value="">-- Vyberte kategóriu --</option>'; // Reset
-                 selectElement.disabled = allCategories.length === 0; // Disable if no categories
+                 if(selectElement) selectElement.innerHTML = '<option value="">-- Vyberte kategóriu --</option>'; // Reset
+                 if(selectElement) selectElement.disabled = allCategories.length === 0; // Disable if no categories
 
                  // Pridaj možnosť pre aktuálne vybranú kategóriu, ak existuje a nie je null/prázdna
                  if (currentSelectedId && allCategories.includes(currentSelectedId)) {
@@ -2021,7 +2054,7 @@
                       currentOption.value = currentSelectedId;
                       currentOption.textContent = currentSelectedId;
                       currentOption.selected = true;
-                      selectElement.appendChild(currentOption);
+                      if(selectElement) selectElement.appendChild(currentOption);
                  }
 
 
@@ -2032,20 +2065,20 @@
                          const option = document.createElement('option');
                          option.value = categoryName;
                          option.textContent = categoryName;
-                         selectElement.appendChild(option);
+                         if(selectElement) selectElement.appendChild(option);
                      }
                  });
 
                  // Ak po pridaní možností nie je žiadna vybraná (napr. currentSelectedId už neexistuje),
                  // zabezpečíme, že select má defaultnú hodnotu
-                  if (!selectElement.value) {
+                  if (selectElement && !selectElement.value) {
                       selectElement.value = ""; // Nastaví na prázdnu možnosť/placeholder
                   }
             }
 
             // Funkcia na aktualizáciu všetkých dynamických selectov kategórií v modáli Vytvorenie Tímov
             function updateDynamicCategorySelects() {
-                 const allSelectElements = teamCategoryCountContainer.querySelectorAll('.team-category-select-dynamic');
+                 const allSelectElements = teamCategoryCountContainer ? teamCategoryCountContainer.querySelectorAll('.team-category-select-dynamic') : [];
                  // Získaj aktuálne vybraté kategórie zo VŠETKÝCH selectov
                  const currentSelections = Array.from(allSelectElements)
                      .map(select => select.value)
@@ -2077,7 +2110,7 @@
 
              // --- Funkcia na manažovanie viditeľnosti tlačidiel "Odstrániť" ---
              function updateRemoveButtonVisibility() {
-                  const allRemoveButtons = teamCategoryCountContainer.querySelectorAll('.category-count-pair .delete-button');
+                  const allRemoveButtons = teamCategoryCountContainer ? teamCategoryCountContainer.querySelectorAll('.category-count-pair .delete-button') : [];
                   if (allRemoveButtons.length > 0) {
                        // Skryť tlačidlo na prvom riadku, zobraziť na ostatných
                        allRemoveButtons.forEach((button, index) => {
@@ -2093,7 +2126,7 @@
 
              // --- Funkcia na kontrolu, či má byť viditeľné tlačidlo "Pridať ďalšiu kategóriu" ---
              function checkIfAddCategoryButtonShouldBeVisible() {
-                  const allSelectElements = teamCategoryCountContainer.querySelectorAll('.team-category-select-dynamic');
+                  const allSelectElements = teamCategoryCountContainer ? teamCategoryCountContainer.querySelectorAll('.team-category-select-dynamic') : [];
                   const currentSelections = Array.from(allSelectElements)
                       .map(select => select.value)
                       .filter(value => value !== ''); // Získaj neprázdne zvolené hodnoty
@@ -2101,24 +2134,29 @@
                   // Ak je počet zvolených kategórií rovný celkovému počtu dostupných kategórií,
                   // skryť tlačidlo 'Pridať ďalšiu kategóriu'. Inak ho zobraziť.
                   // Tiež skontroluj, či allAvailableCategories nie je prázdne (napr. chyba načítania)
-                  if (allAvailableCategories.length > 0 && currentSelections.length >= allAvailableCategories.length) {
-                       addCategoryCountPairButton.style.display = 'none';
-                       console.log("Všetky kategórie sú už vybraté, tlačidlo 'Pridať ďalšiu kategóriu' skryté.");
-                  } else if (allAvailableCategories.length === 0) {
-                       // Ak nie sú žiadne dostupné kategórie, tiež skryť tlačidlo
-                       addCategoryCountPairButton.style.display = 'none';
-                       console.log("Žiadne dostupné kategórie, tlačidlo 'Pridať ďalšiu kategóriu' skryté.");
+                  if (addCategoryCountPairButton) { // Safety check for the button
+                      if (allAvailableCategories.length > 0 && currentSelections.length >= allAvailableCategories.length) {
+                           addCategoryCountPairButton.style.display = 'none';
+                           console.log("Všetky kategórie sú už vybraté, tlačidlo 'Pridať ďalšiu kategóriu' skryté.");
+                      } else if (allAvailableCategories.length === 0) {
+                           // Ak nie sú žiadne dostupné kategórie, tiež skryť tlačidlo
+                           addCategoryCountPairButton.style.display = 'none';
+                           console.log("Žiadne dostupné kategórie, tlačidlo 'Pridať ďalšiu kategóriu' skryté.");
+                      }
+                       else {
+                           addCategoryCountPairButton.style.display = 'inline-block'; // Alebo 'block'
+                           console.log(`Vybratých kategórií: ${currentSelections.length}, celkovo dostupných: ${allAvailableCategories.length}. Tlačidlo 'Pridať ďalšiu kategóriu' zobrazené.`);
+                       }
+                  } else {
+                       console.error("Add category count pair button not found for visibility check.");
                   }
-                   else {
-                       addCategoryCountPairButton.style.display = 'inline-block'; // Alebo 'block'
-                       console.log(`Vybratých kategórií: ${currentSelections.length}, celkovo dostupných: ${allAvailableCategories.length}. Tlačidlo 'Pridať ďalšiu kategóriu' zobrazené.`);
-                   }
              }
 
 
              // --- Funkcia na dynamické pridanie dvojice select kategória + input počet tímov ---
              async function addCategoryCountPair(initialCategory = null) { // Optional: pre-select category if provided
                  const container = document.getElementById('teamCategoryCountContainer');
+                 if (!container) { console.error('FATAL ERROR: teamCategoryCountContainer not found for addCategoryCountPair!'); return; }
 
                  const pairDiv = document.createElement('div');
                  pairDiv.classList.add('category-count-pair'); // Optional class for styling
@@ -2211,13 +2249,13 @@
 
             // Funkcia na otvorenie modálu Vytvorenie Tímov
             async function openTeamCreationModal() {
-                 teamCreationModal.style.display = 'block';
+                 if(teamCreationModal) teamCreationModal.style.display = 'block';
 
                  // Resetuj stav modálu a formulár
                  currentTeamCreationModalMode = 'add'; // Zatiaľ len 'add'
                  if (!teamCreationModalTitle) { console.error('FATAL ERROR: teamCreationModalTitle is null!'); return; } // Safety check
                  teamCreationModalTitle.textContent = 'Vytvoriť tímy';
-                 teamCreationForm.reset();
+                 if(teamCreationForm) teamCreationForm.reset();
 
                  // Vyčisti kontajner dynamických polí a pridaj prvú dvojicu
                  if (!teamCategoryCountContainer) { console.error('FATAL ERROR: teamCategoryCountContainer is null!'); return; } // Safety check
@@ -2246,7 +2284,7 @@
                  console.log("Navigating to hash:", hash);
 
                  // Skryť všetky dynamické oblasti a modály
-                 addButton.style.display = 'none';
+                 if(addButton) addButton.style.display = 'none';
                  if (categoriesContentSection) categoriesContentSection.style.display = 'none';
                  if (groupsContentDiv) groupsContentDiv.style.display = 'none';
                  if (clubsContentDiv) clubsContentDiv.style.display = 'none';
@@ -2287,8 +2325,11 @@
                    // Reset group select visibility for club modal
                    if (clubGroupSelect && clubGroupSelect.parentElement) clubGroupSelect.parentElement.style.display = 'block';
                    // Reset order input visibility for club modal
-                   if (orderInputContainer) orderInputContainer.style.display = 'none';
+                   if (orderInputContainer) orderInputContainer.style.display = 'block'; // Order input is now always visible in add-assign mode
                    if (orderInGroupInput) orderInGroupInput.required = false;
+
+                   // Reset order input disabled state
+                   if (orderInGroupInput) orderInGroupInput.disabled = true;
 
 
                   // Reset team creation modal state and clear dynamic fields
@@ -2396,7 +2437,7 @@
                      if (groupModal) groupModal.style.display = 'none';
                      currentGroupModalMode = 'add'; editingGroupId = null;
                      if (groupForm) groupForm.reset();
-                     console.log("Closing group modal."); // Added log
+                      console.log("Closing group modal."); // Added log
                 });
             }
             if (clubModalCloseBtn) {
@@ -2411,8 +2452,10 @@
                        // Reset group select visibility for club modal
                        if (clubGroupSelect && clubGroupSelect.parentElement) clubGroupSelect.parentElement.style.display = 'block';
                        // Reset order input visibility for club modal
-                       if (orderInputContainer) orderInputContainer.style.display = 'none';
+                       if (orderInputContainer) orderInputContainer.style.display = 'block'; // ZMENENÉ: Order input je vždy viditeľný
                        if (orderInGroupInput) orderInGroupInput.required = false;
+                       // Reset order input disabled state
+                       if (orderInGroupInput) orderInGroupInput.disabled = true;
                  });
             }
 
@@ -2468,8 +2511,10 @@
                       // Reset group select visibility for club modal
                      if (clubGroupSelect && clubGroupSelect.parentElement) clubGroupSelect.parentElement.style.display = 'block';
                       // Reset order input visibility for club modal
-                     if (orderInputContainer) orderInputContainer.style.display = 'none';
-                     if (orderInGroupInput) orderInGroupInput.required = false;
+                     if (orderInputContainer) orderInputContainer.style.display = 'block'; // ZMENENÉ: Order input je vždy viditeľný
+                     if (orderInGroupInput) orderInGroupInput.required = false; // Ensure required is false by default
+                     // Reset order input disabled state
+                     if (orderInGroupInput) orderInGroupInput.disabled = true;
                  }
                  // Team Creation Modal Close
                  if (e.target === teamCreationModal) {
@@ -2508,7 +2553,7 @@
             if (categoryForm) {
                 categoryForm.addEventListener('submit', async (e) => {
                     e.preventDefault();
-                    const categoryName = categoryNameInput.value.trim();
+                    const categoryName = categoryNameInput ? categoryNameInput.value.trim() : ''; // Safety check
                     if (categoryName === '') { alert('Názov kategórie nemôže byť prázdny.'); return; }
 
                     if (currentCategoryModalMode === 'add') {
@@ -2564,7 +2609,7 @@
                               const groupsSnapshot = await getDocs(groupsQuery);
 
                           // Fetch clubs related to groups being deleted *before* starting the batch queries within the loop
-                          const clubUpdates = [];
+                          const clubUpdates = []; // This array is not used, can be removed or ignored
                           for (const groupDoc of groupsSnapshot.docs) {
                               const clubsInGroupQuery = query(clubsCollectionRef, where('groupId', '==', groupDoc.id));
                               const clubsSnapshot = await getDocs(clubsInGroupQuery);
@@ -2626,8 +2671,8 @@
              if (groupForm) {
                  groupForm.addEventListener('submit', async (e) => {
                      e.preventDefault();
-                     const selectedCategoryId = groupCategorySelect.value;
-                     const groupName = groupNameInput.value.trim();
+                     const selectedCategoryId = groupCategorySelect ? groupCategorySelect.value : ''; // Safety check
+                     const groupName = groupNameInput ? groupNameInput.value.trim() : ''; // Safety check
 
                      if (selectedCategoryId === '' || selectedCategoryId === '-- Vyberte kategóriu --' || (groupCategorySelect && groupCategorySelect.disabled)) { alert('Prosím, vyberte platnú kategóriu pre skupinu.'); return; }
                      if (groupName === '') { alert('Názov skupiny nemôže byť prázdny.'); return; }
@@ -2730,12 +2775,13 @@
                 clubForm.addEventListener('submit', async (e) => {
                     e.preventDefault();
 
-                    const selectedCategoryId = clubCategorySelect.value;
-                    // Get the selected group ID only if the group select is NOT disabled
-                    const selectedGroupId = (clubGroupSelect && !clubGroupSelect.disabled) ? clubGroupSelect.value : null;
+                    const selectedCategoryId = clubCategorySelect ? clubCategorySelect.value : ''; // Safety check
+                    // Get the selected group ID only if the group select is NOT disabled AND its container is visible
+                    const selectedGroupId = (clubGroupSelect && !clubGroupSelect.disabled && clubGroupSelect.parentElement && clubGroupSelect.parentElement.style.display !== 'none') ? clubGroupSelect.value : null;
                     // Get the order number value, convert to number. Use null if empty or invalid.
                     const orderInGroupValue = parseInt(orderInGroupInput && orderInGroupInput.value, 10);
-                    const orderInGroup = (orderInGroupInput && orderInGroupInput.value.trim() !== '' && !isNaN(orderInGroupValue) && orderInGroupValue >= 1) ? orderInGroupValue : null;
+                     // Use null if input is empty, invalid number, or less than 1 AND the order input container IS visible
+                    const orderInGroup = (orderInputContainer && orderInputContainer.style.display !== 'none' && orderInGroupInput && orderInGroupInput.value.trim() !== '' && !isNaN(orderInGroupValue) && orderInGroupValue >= 1) ? orderInGroupValue : null;
 
 
                     // Validate selects based on mode and visibility
@@ -2749,7 +2795,7 @@
                          return;
                      }
                     // Validate order number if the input is required (which is true for assigned teams in this logic)
-                     if (orderInGroupInput && orderInGroupInput.required && orderInGroup === null) {
+                     if (orderInGroupInput && orderInputContainer && orderInputContainer.style.display !== 'none' && orderInGroupInput.required && orderInGroup === null) { // Also check if container is visible
                           alert('Prosím, zadajte platné poradové číslo väčšie ako 0.');
                           return;
                      }
@@ -2758,7 +2804,7 @@
                     try {
                         if (currentClubModalMode === 'add-assign') {
                             // === LOGIKA PRIRADENIA TÍMU DO SKUPINY ===
-                            const selectedUnassignedClubId = unassignedClubSelect && unassignedClubSelect.value;
+                            const selectedUnassignedClubId = unassignedClubSelect ? unassignedClubSelect.value : ''; // Safety check
 
                             // Validate the selected unassigned club
                             if (unassignedClubSelectContainer && unassignedClubSelectContainer.style.display !== 'none' && selectedUnassignedClubId === '') { // Only validate if the select je viditeľný
@@ -2779,15 +2825,15 @@
                             if (!clubDocToAssign.exists()) {
                                 alert('Vybraný tím nebol nájdený alebo už bol priradený/zmazaný.');
                                 // Refresh the unassigned list and close modal
-                                populateUnassignedClubsSelect(unassignedClubSelect, null);
+                                if (unassignedClubSelect) populateUnassignedClubsSelect(unassignedClubSelect, null);
                                 if (clubModal) clubModal.style.display = 'none';
                                 if (clubForm) clubForm.reset();
                                  // Reset visibility
                                 if (unassignedClubSelectContainer) unassignedClubSelectContainer.style.display = 'block';
                                 if (clubNameInputContainer) clubNameInputContainer.style.display = 'none';
                                 if (clubGroupSelect && clubGroupSelect.parentElement) clubGroupSelect.parentElement.style.display = 'block'; // Reset group visibility
-                                 if (orderInputContainer) orderInputContainer.style.display = 'none'; // Reset order visibility
-                                 if (orderInGroupInput) orderInGroupInput.required = false;
+                                 if (orderInputContainer) orderInputContainer.style.display = 'block'; // ZMENENÉ: Order input je vždy viditeľný v add-assign móde
+                                 if (orderInGroupInput) { orderInGroupInput.disabled = true; orderInGroupInput.required = false; } // Reset order input state
                                 return;
                             }
 
@@ -2795,15 +2841,15 @@
                             if (clubDataToAssign.groupId !== null) {
                                 alert(`Tím "${clubDataToAssign.name}" je už priradený do skupiny "${clubDataToAssign.groupId}".`);
                                 // Refresh the unassigned list and close modal
-                                populateUnassignedClubsSelect(unassignedClubSelect, null);
+                                if (unassignedClubSelect) populateUnassignedClubsSelect(unassignedClubSelect, null);
                                 if (clubModal) clubModal.style.display = 'none';
                                 if (clubForm) clubForm.reset();
                                  // Reset visibility
                                 if (unassignedClubSelectContainer) unassignedClubSelectContainer.style.display = 'block';
                                 if (clubNameInputContainer) clubNameInputContainer.style.display = 'none';
                                 if (clubGroupSelect && clubGroupSelect.parentElement) clubGroupSelect.parentElement.style.display = 'block'; // Reset group visibility
-                                 if (orderInputContainer) orderInputContainer.style.display = 'none'; // Reset order visibility
-                                 if (orderInGroupInput) orderInGroupInput.required = false;
+                                 if (orderInputContainer) orderInputContainer.style.display = 'block'; // ZMENENÉ: Order input je vždy viditeľný v add-assign móde
+                                 if (orderInGroupInput) { orderInGroupInput.disabled = true; orderInGroupInput.required = false; } // Reset order input state
                                 return;
                             }
 
@@ -2819,8 +2865,8 @@
                             }
 
                             // Check if another team with the same order number already exists IN THIS TARGET GROUP
-                             // Only perform this check if an order number was provided
-                            if (orderInGroup !== null) {
+                             // Only perform this check if an order number was provided (is not null) AND the order input container IS visible
+                            if (orderInGroup !== null && orderInputContainer && orderInputContainer.style.display !== 'none') {
                                   const existingOrderQuery = query(clubsCollectionRef,
                                        where('groupId', '==', selectedGroupId),
                                        where('orderInGroup', '==', orderInGroup)
@@ -2849,7 +2895,7 @@
                             // === LOGIKA ÚPRAVY PRIRADENÉHO ALEBO NEPRIRADENÉHO KLUBU ===
                             // editingClubId holds the auto-generated ID of the club being edited
                             const clubIdToEdit = editingClubId;
-                            const updatedClubName = clubNameInput && clubNameInput.value.trim(); // Get the potentially updated name
+                            const updatedClubName = clubNameInput ? clubNameInput.value.trim() : ''; // Get the potentially updated name // Safety check
 
 
                             if (!clubIdToEdit) {
@@ -2860,8 +2906,9 @@
                                   if (unassignedClubSelectContainer) unassignedClubSelectContainer.style.display = 'block';
                                   if (clubNameInputContainer) clubNameInputContainer.style.display = 'none';
                                   if (clubGroupSelect && clubGroupSelect.parentElement) clubGroupSelect.parentElement.style.display = 'block'; // Reset group visibility
-                                   if (orderInputContainer) orderInputContainer.style.display = 'none'; // Reset order visibility
+                                   if (orderInputContainer) orderInputContainer.style.display = 'block'; // Order input is now always visible in edit mode
                                    if (orderInGroupInput) orderInGroupInput.required = false;
+                                   if (orderInGroupInput) orderInGroupInput.disabled = true; // Reset disabled state
                                   return;
                              }
                              if (!updatedClubName || updatedClubName === '') {
@@ -2912,8 +2959,8 @@
                                    }
 
                                    // Check if a *different* team with the same updated order number already exists IN THE TARGET GROUP
-                                    // Only perform this check if an order number was provided (is not null) AND the target group is not null
-                                   if (orderInGroup !== null) {
+                                    // Only perform this check if an order number was provided (is not null) AND the order input container IS visible
+                                   if (orderInGroup !== null && orderInputContainer && orderInputContainer.style.display !== 'none') {
                                          if (orderInGroup !== originalOrder || targetGroupIdForCheck !== originalGroupId) { // Only check if order changed OR group changed
                                               const existingOrderQuery = query(clubsCollectionRef,
                                                    where('groupId', '==', targetGroupIdForCheck), // Cieľová skupina (môže byť rovnaká ako pôvodná)
@@ -2951,90 +2998,121 @@
                                       // Order number is not relevant for unassigned teams, no duplication check needed here
                                }
 
-
-                             // Update the assigned/unassigned club document
-                             await updateDoc(clubRefToEdit, {
-                                  name: updatedClubName, // Update name
-                                 categoryId: selectedCategoryId, // Allow changing category even for unassigned
-                                 groupId: selectedGroupId, // This will be null if the group select was hidden/disabled
-                                  orderInGroup: selectedGroupId !== null ? orderInGroup : null // Save order only if assigned to a group
-                                 // Update other fields if they were in the form
-                             });
-
-                             console.log(`Klub "${updatedClubName}" (ID: ${clubIdToEdit}) úspešne upravený. Nová skupina: ${selectedGroupId}, Nové poradie: ${orderInGroup}.`);
-                             alert(`Klub úspešne upravený.`);
-
-                         }
-
-                         // --- Common logic after successful add/assign or edit ---
-                         if (clubModal) clubModal.style.display = 'none';
-                         if (clubForm) clubForm.reset();
-                         currentClubModalMode = 'add-assign'; // Reset state to add-assign
-                         editingClubId = null; // Clear editing ID
-
-                         // Reset visibility of name input vs select for next time
-                          if (unassignedClubSelectContainer) unassignedClubSelectContainer.style.display = 'block';
-                          if (clubNameInputContainer) clubNameInputContainer.style.display = 'none';
-                          // Reset group select visibility for club modal
-                          if (clubGroupSelect && clubGroupSelect.parentElement) clubGroupSelect.parentElement.style.display = 'block';
-                          // Reset order input visibility for club modal
-                          if (orderInputContainer) orderInputContainer.style.display = 'none';
-                          if (orderInGroupInput) orderInGroupInput.required = false; // Ensure required is false by default
+                         // Ensure orderInGroup is null if targetGroupId is null
+                         const finalOrderInGroup = selectedGroupId !== null ? orderInGroup : null;
 
 
-                         // Refresh displays that might be affected
-                         // Refresh main 'Created Teams' display (shows all teams now)
-                          displayCreatedTeams();
-                          // Refresh clubs-in-groups display if visible, as an assigned team was edited/assigned/unassigned
-                          if (window.location.hash === '#timy-do-skupin') {
-                               displayClubs(); // Refresh assigned clubs display
-                          }
+                         // Update the assigned/unassigned club document
+                         await updateDoc(clubRefToEdit, {
+                              name: updatedClubName, // Update name
+                             categoryId: selectedCategoryId, // Allow changing category even for unassigned
+                             groupId: selectedGroupId, // This will be null if the group select was hidden/disabled
+                             orderInGroup: finalOrderInGroup // Save order only if assigned to a group
+                             // Update other fields if they were in the form
+                         });
 
+                         console.log(`Klub "${updatedClubName}" (ID: ${clubIdToEdit}) úspešne upravený. Nová skupina: ${selectedGroupId}, Nové poradie: ${finalOrderInGroup}.`);
+                         alert(`Klub úspešne upravený.`);
 
-                     } catch (error) {
-                         console.error('Chyba pri ukladaní alebo priradzovaní klubu: ', error);
-                         alert(`Chyba pri ukladaní alebo priradzovaní klubu! Detail: ${error.message}`);
-                          // Zatvor modál a resetuj stav pri chybe
-                          if (clubModal) clubModal.style.display = 'none';
-                          if (clubForm) clubForm.reset();
-                          currentClubModalMode = 'add-assign'; editingClubId = null;
-                           // Reset visibility of name input vs select on error
-                          if (unassignedClubSelectContainer) unassignedClubSelectContainer.style.display = 'block';
-                          if (clubNameInputContainer) clubNameInputContainer.style.display = 'none';
-                           // Reset group select visibility for club modal on error
-                          if (clubGroupSelect && clubGroupSelect.parentElement) clubGroupSelect.parentElement.style.display = 'block';
-                           // Reset order input visibility on error
-                          if (orderInputContainer) orderInputContainer.style.display = 'none';
-                          if (orderInGroupInput) orderInGroupInput.required = false; // Ensure required is false on error
                      }
-                });
-            } else { console.error("Club form not found!"); }
+
+                     // --- Common logic after successful add/assign or edit ---
+                     if (clubModal) clubModal.style.display = 'none';
+                     if (clubForm) clubForm.reset();
+                     currentClubModalMode = 'add-assign'; // Reset state to add-assign
+                     editingClubId = null; // Clear editing ID
+
+                     // Reset visibility of name input vs select for next time
+                      if (unassignedClubSelectContainer) unassignedClubSelectContainer.style.display = 'block';
+                      if (clubNameInputContainer) clubNameInputContainer.style.display = 'none';
+                      // Reset group select visibility for club modal
+                      if (clubGroupSelect && clubGroupSelect.parentElement) clubGroupSelect.parentElement.style.display = 'block';
+                      // Reset order input visibility for club modal
+                      if (orderInputContainer) orderInputContainer.style.display = 'block'; // ZMENENÉ: Order input je vždy viditeľný
+                      if (orderInGroupInput) { orderInGroupInput.disabled = true; orderInGroupInput.required = false; } // Reset order input state
 
 
-            // --- Event Listener pre zmenu kategórie v modáli klubu (pre priradenie do skupiny) ---
-            if (clubCategorySelect) {
-                clubCategorySelect.addEventListener('change', async () => { // Made async to use await for populateGroupSelect
-                    const selectedCategoryId = clubCategorySelect.value;
-                    // Populate the group select based on the newly selected category
-                     // Only populate if in add-assign mode or if group select is currently visible (editing an assigned club)
-                     if (currentClubModalMode === 'add-assign' || (clubGroupSelect && clubGroupSelect.parentElement && clubGroupSelect.parentElement.style.display !== 'none')) {
-                          if (clubGroupSelect) await populateGroupSelect(selectedCategoryId, clubGroupSelect); // Pass category ID and select element
-                          // Reset order input when category changes
-                          if (orderInGroupInput) orderInGroupInput.value = '';
-                     } else {
-                          // If in edit-assigned mode and group select is hidden (editing unassigned)
-                          // Changing category doesn't affect group select visibility/options or order input
-                     }
-                });
-            } else { console.error("Club category select not found!"); }
+                     // Refresh displays that might be affected
+                     // Refresh main 'Created Teams' display (shows all teams now)
+                      displayCreatedTeams();
+                      // Refresh clubs-in-groups display if visible, as an assigned team was edited/assigned/unassigned
+                      if (window.location.hash === '#timy-do-skupin') {
+                           displayClubs(); // Refresh assigned clubs display
+                      }
 
 
-             // Event listener for change in the unassigned club select (in clubModal) - handles category/group selects update
+                 } catch (error) {
+                     console.error('Chyba pri ukladaní alebo priradzovaní klubu: ', error);
+                     alert(`Chyba pri ukladaní alebo priradzovaní klubu! Detail: ${error.message}`);
+                      // Zatvor modál a resetuj stav pri chybe
+                      if (clubModal) clubModal.style.display = 'none';
+                      if (clubForm) clubForm.reset();
+                      currentClubModalMode = 'add-assign'; editingClubId = null;
+                       // Reset visibility of name input vs select on error
+                      if (unassignedClubSelectContainer) unassignedClubSelectContainer.style.display = 'block';
+                      if (clubNameInputContainer) clubNameInputContainer.style.display = 'none';
+                       // Reset group select visibility for club modal on error
+                      if (clubGroupSelect && clubGroupSelect.parentElement) clubGroupSelect.parentElement.style.display = 'block';
+                       // Reset order input visibility on error
+                      if (orderInputContainer) orderInputContainer.style.display = 'block'; // ZMENENÉ: Order input je vždy viditeľný
+                      if (orderInGroupInput) { orderInGroupInput.disabled = true; orderInGroupInput.required = false; } // Reset order input state
+                 }
+            });
+        } else { console.error("Club form not found!"); }
+
+
+             // --- Event Listener pre zmenu kategórie v modáli klubu (pre priradenie do skupiny) ---
+             if (clubCategorySelect) {
+                 clubCategorySelect.addEventListener('change', async () => { // Made async to use await for populateGroupSelect
+                     const selectedCategoryId = clubCategorySelect.value;
+                     // Populate the group select based on the newly selected category
+                      // Only populate if in add-assign mode or if group select is currently visible (editing an assigned club)
+                      if (currentClubModalMode === 'add-assign' || (clubGroupSelect && clubGroupSelect.parentElement && clubGroupSelect.parentElement.style.display !== 'none')) {
+                           if (clubGroupSelect) await populateGroupSelect(selectedCategoryId, clubGroupSelect); // Pass category ID and select element
+                           // Reset order input when category changes
+                           if (orderInGroupInput) {
+                                orderInGroupInput.value = '';
+                                 // Enable/disable order input and set required based on whether a group is selected after populating
+                                if (clubGroupSelect && clubGroupSelect.value && clubGroupSelect.value !== '' && clubGroupSelect.value !== '-- Vyberte skupinu --' && clubGroupSelect.value !== '-- Žiadne skupiny v kategórii --') {
+                                     orderInGroupInput.disabled = false;
+                                     orderInGroupInput.required = true;
+                                } else {
+                                     orderInGroupInput.disabled = true;
+                                     orderInGroupInput.required = false;
+                                }
+                           }
+                      }
+                      // If not in add-assign mode and group select is hidden (editing unassigned team), changing category
+                      // should not affect group select or order input visibility/state.
+                 });
+             } else { console.error("Club category select not found!"); }
+
+
+              // Event listener for change in the group select (in clubModal) - handles order input state
+             if (clubGroupSelect) {
+                 clubGroupSelect.addEventListener('change', () => {
+                      const selectedGroupId = clubGroupSelect.value;
+                      // Enable/disable order input and set required based on whether a group is selected
+                      if (orderInGroupInput && orderInputContainer && orderInputContainer.style.display !== 'none') { // Only affect if order input is visible
+                           if (selectedGroupId && selectedGroupId !== '' && selectedGroupId !== '-- Vyberte skupinu --' && selectedGroupId !== '-- Žiadne skupiny v kategórii --') {
+                                orderInGroupInput.disabled = false;
+                                orderInGroupInput.required = true;
+                           } else {
+                                orderInGroupInput.disabled = true;
+                                orderInGroupInput.required = false;
+                                orderInGroupInput.value = ''; // Clear value if no group selected
+                           }
+                      }
+                 });
+             } else { console.error("Club group select not found!"); }
+
+
+             // Event listener for change in the unassigned club select (in clubModal) - handles category/group selects update and order input state
              if (unassignedClubSelect) {
                  unassignedClubSelect.addEventListener('change', async () => {
                       const selectedClubId = unassignedClubSelect.value;
                       // When an unassigned club is selected in add-assign mode, populate the category select with its category
-                      // and then populate the group select.
+                      // and then populate the group select. Also manage order input state.
                       if (currentClubModalMode === 'add-assign' && selectedClubId) {
                            try {
                                const clubDoc = await getDoc(doc(clubsCollectionRef, selectedClubId));
@@ -3043,34 +3121,44 @@
                                    if (clubCategorySelect) await populateCategorySelect(clubCategorySelect, clubData.categoryId); // Populate and select category
                                    // Populate group select based on the selected category
                                    // No selected group initially for assignment, so selectedGroupId is null
-                                    if (clubGroupSelect) await populateGroupSelect(clubData.categoryId, clubGroupSelect, null); // Pass category ID and select element
-                                   // Clear order input when a new team is selected for assignment
-                                   if (orderInGroupInput) orderInGroupInput.value = '';
-                               } else {
-                                    console.warn(`Vybraný nepriradený tím ${selectedClubId} už neexistuje.`);
-                                    // Reset selects if the selected team is no longer found
-                                    unassignedClubSelect.value = "";
-                                    if (clubCategorySelect) clubCategorySelect.value = "";
-                                    if (clubGroupSelect) { clubGroupSelect.innerHTML = '<option value="">-- Najprv vyberte kategóriu --</option>'; clubGroupSelect.disabled = true; }
-                                     if (orderInGroupInput) orderInGroupInput.value = ''; // Clear order input
-                                }
-                            } catch (error) {
-                               console.error('Chyba pri načítaní detailov vybraného nepriradeného tímu:', error);
-                               alert('Chyba pri načítaní detailov tímu.');
-                               unassignedClubSelect.value = "";
-                               if (clubCategorySelect) clubCategorySelect.value = "";
-                               if (clubGroupSelect) { clubGroupSelect.innerHTML = '<option value="">-- Najprv vyberte kategóriu --</option>'; clubGroupSelect.disabled = true; }
-                                if (orderInGroupInput) orderInGroupInput.value = ''; // Clear order input
+                                    if (clubGroupSelect) await populateGroupSelect(clubCategorySelect.value, clubGroupSelect, null); // Pass category ID and select element
+                                   // Clear order input and manage state based on the new group selection
+                                    if (orderInGroupInput && orderInputContainer && orderInputContainer.style.display !== 'none') { // Only affect if order input is visible
+                                     orderInGroupInput.value = ''; // Clear previous value
+                                      // Enable/disable order input and set required based on whether a group is now selected
+                                     if (clubGroupSelect && clubGroupSelect.value && clubGroupSelect.value !== '' && clubGroupSelect.value !== '-- Vyberte skupinu --' && clubGroupSelect.value !== '-- Žiadne skupiny v kategórii --') {
+                                          orderInGroupInput.disabled = false;
+                                          orderInGroupInput.required = true;
+                                     } else {
+                                          orderInGroupInput.disabled = true;
+                                          orderInGroupInput.required = false;
+                                     }
+                                 }
+                           } else {
+                                console.warn(`Vybraný nepriradený tím ${selectedClubId} už neexistuje.`);
+                                // Reset selects and order input if the selected team is no longer found
+                                if(unassignedClubSelect) unassignedClubSelect.value = "";
+                                if (clubCategorySelect) clubCategorySelect.value = "";
+                                if (clubGroupSelect) { clubGroupSelect.innerHTML = '<option value="">-- Najprv vyberte kategóriu --</option>'; clubGroupSelect.disabled = true; }
+                                 if (orderInGroupInput && orderInputContainer && orderInputContainer.style.display !== 'none') { orderInGroupInput.value = ''; orderInGroupInput.disabled = true; orderInGroupInput.required = false; } // Reset order input state
                             }
-                       } else if (currentClubModalMode === 'add-assign' && !selectedClubId) {
-                           // No team selected in unassigned select (back to placeholder), reset category and group selects and order input
+                        } catch (error) {
+                           console.error('Chyba pri načítaní detailov vybraného nepriradeného tímu:', error);
+                           alert('Chyba pri načítaní detailov tímu.');
+                           if(unassignedClubSelect) unassignedClubSelect.value = "";
                            if (clubCategorySelect) clubCategorySelect.value = "";
                            if (clubGroupSelect) { clubGroupSelect.innerHTML = '<option value="">-- Najprv vyberte kategóriu --</option>'; clubGroupSelect.disabled = true; }
-                            if (orderInGroupInput) orderInGroupInput.value = ''; // Clear order input
-                       }
-                        // If not in add-assign mode, this listener should not trigger changes
-                 });
-             } else { console.error("Unassigned club select not found!"); }
+                            if (orderInGroupInput && orderInputContainer && orderInputContainer.style.display !== 'none') { orderInGroupInput.value = ''; orderInGroupInput.disabled = true; orderInGroupInput.required = false; } // Reset order input state
+                        }
+                   } else if (currentClubModalMode === 'add-assign' && !selectedClubId) {
+                       // No team selected in unassigned select (back to placeholder), reset category and group selects and order input state
+                       if (clubCategorySelect) clubCategorySelect.value = "";
+                       if (clubGroupSelect) { clubGroupSelect.innerHTML = '<option value="">-- Najprv vyberte kategóriu --</option>'; clubGroupSelect.disabled = true; }
+                        if (orderInGroupInput && orderInputContainer && orderInputContainer.style.display !== 'none') { orderInGroupInput.value = ''; orderInGroupInput.disabled = true; orderInGroupInput.required = false; } // Reset order input state
+                   }
+                    // If not in add-assign mode, this listener should not trigger changes
+             });
+         } else { console.error("Unassigned club select not found!"); }
 
 
             // --- Obsluha formulára Vytvorenie Tímov - UPRAVENÉ PRE VIAC KATEGÓRIÍ S POČTOM ---
@@ -3078,14 +3166,14 @@
                 teamCreationForm.addEventListener('submit', async (e) => {
                     e.preventDefault();
 
-                    const teamNameBase = teamNameInput && teamNameInput.value.trim();
+                    const teamNameBase = teamNameInput ? teamNameInput.value.trim() : ''; // Safety check
                     if (!teamNameInput || teamNameBase === '') {
                         alert('Základný názov tímu nemôže byť prázdny.');
                         return;
                     }
 
                     // Získať všetky dynamicky pridané dvojice kategória + počet
-                    const categoryCountPairs = teamCategoryCountContainer && teamCategoryCountContainer.querySelectorAll('.category-count-pair');
+                    const categoryCountPairs = teamCategoryCountContainer ? teamCategoryCountContainer.querySelectorAll('.category-count-pair') : []; // Safety check
 
                     if (!categoryCountPairs || categoryCountPairs.length === 0) {
                         alert('Pridajte aspoň jednu kategóriu a počet tímov.');
@@ -3100,8 +3188,8 @@
                          const categorySelect = pairDiv.querySelector('.team-category-select-dynamic');
                          const teamCountInput = pairDiv.querySelector('.team-count-input-dynamic');
 
-                         const categoryId = categorySelect && categorySelect.value;
-                         const teamCount = parseInt(teamCountInput && teamCountInput.value, 10);
+                         const categoryId = categorySelect ? categorySelect.value : ''; // Safety check
+                         const teamCount = parseInt(teamCountInput ? teamCountInput.value : '', 10); // Safety check
 
                          // Validácia dvojice
                          if (!categorySelect || categoryId === '' || categorySelect.disabled) {
@@ -3256,6 +3344,6 @@
             } else { console.error("Add category count pair button not found!"); }
 
     </script>
-
+    
 </body>
 </html>
