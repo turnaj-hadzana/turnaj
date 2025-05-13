@@ -1423,7 +1423,7 @@
                       if(clubModal) clubModal.style.display = 'block';
 
 
-                       // --- PREPRACOVANÁ LOGIKA NASTAVENIA FOCUSU ---
+                       // --- PREPRACOVANÁ LOGIKA NASTAVENIA FOCUSU (V.2) ---
                        let focused = false; // Flag to track if focus was successfully set
 
                        if (currentClubModalMode === 'add-assign') {
@@ -1443,6 +1443,7 @@
                            }
                        } else if (currentClubModalMode === 'edit-assigned') {
                            // V režime úpravy skús nastaviť focus na názov tímu, kategóriu, skupinu, poradie
+                           // Explicitne kontrolujeme, či je input na názov viditeľný
                            if (clubNameInput && clubNameInputContainer && clubNameInputContainer.style.display !== 'none') {
                                clubNameInput.focus();
                                focused = true;
