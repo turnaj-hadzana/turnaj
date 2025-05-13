@@ -7,7 +7,7 @@
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="style.css">
 
-    <style>
+<style>
         /* --- General Styles --- */
         body {
             font-family: sans-serif;
@@ -447,30 +447,26 @@
         /* --- Responsive adjustments for clubsContent --- */
         @media (min-width: 577px) { /* 2 items per row */
              #clubsContent .section-block {
-                  flex: 1 1 calc(50% - 20px);
+                  flex: 0 0 calc(50% - 20px); /* Dva stĺpce */
                   min-width: 0; /* Allow shrinking below basis if needed */
              }
         }
 
         @media (min-width: 993px) { /* 3 items per row */
              #clubsContent .section-block {
-                  /* flex: 1 1 calc(33.33% - 20px); */
-                  /* Aby sme dosiahli šírku čo najbližšie k 25% pri max 3, musíme použiť flex-basis 33.33% */
-                  /* a nechať ich roztiahnuť. Pri flex-basis 25% by ich boli 4. */
-                  /* Ak striktne chceme šírku 25% a max 3, treba prijať prázdne miesto alebo iný layout model (Grid). */
-                  /* Tento kód zabezpečí MAX 3 a rovnako široké položky na riadku (>992px). */
-                  flex: 1 1 calc(25% - 20px);
+                  /* Nastavená požadovaná šírka 25% */
+                  /* Na obrazovkách >= 993px sa vďaka tejto šírke zmestia 3 bloky vedľa seba s prázdnym miestom */
+                  flex: 0 0 calc(25% - 20px);
                   min-width: 0; /* Allow shrinking below basis if needed */
              }
         }
 
-         /* You could potentially add a media query for very wide screens (>1400px?) */
-         /* and set flex-basis to calc(25% - 20px) there IF you accept 4 columns. */
-         /* Or, if max 3 is absolute, keep flex: 1 1 calc(33.33% - 20px); for all screens > 992px */
+         /* Default pre najmenšie obrazovky (1 stĺpec) zostáva flex: 1 100%; */
 
 
     </style>
 
+    
 </head>
 <body>
     <script>
