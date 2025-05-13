@@ -7,7 +7,7 @@
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="style.css">
 
-<style>
+    <style>
         /* --- General Styles --- */
         body {
             font-family: sans-serif;
@@ -260,12 +260,11 @@
 
         /* Individual table containers in #timy-do-skupin */
         #clubsContent .section-block {
-             /* flex-grow: 0, flex-shrink: 0, flex-basis */
-            /* Používame flex: 0 0 [šírka] na vynútenie rovnakej šírky, ignorujúc rast a sťahovanie */
-            flex: 0 0 calc(25% - 20px); /* Presne jedna tretina minus medzera */
-            min-width: 280px; /* Minimálna šírka, aby sa obsah zmestil */
-            box-sizing: border-box; /* Include padding and border in element's total width */
-             margin-bottom: 0; /* Override the default .section-block margin when inside flex */
+             /* Default: 1 item per row on very small screens */
+             flex: 1 100%;
+             min-width: 250px; /* Ensure minimum width */
+             box-sizing: border-box;
+             margin-bottom: 0; /* Override default */
         }
 
         /* Adjust table inside section-block if needed, but width: 100% should handle it */
@@ -446,19 +445,29 @@
 
 
         /* --- Responsive adjustments for clubsContent --- */
-        @media (max-width: 992px) { /* Example breakpoint for medium screens */
+        @media (min-width: 577px) { /* 2 items per row */
              #clubsContent .section-block {
-                  /* Upravená šírka pre 2 stĺpce - flex: 0 0 calc(50% - medzera) */
-                  flex: 0 0 calc(50% - 20px);
+                  flex: 1 1 calc(50% - 20px);
+                  min-width: 0; /* Allow shrinking below basis if needed */
              }
         }
 
-        @media (max-width: 576px) { /* Example breakpoint for small screens */
+        @media (min-width: 993px) { /* 3 items per row */
              #clubsContent .section-block {
-                  /* Jeden stĺpec - flex: 0 0 100% */
-                  flex: 0 0 100%;
+                  /* flex: 1 1 calc(33.33% - 20px); */
+                  /* Aby sme dosiahli šírku čo najbližšie k 25% pri max 3, musíme použiť flex-basis 33.33% */
+                  /* a nechať ich roztiahnuť. Pri flex-basis 25% by ich boli 4. */
+                  /* Ak striktne chceme šírku 25% a max 3, treba prijať prázdne miesto alebo iný layout model (Grid). */
+                  /* Tento kód zabezpečí MAX 3 a rovnako široké položky na riadku (>992px). */
+                  flex: 1 1 calc(33.33% - 20px);
+                  min-width: 0; /* Allow shrinking below basis if needed */
              }
         }
+
+         /* You could potentially add a media query for very wide screens (>1400px?) */
+         /* and set flex-basis to calc(25% - 20px) there IF you accept 4 columns. */
+         /* Or, if max 3 is absolute, keep flex: 1 1 calc(33.33% - 20px); for all screens > 992px */
+
 
     </style>
 
