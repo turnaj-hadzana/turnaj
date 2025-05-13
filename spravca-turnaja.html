@@ -669,6 +669,13 @@
         const teamCreationModal = document.getElementById('teamCreationModal');
         const teamCreationModalCloseBtn = teamCreationModal.querySelector('.team-creation-modal-close'); // <--- Tento riadok sem pridaj
 
+        // Nový Modal pre správu individuálnych tímov
+        const manageTeamsModal = document.getElementById('manageTeamsModal'); // Referencia na samotný modál
+        const baseTeamNameInModalSpan = document.getElementById('baseTeamNameInModal'); // Referencia na element v modáli
+        const teamsListInModalDiv = document.getElementById('teamsListInModal'); // Referencia na element v modáli
+        // Referencia na zatváracie tlačidlo modálu pre správu tímov:
+        const manageTeamsModalCloseBtn = manageTeamsModal.querySelector('.manage-teams-modal-close'); // <-- Tento riadok musí byť definovaný tu (alebo pred jeho použitím)
+
         // REFERENCES FOR CLUB MODAL CHANGES (add/edit assigned)
         const unassignedClubSelectContainer = document.getElementById('unassignedClubSelectContainer');
         const unassignedClubSelect = document.getElementById('unassignedClubSelect');
