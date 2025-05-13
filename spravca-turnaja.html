@@ -1487,18 +1487,17 @@
 
 
                                         // *** NOVÁ LOGIKA: Povolíme a naplníme select skupín pre túto kategóriu ***
-                                        // Nenavoláme change event na clubCategorySelect, ale priamo naplníme a povolíme clubGroupSelect
-                                         await populateGroupSelect(categoryIdToSet, clubGroupSelect, null); // Naplni skupiny pre zvolenu kategoriu
+                                        // Naplni skupiny pre zvolenu kategoriu
+                                         await populateGroupSelect(categoryIdToSet, clubGroupSelect, null);
                                          clubGroupSelect.disabled = false; // !!! POVOLIŤ SELECT SKUPÍN !!!
                                         console.log("unassignedClubSelect change: populated and ENABLED clubGroupSelect for category:", categoryIdToSet);
 
 
-                                        // Spustíte change udalosť na clubCategorySelect
-                                        // Pôvodný dispatcher. Stále ho necháme, ak by nejaká iná logika na ňom závisela,
-                                        // ale už nespoliehame na neho pre povolenie selectu skupín v tomto režime.
-                                         const event = new Event('change');
-                                         clubCategorySelect.dispatchEvent(event);
-                                         console.log("unassignedClubSelect change: Spustený dispatchEvent na clubCategorySelect (zablokovaný).");
+                                        // Spustíme change udalosť na clubCategorySelect
+                                        // Odstránený dispatchEvent, aby sa neblokoval select skupiny, ktorý sme práve povolili.
+                                        // const event = new Event('change');
+                                        // clubCategorySelect.dispatchEvent(event);
+                                        // console.log("unassignedClubSelect change: Spustený dispatchEvent na clubCategorySelect (zablokovaný).");
 
 
                                         // Po výbere tímu a nastavení kategórie/skupín, zobrazíme pole poradia, ak existuje skupina
@@ -1523,7 +1522,7 @@
                                     if (clubCategorySelect) { clubCategorySelect.value = ""; clubCategorySelect.disabled = true; } // Reset category select value and disable
                                     if (clubGroupSelect) { clubGroupSelect.innerHTML = '<option value="">-- Najprv vyberte kategóriu --</option>'; clubGroupSelect.disabled = true; } // Reset group select and disable
 
-                                     // Potom spustíme change event na kategórii, aby sa resetovali skupiny a poradie (pre istotu)
+                                     // Spustíme change event na kategórii, aby sa resetovali skupiny a poradie (pre istotu)
                                      const event = new Event('change');
                                      if (clubCategorySelect) clubCategorySelect.dispatchEvent(event);
                                 }
@@ -2528,7 +2527,7 @@
                  });
 
                  // Po aktualizácii selectov skontroluj, či zobraziť/skryť tlačidlo Pridať ďalšiu kategóriu
-                 checkIfAddCategoryButtonShouldBeVisible();
+                 checkIfAddCategoryCountPairButtonShouldBeVisible();
             }
 
 
@@ -2549,7 +2548,7 @@
 
 
              // --- Funkcia na kontrolu, či má byť viditeľné tlačidlo "Pridať ďalšiu kategóriu" ---
-             function checkIfAddCategoryButtonShouldBeVisible() {
+             function checkIfAddCategoryCountPairButtonShouldBeVisible() {
                   const allSelectElements = teamCategoryCountContainer.querySelectorAll('.team-category-select-dynamic');
                   const currentSelections = Array.from(allSelectElements)
                       .map(select => select.value)
@@ -2567,7 +2566,7 @@
                        console.log("Žiadne dostupné kategórie, tlačidlo 'Pridať ďalšiu kategóriu' skryté.");
                   }
                    else {
-                       addCategoryCountPairButton.style.display = 'inline-block'; // Alebo 'block'
+                       if (addCategoryCountPairButton) addCategoryCountPairButton.style.display = 'inline-block'; // Alebo 'block'
                        console.log(`Vybratých kategórií: ${currentSelections.length}, celkovo dostupných: ${allAvailableCategories.length}. Tlačidlo 'Pridať ďalšiu kategóriu' zobrazené.`);
                    }
              }
@@ -2615,7 +2614,7 @@
 
                   removeButton.onclick = () => {
                       pairDiv.remove();
-                      updateDynamicCategorySelects(); // Aktualizuje selecty (volá checkIfAddCategoryButtonShouldBeVisible)
+                      updateDynamicCategorySelects(); // Aktualizuje selecty (volá checkIfAddCategoryCountPairButtonShouldBeVisible)
                       updateRemoveButtonVisibility(); // Aktualizuje viditeľnosť tlačidiel Odstrániť
                   };
 
@@ -2655,7 +2654,7 @@
                  );
 
                   // Po pridaní novej dvojice a jej naplnení aktualizovať všetky ostatné selecty a tlačidlá
-                  // updateDynamicCategorySelects(); // Táto funkcia volá aj checkIfAddCategoryButtonShouldBeVisible()
+                  // updateDynamicCategorySelects(); // Táto funkcia volá aj checkIfAddCategoryCountPairButtonShouldBeVisible()
                   updateRemoveButtonVisibility(); // Aktualizuje viditeľnosť tlačidiel Odstrániť
                   // updateDynamicCategorySelects() je volané event listenerom change na categorySelect alebo v openTeamCreationModal
                   // Ak pridávame prvý riadok, updateDynamicCategorySelects sa zavolá v openTeamCreationModal
@@ -2677,21 +2676,21 @@
                  teamCreationForm.reset();
 
                  // Vyčisti kontajner dynamických polí a pridaj prvú dvojicu
-                 if (!teamCategoryCountContainer) { console.error('FATAL ERROR: teamCategoryCountContainer is null!'); return; } // Safety check
+                 if (!teamCategoryCountContainer) { console.error('FATAL ERROR: teamCategoryCountContainer je null!'); return; } // Safety check
                  teamCategoryCountContainer.innerHTML = '';
                  // Zabezpeč, že všetky kategórie sú načítané pred pridaním prvej dvojice
                  if (allAvailableCategories.length === 0) {
-                      await loadAllCategoriesForDynamicSelects(); // Načítaj kategórie ak ešte nie sú (volá updateDynamicCategorySelects a checkIfAddCategoryButtonShouldBeVisible)
+                      await loadAllCategoriesForDynamicSelects(); // Načítaj kategórie ak ešte nie sú (volá updateDynamicCategorySelects a checkIfAddCategoryCountPairButtonShouldBeVisible)
                  } else {
                        // Ak už sú kategórie načítané, len aktualizuj selecty a tlačidlá
-                       updateDynamicCategorySelects(); // Volá checkIfAddCategoryButtonShouldBeVisible
+                       updateDynamicCategorySelects(); // Volá checkIfAddCategoryCountPairButtonShouldBeVisible
                        updateRemoveButtonVisibility(); // Volá sa po pridaní prvej dvojice
                    }
 
                  // Vždy pridaj prvú dvojicu pri otvorení modálu
                  await addCategoryCountPair(); // Táto funkcia volá updateDynamicCategorySelects a updateRemoveButtonVisibility na konci
 
-                 if (!teamNameInput) { console.error('FATAL ERROR: teamNameInput is null!'); return; } // Safety check
+                 if (!teamNameInput) { console.error('FATAL ERROR: teamNameInput je null!'); return; } // Safety check
                  teamNameInput.focus(); // Nastav focus na názov tímu
             }
 
@@ -2779,7 +2778,7 @@
                      displayCreatedTeams(); // This now loads all teams
                      if (addButton) addButton.title = "Vytvoriť tímy";
                      // Načítaj kategórie pri vstupe do sekcie "Vytvorenie tímov"
-                     loadAllCategoriesForDynamicSelects(); // Volá updateDynamicCategorySelects a checkIfAddCategoryButtonShouldBeVisible
+                     loadAllCategoriesForDynamicSelects(); // Volá updateDynamicCategorySelects a checkIfAddCategoryCountPairButtonShouldBeVisible
                  }
                  else if (hash === '#timy-do-skupin') {
                      if (addButton) addButton.style.display = 'block';
@@ -2847,7 +2846,7 @@
                      console.log("Closing category modal."); // Added log
                      // Ak sa zatvára kategória modál a bol otvorený Team Creation Modal, aktualizuj jeho selecty
                       if (teamCreationModal && teamCreationModal.style.display === 'block') {
-                          loadAllCategoriesForDynamicSelects(); // Pre istotu znovu načítaj kategórie (volá updateDynamicCategorySelects a checkIfAddCategoryButtonShouldBeVisible)
+                          loadAllCategoriesForDynamicSelects(); // Pre istotu znovu načítaj kategórie (volá updateDynamicCategorySelects a checkIfAddCategoryCountPairButtonShouldBeVisible)
                       }
                 });
             }
@@ -2910,7 +2909,7 @@
                      console.log("Clicked outside, closing category modal."); // Added log
                      // Ak sa zatvára kategória modál a bol otvorený Team Creation Modal, aktualizuj jeho selecty
                       if (teamCreationModal && teamCreationModal.style.display === 'block') {
-                          loadAllCategoriesForDynamicSelects(); // Pre istotu znovu načítaj kategórie (volá updateDynamicCategorySelects a checkIfAddCategoryButtonShouldBeVisible)
+                          loadAllCategoriesForDynamicSelects(); // Pre istotu znovu načítaj kategórie (volá updateDynamicCategorySelects a checkIfAddCategoryCountPairButtonShouldBeVisible)
                       }
                 }
                 if (e.target === groupModal) {
@@ -3355,7 +3354,7 @@
                          if (teamCreationForm) teamCreationForm.reset(); // Vyčistí aspoň základný názov
                          // Nečistíme teamCategoryCountContainer, aby užívateľ videl, čo zadal
                          // Ak nastane chyba, môžeme znova načítat kategórie a aktualizovať selecty
-                         loadAllCategoriesForDynamicSelects(); // Pre istotu znovu načítaj kategórie (volá updateDynamicCategorySelects a checkIfAddCategoryButtonShouldBeVisible)
+                         loadAllCategoriesForDynamicSelects(); // Pre istotu znovu načítaj kategórie (volá updateDynamicCategorySelects a checkIfAddCategoryCountPairButtonShouldBeVisible)
                     }
                 });
             } else { console.error("Team creation form not found!"); }
@@ -3366,7 +3365,7 @@
                 addCategoryCountPairButton.addEventListener('click', async () => {
                      // Pred pridaním novej dvojice zabezpečiť, že kategórie sú načítané
                      if (allAvailableCategories.length === 0) {
-                          await loadAllCategoriesForDynamicSelects(); // Načítaj kategórie ak ešte nie sú (volá updateDynamicCategorySelects a checkIfAddCategoryButtonShouldBeVisible)
+                          await loadAllCategoriesForDynamicSelects(); // Načítaj kategórie ak ešte nie sú (volá updateDynamicCategorySelects a checkIfAddCategoryCountPairButtonShouldBeVisible)
                      }
                      await addCategoryCountPair(); // Volaj funkciu na pridanie ďalšej dvojice (volá updateDynamicCategorySelects a updateRemoveButtonVisibility)
                 });
