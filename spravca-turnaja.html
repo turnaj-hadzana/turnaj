@@ -1301,7 +1301,7 @@
 
 
                    // Načítame kategórie a skupiny pre selecty (ak ešte nie sú načítané)
-                   await populateCategorySelect(clubCategorySelect, true); // Populate category select for the club modal, include default option
+                   // await populateCategorySelect(clubCategorySelect, true); // Populate category select for the club modal, include default option
                    clubGroupSelect.disabled = true; // Group select is disabled until a category is chosen
 
 
@@ -1455,9 +1455,18 @@
                                    const clubData = clubDoc.data();
                                    if (clubCategorySelect) {
                                         await populateCategorySelect(clubCategorySelect, clubData.categoryId); // Populate and select category
-                                        // Trigger the category change event manually to populate groups and manage order input
-                                        const event = new Event('change');
-                                        clubCategorySelect.dispatchEvent(event);
+                                        // *** Nahradenie manuálneho dispatch volaním logiky pre skupiny a poradie ***
+                                        const selectedCategoryId = clubCategorySelect.value; // Získajte práve nastavenú kategóriu
+                                        if (clubGroupSelect && clubGroupSelect.parentElement && clubGroupSelect.parentElement.style.display !== 'none') {
+                                             await populateGroupSelect(selectedCategoryId, clubGroupSelect); // Priamo naplnite GROUP select
+                                             // Resetujte pole poradia, keď sa nastaví kategória (táto logika bola v poslucháči zmeny kategórie)
+                                             if (orderInGroupInput) orderInGroupInput.value = '';
+                                              if (orderInGroupInput) orderInGroupInput.required = false; // Poradie nie je povinné, kým sa nevyberie skupina
+                                        } else {
+                                             // Ak je pole skupín skryté (napr. úprava nepriradeného tímu),
+                                             // zmena kategórie stále znamená, že poradie nie je povinné.
+                                              if (orderInGroupInput) orderInGroupInput.required = false;
+                                        }
                                    } else { console.error("clubCategorySelect not found after selecting unassigned club."); }
 
 
