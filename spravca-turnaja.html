@@ -254,15 +254,16 @@
             flex-wrap: wrap; /* Allow items to wrap to the next line */
             gap: 20px; /* Space between flex items */
             justify-content: flex-start; /* Align items to the start */
-            padding: 20px; /* Add padding around the flex container (kept 20px from my original suggestion) */
+            padding: 20px; /* Add padding around the flex container */
             margin-bottom: 20px; /* Keep space below the section */
         }
 
         /* Individual table containers in #timy-do-skupin */
         #clubsContent .section-block {
              /* flex-grow, flex-shrink, flex-basis */
-            flex: 1 1 calc(33.33% - 20px); /* Tries to make each item about 1/3rd of the container width, minus gap */
-            min-width: 300px; /* Ensure a minimum width */
+            /* Zmenená flex-basis na zmenšenie šírky */
+            flex: 1 1 calc(30% - 20px); /* Menšia základná šírka */
+            min-width: 280px; /* Prispôsobená minimálna šírka */
             box-sizing: border-box; /* Include padding and border in element's total width */
              margin-bottom: 0; /* Override the default .section-block margin when inside flex */
         }
@@ -447,13 +448,13 @@
         /* --- Responsive adjustments for clubsContent --- */
         @media (max-width: 992px) { /* Example breakpoint for medium screens */
              #clubsContent .section-block {
-                  flex: 1 1 calc(50% - 20px); /* Two items per row */
+                  flex: 1 1 calc(45% - 20px); /* Upravená šírka pre 2 stĺpce */
              }
         }
 
         @media (max-width: 576px) { /* Example breakpoint for small screens */
              #clubsContent .section-block {
-                  flex: 1 1 100%; /* One item per row */
+                  flex: 1 1 100%; /* Jeden stĺpec */
              }
         }
 
