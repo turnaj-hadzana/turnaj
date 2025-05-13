@@ -1291,7 +1291,7 @@
                      // Edit mode (Editing an ALREADY ASSIGNED club OR an UNASSIGNED club from Manage Modal)
                      currentClubModalMode = 'edit-assigned'; // Stále použijeme 'edit-assigned' režim
                      editingClubId = clubId; // Store the auto-generated ID of the club being edited
-                      if (!clubModalTitle) { console.error('FATAL ERROR: clubModalTitle is null in edit mode!'); return; } // Safety check
+                      if (!clubModalTitle) { console.error('FATAL ERROR: clubModalTitle is null in edit mode!'); return; } // Safety check 1
                       clubModalTitle.textContent = 'Upraviť tím'; // <-- Line that caused error in previous user attempt
                      clubFormSubmitButton.textContent = 'Uložiť zmeny';
 
@@ -1345,7 +1345,13 @@
                      // Add mode (Assigning an UNASSIGNED club to a group)
                      currentClubModalMode = 'add-assign';
                      editingClubId = null; // No specific club ID selected yet via edit button
-                     if (!clubModalTitle) { console.error('FATAL ERROR: clubModalTitle is null in add mode!'); return; } // Safety check
+                     if (!clubModalTitle) { 
+                         console.error('FATAL ERROR: clubModalTitle is null in add mode!'); 
+                        console.error('Value of clubModalTitle when check fails:', clubModalTitle); // Pridaná logovacia správa
+                         return; 
+                     } // Safety check 2
+                     console.log('DEBUG: Value of clubModalTitle right before setting textContent:', clubModalTitle); // <--- Pridaj tento riadok
+                      
                      clubModalTitle.textContent = 'Priradiť tím do skupiny'; // Specific title
                      clubFormSubmitButton.textContent = 'Priradiť'; // Specific button text
 
