@@ -110,6 +110,7 @@
             padding: 0;
             box-shadow: none;
             background-color: transparent;
+             min-width: 0; /* Pridané: Zabráni, aby obsah main bloku tlačil na menu */
         }
 
         /* --- Section Block Style --- */
@@ -247,7 +248,7 @@
              white-space: nowrap;
          }
 
-        /* --- NEW: Styles for #timy-do-skupin layout (Flexbox) --- */
+        /* --- Styles for #timy-do-skupin layout (Flexbox) --- */
         /* Container for tables in #timy-do-skupin */
         #clubsContent {
             display: flex; /* Enable flexbox */
@@ -453,11 +454,11 @@
         }
 
         @media (min-width: 993px) { /* 3 items per row */
-                 #clubsContent .section-block {
-                 /* Nastavená požadovaná šírka 25% */
-                 /* Na obrazovkách >= 993px sa vďaka tejto šírke zmestia 3 bloky vedľa seba s prázdnym miestom */
-                 flex: 0 0 calc(25% - 20px);
-                 min-width: 0; /* Allow shrinking below basis if needed */
+             #clubsContent .section-block {
+                  /* Nastavená požadovaná šírka 25% */
+                  /* Na obrazovkách >= 993px sa vďaka tejto šírke zmestia 3 bloky vedľa seba s prázdnym miestom */
+                  flex: 0 0 calc(25% - 20px);
+                  min-width: 0; /* Allow shrinking below basis if needed */
              }
         }
 
