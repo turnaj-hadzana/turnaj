@@ -7,7 +7,7 @@
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="style.css">
 
-    <style>
+<style>
         /* --- General Styles --- */
         body {
             font-family: sans-serif;
@@ -201,12 +201,12 @@
 
         /* Center align quantity cells in Created Teams table */
          #createdTeamsTable tbody td:not(:first-child):not(:last-child) {
-              text-align: center;
+             text-align: center;
          }
 
          /* Center align order column in group-clubs-table */
          .group-clubs-table tbody td:first-child {
-              text-align: center;
+             text-align: center;
          }
          #manageTeamsModal .group-clubs-table tbody td:first-child {
              text-align: center; /* Also for modal tables */
@@ -222,7 +222,7 @@
          #manageTeamsModal .group-clubs-table tbody tr:last-child td
          {
              border-bottom: none;
-        }
+         }
 
         /* Hover effect for all table rows */
         #categoryTable tbody tr:hover,
@@ -245,31 +245,37 @@
          #manageTeamsModal .group-clubs-table td:last-child /* Also for tables in modal */
          {
              white-space: nowrap;
-        }
+         }
 
+        /* --- NEW: Styles for #timy-do-skupin layout (Flexbox) --- */
+        /* Container for tables in #timy-do-skupin */
         #clubsContent {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-            align-items: flex-start;
-            padding: 0;
-            margin-bottom: 20px;
+            display: flex; /* Enable flexbox */
+            flex-wrap: wrap; /* Allow items to wrap to the next line */
+            gap: 20px; /* Space between flex items */
+            justify-content: flex-start; /* Align items to the start */
+            padding: 20px; /* Add padding around the flex container (kept 20px from my original suggestion) */
+            margin-bottom: 20px; /* Keep space below the section */
         }
 
-        /* Style for container divs that wrap club sections when inside #clubsContent */
+        /* Individual table containers in #timy-do-skupin */
         #clubsContent .section-block {
-            /* Inherits background, padding, radius, shadow from .section-block */
-             /* Remove min-width and flex-basis to allow content to dictate width better */
-            /* min-width: 300px; */
-            flex-grow: 1; /* Allow growing to fill space */
-            flex-basis: 0; /* Reset flex-basis */
-            margin-bottom: 0; /* Override the default .section-block margin when inside flex */
+             /* flex-grow, flex-shrink, flex-basis */
+            flex: 1 1 calc(33.33% - 20px); /* Tries to make each item about 1/3rd of the container width, minus gap */
+            min-width: 300px; /* Ensure a minimum width */
+            box-sizing: border-box; /* Include padding and border in element's total width */
+             margin-bottom: 0; /* Override the default .section-block margin when inside flex */
+        }
+
+        /* Adjust table inside section-block if needed, but width: 100% should handle it */
+        #clubsContent .section-block table {
+             width: 100%; /* Table fills its flex item container */
         }
 
         #teamCreationContentSection table {
-            /* Ensure table within section block takes full width */
+             /* Ensure table within section block takes full width */
              width: 100%;
-        }
+         }
 
 
         /* --- Action Button Styles --- */
@@ -299,16 +305,16 @@
 
         /* --- Modal Styles --- */
          .modal {
-            display: none;
-            position: fixed;
-            z-index: 1;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-            background-color: rgba(0,0,0,0.4);
-            padding-top: 60px;
+             display: none;
+             position: fixed;
+             z-index: 1001; /* Adjusted z-index to be higher than add button */
+             left: 0;
+             top: 0;
+             width: 100%;
+             height: 100%;
+             overflow: auto;
+             background-color: rgba(0,0,0,0.4);
+             padding-top: 60px;
          }
 
         .modal-content {
@@ -320,6 +326,12 @@
             max-width: 500px;
             border-radius: 8px;
             position: relative;
+        }
+
+        .modal-content h2 {
+             margin-top: 0;
+             margin-bottom: 20px;
+             color: #333;
         }
 
         .close {
@@ -347,12 +359,12 @@
          .modal-content form input[type="text"],
          .modal-content form input[type="number"],
          .modal-content form select {
-            width: calc(100% - 22px);
-            padding: 10px;
-            margin-bottom: 20px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            box-sizing: border-box;
+             width: calc(100% - 22px);
+             padding: 10px;
+             margin-bottom: 20px;
+             border: 1px solid #ccc;
+             border-radius: 4px;
+             box-sizing: border-box;
          }
          /* Adjust select height for multiple */
          .modal-content form select[multiple] {
@@ -372,7 +384,7 @@
         }
 
          .modal-content form button[type="submit"]:hover { /* Target the submit button */
-            background-color: #218838;
+             background-color: #218838;
          }
 
          /* Style for the container divs around specific form elements */
@@ -386,53 +398,67 @@
           .modal-content form input[type="text"],
           .modal-content form input[type="number"],
           .modal-content form select {
-              margin-bottom: 0; /* Remove margin from elements inside the div */
-          }
+               margin-bottom: 0; /* Remove margin from elements inside the div */
+           }
 
-          /* Optional CSS for dynamically added category/count pairs */
-            .category-count-pair {
-                border: 1px solid #eee;
-                padding: 10px;
-                margin-bottom: 15px; /* Space below each pair */
-                border-radius: 5px;
-                background-color: #f9f9f9;
+         /* Optional CSS for dynamically added category/count pairs */
+          .category-count-pair {
+               border: 1px solid #eee;
+               padding: 10px;
+               margin-bottom: 15px; /* Space below each pair */
+               border-radius: 5px;
+               background-color: #f9f9f9;
+           }
+
+           .category-count-pair label {
+               display: inline-block; /* Make labels inline */
+               margin-bottom: 5px;
+               margin-right: 10px; /* Space between label and input/select */
+               font-weight: normal; /* Less bold than section titles */
+               min-width: 80px; /* Align labels (adjust as needed) */
+           }
+
+           .category-count-pair select,
+           .category-count-pair input[type="number"] {
+                display: inline-block; /* Make inputs/selects inline */
+                width: auto; /* Allow size based on content/min-width */
+                margin-bottom: 0; /* Remove bottom margin */
+                margin-right: 10px; /* Space between elements */
+                padding: 5px; /* Smaller padding */
             }
 
-            .category-count-pair label {
-                display: inline-block; /* Make labels inline */
-                margin-bottom: 5px;
-                margin-right: 10px; /* Space between label and input/select */
-                font-weight: normal; /* Less bold than section titles */
-                min-width: 80px; /* Align labels (adjust as needed) */
-            }
+           /* Style for the remove button within the pair */
+           .category-count-pair .action-button.delete-button {
+               padding: 3px 8px; /* Smaller padding */
+               font-size: 0.8em; /* Smaller font */
+           }
 
-            .category-count-pair select,
-            .category-count-pair input[type="number"] {
-                 display: inline-block; /* Make inputs/selects inline */
-                 width: auto; /* Allow size based on content/min-width */
-                 margin-bottom: 0; /* Remove bottom margin */
-                 margin-right: 10px; /* Space between elements */
-                 padding: 5px; /* Smaller padding */
-            }
+           /* Adjust spacing within the container div */
+           #teamCategoryCountContainer div {
+               margin-bottom: 10px; /* Space between inner divs (label+element) */
+           }
 
-            /* Style for the remove button within the pair */
-            .category-count-pair .action-button.delete-button {
-                padding: 3px 8px; /* Smaller padding */
-                font-size: 0.8em; /* Smaller font */
-            }
+           /* Ensure remove button is not on a new line if space allows */
+           .category-count-pair div:last-of-type { /* This targets the last div within a pairDiv */
+                margin-bottom: 0;
+           }
 
-            /* Adjust spacing within the container div */
-            #teamCategoryCountContainer div {
-                margin-bottom: 10px; /* Space between inner divs (label+element) */
-            }
 
-            /* Ensure remove button is not on a new line if space allows */
-            .category-count-pair div:last-of-type { /* This targets the last div within a pairDiv */
-                 margin-bottom: 0;
-            }
+        /* --- Responsive adjustments for clubsContent --- */
+        @media (max-width: 992px) { /* Example breakpoint for medium screens */
+             #clubsContent .section-block {
+                  flex: 1 1 calc(50% - 20px); /* Two items per row */
+             }
+        }
 
+        @media (max-width: 576px) { /* Example breakpoint for small screens */
+             #clubsContent .section-block {
+                  flex: 1 1 100%; /* One item per row */
+             }
+        }
 
     </style>
+
 </head>
 <body>
     <script>
