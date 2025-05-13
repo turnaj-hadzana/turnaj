@@ -1256,8 +1256,6 @@
 
 
 // Funkcia na otvorenie modálu klubu (pre priradenie do skupín ALEBO úpravu priradeného/nepriradeného)
-             // clubId je auto-generované ID dokumentu
-// Funkcia na otvorenie modálu klubu (pre priradenie do skupín ALEBO úpravu priradeného/nepriradeného)
                  // clubId je auto-generované ID dokumentu
                  async function openClubModal(clubId = null, clubData = null) { // clubId is auto-generované ID
                      // --- DEBUG LOG: Check function call arguments ---
@@ -1411,7 +1409,6 @@
                           if (clubCategorySelect) {
                                 clubCategorySelect.disabled = false;
                                 // Ak uz boli kategorie nacitane, mozeme select rovno naplnit
-                                // Populate category select for the club modal in add-assign mode (re-populate to include default option and reset)
                                 // populateCategorySelect(clubCategorySelect, null); // This call is now handled by the initial call at the start of the function
                            } else {
                                 console.error("FATAL ERROR: clubCategorySelect not found in add mode!");
@@ -1426,30 +1423,52 @@
                       if(clubModal) clubModal.style.display = 'block';
 
 
-                      // Set focus to the first relevant input/select, AVOIDING HIDDEN ELEMENTS
-                      // Priorita: unassignedClubSelect (add-assign) -> clubNameInput (edit) -> clubCategorySelect -> clubGroupSelect -> orderInGroupInput
-                       if (currentClubModalMode === 'add-assign' && unassignedClubSelect && unassignedClubSelectContainer && unassignedClubSelectContainer.style.display !== 'none') {
-                           unassignedClubSelect.focus();
-                       } else if (currentClubModalMode === 'edit-assigned' && clubNameInputContainer && clubNameInputContainer.style.display !== 'none' && clubNameInput) { // Focus on name input if visible in edit mode
-                           clubNameInput.focus();
+                       // --- PREPRACOVANÁ LOGIKA NASTAVENIA FOCUSU ---
+                       let focused = false; // Flag to track if focus was successfully set
+
+                       if (currentClubModalMode === 'add-assign') {
+                           // V režime priradenia skús nastaviť focus na select nepriradených tímov, kategórie, skupiny, poradie
+                           if (unassignedClubSelect && unassignedClubSelectContainer && unassignedClubSelectContainer.style.display !== 'none') {
+                               unassignedClubSelect.focus();
+                               focused = true;
+                           } else if (clubCategorySelect && clubCategorySelect.parentElement && clubCategorySelect.parentElement.style.display !== 'none' && !clubCategorySelect.disabled) {
+                               clubCategorySelect.focus();
+                               focused = true;
+                           } else if (clubGroupSelect && clubGroupSelect.parentElement && clubGroupSelect.parentElement.style.display !== 'none' && !clubGroupSelect.disabled) {
+                               clubGroupSelect.focus();
+                               focused = true;
+                           } else if (orderInGroupInput && orderInputContainer && orderInputContainer.style.display !== 'none' && !orderInGroupInput.disabled) {
+                                orderInGroupInput.focus();
+                                focused = true;
+                           }
+                       } else if (currentClubModalMode === 'edit-assigned') {
+                           // V režime úpravy skús nastaviť focus na názov tímu, kategóriu, skupinu, poradie
+                           if (clubNameInput && clubNameInputContainer && clubNameInputContainer.style.display !== 'none') {
+                               clubNameInput.focus();
+                               focused = true;
+                           } else if (clubCategorySelect && clubCategorySelect.parentElement && clubCategorySelect.parentElement.style.display !== 'none' && !clubCategorySelect.disabled) {
+                                clubCategorySelect.focus();
+                                focused = true;
+                           } else if (clubGroupSelect && clubGroupSelect.parentElement && clubGroupSelect.parentElement.style.display !== 'none' && !clubGroupSelect.disabled) {
+                                clubGroupSelect.focus();
+                                focused = true;
+                           } else if (orderInGroupInput && orderInputContainer && orderInputContainer.style.display !== 'none' && !orderInGroupInput.disabled) {
+                                orderInGroupInput.focus();
+                                focused = true;
+                           }
                        }
-                       else if (clubCategorySelect && clubCategorySelect.parentElement && clubCategorySelect.parentElement.style.display !== 'none' && !clubCategorySelect.disabled) { // Fallback focus on category select if visible and enabled
-                           clubCategorySelect.focus();
+
+                       // Fallback log ak sa focus nepodarilo nastaviť
+                       if (!focused) {
+                           console.warn("Could not set focus in club modal.");
                        }
-                        else if (clubGroupSelect && clubGroupSelect.parentElement && clubGroupSelect.parentElement.style.display !== 'none' && !clubGroupSelect.disabled) { // Fallback focus on group select if visible and enabled
-                           clubGroupSelect.focus();
-                       }
-                        else if (orderInGroupInput && orderInputContainer && orderInputContainer.style.display !== 'none' && !orderInGroupInput.disabled) { // Fallback focus on order input if visible and enabled
-                           orderInGroupInput.focus();
-                       }
-                       else {
-                            // Ak sa nepodarilo nastaviť focus, zalogujeme to
-                            console.warn("Could not set focus in club modal.");
-                       }
+                       // --- KONIEC PREPRACOVANEJ LOGIKY NASTAVENIA FOCUSU ---
 
 
                  } // Koniec openClubModal
 
+
+    
             // Funkcia na zobrazenie klubov usporiadaných podľa kategórií a skupín (PRIRADENÉ tímy)
             // fetchuje kluby s groupId != null
              // Funkcia na zobrazenie klubov usporiadaných podľa kategórií a skupín (PRIRADENÉ tímy)
