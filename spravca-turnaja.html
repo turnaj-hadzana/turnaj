@@ -129,8 +129,8 @@
             border-radius: 8px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
             margin-bottom: 20px;
-             flex: 1 1 300px; /* Adjusted flex-basis to encourage multiple columns */
-             min-width: 250px; /* Keep a minimum useful width */
+             flex: 1 1 300px;
+             min-width: 250px;
              box-sizing: border-box;
         }
         #categoryTable, .category-group-table, #clubsTable, #createdTeamsTable {
@@ -197,6 +197,7 @@
          }
          .group-clubs-table tbody td:first-child {
              text-align: center;
+             padding: 10px 5px; /* Reduced padding for the first column */
          }
          #manageTeamsModal .group-clubs-table tbody td:first-child {
              text-align: center;
@@ -386,13 +387,13 @@
            }
         @media (min-width: 577px) {
               #clubsContent .section-block {
-              flex: 1 1 calc(50% - 10px); /* Adjusted for 2 columns on medium screens */
+              flex: 1 1 calc(50% - 10px);
               min-width: 0;
              }
         }
     @media (min-width: 993px) {
          #clubsContent .section-block {
-              flex: 0 0 calc((100% - 40px) / 3); /* Keep for 3 columns on large screens */
+              flex: 0 0 calc((100% - 40px) / 3);
               min-width: 0;
          }
     }
