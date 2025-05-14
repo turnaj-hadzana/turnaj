@@ -1051,15 +1051,15 @@ body.modal-open .left-menu a {
              clubGroupSelect.parentElement.style.display = 'block';
              clubGroupSelect.disabled = true;
              if (clubCategorySelect) {
-                 clubCategorySelect.disabled = true;
+                 clubCategorySelect.disabled = true; // Inicialne zablokovat kategoriu
                  clubCategorySelect.value = "";
              } else { console.error("FATAL ERROR: clubCategorySelect not found!"); if (clubModal) closeModal(clubModal); return; }
-             await populateCategorySelect(clubCategorySelect);
+             await populateCategorySelect(clubCategorySelect); // Nacitat kategorie (zostane zablokovane)
              if (clubId && clubData) {
                  currentClubModalMode = 'edit-assigned';
                  editingClubId = clubId;
                  if (clubCategorySelect) {
-                      clubCategorySelect.disabled = false;
+                      clubCategorySelect.disabled = false; // Odblokovat v edit mode
                       clubCategorySelect.value = clubData.categoryId || '';
                        if (clubData.groupId === null) {
                             clubGroupSelect.parentElement.style.display = 'none';
@@ -1081,14 +1081,15 @@ body.modal-open .left-menu a {
                  if (!clubModalTitle) { console.error('FATAL ERROR: clubModalTitle is null in edit mode!'); if (clubModal) closeModal(clubModal); return; }
                  clubModalTitle.textContent = 'Upraviť tím';
                  clubFormSubmitButton.textContent = 'Uložiť zmeny';
-              } else {
+              } else { // Add-assign mode
                  currentClubModalMode = 'add-assign';
                  editingClubId = null;
                  unassignedClubSelectContainer.style.display = 'block';
                  clubNameInputContainer.style.display = 'none';
                  if (clubGroupSelect) clubGroupSelect.required = false;
                  if (orderInGroupInput) orderInGroupInput.required = false;
-                 await populateUnassignedClubsSelect(unassignedClubSelect);
+                 await populateUnassignedClubsSelect(unassignedClubSelect); // Nacitat nepriradene kluby
+                  // clubCategorySelect zostava zablokovany po volani populateCategorySelect vyssie v tejto funkcii
                  if (!clubModalTitle) { console.error('FATAL ERROR: clubModalTitle is null in add mode!'); if (clubModal) closeModal(clubModal); return; }
                  clubModalTitle.textContent = 'Priradiť tím do skupiny';
                  clubFormSubmitButton.textContent = 'Priradiť';
@@ -1172,7 +1173,7 @@ body.modal-open .left-menu a {
                                    if (clubCategorySelect && clubGroupSelect) {
                                         const categoryIdToSet = clubData.categoryId || '';
                                         clubCategorySelect.value = categoryIdToSet;
-                                        clubCategorySelect.disabled = true;
+                                        clubCategorySelect.disabled = false; // ODKOMENTOVANE - Odblokovat kategoriu po vybrati timu
                                          await populateGroupSelect(categoryIdToSet, clubGroupSelect, null);
                                          clubGroupSelect.disabled = false;
                                          if (categoryIdToSet && categoryIdToSet !== '' && clubGroupSelect.options.length > 1) {
@@ -1202,7 +1203,7 @@ body.modal-open .left-menu a {
                                console.error('Chyba pri načítaní detailov vybraného nepriradeného tímu:', error);
                                alert('Chyba pri načítaní detailov tímu.');
                                unassignedClubSelect.value = "";
-                               if (clubCategorySelect) { clubCategorySelect.value = ""; clubCategorySelect.disabled = true; }
+                               if (clubCategorySelect) { clubCategorySelect.value = ""; clubCategorySelect.disabled = true; } // Zablokovat kategoriu spat pri chybe
                                if (clubGroupSelect) {
                                    clubGroupSelect.innerHTML = '<option value="">-- Najprv vyberte kategóriu --</option>';
                                    clubGroupSelect.disabled = true;
@@ -1212,7 +1213,7 @@ body.modal-open .left-menu a {
                                if (orderInGroupInput) { orderInGroupInput.required = false; orderInGroupInput.value = ''; }
                             }
                        } else if (currentClubModalMode === 'add-assign' && (!selectedClubId || selectedClubId === '-- Vyberte tím na priradenie --')) {
-                           if (clubCategorySelect) { clubCategorySelect.value = ""; clubCategorySelect.disabled = true; }
+                           if (clubCategorySelect) { clubCategorySelect.value = ""; clubCategorySelect.disabled = true; } // Zablokovat kategoriu ak nie je vybrany tim
                              if (clubGroupSelect) {
                                  clubGroupSelect.innerHTML = '<option value="">-- Najprv vyberte kategóriu --</option>';
                                  clubGroupSelect.disabled = true;
@@ -2371,7 +2372,7 @@ body.modal-open .left-menu a {
                          const newCategoryDocRef = doc(categoriesCollectionRef, newCategoryName);
                          try {
                               const existingDoc = await getDoc(newCategoryDocRef);
-                              if (existingDoc.exists()) { alert(`Kategória s názvom "${newCategoryName}" už existuje!`); return; }
+                              if (existingDoc.exists()) { alert(`Kategória "${newCategoryName}" už existuje!`); return; }
                               const oldCategoryDocRef = doc(categoriesCollectionRef, oldCategoryName);
                               const oldDocSnapshot = await getDoc(oldCategoryDocRef);
                               if (!oldDocSnapshot.exists()) { console.error(`Chyba: Pôvodný dokument kategórie ${oldCategoryName} nenájdený na úpravu.`); alert("Pôvodná kategória na úpravu nebola nájdena."); if (categoryModal) closeModal(categoryModal); if (categoryForm) categoryForm.reset(); currentCategoryModalMode = 'add'; editingCategoryName = null; loadCategoriesTable(); return; }
