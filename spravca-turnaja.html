@@ -1261,7 +1261,7 @@ body.modal-open .left-menu a {
                                   return;
                              }
                             const clubRefToAssign = doc(clubsCollectionRef, selectedUnassignedClubId);
-                            const clubDocToAssign = await getDoc(clubRefToassign);
+                            const clubDocToAssign = await getDoc(clubRefToAssign);
                             if (!clubDocToAssign.exists()) {
                                 alert('Vybraný nepriradený tím nebol nájdený alebo už bol priradený/zmazaný.');
                                 populateUnassignedClubsSelect(unassignedClubSelect, null);
@@ -1577,9 +1577,9 @@ body.modal-open .left-menu a {
                            section.style.flexShrink = '0';
                            section.style.flexBasis = 'auto';
                      });
+                    const sectionBlocks = clubsContentDiv.querySelectorAll('.section-block');
                     if (window.innerWidth > 993 && sectionBlocks.length > 2) {
                          let maxWidth = 0;
-                         const sectionBlocks = clubsContentDiv.querySelectorAll('.section-block');
                          sectionBlocks.forEach(section => {
                               if (section.offsetWidth > maxWidth) {
                                   maxWidth = section.offsetWidth;
@@ -1698,7 +1698,7 @@ body.modal-open .left-menu a {
                                                    populateUnassignedClubsSelect(unassignedClubSelect, null);
                                               }
                                            }
-                                          if (manageTeamsModal.style.display === 'block' && baseTeamNameInModalSpan && baseTeamNameInModalSpan.textContent === `Tím: ${baseTeamName}`) {
+                                          if (manageTeamsModal.style.display === 'block' && baseTeamNameInModalSpan && baseTeamNameInModalSpan.textContent === `Tímy: ${baseTeamName}`) {
                                                closeManageTeamsModal();
                                           }
                                    } catch (error) {
@@ -1732,7 +1732,7 @@ body.modal-open .left-menu a {
              async function openManageTeamsModal(baseTeamName, individualTeams) {
                   openModal(manageTeamsModal);
                   if (!baseTeamNameInModalSpan) { console.error('FATAL ERROR: baseTeamNameInModalSpan is null!'); return; }
-                  baseTeamNameInModalSpan.textContent = `Tím: ${baseTeamName}`;
+                  baseTeamNameInModalSpan.textContent = `Tímy: ${baseTeamName}`;
                   if (!teamsListInModalDiv) { console.error('FATAL ERROR: teamsListInModalDiv is null!'); return; }
                   teamsListInModalDiv.innerHTML = '';
                   if (!individualTeams || individualTeams.length === 0) {
@@ -2371,7 +2371,7 @@ body.modal-open .left-menu a {
                          const newCategoryDocRef = doc(categoriesCollectionRef, newCategoryName);
                          try {
                               const existingDoc = await getDoc(newCategoryDocRef);
-                              if (existingDoc.exists()) { alert(`Kategória "${newCategoryName}" už existuje!`); return; }
+                              if (existingDoc.exists()) { alert(`Kategória s názvom "${newCategoryName}" už existuje!`); return; }
                               const oldCategoryDocRef = doc(categoriesCollectionRef, oldCategoryName);
                               const oldDocSnapshot = await getDoc(oldCategoryDocRef);
                               if (!oldDocSnapshot.exists()) { console.error(`Chyba: Pôvodný dokument kategórie ${oldCategoryName} nenájdený na úpravu.`); alert("Pôvodná kategória na úpravu nebola nájdena."); if (categoryModal) closeModal(categoryModal); if (categoryForm) categoryForm.reset(); currentCategoryModalMode = 'add'; editingCategoryName = null; loadCategoriesTable(); return; }
