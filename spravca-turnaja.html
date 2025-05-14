@@ -1698,7 +1698,7 @@ body.modal-open .left-menu a {
                                                    populateUnassignedClubsSelect(unassignedClubSelect, null);
                                               }
                                            }
-                                          if (manageTeamsModal.style.display === 'block' && baseTeamNameInModalSpan && baseTeamNameInModalSpan.textContent === `Tímy: ${baseTeamName}`) {
+                                          if (manageTeamsModal.style.display === 'block' && baseTeamNameInModalSpan && baseTeamNameInModalSpan.textContent === `Tím: ${baseTeamName}`) {
                                                closeManageTeamsModal();
                                           }
                                    } catch (error) {
@@ -1732,7 +1732,7 @@ body.modal-open .left-menu a {
              async function openManageTeamsModal(baseTeamName, individualTeams) {
                   openModal(manageTeamsModal);
                   if (!baseTeamNameInModalSpan) { console.error('FATAL ERROR: baseTeamNameInModalSpan is null!'); return; }
-                  baseTeamNameInModalSpan.textContent = `Tímy: ${baseTeamName}`;
+                  baseTeamNameInModalSpan.textContent = `Tím: ${baseTeamName}`;
                   if (!teamsListInModalDiv) { console.error('FATAL ERROR: teamsListInModalDiv is null!'); return; }
                   teamsListInModalDiv.innerHTML = '';
                   if (!individualTeams || individualTeams.length === 0) {
