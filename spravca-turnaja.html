@@ -483,19 +483,20 @@
 
         /* --- Responsive adjustments for clubsContent --- */
         @media (min-width: 577px) { /* 2 items per row */
-             #clubsContent .section-block {
-                  flex: 0 0 calc(50% - 20px); /* Dva stĺpce */
-                  min-width: 0; /* Allow shrinking below basis if needed */
+              #clubsContent .section-block {
+              /* Corrected calc for 2 items with 20px gap */
+              flex: 0 0 calc(50% - 10px);
+              min-width: 0;
              }
         }
 
-        @media (min-width: 993px) { /* 3 items per row - ADJUSTED FROM 25% */
-             #clubsContent .section-block {
-                  /* Nastavená požadovaná šírka pre 3 stĺpce */
-                  flex: 0 0 calc(33.33% - 20px);
-                  min-width: 0; /* Allow shrinking below basis if needed */
-             }
-        }
+    @media (min-width: 993px) { /* 3 items per row */
+         #clubsContent .section-block {
+              /* Corrected calc for 3 items with 20px gap */
+              flex: 0 0 calc((100% - 40px) / 3);
+              min-width: 0;
+         }
+    }
 
          /* Default pre najmenšie obrazovky (1 stĺpec) zostáva flex: 1 100%; */
 
