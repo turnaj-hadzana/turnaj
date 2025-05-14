@@ -1710,7 +1710,7 @@ async function displayCreatedTeams() {
                   deleteAllButton.textContent = 'Vymazať';
                   deleteAllButton.classList.add('action-button', 'delete-button');
                   deleteAllButton.onclick = async () => {
-                      if (!confirm(`Naozaj chcete vymazať VŠETKY tímy s názvom "${baseTeamName}" (${teamSummary.originalTeams.length} ks)?`)) {
+                      if (!confirm(`Naozaj chcete vymazať VŠETKY tímy s názvom "${baseTeamName}"?`)) {
                           return;
                       }
                       try {
@@ -2558,7 +2558,7 @@ async function displayCreatedTeams() {
                         await batch.commit();
                          let resultMessage = `Pokus o vytvorenie tímov dokončený. Úspešne vytvorených: ${successfullyAddedCount}.`;
                          if (failedCreations.length > 0) {
-                             resultMessage += ` Niektoré tímy boli preskočené, pretože dokumenty s príslušnými ID už existovali (${failedCreations.length} ks).`;
+                             resultMessage += ` Niektoré tímy boli preskočené, pretože dokumenty s príslušnými ID už existovali.`;
                          } else {
                              resultMessage += " Všetky plánované tímy boli úspešne vytvorené.";
                          }
