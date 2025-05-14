@@ -2655,8 +2655,7 @@ body.modal-open .left-menu a {
             if (clubFilterCategorySelect) {
                  clubFilterCategorySelect.addEventListener('change', () => {
                       const selectedCategoryId = clubFilterCategorySelect.value;
-                      populateClubFilterGroups(selectedCategoryId); // Update group filter based on category
-                      await populateClubFilterGroups(selectedCategoryId);
+                      await populateClubFilterGroups(selectedCategoryId); // Toto volanie zostáva s await
                  });
             } else { console.error("Club filter category select not found!"); }
 
