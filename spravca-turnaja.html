@@ -377,13 +377,13 @@
            }
         @media (min-width: 577px) {
               #clubsContent .section-block {
-              flex: 0 0 calc(40% - 10px);
+              flex: 0 0 calc(50% - 10px);
               min-width: 0;
              }
         }
     @media (min-width: 993px) {
          #clubsContent .section-block {
-              flex: 0 0 calc((90% - 40px) / 3);
+              flex: 0 0 calc((100% - 40px) / 3);
               min-width: 0;
          }
     }
@@ -846,22 +846,21 @@ body.modal-open .left-menu a:hover {
       editingGroupId = null;
       groupForm.reset();
       groupNameInput.disabled = false;
-      groupFormSubmitButton.textContent = 'Uložiť';
+      if (groupFormSubmitButton) groupFormSubmitButton.textContent = 'Uložiť';
       groupCategorySelect.value = "";
+      if (!groupModalTitle) { console.error('FATAL ERROR: groupModalTitle element not found!'); return; }
       if (groupId && groupData) {
           currentGroupModalMode = 'edit';
           editingGroupId = groupId;
-          if (!groupModalTitle) { console.error('FATAL ERROR: groupModalTitle is null in edit mode!'); return; }
           groupModalTitle.textContent = 'Premenovať skupinu';
-          groupFormSubmitButton.textContent = 'Uložiť zmeny';
+          if (groupFormSubmitButton) groupFormSubmitButton.textContent = 'Uložiť zmeny';
           await populateCategorySelect(groupCategorySelect, groupData.categoryId);
-          groupNameInput.value = groupData.name;
+          if (groupNameInput) groupNameInput.value = groupData.name;
       } else {
-          if (!groupModalTitle) { console.error('FATAL ERROR: groupModalTitle is null in add mode!'); return; }
           groupModalTitle.textContent = 'Pridať skupinu';
           await populateCategorySelect(groupCategorySelect, null);
       }
-      groupNameInput.focus();
+      if (groupNameInput) groupNameInput.focus();
      }
              async function displayGroupsByCategory() {
                   groupsContentDiv.innerHTML = '';
