@@ -7,7 +7,7 @@
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="style.css">
 
-    <style>
+<style>
         /* --- General Styles --- */
         body {
             font-family: sans-serif;
@@ -65,12 +65,14 @@
         .content-wrapper {
             display: flex;
             margin-top: 20px;
-            padding: 0 20px;
+            padding: 0 20px; /* Ponecháme celkové odsadenie stránky */
+            gap: 20px; /* Pridáme medzeru medzi ľavé menu a hlavný obsah */
         }
 
         .left-menu {
-            width: 200px;
-            margin-right: 20px;
+            /* width: 180px; Remove fixed width */
+            /* margin-right: 15px; Remove margin-right, replaced by gap on parent */
+            flex: 0 0 10%; /* Základná veľkosť 10%, nerasť, nezmenšovať sa pod túto veľkosť */
             background-color: #fff;
             padding: 15px;
             border-radius: 8px;
@@ -108,11 +110,12 @@
         }
 
         main {
-            flex-grow: 1;
-            padding: 0;
-            box-shadow: none;
-            background-color: transparent;
-            min-width: 0; /* Zabráni, aby obsah main bloku tlačil na menu */
+            /* flex-grow: 1; Modify flex shorthand */
+            flex: 1 1 90%; /* Základná veľkosť 90%, rásť a zmenšovať sa podľa potreby */
+            padding: 0; /* Padding pre jednotlivé bloky je vo .section-block */
+            box-shadow: none; /* Box shadow pre jednotlivé bloky je vo .section-block */
+            background-color: transparent; /* Background pre jednotlivé bloky je vo .section-block */
+            min-width: 0; /* Umožní zmenšiť main blok, ak obsah tlačí */
              /* overflow-x: auto; */ /* Vrátené späť, keďže nepomohlo */
         }
 
@@ -130,7 +133,7 @@
         /* Styles for the table element itself, regardless of the wrapper */
         #categoryTable, .category-group-table, #clubsTable, #createdTeamsTable {
             border-collapse: collapse;
-            width: 100%; /* Keep 100% width for these tables */
+            width: 100%; /* Keep 100% width for these tables within their parent */
             border: none;
             overflow: hidden;
         }
@@ -151,9 +154,9 @@
         .category-group-section {
             /* Inherits background, padding, radius, shadow from .section-block */
             /* Flex properties only for group sections when inside #groupsContent */
-            min-width: 300px;
+            min-width: 300px; /* Ponecháme min-width, aby sa flex položky príliš nezmenšili */
             flex-grow: 1;
-            flex-basis: 0;
+            flex-basis: 0; /* Reset flex-basis pre flex-wrap kontajner */
         }
 
         /* Style for the main container of group sections (the flex container) */
