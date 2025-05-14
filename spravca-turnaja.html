@@ -1485,99 +1485,75 @@ body.modal-open .left-menu a {
              async function displayClubs() {
                 clubsContentDiv.innerHTML = '';
                 try {
-                    let q = query(clubsCollectionRef, where('groupId', '!=', null));
                     const selectedCategoryId = clubFilterCategorySelect.value;
                     const selectedGroupId = clubFilterGroupSelect.value;
 
-                    // Pridana validacia pre filter - ak vyberie kategoriu, ale neexistuju v nej skupiny
-                    if (selectedCategoryId && selectedCategoryId !== '' && clubFilterGroupSelect && clubFilterGroupSelect.disabled && clubFilterGroupSelect.options.length <= 1) {
-                         const message = document.createElement('p');
-                         message.textContent = `V kategórii "${selectedCategoryId}" zatiaľ nie sú žiadne skupiny, a teda ani žiadne priradené kluby na zobrazenie.`;
-                         clubsContentDiv.appendChild(message);
-                         return;
+                    // 1. Fetch all groups for the selected category (if category is filtered)
+                    let allGroupsForSelectedCategory = [];
+                    if (selectedCategoryId && selectedCategoryId !== '') {
+                         const groupsQueryForCategory = query(groupsCollectionRef, where('categoryId', '==', selectedCategoryId));
+                         const groupsSnapshotForCategory = await getDocs(groupsQueryForCategory);
+                         allGroupsForSelectedCategory = groupsSnapshotForCategory.docs.map(doc => ({ id: doc.id, data: doc.data() }));
+                          // Sort groups by name/ID
+                         allGroupsForSelectedCategory.sort((a, b) => a.id.localeCompare(b.id));
                     }
 
+                    // 2. Fetch assigned clubs based on filters
+                    let clubsQuery;
                     if (selectedCategoryId && selectedCategoryId !== '') {
-                        // Ak je vybrana kategoria, filtrujeme podla nej
                         if (selectedGroupId && selectedGroupId !== '') {
-                            // Ak je vybrana aj skupina
-                            q = query(clubsCollectionRef, where('categoryId', '==', selectedCategoryId), where('groupId', '==', selectedGroupId));
+                            // If both category and group are selected, get clubs for that specific group
+                            clubsQuery = query(clubsCollectionRef, where('categoryId', '==', selectedCategoryId), where('groupId', '==', selectedGroupId));
                         } else {
-                            // Ak nie je vybrana skupina, zobrazime vsetky kluby v danej kategorii, ktore su priradene do akejkolvek skupiny
-                            q = query(clubsCollectionRef, where('categoryId', '==', selectedCategoryId), where('groupId', '!=', null));
+                            // If only category is selected, get all assigned clubs in that category
+                            clubsQuery = query(clubsCollectionRef, where('categoryId', '==', selectedCategoryId), where('groupId', '!=', null));
                         }
                     } else {
-                         // Ak nie je vybrana kategoria, zobrazime vsetky kluby priradene do akejkolvek skupiny
-                         q = query(clubsCollectionRef, where('groupId', '!=', null));
+                         // If no category is selected, get all assigned clubs regardless of category/group
+                        clubsQuery = query(clubsCollectionRef, where('groupId', '!=', null));
                     }
 
-                    const clubsSnapshot = await getDocs(q);
-                    const clubs = clubsSnapshot.docs.map(clubDoc => ({ id: clubDoc.id, data: clubDoc.data() }));
+                    const clubsSnapshot = await getDocs(clubsQuery);
+                    const fetchedClubs = clubsSnapshot.docs.map(clubDoc => ({ id: clubDoc.id, data: clubDoc.data() }));
 
-                    if (clubs.length === 0) {
-                        const message = document.createElement('p');
-                         if (selectedCategoryId && selectedCategoryId !== '') {
-                              if (selectedGroupId && selectedGroupId !== '') {
-                                   const groupNameParts = selectedGroupId.split(' - ');
-                                   const pureGroupName = groupNameParts.length > 1 ? groupNameParts.slice(1).join(' - ') : selectedGroupId;
-                                   message.textContent = `V skupine "${pureGroupName}" v kategórii "${selectedCategoryId}" zatiaľ nie sú žiadne kluby.`;
-                              } else {
-                                   message.textContent = `V kategórii "${selectedCategoryId}" zatiaľ nie sú žiadne priradené kluby.`;
-                              }
-                         } else {
-                            message.textContent = "Žiadne kluby zatiaľ neboli priradené do skupín.";
-                         }
-                        clubsContentDiv.appendChild(message);
-                        return;
-                    }
-
-                    const clubsByCategoryAndGroup = {};
-                    clubs.forEach(club => {
-                        const categoryId = club.data.categoryId;
-                        const groupId = club.data.groupId;
-                         // Zobrazujeme len kluby, ktore maju priradenu kategoriu AJ skupinu
-                         if (categoryId && groupId && categoryId !== 'null' && groupId !== 'null') {
-                             if (!clubsByCategoryAndGroup[categoryId]) {
-                                 clubsByCategoryAndGroup[categoryId] = {};
+                     // 3. Create a map of fetched clubs keyed by groupId
+                     const clubsByGroupId = {};
+                     fetchedClubs.forEach(club => {
+                         const groupId = club.data.groupId;
+                         if (groupId) {
+                             if (!clubsByGroupId[groupId]) {
+                                 clubsByGroupId[groupId] = [];
                              }
-                             if (!clubsByCategoryAndGroup[categoryId][groupId]) {
-                                 clubsByCategoryAndGroup[categoryId][groupId] = [];
-                             }
-                              clubsByCategoryAndGroup[categoryId][groupId].push(club);
-                         } else {
-                            // Tieto kluby by sa nemali objavit vo vysledkoch dotazu s where('groupId', '!=', null)
-                            // ale pre istotu ich ignorujeme pri zobrazeni
+                             clubsByGroupId[groupId].push(club);
                          }
-                    });
-
-                    const sortedCategories = Object.keys(clubsByCategoryAndGroup).sort();
-
-                     // Ak po filtrovani alebo chybnych datach nemame ziadne zoskupene kluby na zobrazenie
-                     if (sortedCategories.length === 0 && clubs.length > 0) {
-                          const message = document.createElement('p');
-                           message.textContent = "Existujú priradené kluby zodpovedajúce filtru, ale žiadne nemajú konzistentne priradenú kategóriu a skupinu pre zobrazenie tu (možné chyby v dátach).";
-                          clubsContentDiv.appendChild(message);
-                          return;
-                     } else if (sortedCategories.length === 0 && clubs.length === 0) {
-                          // Toto uz bolo osetrene vyssie, ale pre istotu
-                            const message = document.createElement('p');
-                            message.textContent = "Žiadne kluby zodpovedajúce filtru neboli nájdené.";
-                            clubsContentDiv.appendChild(message);
-                            return;
-                     }
+                     });
 
 
-                     const generatedClubSections = [];
-                    sortedCategories.forEach(categoryId => {
-                        const sortedGroups = Object.keys(clubsByCategoryAndGroup[categoryId]).sort();
-                        sortedGroups.forEach(groupId => {
-                            const clubsInThisGroup = clubsByCategoryAndGroup[categoryId][groupId];
+                    // Now, decide what to display based on the selected category filter state
+                    if (selectedCategoryId && selectedCategoryId !== '') {
+                        // User filtered by category - show all groups in that category, populated with clubs
+                        if (allGroupsForSelectedCategory.length === 0) {
+                             // If no groups exist in the selected category AT ALL (this is different from no clubs)
+                             const message = document.createElement('p');
+                             message.textContent = `V kategórii "${selectedCategoryId}" zatiaľ nie sú žiadne skupiny.`;
+                             clubsContentDiv.appendChild(message);
+                             return;
+                        }
+
+                         // Iterate through the fetched groups and display sections
+                        const generatedClubSections = [];
+                        allGroupsForSelectedCategory.forEach(group => {
+                             // If a specific group filter is applied, only display that one group
+                             if (selectedGroupId && selectedGroupId !== '' && group.id !== selectedGroupId) {
+                                  return; // Skip this group if a specific group filter is active
+                             }
+
                             const groupClubSectionDiv = document.createElement('div');
                             groupClubSectionDiv.classList.add('section-block');
-                            const groupNameParts = groupId.split(' - ');
-                            const groupName = groupNameParts.length > 1 ? groupNameParts.slice(1).join(' - ') : groupId;
+                            const groupNameParts = group.id.split(' - ');
+                            const groupName = groupNameParts.length > 1 ? groupNameParts.slice(1).join(' - ') : group.id;
                             const sectionHeading = document.createElement('h2');
-                            sectionHeading.textContent = `${categoryId} - ${groupName}`;
+                             sectionHeading.textContent = `${group.data.categoryId} - ${groupName}`; // Use categoryId from group data
                             groupClubSectionDiv.appendChild(sectionHeading);
 
                             const clubTable = document.createElement('table');
@@ -1585,8 +1561,8 @@ body.modal-open .left-menu a {
                             const thead = document.createElement('thead');
                             const headerRow = document.createElement('tr');
                             const orderTh = document.createElement('th');
-                            orderTh.textContent = ''; // Pre poradové číslo
-                            orderTh.style.width = '30px'; // Zmenšená šírka pre číslo
+                            orderTh.textContent = '';
+                            orderTh.style.width = '30px';
                             const clubNameTh = document.createElement('th');
                             clubNameTh.textContent = 'Názov klubu';
                              const actionsTh = document.createElement('th');
@@ -1599,6 +1575,8 @@ body.modal-open .left-menu a {
                              clubTable.appendChild(thead);
                             const tbody = document.createElement('tbody');
 
+                            const clubsInThisGroup = clubsByGroupId[group.id] || []; // Get clubs for this group from the map
+
                             if (clubsInThisGroup.length === 0) {
                                  const noClubsRow = document.createElement('tr');
                                  const td = document.createElement('td');
@@ -1607,7 +1585,7 @@ body.modal-open .left-menu a {
                                  td.style.textAlign = 'center';
                                  tbody.appendChild(noClubsRow);
                             } else {
-                                 // Zoradit najprv podla poradia, potom podla mena
+                                 // Sort clubs within this group
                                  clubsInThisGroup.sort((a, b) => {
                                      const orderA = a.data.orderInGroup;
                                      const orderB = b.data.orderInGroup;
@@ -1628,6 +1606,7 @@ body.modal-open .left-menu a {
 
                                  clubsInThisGroup.forEach(club => {
                                      const tr = document.createElement('tr');
+                                      tr.dataset.clubId = club.id; // Pridat data atribut pre jednoduchsie vyhladavanie
                                      const orderTd = document.createElement('td');
                                      orderTd.textContent = typeof club.data.orderInGroup === 'number' ? club.data.orderInGroup : '-';
                                      orderTd.style.textAlign = 'center';
@@ -1647,7 +1626,7 @@ body.modal-open .left-menu a {
                                        unassignClubButton.textContent = 'Odobrať';
                                        unassignClubButton.classList.add('action-button', 'delete-button');
                                        unassignClubButton.onclick = async () => {
-                                           if (!confirm(`Naozaj chcete odobrať klub "${club.data.name}" zo skupiny "${groupName}" v kategórii "${categoryId}"? Tím sa vráti medzi nepriradené tímy.`)) {
+                                           if (!confirm(`Naozaj chcete odobrať klub "${club.data.name}" zo skupiny "${groupName}" v kategórii "${group.data.categoryId}"? Tím sa vráti medzi nepriradené tímy.`)) {
                                                return;
                                            }
                                            try {
@@ -1680,41 +1659,203 @@ body.modal-open .left-menu a {
                                  groupClubSectionDiv.appendChild(clubTable);
                                  generatedClubSections.push(groupClubSectionDiv);
                               });
+
+                         // Append all generated group sections (including potentially empty ones)
+                         generatedClubSections.forEach(sectionDiv => {
+                             clubsContentDiv.appendChild(sectionDiv);
                          });
 
-                     generatedClubSections.forEach(sectionDiv => {
-                         clubsContentDiv.appendChild(sectionDiv);
-                     });
 
-                    // Adjustment for column width consistency (from previous fix)
+                    } else {
+                        // No category filter selected - revert to displaying all assigned clubs, grouped by Category and then Group.
+                        // This part uses the original grouping logic based *only* on fetched clubs.
+                         if (fetchedClubs.length === 0) {
+                              const message = document.createElement('p');
+                             message.textContent = "Žiadne kluby zatiaľ neboli priradené do skupín.";
+                             clubsContentDiv.appendChild(message);
+                             return;
+                         }
+
+                        const clubsByCategoryAndGroup = {};
+                        fetchedClubs.forEach(club => {
+                            const categoryId = club.data.categoryId;
+                            const groupId = club.data.groupId;
+                             if (categoryId && groupId) { // Only group clubs that have both assigned
+                                 if (!clubsByCategoryAndGroup[categoryId]) {
+                                     clubsByCategoryAndGroup[categoryId] = {};
+                                 }
+                                 if (!clubsByCategoryAndGroup[categoryId][groupId]) {
+                                     clubsByCategoryAndGroup[categoryId][groupId] = [];
+                                 }
+                                  clubsByCategoryAndGroup[categoryId][groupId].push(club);
+                             }
+                        });
+
+                         const sortedCategories = Object.keys(clubsByCategoryAndGroup).sort();
+
+                         if (sortedCategories.length === 0 && fetchedClubs.length > 0) {
+                             const message = document.createElement('p');
+                              message.textContent = "Existujú priradené kluby, ale žiadne nemajú konzistentne priradenú kategóriu a skupinu pre zobrazenie tu (možné chyby v dátach).";
+                             clubsContentDiv.appendChild(message);
+                             return;
+                          } else if (sortedCategories.length === 0 && fetchedClubs.length === 0) {
+                             const message = document.createElement('p');
+                             message.textContent = "Žiadne kluby zodpovedajúce filtru neboli nájdené."; // This case should be covered by the first check, but defensive
+                             clubsContentDiv.appendChild(message);
+                             return;
+                          }
+
+
+                         const generatedClubSections = [];
+                         sortedCategories.forEach(categoryId => {
+                             const sortedGroups = Object.keys(clubsByCategoryAndGroup[categoryId]).sort();
+                             sortedGroups.forEach(groupId => {
+                                 const clubsInThisGroup = clubsByCategoryAndGroup[categoryId][groupId];
+                                 const groupClubSectionDiv = document.createElement('div');
+                                 groupClubSectionDiv.classList.add('section-block');
+                                 const groupNameParts = groupId.split(' - ');
+                                 const groupName = groupNameParts.length > 1 ? groupNameParts.slice(1).join(' - ') : groupId;
+                                 const sectionHeading = document.createElement('h2');
+                                  sectionHeading.textContent = `${categoryId} - ${groupName}`;
+                                 groupClubSectionDiv.appendChild(sectionHeading);
+
+                                 const clubTable = document.createElement('table');
+                                 clubTable.classList.add('group-clubs-table');
+                                 const thead = document.createElement('thead');
+                                 const headerRow = document.createElement('tr');
+                                 const orderTh = document.createElement('th');
+                                 orderTh.textContent = ''; // Pre poradové číslo
+                                 orderTh.style.width = '30px'; // Zmenšená šírka pre číslo
+                                 const clubNameTh = document.createElement('th');
+                                 clubNameTh.textContent = 'Názov klubu';
+                                  const actionsTh = document.createElement('th');
+                                  actionsTh.textContent = '';
+                                  actionsTh.style.width = '150px';
+                                  headerRow.appendChild(orderTh);
+                                  headerRow.appendChild(clubNameTh);
+                                  headerRow.appendChild(actionsTh);
+                                  thead.appendChild(headerRow);
+                                  clubTable.appendChild(thead);
+                                 const tbody = document.createElement('tbody');
+
+                                  if (clubsInThisGroup.length === 0) {
+                                       // This case should not happen based on how clubsByCategoryAndGroup is built
+                                       const noClubsRow = document.createElement('tr');
+                                       const td = document.createElement('td');
+                                       td.colSpan = 3;
+                                       td.textContent = `Žiadne kluby v tejto skupine.`;
+                                       td.style.textAlign = 'center';
+                                       tbody.appendChild(noClubsRow);
+                                  } else {
+                                       // Sort clubs within this group (same sorting logic)
+                                       clubsInThisGroup.sort((a, b) => {
+                                            const orderA = a.data.orderInGroup;
+                                            const orderB = b.data.orderInGroup;
+                                            const numA = typeof orderA === 'number' ? orderA : Infinity;
+                                            const numB = typeof orderB === 'number' ? orderB : Infinity;
+                                            if (numA !== numB) {
+                                                 return numA - numB;
+                                            } else {
+                                                const nameA = a.data.name || '';
+                                                const nameB = b.data.name || '';
+                                                return nameA.localeCompare(nameB, 'sk-SK');
+                                            }
+                                       });
+
+                                       clubsInThisGroup.forEach(club => {
+                                           const tr = document.createElement('tr');
+                                           tr.dataset.clubId = club.id;
+                                           const orderTd = document.createElement('td');
+                                           orderTd.textContent = typeof club.data.orderInGroup === 'number' ? club.data.orderInGroup : '-';
+                                           orderTd.style.textAlign = 'center';
+                                           const nameTd = document.createElement('td');
+                                           nameTd.textContent = club.data.name;
+                                           const actionsTd = document.createElement('td');
+                                           actionsTd.style.whiteSpace = 'nowrap';
+
+                                            // Edit button
+                                            const editClubButton = document.createElement('button');
+                                            editClubButton.textContent = 'Upraviť';
+                                            editClubButton.classList.add('action-button');
+                                            editClubButton.onclick = () => {
+                                                 openClubModal(club.id, club.data);
+                                             };
+                                            actionsTd.appendChild(editClubButton);
+
+                                             // Unassign button
+                                             const unassignClubButton = document.createElement('button');
+                                             unassignClubButton.textContent = 'Odobrať';
+                                             unassignClubButton.classList.add('action-button', 'delete-button');
+                                             unassignClubButton.onclick = async () => {
+                                                 if (!confirm(`Naozaj chcete odobrať klub "${club.data.name}" zo skupiny "${groupName}" v kategórii "${categoryId}"? Tím sa vráti medzi nepriradené tímy.`)) {
+                                                     return;
+                                                 }
+                                                 try {
+                                                      await updateDoc(doc(clubsCollectionRef, club.id), {
+                                                          groupId: null,
+                                                          orderInGroup: null
+                                                      });
+                                                      displayClubs();
+                                                      displayCreatedTeams();
+                                                       if (manageTeamsModal.style.display === 'block' && teamsListInModalDiv && teamsListInModalDiv.querySelector(`tr[data-club-id="${club.id}"]`)) {
+                                                           closeManageTeamsModal();
+                                                       }
+                                                 } catch (error) {
+                                                      console.error('Chyba pri odpriradzovaní klubu: ', error);
+                                                      alert('Chyba pri odpriradzovaní klubu! Prosím, skúste znova.');
+                                                 }
+                                             };
+                                            actionsTd.appendChild(unassignClubButton);
+
+                                           tr.appendChild(orderTd);
+                                           tr.appendChild(nameTd);
+                                           actionsTd.appendChild(editClubButton); // Add Edit button
+                                           actionsTd.appendChild(unassignClubButton); // Add Remove button
+                                           tr.appendChild(actionsTd);
+                                           tbody.appendChild(tr);
+                                       });
+                                    }
+                                    clubTable.appendChild(tbody);
+                                    groupClubSectionDiv.appendChild(clubTable);
+                                    generatedClubSections.push(groupClubSectionDiv);
+                                 });
+                              });
+
+                           generatedClubSections.forEach(sectionDiv => {
+                                clubsContentDiv.appendChild(sectionDiv);
+                           });
+                      }
+
+
+                   // Adjustment for column width consistency (same as original)
                     clubsContentDiv.querySelectorAll('.section-block').forEach(section => {
-                          section.style.width = 'auto';
-                           section.style.flexGrow = '0';
-                           section.style.flexShrink = '0';
-                           section.style.flexBasis = 'auto';
-                     });
+                         section.style.width = 'auto';
+                         section.style.flexGrow = '0';
+                         section.style.flexShrink = '0';
+                         section.style.flexBasis = 'auto';
+                    });
                     const sectionBlocks = clubsContentDiv.querySelectorAll('.section-block');
                     if (window.innerWidth > 993 && sectionBlocks.length > 2) {
-                         let maxWidth = 0;
-                         sectionBlocks.forEach(section => {
-                              if (section.offsetWidth > maxWidth) {
-                                  maxWidth = section.offsetWidth;
-                              }
-                         });
-                         if (maxWidth > 0) {
-                             sectionBlocks.forEach(section => {
-                                 section.style.width = maxWidth + 'px';
-                             });
-                         }
+                        let maxWidth = 0;
+                        sectionBlocks.forEach(section => {
+                             if (section.offsetWidth > maxWidth) {
+                                 maxWidth = section.offsetWidth;
+                             }
+                        });
+                        if (maxWidth > 0) {
+                            sectionBlocks.forEach(section => {
+                                section.style.width = maxWidth + 'px';
+                            });
+                        }
                     }
 
 
-                    } catch (error) {
-                        console.error('Chyba pri načítaní alebo zobrazovaní klubov: ', error);
-                        const errorMessage = document.createElement('p');
-                        errorMessage.textContent = 'Chyba pri načítaní dát klubov priradených do skupín.';
-                        clubsContentDiv.appendChild(errorMessage);
-                    }
+                } catch (error) {
+                    console.error('Chyba pri načítaní alebo zobrazovaní klubov: ', error);
+                    const errorMessage = document.createElement('p');
+                    errorMessage.textContent = 'Chyba pri načítaní dát klubov alebo skupín pre zobrazenie.'; // More general error message
+                    clubsContentDiv.appendChild(errorMessage);
+                }
              }
              async function displayCreatedTeams() {
                   createdTeamsTableBody.innerHTML = '';
@@ -1832,11 +1973,11 @@ body.modal-open .left-menu a {
                                             displayClubs(); // Obnovit zobrazenie klubov v skupinach
                                        }
                                          // Ak je otvorene modalne okno vytvarania timov a pouzivatel by chcel vytvorit dalsie, obnovit zoznam kategorii
-                                         if (teamCreationModal && openModalCount > 0) {
+                                         if (teamCreationModal && teamCreationModal.style.display === 'block') {
                                               loadAllCategoriesForDynamicSelects();
                                          }
                                           // Ak je otvorene modalne okno klubu a upraval sa tim s tymto nazvom, zatvorit ho
-                                          if (clubModal && openModalCount > 0) {
+                                          if (clubModal && clubModal.style.display === 'block') {
                                               if (currentClubModalMode === 'edit-assigned' && teamSummary.originalTeams.some(t => t.id === editingClubId)) {
                                                   if (clubModal) closeModal(clubModal);
                                               }
