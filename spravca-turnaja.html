@@ -1173,7 +1173,7 @@ body.modal-open .left-menu a {
                                    if (clubCategorySelect && clubGroupSelect) {
                                         const categoryIdToSet = clubData.categoryId || '';
                                         clubCategorySelect.value = categoryIdToSet;
-                                        clubCategorySelect.disabled = false; // ODKOMENTOVANE - Odblokovat kategoriu po vybrati timu
+//                                        clubCategorySelect.disabled = false; // ODKOMENTOVANE - Odblokovat kategoriu po vybrati timu
                                          await populateGroupSelect(categoryIdToSet, clubGroupSelect, null);
                                          clubGroupSelect.disabled = false;
                                          if (categoryIdToSet && categoryIdToSet !== '' && clubGroupSelect.options.length > 1) {
