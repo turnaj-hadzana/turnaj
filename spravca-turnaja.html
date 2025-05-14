@@ -197,8 +197,11 @@
          }
          .group-clubs-table tbody td:first-child {
              text-align: center;
-             padding: 10px 5px; /* Reduced padding for the first column */
+             padding: 10px 5px; /* Keep reduced padding for the first column */
          }
+          .group-clubs-table tbody td:nth-child(2) {
+              white-space: nowrap; /* Prevent wrapping for the second column */
+          }
          #manageTeamsModal .group-clubs-table tbody td:first-child {
              text-align: center;
          }
@@ -228,7 +231,7 @@
         #createdTeamsTable td:last-child,
          #manageTeamsModal .group-clubs-table td:last-child
          {
-             white-space: nowrap;
+             white-space: nowrap; /* Keep nowrap for the last column to keep buttons inline */
          }
         #clubsContent {
             display: flex;
@@ -239,7 +242,6 @@
             margin-bottom: 20px;
         }
         #clubsContent .section-block {
-             /* Flex properties moved to the base .section-block rule */
              min-width: 250px;
              box-sizing: border-box;
              margin-bottom: 0;
