@@ -230,7 +230,7 @@
             display: flex;
             flex-wrap: wrap;
             gap: 20px;
-            justify-content: flex-start;
+            justify-content: center;
             padding: 20px 20px 20px 30px;
             margin-bottom: 20px;
         }
@@ -383,13 +383,13 @@
            }
         @media (min-width: 577px) {
               #clubsContent .section-block {
-              flex: 0 0 calc(40% - 10px);
+              flex: 0 0 calc(50% - 10px);
               min-width: 0;
              }
         }
     @media (min-width: 993px) {
          #clubsContent .section-block {
-              flex: 0 0 calc((80% - 40px) / 3);
+              flex: 0 0 calc((100% - 40px) / 3);
               min-width: 0;
          }
     }
@@ -1240,7 +1240,7 @@ body.modal-open .left-menu a:hover {
                             const clubDocToAssign = await getDoc(clubRefToAssign);
                             if (!clubDocToAssign.exists()) {
                                 alert('Vybraný tím nebol nájdený alebo už bol priradený/zmazaný.');
-                                populateUnassignedClubsSelect(unassignedClubSelect, null);
+                                populateUnassignedClubSelect(unassignedClubSelect, null);
                                 if (clubModal) closeModal(clubModal);
                                 if (clubForm) clubForm.reset();
                                  if (unassignedClubSelectContainer) unassignedClubSelectContainer.style.display = 'block';
