@@ -144,7 +144,8 @@
             border: none;
             overflow: hidden;
             table-layout: auto;
-            font-size: 0.9em; /* Zmenšená veľkosť písma pre text tabuľky */
+            font-size: 0.9em;
+            /* width: 100%; */ /* Pôvodná šírka 100% - zakomentovaná */
         }
         .category-group-section {
             min-width: 300px;
@@ -168,8 +169,8 @@
         }
          #manageTeamsModal .group-clubs-table {
              margin-bottom: 15px;
-             width: 100%;
-             font-size: 0.9em; /* Zmenšená veľkosť písma pre text tabuľky v modáli */
+             /* width: 100%; */ /* Pôvodná šírka 100% - zakomentovaná */
+             font-size: 0.9em;
          }
         #categoryTable th, #clubsTable th, .category-group-table th, .group-clubs-table th, #createdTeamsTable th,
          #manageTeamsModal .group-clubs-table th
@@ -180,7 +181,8 @@
             text-align: left;
             padding: 12px 15px;
             border-bottom: 2px solid #ddd;
-             font-size: 0.9em; /* Zmenšená veľkosť písma pre hlavičku tabuľky */
+             font-size: 0.9em;
+             white-space: nowrap; /* Zabraňuje zalomeniu textu v hlavičke */
         }
         #categoryTable td, #clubsTable td, .category-group-table td, .group-clubs-table td, #createdTeamsTable td,
          #manageTeamsModal .group-clubs-table td
@@ -188,7 +190,8 @@
             text-align: left;
             padding: 10px 15px;
             border-bottom: 1px solid #eee;
-             font-size: 0.9em; /* Zmenšená veľkosť písma pre bunky tabuľky */
+             font-size: 0.9em;
+             white-space: nowrap; /* Zabraňuje zalomeniu textu v bunkách */
         }
          .category-group-table td {
             white-space: nowrap;
@@ -204,7 +207,7 @@
              padding: 10px 5px; /* Keep reduced padding for the first column */
          }
           .group-clubs-table tbody td:nth-child(2) {
-              white-space: nowrap; /* Prevent wrapping for the second column */
+              white-space: nowrap; /* Prevent wrapping for the second column - už je pokryté všeobecným td pravidlom, ale ponechané pre prehľadnosť */
           }
          #manageTeamsModal .group-clubs-table tbody td:first-child {
              text-align: center;
@@ -244,6 +247,8 @@
             justify-content: center;
             padding: 20px 20px 20px 30px;
             margin-bottom: 20px;
+            /* Pridať overflow-x ak by tabuľky pretekali */
+             overflow-x: auto; /* Pridávame horizontálny scroll, ak obsah pretečie */
         }
         #clubsContent .section-block {
              min-width: 250px;
@@ -251,7 +256,7 @@
              margin-bottom: 0;
         }
         #clubsContent .section-block table {
-             width: 100%;
+             /* width: 100%; */ /* Už nie je potrebné, šírka sa prispôsobí obsahu */
         }
         #teamCreationContentSection table {
              width: 100%;
@@ -262,7 +267,7 @@
             border: none;
             border-radius: 4px;
             cursor: pointer;
-            font-size: 0.9em; /* Zmenšená veľkosť písma pre tlačidlá */
+            font-size: 0.9em;
             transition: background-color 0.3s ease;
         }
         .action-button:not(.delete-button) {
@@ -296,6 +301,8 @@
             max-width: 500px;
             border-radius: 8px;
             position: relative;
+             /* Pridať overflow-x pre modálne okná s tabuľkami, ak by pretekali */
+             overflow-x: auto;
         }
         .modal-content h2 {
              margin-top: 0;
@@ -383,7 +390,7 @@
             }
            .category-count-pair .action-button.delete-button {
                padding: 3px 8px;
-               font-size: 0.8em; /* Zmenšená veľkosť písma pre tlačidlo "Odstrániť" */
+               font-size: 0.8em;
            }
            #teamCategoryCountContainer div {
                margin-bottom: 10px;
