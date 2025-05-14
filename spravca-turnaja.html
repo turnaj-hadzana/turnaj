@@ -197,7 +197,7 @@
          }
          .group-clubs-table tbody td:first-child {
              text-align: center;
-             padding: 10px 5px;
+             padding: 10px 5px; /* Reduced padding for the first column */
          }
          #manageTeamsModal .group-clubs-table tbody td:first-child {
              text-align: center;
@@ -239,6 +239,7 @@
             margin-bottom: 20px;
         }
         #clubsContent .section-block {
+             /* Flex properties moved to the base .section-block rule */
              min-width: 250px;
              box-sizing: border-box;
              margin-bottom: 0;
@@ -411,13 +412,6 @@ body.modal-open .left-menu a:hover {
      background-color: transparent !important;
      cursor: default;
 }
-         .group-clubs-table td:last-child {
-             white-space: normal; /* Allow wrapping */
-             display: flex; /* Use flexbox for column layout */
-             flex-direction: column; /* Stack items vertically */
-             align-items: flex-start; /* Align items to the start (left) */
-             gap: 5px; /* Add space between buttons */
-         }
     </style>
 </head>
 <body>
