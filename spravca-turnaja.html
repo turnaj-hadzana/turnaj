@@ -403,6 +403,10 @@
               min-width: 0;
          }
     }
+body.modal-open .left-menu {
+    opacity: 0.5;
+    transition: opacity 0.3s ease;
+}
 body.modal-open .left-menu a {
     color: #007bff !important;
     font-weight: bold !important;
@@ -412,11 +416,6 @@ body.modal-open .left-menu a {
     outline: none !important;
     pointer-events: none;
     cursor: default;
-}
-body.modal-open .left-menu a:hover {
-     color: #007bff !important;
-     background-color: transparent !important;
-     cursor: default;
 }
     </style>
 </head>
@@ -778,9 +777,9 @@ body.modal-open .left-menu a:hover {
               try {
                   const querySnapshot = await getDocs(categoriesCollectionRef);
                   if (querySnapshot.empty) {
-                      const option = document.createElement('option');
-                      option.value = '';
-                      option.textContent = '-- Žiadne kategórie --';
+                       const option = document.createElement('option');
+                       option.value = '';
+                       option.textContent = '-- Žiadne kategórie --';
                        option.disabled = true;
                       selectElement.appendChild(option);
                        selectElement.disabled = true;
@@ -1602,6 +1601,8 @@ body.modal-open .left-menu a:hover {
                     } catch (error) {
                         console.error('Chyba pri načítaní alebo zobrazovaní klubov: ', error);
                         const errorMessage = document.createElement('p');
+                        errorMessage.textContent = 'Chyba pri načítaní dát klubov priradených do skupín.';
+                        clubsContentDiv.appendChild(errorMessage);
                     }
              }
              async function displayCreatedTeams() {
@@ -2249,9 +2250,9 @@ body.modal-open .left-menu a:hover {
                            if (!clubCategorySelect.disabled && clubCategorySelect.value) {
                                 populateGroupSelect(clubCategorySelect.value, clubGroupSelect, clubGroupSelect.value);
                            } else if (clubGroupSelect) {
-                               clubGroupSelect.innerHTML = '<option value="">-- Najprv vyberte kategóriu --</option>';
-                               clubGroupSelect.disabled = true;
-                               if (clubGroupSelect) clubGroupSelect.required = false;
+                                clubGroupSelect.innerHTML = '<option value="">-- Najprv vyberte kategóriu --</option>';
+                                clubGroupSelect.disabled = true;
+                                if (clubGroupSelect) clubGroupSelect.required = false;
                            }
                            if (clubGroupSelect) clubGroupSelect.required = false;
                            if (orderInGroupInput) orderInGroupInput.required = false;
@@ -2629,7 +2630,6 @@ body.modal-open .left-menu a:hover {
                          } else {
                                if (teamCreationForm) teamCreationForm.reset();
                                if (teamCategoryCountContainer) teamCategoryCountContainer.innerHTML = '';
-                                if (addCategoryCountPairButton) addCategoryCountPairButton.style.display = 'none';
                          }
                     }
                 });
@@ -2640,7 +2640,6 @@ body.modal-open .left-menu a:hover {
                           await loadAllCategoriesForDynamicSelects();
                      }
                      await addCategoryCountPair();
-                     checkIfAddCategoryCountPairButtonShouldBeVisible();
                 });
             } else { console.error("Add category count pair button not found!"); }
     </script>
