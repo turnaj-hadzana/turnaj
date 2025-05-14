@@ -129,6 +129,9 @@
             border-radius: 8px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
             margin-bottom: 20px;
+             flex: 1 1 300px; /* Adjusted flex-basis to encourage multiple columns */
+             min-width: 250px; /* Keep a minimum useful width */
+             box-sizing: border-box;
         }
         #categoryTable, .category-group-table, #clubsTable, #createdTeamsTable {
             border-collapse: collapse;
@@ -235,7 +238,7 @@
             margin-bottom: 20px;
         }
         #clubsContent .section-block {
-             flex: 1 100%;
+             /* Flex properties moved to the base .section-block rule */
              min-width: 250px;
              box-sizing: border-box;
              margin-bottom: 0;
@@ -383,13 +386,13 @@
            }
         @media (min-width: 577px) {
               #clubsContent .section-block {
-              flex: 0 0 calc(50% - 10px);
+              flex: 1 1 calc(50% - 10px); /* Adjusted for 2 columns on medium screens */
               min-width: 0;
              }
         }
     @media (min-width: 993px) {
          #clubsContent .section-block {
-              flex: 0 0 calc((100% - 40px) / 3);
+              flex: 0 0 calc((100% - 40px) / 3); /* Keep for 3 columns on large screens */
               min-width: 0;
          }
     }
@@ -572,7 +575,7 @@ body.modal-open .left-menu a:hover {
             apiKey: "AIzaSyD0h0rQZiIGi0-UDb4-YU_JihRGpIlfz40",
             authDomain: "turnaj-a28c5.firebaseapp.com",
             projectId: "turnaj-a28c5",
-            storageBucket: "turnaj-a28c5.firebasestorage.app",
+            storageBucket: "turnaj-a28c5.firebaseapp.com",
             messagingSenderId: "13732191148",
             appId: "1:13732191148:web:5ad78eaef2ad452a10f809"
         };
@@ -1240,7 +1243,7 @@ body.modal-open .left-menu a:hover {
                             const clubDocToAssign = await getDoc(clubRefToAssign);
                             if (!clubDocToAssign.exists()) {
                                 alert('Vybraný tím nebol nájdený alebo už bol priradený/zmazaný.');
-                                populateUnassignedClubSelect(unassignedClubSelect, null);
+                                populateUnassignedClubsSelect(unassignedClubSelect, null);
                                 if (clubModal) closeModal(clubModal);
                                 if (clubForm) clubForm.reset();
                                  if (unassignedClubSelectContainer) unassignedClubSelectContainer.style.display = 'block';
@@ -1253,7 +1256,7 @@ body.modal-open .left-menu a:hover {
                             const clubDataToAssign = clubDocToAssign.data();
                             if (clubDataToAssign.groupId !== null) {
                                 alert(`Tím "${clubDataToAssign.name}" je už priradený do skupiny "${clubDataToAssign.groupId}".`);
-                                populateUnassignedClubSelect(unassignedClubSelect, null);
+                                populateUnassignedClubsSelect(unassignedClubSelect, null);
                                 if (clubModal) closeModal(clubModal);
                                 if (clubForm) clubForm.reset();
                                  if (unassignedClubSelectContainer) unassignedClubSelectContainer.style.display = 'block';
@@ -1841,7 +1844,7 @@ body.modal-open .left-menu a:hover {
                       currentOption.selected = true;
                       selectElement.appendChild(currentOption);
                  }
-                 allCategories.forEach(categoryName => {
+                 allAvailableCategories.forEach(categoryName => { /* Use allAvailableCategories here */
                      if (categoryName !== currentSelectedId && !categoriesToExclude.includes(categoryName)) {
                          const option = document.createElement('option');
                          option.value = categoryName;
