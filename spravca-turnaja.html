@@ -1644,7 +1644,7 @@ body.modal-open .left-menu a {
                                        };
 
                                        const unassignClubButton = document.createElement('button');
-                                       unassignClubButton.textContent = 'Odobrať zo skupiny';
+                                       unassignClubButton.textContent = 'Odobrať';
                                        unassignClubButton.classList.add('action-button', 'delete-button');
                                        unassignClubButton.onclick = async () => {
                                            if (!confirm(`Naozaj chcete odobrať klub "${club.data.name}" zo skupiny "${groupName}" v kategórii "${categoryId}"? Tím sa vráti medzi nepriradené tímy.`)) {
