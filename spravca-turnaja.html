@@ -1602,14 +1602,28 @@ body.modal-open .left-menu a:hover {
                            section.style.flexGrow = '0'; // Nebudú sa zbytočne rozťahovať viac ako potrebujú pre obsah
                            section.style.flexShrink = '0'; // Zabráni zmenšovaniu pod šírku obsahu (v kombinácii s min-width: 0 a nowrap)
                            section.style.flexBasis = 'auto'; // Základná veľkosť sa určí podľa obsahu
-                     });                    
-                    
+                     });
                     } catch (error) {
                         console.error('Chyba pri načítaní alebo zobrazovaní klubov: ', error);
                         const errorMessage = document.createElement('p');
                         errorMessage.textContent = 'Chyba pri načítaní dát klubov priradených do skupín.';
                         clubsContentDiv.appendChild(errorMessage);
                     }
+                    let maxWidth = 0;
+                    const sectionBlocks = clubsContentDiv.querySelectorAll('.section-block');
+                    sectionBlocks.forEach(section => {
+                        if (section.offsetWidth > maxWidth) {
+                            maxWidth = section.offsetWidth;
+                        }
+                    });
+                    if (maxWidth > 0) {
+                        sectionBlocks.forEach(section => {
+                            section.style.width = maxWidth + 'px';
+                            section.style.flexGrow = '0';
+                            section.style.flexShrink = '0';
+                            section.style.flexBasis = 'auto'; // Alebo '0' alebo 'auto' v závislosti od požadovaného flexbox správania, ale width + flex-shrink: 0 by malo stačiť
+                        });
+                    }                 
              }
              async function displayCreatedTeams() {
                   createdTeamsTableBody.innerHTML = '';
