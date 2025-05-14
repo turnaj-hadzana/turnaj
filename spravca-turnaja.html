@@ -1570,22 +1570,30 @@ body.modal-open .left-menu a:hover {
                      });
                     const minWidthFor3Columns = 993;
                     const firstSection = clubsContentDiv.querySelector('.section-block');
-                    if (capturedClubSectionWidth === null && window.innerWidth >= minWidthFor3Columns && firstSection) {
-                         capturedClubSectionWidth = firstSection.offsetWidth;
-                         clubsContentDiv.querySelectorAll('.section-block').forEach(section => {
-                              section.style.width = capturedClubSectionWidth + 'px';
-                              section.style.flexGrow = '0';
-                              section.style.flexShrink = '0';
-                              section.style.flexBasis = 'auto';
-                         });
-                     } else if (capturedClubSectionWidth !== null) {
-                         clubsContentDiv.querySelectorAll('.section-block').forEach(section => {
-                              section.style.width = capturedClubSectionWidth + 'px';
-                              section.style.flexGrow = '0';
-                              section.style.flexShrink = '0';
-                              section.style.flexBasis = 'auto';
-                         });
-                     }
+//                    if (capturedClubSectionWidth === null && window.innerWidth >= minWidthFor3Columns && firstSection) {
+//                         capturedClubSectionWidth = firstSection.offsetWidth;
+//                         clubsContentDiv.querySelectorAll('.section-block').forEach(section => {
+//                              section.style.width = capturedClubSectionWidth + 'px';
+//                              section.style.flexGrow = '0';
+//                              section.style.flexShrink = '0';
+//                              section.style.flexBasis = 'auto';
+//                         });
+//                     } else if (capturedClubSectionWidth !== null) {
+//                         clubsContentDiv.querySelectorAll('.section-block').forEach(section => {
+//                              section.style.width = capturedClubSectionWidth + 'px';
+//                              section.style.flexGrow = '0';
+//                              section.style.flexShrink = '0';
+//                              section.style.flexBasis = 'auto';
+//                         });
+//                     }
+
+                    clubsContentDiv.querySelectorAll('.section-block').forEach(section => {
+                     section.style.width = 'auto'; // Ensure no fixed width is set by JS
+                     section.style.flexGrow = '1'; // Allow it to grow if space available
+                     section.style.flexShrink = '1'; // Allow it to shrink if needed (down to min-width)
+                     section.style.flexBasis = 'auto'; // Base size determined by content
+                 });
+                    
                     } catch (error) {
                         console.error('Chyba pri načítaní alebo zobrazovaní klubov: ', error);
                         const errorMessage = document.createElement('p');
