@@ -1873,7 +1873,7 @@ body.modal-open .left-menu a:hover {
                                deleteAllButton.classList.add('action-button', 'delete-button');
                                deleteAllButton.onclick = async () => {
                                    // Potvrdenie akcie
-                                   if (!confirm(`Naozaj chcete vymazať VŠETKY tímy s názvom "${baseTeamName}" (${teamSummary.originalTeams.length} ks)? Táto akcia vymaže všetky individuálne tímy priradené k tomuto základnému názvu.`)) {
+                                   if (!confirm(`Naozaj chcete vymazať VŠETKY tímy s názvom "${baseTeamName}"? Táto akcia vymaže všetky individuálne tímy priradené k tomuto základnému názvu.`)) {
                                        return;
                                    }
                                    try {
@@ -3070,7 +3070,7 @@ body.modal-open .left-menu a:hover {
                          // Zobrazenie výsledku
                          let resultMessage = `Pokus o vytvorenie tímov dokončený. Úspešne vytvorených: ${successfullyAddedCount}.`;
                          if (failedCreations.length > 0) {
-                              resultMessage += `\n\nNiektoré tímy nebolo možné vytvoriť, pretože záznam s príslušným ID už existoval (${failedCreations.length} ks). Skontrolujte zoznam tímov.`;
+                              resultMessage += `\n\nNiektoré tímy nebolo možné vytvoriť, pretože záznam s príslušným ID už existoval. Skontrolujte zoznam tímov.`;
                              console.warn("Neúspešné pokusy o vytvorenie tímov:", failedCreations);
                          } else {
                              resultMessage += " Všetky plánované tímy boli úspešne vytvorené.";
