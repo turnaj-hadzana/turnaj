@@ -1058,7 +1058,7 @@ body.modal-open .left-menu a {
                  currentClubModalMode = 'edit-assigned';
                  editingClubId = clubId;
                  if (clubCategorySelect) {
-                      clubCategorySelect.disabled = false; // Odblokovat v edit mode
+                      clubCategorySelect.disabled = false;
                       clubCategorySelect.value = clubData.categoryId || '';
                        if (clubData.groupId === null) {
                             clubGroupSelect.parentElement.style.display = 'none';
@@ -1080,7 +1080,7 @@ body.modal-open .left-menu a {
                  if (!clubModalTitle) { console.error('FATAL ERROR: clubModalTitle is null in edit mode!'); if (clubModal) closeModal(clubModal); return; }
                  clubModalTitle.textContent = 'Upraviť tím';
                  clubFormSubmitButton.textContent = 'Uložiť zmeny';
-             } else { // Add-assign mode (triggered by '+')
+             } else { 
                  currentClubModalMode = 'add-assign';
                  editingClubId = null;
                  unassignedClubSelectContainer.style.display = 'block';
@@ -1173,7 +1173,6 @@ body.modal-open .left-menu a {
                                    if (clubCategorySelect && clubGroupSelect) {
                                         const categoryIdToSet = clubData.categoryId || '';
                                         clubCategorySelect.value = categoryIdToSet;
-//                                        clubCategorySelect.disabled = false; // ODKOMENTOVANE - Odblokovat kategoriu po vybrati timu
                                          await populateGroupSelect(categoryIdToSet, clubGroupSelect, null);
                                          clubGroupSelect.disabled = false;
                                          if (categoryIdToSet && categoryIdToSet !== '' && clubGroupSelect.options.length > 1) {
@@ -1203,7 +1202,7 @@ body.modal-open .left-menu a {
                                console.error('Chyba pri načítaní detailov vybraného nepriradeného tímu:', error);
                                alert('Chyba pri načítaní detailov tímu.');
                                unassignedClubSelect.value = "";
-                               if (clubCategorySelect) { clubCategorySelect.value = ""; clubCategorySelect.disabled = true; } // Zablokovat kategoriu spat pri chybe
+                               if (clubCategorySelect) { clubCategorySelect.value = ""; clubCategorySelect.disabled = true; }
                                if (clubGroupSelect) {
                                    clubGroupSelect.innerHTML = '<option value="">-- Najprv vyberte kategóriu --</option>';
                                    clubGroupSelect.disabled = true;
@@ -1213,7 +1212,7 @@ body.modal-open .left-menu a {
                                if (orderInGroupInput) { orderInGroupInput.required = false; orderInGroupInput.value = ''; }
                             }
                        } else if (currentClubModalMode === 'add-assign' && (!selectedClubId || selectedClubId === '-- Vyberte tím na priradenie --')) {
-                           if (clubCategorySelect) { clubCategorySelect.value = ""; clubCategorySelect.disabled = true; } // Zablokovat kategoriu ak nie je vybrany tim
+                           if (clubCategorySelect) { clubCategorySelect.value = ""; clubCategorySelect.disabled = true; }
                              if (clubGroupSelect) {
                                  clubGroupSelect.innerHTML = '<option value="">-- Najprv vyberte kategóriu --</option>';
                                  clubGroupSelect.disabled = true;
