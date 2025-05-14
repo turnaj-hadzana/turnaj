@@ -1517,13 +1517,13 @@ body.modal-open .left-menu a:hover {
                                      const actionsTd = document.createElement('td');
                                      actionsTd.style.whiteSpace = 'nowrap';
                                       const editClubButton = document.createElement('button');
-                                      editClubButton.textContent = '✎';
+                                      editClubButton.textContent = 'Upraviť';
                                       editClubButton.classList.add('action-button');
                                       editClubButton.onclick = () => {
                                            openClubModal(club.id, club.data);
                                        };
                                        const unassignClubButton = document.createElement('button');
-                                       unassignClubButton.textContent = 'X';
+                                       unassignClubButton.textContent = 'Vymazať';
                                        unassignClubButton.classList.add('action-button', 'delete-button');
                                        unassignClubButton.onclick = async () => {
                                            if (!confirm(`Naozaj chcete odobrať klub "${club.data.name}" zo skupiny "${groupName}" v kategórii "${categoryId}"? Tím sa vráti medzi nepriradené tímy.`)) {
