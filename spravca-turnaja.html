@@ -7,15 +7,13 @@
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="style.css">
 
-
-
 <style>
         /* --- General Styles --- */
         body {
             font-family: sans-serif;
             margin: 0;
             padding: 0;
-            background-color: #f8f9fa; /* Svetlo šedé pozadie tela */
+            background-color: #f8f9fa;
         }
 
         h1 {
@@ -64,7 +62,7 @@
             background-color: #218838;
         }
 
-         /* --- Filter Styles --- */
+         /* --- Filter Styles (New) --- */
          .filter-container {
              display: flex; /* Používame flexbox pre usporiadanie filtrov */
              justify-content: center; /* Centrujeme filtre horizontálne */
@@ -295,8 +293,6 @@
             /* padding: 20px; */ /* Pôvodné padding */
             padding: 20px 20px 20px 30px; /* Zväčšený ľavý padding: top, right, bottom, left */
             margin-bottom: 20px; /* Keep space below the section */
-            /* Default background color - can be body background or transparent */
-            background-color: transparent;
         }
 
         /* Individual table containers in #timy-do-skupin */
@@ -493,12 +489,7 @@
              }
         }
 
-        @media (min-width: 993px) { /* 3 items per row */
-             #clubsContent {
-                  /* Add a background color for PC view */
-                  background-color: #f0f0f0; /* Example light grey */
-                  padding: 20px; /* Adjust padding for the new background */
-             }
+        @media (min-width: 993px) { /* 3 items per row - ADJUSTED FROM 25% */
              #clubsContent .section-block {
                   /* Nastavená požadovaná šírka pre 3 stĺpce */
                   flex: 0 0 calc(33.33% - 20px);
@@ -526,7 +517,7 @@
 
     <button class="add-button" id="addButton" title="Pridať položku">+</button>
 
-     <div class="filter-container" id="clubsFilterContainer" style="display: none;">
+    <div class="filter-container" id="clubsFilterContainer" style="display: none;">
         <div class="filter-group">
             <label for="clubFilterCategorySelect">Kategória:</label>
             <select id="clubFilterCategorySelect">
@@ -776,7 +767,7 @@
          const orderInputContainer = document.getElementById('orderInputContainer'); // Reference to the new order input container
         const orderInGroupInput = document.getElementById('orderInGroup'); // Reference to the new order input field
 
-         // Filter elements for #timy-do-skupin
+         // Filter elements for #timy-do-skupin (New References)
          const clubsFilterContainer = document.getElementById('clubsFilterContainer');
          const clubFilterCategorySelect = document.getElementById('clubFilterCategorySelect');
          const clubFilterGroupSelect = document.getElementById('clubFilterGroupSelect');
@@ -885,7 +876,6 @@
                            console.log(`Stará skupina "${groupDoc.id}" zmazaná pri mazaní kategórie.`); // Clarified log
                        }
 
-                      
                        // Nájdi a aktualizuj kluby s touto kategóriou, ktoré už nemusia byť priradené k skupine (groupId == null)
                        const unassignedClubsQuery = query(clubsCollectionRef, where('categoryId', '==', categoryToDelete), where('groupId', '==', null));
                         const unassignedClubsSnapshot = await getDocs(unassignedClubsQuery);
