@@ -2341,6 +2341,7 @@ body.modal-open .left-menu a {
                      clubFilterGroupSelect.appendChild(option);
                       clubFilterGroupSelect.disabled = true; // Zablokovat pri chybe
                  }
+                displayClubs();
             }
 
 
@@ -2655,7 +2656,7 @@ body.modal-open .left-menu a {
                  clubFilterCategorySelect.addEventListener('change', () => {
                       const selectedCategoryId = clubFilterCategorySelect.value;
                       populateClubFilterGroups(selectedCategoryId); // Update group filter based on category
-                      displayClubs(); // Refresh clubs display based on new filter
+                      await populateClubFilterGroups(selectedCategoryId);
                  });
             } else { console.error("Club filter category select not found!"); }
 
