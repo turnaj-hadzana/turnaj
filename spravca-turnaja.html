@@ -1568,31 +1568,41 @@ body.modal-open .left-menu a:hover {
                      generatedClubSections.forEach(sectionDiv => {
                          clubsContentDiv.appendChild(sectionDiv);
                      });
-                    const minWidthFor3Columns = 993;
-                    const firstSection = clubsContentDiv.querySelector('.section-block');
-                    if (capturedClubSectionWidth === null && window.innerWidth >= minWidthFor3Columns && firstSection) {
-                         capturedClubSectionWidth = firstSection.offsetWidth;
-                         clubsContentDiv.querySelectorAll('.section-block').forEach(section => {
+                    
+
+//                    const minWidthFor3Columns = 993;
+//                    const firstSection = clubsContentDiv.querySelector('.section-block');
+//                    if (capturedClubSectionWidth === null && window.innerWidth >= minWidthFor3Columns && firstSection) {
+//                         capturedClubSectionWidth = firstSection.offsetWidth;
+//                         clubsContentDiv.querySelectorAll('.section-block').forEach(section => {
 //                              section.style.width = capturedClubSectionWidth + 'px';
-                              section.style.flexGrow = '0';
-                              section.style.flexShrink = '0';
-                              section.style.flexBasis = 'auto';
-                         });
-                     } else if (capturedClubSectionWidth !== null) {
-                         clubsContentDiv.querySelectorAll('.section-block').forEach(section => {
+//                              section.style.flexGrow = '0';
+//                              section.style.flexShrink = '0';
+//                              section.style.flexBasis = 'auto';
+//                         });
+//                     } else if (capturedClubSectionWidth !== null) {
+//                         clubsContentDiv.querySelectorAll('.section-block').forEach(section => {
 //                              section.style.width = capturedClubSectionWidth + 'px';
-                              section.style.flexGrow = '0';
-                              section.style.flexShrink = '0';
-                              section.style.flexBasis = 'auto';
-                         });
-                     }
+//                              section.style.flexGrow = '0';
+//                              section.style.flexShrink = '0';
+//                              section.style.flexBasis = 'auto';
+//                         });
+//                     }
+//
+//                    clubsContentDiv.querySelectorAll('.section-block').forEach(section => {
+//                     section.style.width = 'auto'; // Ensure no fixed width is set by JS
+//                     section.style.flexGrow = '1'; // Allow it to grow if space available
+//                     section.style.flexShrink = '1'; // Allow it to shrink if needed (down to min-width)
+//                     section.style.flexBasis = 'auto'; // Base size determined by content
+//                 });                    
 
                     clubsContentDiv.querySelectorAll('.section-block').forEach(section => {
-                     section.style.width = 'auto'; // Ensure no fixed width is set by JS
-                     section.style.flexGrow = '1'; // Allow it to grow if space available
-                     section.style.flexShrink = '1'; // Allow it to shrink if needed (down to min-width)
-                     section.style.flexBasis = 'auto'; // Base size determined by content
-                 });
+                          section.style.width = 'auto'; // Zruší akékoľvek pevné JS nastavenie šírky
+                           // Voliteľné: Explicitne nastaviť flex vlastnosti, ak chceš byť istý, ako sa správajú vo flex kontajneri
+                           section.style.flexGrow = '0'; // Nebudú sa zbytočne rozťahovať viac ako potrebujú pre obsah
+                           section.style.flexShrink = '0'; // Zabráni zmenšovaniu pod šírku obsahu (v kombinácii s min-width: 0 a nowrap)
+                           section.style.flexBasis = 'auto'; // Základná veľkosť sa určí podľa obsahu
+                     });                    
                     
                     } catch (error) {
                         console.error('Chyba pri načítaní alebo zobrazovaní klubov: ', error);
