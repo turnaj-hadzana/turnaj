@@ -2341,7 +2341,6 @@ body.modal-open .left-menu a {
                      clubFilterGroupSelect.appendChild(option);
                       clubFilterGroupSelect.disabled = true; // Zablokovat pri chybe
                  }
-                displayClubs();
             }
 
 
@@ -2655,7 +2654,8 @@ body.modal-open .left-menu a {
             if (clubFilterCategorySelect) {
                  clubFilterCategorySelect.addEventListener('change', () => {
                       const selectedCategoryId = clubFilterCategorySelect.value;
-                      await populateClubFilterGroups(selectedCategoryId); // Toto volanie zostáva s await
+                      populateClubFilterGroups(selectedCategoryId); // Update group filter based on category
+                      displayClubs(); // Refresh clubs display based on new filter
                  });
             } else { console.error("Club filter category select not found!"); }
 
