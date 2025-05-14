@@ -407,12 +407,6 @@ body.modal-open .left-menu {
     opacity: 0.5;
 }
 body.modal-open .left-menu a {
-    color: #007bff !important;
-    font-weight: bold !important;
-    background-color: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    outline: none !important;
     pointer-events: none;
     cursor: default;
 }
@@ -1267,7 +1261,7 @@ body.modal-open .left-menu a {
                                   return;
                              }
                             const clubRefToAssign = doc(clubsCollectionRef, selectedUnassignedClubId);
-                            const clubDocToAssign = await getDoc(clubRefToAssign);
+                            const clubDocToAssign = await getDoc(clubRefToassign);
                             if (!clubDocToAssign.exists()) {
                                 alert('Vybraný nepriradený tím nebol nájdený alebo už bol priradený/zmazaný.');
                                 populateUnassignedClubsSelect(unassignedClubSelect, null);
@@ -2377,7 +2371,7 @@ body.modal-open .left-menu a {
                          const newCategoryDocRef = doc(categoriesCollectionRef, newCategoryName);
                          try {
                               const existingDoc = await getDoc(newCategoryDocRef);
-                              if (existingDoc.exists()) { alert(`Kategória s názvom "${newCategoryName}" už existuje!`); return; }
+                              if (existingDoc.exists()) { alert(`Kategória "${newCategoryName}" už existuje!`); return; }
                               const oldCategoryDocRef = doc(categoriesCollectionRef, oldCategoryName);
                               const oldDocSnapshot = await getDoc(oldCategoryDocRef);
                               if (!oldDocSnapshot.exists()) { console.error(`Chyba: Pôvodný dokument kategórie ${oldCategoryName} nenájdený na úpravu.`); alert("Pôvodná kategória na úpravu nebola nájdena."); if (categoryModal) closeModal(categoryModal); if (categoryForm) categoryForm.reset(); currentCategoryModalMode = 'add'; editingCategoryName = null; loadCategoriesTable(); return; }
