@@ -1654,19 +1654,12 @@ async function displayCreatedTeams() {
          querySnapshot.docs.forEach(doc => {
              const clubData = doc.data();
 
-             // __________ TÚTO ČASŤ KÓDU NAHRAĎTE __________
-             let baseTeamName = 'Neznámy názov';
-              const idParts = doc.id.split(' - ');
-              if (idParts.length >= 2) {
-                  const secondPart = idParts.slice(1).join(' - ');
-                   const nameSuffixMatch = secondPart.match(/^(.*)\s[A-Z]$/);
-                   baseTeamName = nameSuffixMatch ? nameSuffixMatch[1] : secondPart;
-              } else {
-                  const fullTeamName = clubData.name || 'Neznámy názov';
-                  const nameSuffixMatch = fullTeamName.match(/^(.*)\s[A-Z]$/);
-                   baseTeamName = nameSuffixMatch ? nameSuffixMatch[1] : fullTeamName;
-              }
-              // _____________________________________________
+             // __________ NOVÁ ČASŤ KÓDU __________
+             const fullTeamName = clubData.name || 'Neznámy názov'; // Použijeme názov z databázy
+             // Odvodíme základný názov odstránením voliteľného koncového ' A', ' B', atď.
+             const nameSuffixMatch = fullTeamName.match(/^(.*)\s[A-Z]$/);
+             const baseTeamName = nameSuffixMatch ? nameSuffixMatch[1] : fullTeamName;
+             // _____________________________________
 
              const categoryId = clubData.categoryId || 'Nepriradená';
              if (!teamsByBaseName[baseTeamName]) {
@@ -1764,8 +1757,7 @@ async function displayCreatedTeams() {
          errorMessage.appendChild(td);
          createdTeamsTableBody.appendChild(errorMessage);
      }
-}
-    
+}   
     
     
     
