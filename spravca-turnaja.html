@@ -1038,7 +1038,7 @@ body.modal-open .left-menu a {
                    }
               }
          }
-         async function openClubModal(clubId = null, clubData = null) {
+        async function openClubModal(clubId = null, clubData = null) {
              if (!clubForm) { console.error("FATAL ERROR: clubForm not found!"); if (clubModal) closeModal(clubModal); return; }
              clubForm.reset();
              const clubFormSubmitButton = clubForm.querySelector('button[type="submit"]');
@@ -1051,15 +1051,14 @@ body.modal-open .left-menu a {
              clubGroupSelect.parentElement.style.display = 'block';
              clubGroupSelect.disabled = true;
              if (clubCategorySelect) {
-                 clubCategorySelect.disabled = true; // Inicialne zablokovat kategoriu
                  clubCategorySelect.value = "";
              } else { console.error("FATAL ERROR: clubCategorySelect not found!"); if (clubModal) closeModal(clubModal); return; }
-             await populateCategorySelect(clubCategorySelect); // Nacitat kategorie (zostane zablokovane)
+             await populateCategorySelect(clubCategorySelect);
              if (clubId && clubData) {
                  currentClubModalMode = 'edit-assigned';
                  editingClubId = clubId;
                  if (clubCategorySelect) {
-//                      clubCategorySelect.disabled = false; // Odblokovat v edit mode
+                      clubCategorySelect.disabled = false; // Odblokovat v edit mode
                       clubCategorySelect.value = clubData.categoryId || '';
                        if (clubData.groupId === null) {
                             clubGroupSelect.parentElement.style.display = 'none';
@@ -1081,15 +1080,16 @@ body.modal-open .left-menu a {
                  if (!clubModalTitle) { console.error('FATAL ERROR: clubModalTitle is null in edit mode!'); if (clubModal) closeModal(clubModal); return; }
                  clubModalTitle.textContent = 'Upraviť tím';
                  clubFormSubmitButton.textContent = 'Uložiť zmeny';
-              } else { // Add-assign mode
+             } else { // Add-assign mode (triggered by '+')
                  currentClubModalMode = 'add-assign';
                  editingClubId = null;
                  unassignedClubSelectContainer.style.display = 'block';
                  clubNameInputContainer.style.display = 'none';
                  if (clubGroupSelect) clubGroupSelect.required = false;
                  if (orderInGroupInput) orderInGroupInput.required = false;
-                 await populateUnassignedClubsSelect(unassignedClubSelect); // Nacitat nepriradene kluby
-                  // clubCategorySelect zostava zablokovany po volani populateCategorySelect vyssie v tejto funkcii
+                 await populateUnassignedClubsSelect(unassignedClubSelect);
+                 if (clubCategorySelect) clubCategorySelect.disabled = true;
+                 if (clubGroupSelect) clubGroupSelect.disabled = true;
                  if (!clubModalTitle) { console.error('FATAL ERROR: clubModalTitle is null in add mode!'); if (clubModal) closeModal(clubModal); return; }
                  clubModalTitle.textContent = 'Priradiť tím do skupiny';
                  clubFormSubmitButton.textContent = 'Priradiť';
@@ -1107,7 +1107,7 @@ body.modal-open .left-menu a {
                     clubModal.focus();
                }
          }
-        if (clubCategorySelect) {
+         if (clubCategorySelect) {
             clubCategorySelect.addEventListener('change', async () => {
                 const selectedCategoryId = clubCategorySelect.value;
                  if (orderInGroupInput) orderInGroupInput.value = '';
