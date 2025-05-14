@@ -3041,14 +3041,20 @@
                      loadAllCategoriesForDynamicSelects(); // Volá updateDynamicCategorySelects a checkIfAddCategoryCountPairButtonShouldBeVisible
                  }
                  else if (hash === '#timy-do-skupin') {
-                     if (addButton) addButton.style.display = 'block';
-                      if (clubsFilterContainer) clubsFilterContainer.style.display = 'flex'; // Show filters
-                     if (clubsContentDiv) clubsContentDiv.style.display = 'flex';
-                     // Populate filters and then display clubs based on initial filter state (empty/all)
-                     populateClubFilterCategories(); // This will also trigger populating group filter and calling displayClubs
-                     // displayClubs() is called within populateClubFilterCategories or its chained calls
-                     if (addButton) addButton.title = "Priradiť tím do skupiny";
-                 }
+                    if (addButton) addButton.style.display = 'block';
+                    if (clubsFilterContainer) clubsFilterContainer.style.display = 'flex'; // Show filters
+                    if (clubsContentDiv) clubsContentDiv.style.display = 'flex';
+                    // Populate filters and then display clubs based on initial filter state (empty/all)
+                    populateClubFilterCategories(); // This will also trigger populating group filter
+
+                    // *** PRIDAŤ TENTO RIADOK ***
+                    displayClubs(); // Zavolaj displayClubs po naplnení filtrov
+
+                    // displayClubs() is called within populateClubFilterCategories or its chained calls
+                    // ^ Tento komentár by mohol byť mätúci alebo nesprávny
+
+                    if (addButton) addButton.title = "Priradiť tím do skupiny";
+                }
                  // Add cases for other sections if needed (#sportove-haly, #sprava-turnaja, #nastavenia)
                  // else if (hash === '#sportove-haly') { ... }
                  // else if (hash === '#sprava-turnaja') { ... }
