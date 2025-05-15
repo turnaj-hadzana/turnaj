@@ -21,7 +21,9 @@ let allClubs = [];
 async function loadAllCategories() {
      console.log("Načítavam všetky kategórie...");
      try {
+         // Načítať všetky dokumenty z kolekcie kategórií
          const querySnapshot = await getDocs(query(categoriesCollectionRef, orderBy('name'))); // Zoradiť podľa názvu
+         // Mapovať dokumenty na polia objektov s id a data
          allCategories = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
           console.log("Načítané kategórie:", allCategories.length);
      } catch (e) {
@@ -35,8 +37,10 @@ async function loadAllCategories() {
 async function loadAllGroups() {
      console.log("Načítavam všetky skupiny...");
      try {
-         // Načítame skupiny a zoradíme ich podľa categoryId a potom podľa názvu
+         // Načítať všetky dokumenty z kolekcie skupín
+         // Zoradiť skupiny podľa categoryId a potom podľa názvu pre lepšie spracovanie
          const querySnapshot = await getDocs(query(groupsCollectionRef, orderBy('categoryId'), orderBy('name')));
+         // Mapovať dokumenty na polia objektov s id a data
          allGroups = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
           console.log("Načítané skupiny:", allGroups.length);
      } catch (e) {
@@ -50,8 +54,10 @@ async function loadAllGroups() {
 async function loadAllClubs() {
      console.log("Načítavam všetky tímy...");
      try {
-         // Načítame tímy a zoradíme ich (toto zoradenie pomôže pri zoskupovaní, ale konečné zoradenie v skupine bude podľa orderInGroup)
+         // Načítať všetky dokumenty z kolekcie klubov/tímov
+         // Zoradiť tímy (toto poradie je informatívne pri načítaní, konečné v skupine je podľa orderInGroup)
          const querySnapshot = await getDocs(query(clubsCollectionRef, orderBy('categoryId'), orderBy('groupId'), orderBy('orderInGroup')));
+         // Mapovať dokumenty na polia objektov s id a data
          allClubs = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
           console.log("Načítané tímy:", allClubs.length);
      } catch (e) {
@@ -74,21 +80,33 @@ async function displayGroupedData() {
     dataDisplayArea.innerHTML = 'Načítavam dáta...'; // Zobrazte načítavacie správu
 
     try {
-        // 1. Načítajte všetky dáta pomocou nových funkcií
+        // 1. Načítajte všetky dáta pomocou nových funkcií (sekvenčné volanie)
         await loadAllCategories();
         await loadAllGroups();
         await loadAllClubs();
 
         console.log("Dáta načítané:", { categories: allCategories.length, groups: allGroups.length, clubs: allClubs.length });
 
+        // Vytvoriť mapy pre rýchly prístup k dátam podľa ID
+        const categoriesMap = allCategories.reduce((map, category) => {
+             map[category.id] = category;
+             return map;
+        }, {});
 
-        // 2. Roztriedenie a zoskupenie dát (Táto časť zostáva podobne komplexná, pretože organizuje dáta pre zobrazenie)
-        const groupedData = {}; // Štruktúra: { categoryId: { groupID: [teams] } }
+         const groupsMap = allGroups.reduce((map, group) => {
+              map[group.id] = group;
+              return map;
+         }, {});
 
-        // Zoskupenie tímov do skupín (používame už načítané allClubs)
+
+        // 2. Roztriedenie a zoskupenie dát (Táto časť spracováva načítané dáta)
+        // Štruktúra: { categoryId: { groupID: [teams] } }
+        const groupedData = {};
+
+        // Zoskupenie tímov do skupín a kategórií (používame už načítané allClubs)
         allClubs.forEach(club => {
             const groupId = club.groupId || 'unassigned'; // Priradiť tímy bez skupiny do "unassigned" skupiny
-            const categoryId = club.categoryId || 'unassigned_category'; // Priradiť tímy bez kategórie
+            const categoryId = club.categoryId || 'unassigned_category'; // Priradiť tímy bez kategórie do "unassigned_category"
 
             if (!groupedData[categoryId]) {
                 groupedData[categoryId] = {};
@@ -120,31 +138,71 @@ async function displayGroupedData() {
             }
         }
 
-        // 3. Vytvorenie HTML štruktúry
+        // 3. Vytvorenie HTML štruktúry pre zobrazenie dát
         let html = '';
 
-         // Zoradiť kategórie pre zobrazenie (používame už zoradené allCategories)
-         const sortedCategories = allCategories; // allCategories by už mali byť zoradené podľa názvu z loadAllCategories
+         // Získať a zoradiť ID kategórií, ktoré majú byť zobrazené (tie, ktoré majú priradené tímy alebo skupiny)
+         const categoryIdsToDisplay = new Set(Object.keys(groupedData).filter(catId => catId !== 'unassigned_category'));
+          allGroups.forEach(group => { // Pridať aj kategórie, ktoré majú priradené skupiny (aj prázdne skupiny)
+              if (group.categoryId && group.categoryId !== 'unassigned_category') {
+                   categoryIdsToDisplay.add(group.categoryId);
+              }
+          });
 
-         // Zobraziť kategórie a ich skupiny a tímy
-         if (sortedCategories.length > 0) {
-             sortedCategories.forEach(category => {
-                  const categoryId = category.id;
-                  const categoryName = category.name;
-                  const groupsForCategory = allGroups.filter(group => group.categoryId === categoryId);
-                   const dataForCategory = groupedData[categoryId] || {}; // Získať dáta pre túto kategóriu
 
-                   // Zobraziť sekciu kategórie iba ak má nejaké priradené skupiny ALEBO tímy v týchto skupinách
-                   const hasContent = groupsForCategory.length > 0 || (Object.keys(dataForCategory).length > 0 && Object.keys(dataForCategory).some(groupId => groupId !== 'unassigned'));
+         // Zoradiť kategórie, ktoré sa budú zobrazovať, podľa ich názvov
+         const sortedCategoryIds = Array.from(categoryIdsToDisplay).sort((idA, idB) => {
+              const categoryA = categoriesMap[idA];
+              const categoryB = categoriesMap[idB];
+              const nameA = categoryA ? categoryA.name || categoryA.id : idA;
+              const nameB = categoryB ? categoryB.name || categoryB.id : idB;
+              return nameA.localeCompare(nameB, 'sk-SK');
+         });
+
+
+         // Iterovať cez zoradené kategórie a vygenerovať HTML
+         if (sortedCategoryIds.length > 0) {
+             sortedCategoryIds.forEach(categoryId => {
+                  const category = categoriesMap[categoryId];
+                  const categoryName = category ? category.name || category.id : categoryId; // Získať názov kategórie alebo použiť ID
+
+                  const dataForCategory = groupedData[categoryId] || {}; // Získať dáta tímov pre túto kategóriu
+                  const groupsForCategory = allGroups.filter(group => group.categoryId === categoryId); // Získať skupiny priradené k tejto kategórii
+
+
+                   // Zobraziť sekciu kategórie iba ak má nejaké priradené skupiny ALEBO tímy v týchto skupinách/nepr. v kategórii
+                   const hasContent = groupsForCategory.length > 0 || (Object.keys(dataForCategory).length > 0);
 
                    if (hasContent) {
                         html += `<div class="category-section section-block"><h3>${categoryName}</h3>`;
 
-                        // Zoradiť skupiny v rámci tejto kategórie (používame už zoradené allGroups filtrované pre kategóriu)
-                        groupsForCategory.forEach(group => {
-                             const groupId = group.id;
-                             const groupName = group.name || groupId;
-                             const teamsInGroup = dataForCategory[groupId] || []; // Získať tímy pre túto skupinu
+                        // Získať a zoradiť ID skupín v tejto kategórii, ktoré majú byť zobrazené
+                         const groupIdsToDisplay = new Set(groupsForCategory.map(group => group.id)); // Skupiny priradené ku kategórii
+                         if (dataForCategory) { // Pridať aj skupiny z groupedData, ktoré nemusia byť v allGroups (dátová nekonzistencia)
+                              Object.keys(dataForCategory).forEach(groupId => {
+                                   if (groupId !== 'unassigned') {
+                                        groupIdsToDisplay.add(groupId);
+                                   }
+                              });
+                         }
+
+
+                         // Zoradiť skupiny v rámci kategórie podľa ich názvov
+                         const sortedGroupIds = Array.from(groupIdsToDisplay).sort((idA, idB) => {
+                              const groupA = groupsMap[idA];
+                              const groupB = groupsMap[idB];
+                              const nameA = groupA ? groupA.name || groupA.id : idA;
+                              const nameB = groupB ? groupB.name || groupB.id : idB;
+                              return nameA.localeCompare(nameB, 'sk-SK');
+                         });
+
+
+                        // Iterovať cez zoradené skupiny v tejto kategórii a vygenerovať HTML
+                        sortedGroupIds.forEach(groupId => {
+                             const group = groupsMap[groupId];
+                             const groupName = group ? group.name || group.id : groupId; // Získať názov skupiny alebo použiť ID
+
+                             const teamsInGroup = dataForCategory[groupId] || []; // Získať tímy pre túto skupinu z groupedData (sú už zoradené)
 
                               // Zobraziť sekciu skupiny iba ak má nejaké tímy
                              if (teamsInGroup.length > 0) {
@@ -161,7 +219,7 @@ async function displayGroupedData() {
                          // Zobraziť nepriradené tímy s touto categoryId (ak existujú)
                          if (dataForCategory['unassigned'] && dataForCategory['unassigned'].length > 0) {
                               const unassignedTeams = dataForCategory['unassigned'];
-                              // Tímy bez skupiny sú už zoradené podľa mena pri zoskupovaní a konečnom triedení
+                              // Tímy bez skupiny sú už zoradené podľa mena
                               html += `<div class="group-section"><h4>Nepriradené tímy v kategórii ${categoryName}</h4>`;
                               html += '<table class="group-clubs-table"><thead><tr><th>Názov tímu</th></tr></thead><tbody>';
                               unassignedTeams.forEach(team => {
@@ -176,7 +234,7 @@ async function displayGroupedData() {
                    }
              });
          } else {
-              html += '<p>Žiadne kategórie sa nenašli.</p>';
+              html += '<p>Žiadne kategórie sa nenašli alebo žiadne tímy/skupiny nie sú k nim priradené.</p>';
          }
 
 
@@ -194,9 +252,9 @@ async function displayGroupedData() {
          }
 
 
-        // Ak sa po spracovaní nič nevygenerovalo
+        // Ak sa po spracovaní nič nevygenerovalo (napr. databáza bola prázdna)
         if (html === '') {
-             html = '<p>Žiadne tímy ani skupiny s platným priradením sa nenašli.</p>';
+             html = '<p>Zatiaľ nie sú pridané žiadne kategórie, skupiny ani tímy, alebo nemajú platné priradenie.</p>';
         }
 
 
@@ -211,5 +269,9 @@ async function displayGroupedData() {
 // Inicializácia - spustí načítanie a zobrazenie dát po načítaní DOM
 document.addEventListener('DOMContentLoaded', () => {
     console.log("DOM plne načítaný pre zobrazenie skupín.");
+    // Spustiť načítanie a zobrazenie dát
     displayGroupedData();
 });
+
+// Ak potrebujete exportovať displayGroupedData pre volanie z inej stránky (napr. refresh), môžete to pridať
+// export { displayGroupedData };
