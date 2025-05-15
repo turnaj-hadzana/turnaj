@@ -1101,7 +1101,7 @@ function displayAppliedFiltersInHeader() {
              // Vytvoríme element na zobrazenie hodnoty filtra
              const filterValueSpan = document.createElement('span');
              filterValueSpan.classList.add('applied-filter-value'); // Pridať triedu pre štýlovanie
-             filterValueSpan.textContent = `(Filter: ${filterValue})`; // Zobraziť hodnotu filtra
+             filterValueSpan.textContent = `${filterValue}; // Zobraziť hodnotu filtra
 
              // Pripojíme element k hlavičke
              headerCell.appendChild(filterValueSpan);
