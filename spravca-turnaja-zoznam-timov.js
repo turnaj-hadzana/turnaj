@@ -1272,14 +1272,13 @@ document.addEventListener('DOMContentLoaded', async () => {
      const addButton = document.getElementById('addButton');
      if (addButton) {
           addButton.style.display = 'block'; // Zobraziť tlačidlo "+"
-          addButton.title = "Vytvoriť tímy"; // Nastaviť popis tlačidla "+"
-           // Listener pre tlačidlo "+" je teraz riadený v spravca-turnaja-script.js na základe hasha v URL
-           // Ak by spravca-turnaja-script.js nebol pouzity, odkomentovali by ste toto:
-           /*
+          addButton.title = "Priradiť nepriradený tím"; // Nastaviť popis tlačidla "+" na Priradiť tím
+           // Priradiť funkciu na otvorenie modalu klubu v režime 'assign'
            addButton.onclick = () => {
-                openTeamCreationModal(); // Volanie funkcie na otvorenie modalu Vytvoriť tímy
+                // Volanie funkcie na otvorenie modalu klubu bez ID (režim 'assign')
+                // Mode 'assign' je default, ale pre prehľadnosť ho môžeme explicitne uviesť:
+                openClubModal(null, 'assign');
            };
-           */
       } else {
          console.error("Add button not found on teams list page!");
      }
