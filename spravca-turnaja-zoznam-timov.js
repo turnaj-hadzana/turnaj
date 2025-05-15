@@ -1,4 +1,4 @@
-// spravca-turnaja-zoznam-timov.js
+// spravca-turnaja-zoznam-timov.js (Celý kód)
 
 // Import necessary functions and references from common.js
 // Uistite sa, že spravca-turnaja-common.js exportuje tieto:
@@ -122,7 +122,8 @@ async function displayCreatedTeams() {
             const noDataRow = document.createElement('tr');
             const td = document.createElement('td');
             // Spojiť stĺpce: Názov + Počet kategórií + Akcie
-            td.colSpan = 1 + categories.length + 1;
+            const colSpan = createdTeamsTableHeader ? createdTeamsTableHeader.querySelectorAll('th').length : 4; // Default 4 ak hlavička neexistuje
+            td.colSpan = colSpan;
             td.textContent = "Žiadne tímy zatiaľ pridané.";
             td.style.textAlign = 'center';
             noDataRow.appendChild(td);
@@ -135,19 +136,20 @@ async function displayCreatedTeams() {
 
                 // Stĺpec: Základný názov tímu
                 const nameTd = document.createElement('td');
-                nameTd.textContent = baseTeamName;
-                tr.appendChild(nameTd);
+                nameTd.textContent = baseTeamName; // Názov individuálneho tímu
+                 // ODSTRÁNENÉ inline štýly, budú riadené CSS
+                 // nameTd.style.overflow = 'hidden';
+                 // nameTd.style.textOverflow = 'ellipsis';
+                 // nameTd.style.whiteSpace = 'nowrap'; // <--- ODSTRÁNENÉ
 
-                // Stĺpce: Počet tímov v jednotlivých kategóriách
-                categories.forEach(categoryName => {
-                    const countTd = document.createElement('td');
-                    const count = teamSummary.categories[categoryName] || 0; // Počet tímov pre danú kategóriu (alebo 0, ak žiadne)
-                    countTd.textContent = count > 0 ? count : '-'; // Zobraziť počet alebo '-' ak je 0
-                    countTd.style.textAlign = 'center'; // Centrovať počet
-                    tr.appendChild(countTd);
-                });
 
-                // Stĺpec: Akcie
+                const groupTd = document.createElement('td');
+                 const groupNameParts = (teamSummary.originalTeams[0].data.groupId || '').split(' - '); // Rozdeliť ID skupiny na NázovKategórie - NázovSkupiny (pre prvy tim ako priklad)
+                // groupTd.textContent = teamSummary.originalTeams[0].data.groupId ? (groupNameParts.length > 1 ? groupNameParts.slice(1).join(' - ') : teamSummary.originalTeams[0].data.groupId) : 'Nepriradené'; // Zobraziť názov skupiny alebo 'Nepriradené' - Toto nie je v hlavnej tabulke relevantne
+                 // V hlavnej tabulke zobrazujeme zhrnutie, nie detaily jedneho timu. Tento stlpec tu nema byt.
+                 // console.warn("Stĺpec 'Skupina' sa zobrazuje v hlavnej tabuľke Vytvorené tímy. Mal by byť len v modále Správa tímov.");
+
+
                 const actionsTd = document.createElement('td');
                 actionsTd.style.whiteSpace = 'nowrap'; // Zabrániť zalomeniu tlačidiel
                  // Použiť Flexbox na zoradenie tlačidiel v TD
@@ -189,7 +191,7 @@ async function displayCreatedTeams() {
                         displayCreatedTeams(); // Obnoviť zoznam tímov
 
 
-                         // Ak je otvorené modálne okno na vytváranie tímov, obnoviť zoznam kategórií
+                         // Ak je otvorené modálne okno na vytváranie tímov, obnoviť zoznam kategórií (ak bol vymazaný tím priradený ku kategórii)
                          if (teamCreationModal && teamCreationModal.style.display === 'block') {
                               loadAllCategoriesForDynamicSelects();
                          }
@@ -202,6 +204,7 @@ async function displayCreatedTeams() {
                                closeModal(clubModal);
                            }
                             // Ak je otvorené modálne okno pre priradenie a mazali sa nepriradené tímy, obnoviť selectbox
+                            // Predpokladáme, že currentClubModalMode a unassignedClubSelect a populateUnassignedClubsSelect sú dostupné
                             // eslint-disable-next-line no-undef
                             if (clubModal && clubModal.style.display === 'block' && typeof currentClubModalMode !== 'undefined' && currentClubModalMode === 'add-assign') {
                                  // Ak je unassignedClubSelect definovaný v common.js alebo globálne
@@ -227,7 +230,19 @@ async function displayCreatedTeams() {
                 };
                 actionsTd.appendChild(deleteAllButton);
 
-                tr.appendChild(actionsTd);
+                tr.appendChild(nameTd); // Pridať bunku s názvom
+
+                // Pridať bunky s počtom tímov pre každú kategóriu
+                 categories.forEach(categoryName => {
+                     const countTd = document.createElement('td');
+                     const count = teamSummary.categories[categoryName] || 0; // Počet tímov pre danú kategóriu (alebo 0, ak žiadne)
+                     countTd.textContent = count > 0 ? count : '-'; // Zobraziť počet alebo '-' ak je 0
+                     countTd.style.textAlign = 'center'; // Centrovať počet
+                     tr.appendChild(countTd);
+                 });
+
+
+                tr.appendChild(actionsTd); // Pridať bunku s tlačidlami akcií
                 createdTeamsTableBody.appendChild(tr);
             });
         }
@@ -246,6 +261,7 @@ async function displayCreatedTeams() {
         createdTeamsTableBody.appendChild(errorMessage);
     }
 }
+
 
 // Funkcia na načítanie všetkých kategórií pre dynamické selectboxy vo vytváraní tímov
 async function loadAllCategoriesForDynamicSelects() {
@@ -277,7 +293,7 @@ function populateDynamicCategorySelect(selectElement, currentSelectedId, allCate
      selectElement.disabled = availableOptionsCount <= 1 && !currentSelectedId; // Zablokovat, ak je len jedna alebo ziadna moznost (okrem aktualne vybranej)
 
 
-     // Pridať aktuálne vybranú možnosť (ak existuje a je v platných kategóriach)
+     // Pridať aktuálne vybranú možnosť (ak existuje a je v platných kategoriach)
      if (currentSelectedId && allCategories.includes(currentSelectedId)) {
           const currentOption = document.createElement('option');
           currentOption.value = currentSelectedId;
@@ -374,50 +390,53 @@ async function addCategoryCountPair(initialCategory = null) {
      if (!container) { console.error('teamCategoryCountContainer not found!'); return; }
 
      const pairDiv = document.createElement('div');
-     pairDiv.classList.add('category-count-pair'); // Trieda pre štýlovanie Flexboxom (ako máme v CSS)
+     pairDiv.classList.add('category-count-pair'); // Trieda pre štýlovanie Flexboxom (ponechané)
 
-     // Kontajner pre Label a Select - pre Flexbox zarovnanie v rámci páru
+     // NOVÝ kontajner pre Category a Count - bude stakovať interne
+     const fieldsContainerDiv = document.createElement('div');
+     fieldsContainerDiv.classList.add('category-count-fields'); // Nová trieda pre CSS
+
+     // Kontajner pre Label a Select - pôvodný selectContainer
      const selectContainer = document.createElement('div');
+     // Keep its flex properties for label/select alignment within its row
      selectContainer.style.display = 'flex';
      selectContainer.style.alignItems = 'center';
-     selectContainer.style.gap = '10px'; // Medzera medzi labelom a selectom
-     selectContainer.style.flexWrap = 'wrap'; // Umožniť zalomenie na mobiloch
-      selectContainer.style.flex = '1 1 auto'; // Umožniť kontajneru zväčšiť sa/zmenšiť
-
+     selectContainer.style.gap = '10px';
+     selectContainer.style.flexWrap = 'wrap';
+     selectContainer.style.flex = '1 1 auto'; // Umožní kontajneru zväčšiť sa/zmenšiť
 
      const categorySelectLabel = document.createElement('label');
      categorySelectLabel.textContent = 'Kategória:';
-     categorySelectLabel.style.flexShrink = '0'; // Zabrániť zmenšovaniu labelu
+     categorySelectLabel.style.flexShrink = '0';
 
      const categorySelect = document.createElement('select');
      categorySelect.classList.add('team-category-select-dynamic'); // Identifikačná trieda pre JS
      categorySelect.name = 'category';
      categorySelect.required = true;
-     categorySelect.style.flexGrow = '1'; // Nechať select zväčšiť sa
-     categorySelect.style.minWidth = '150px'; // Minimálna šírka pre select
-     categorySelect.style.padding = '5px'; // Menšie polstrovanie ako v hlavnom formulári, zladené s inputom počtu
+     categorySelect.style.flexGrow = '1';
+     categorySelect.style.minWidth = '150px';
+     categorySelect.style.padding = '5px';
 
-
-     // Listener pre aktualizáciu ostatných selectboxov a tlačidiel po zmene vyberu
      categorySelect.addEventListener('change', () => {
-         updateDynamicCategorySelects(); // Aktualizuje ostatné selecty (vylúči vybranú kategóriu)
+         updateDynamicCategorySelects();
      });
 
      selectContainer.appendChild(categorySelectLabel);
      selectContainer.appendChild(categorySelect);
 
-     // Kontajner pre Label a Input - pre Flexbox zarovnanie v rámci páru
+     // Kontajner pre Label a Input - pôvodný inputContainer
      const inputContainer = document.createElement('div');
+     // Keep its flex properties for label/input alignment within its row
      inputContainer.style.display = 'flex';
      inputContainer.style.alignItems = 'center';
-     inputContainer.style.gap = '10px'; // Medzera medzi labelom a inputom
-     inputContainer.style.flexWrap = 'wrap'; // Umožniť zalomenie na mobiloch
-      inputContainer.style.flex = '1 1 auto'; // Umožniť kontajneru zväčšiť sa/zmenšiť
+     inputContainer.style.gap = '10px';
+     inputContainer.style.flexWrap = 'wrap';
+     inputContainer.style.flex = '1 1 auto';
 
 
      const teamCountLabel = document.createElement('label');
      teamCountLabel.textContent = 'Počet tímov:';
-     teamCountLabel.style.flexShrink = '0'; // Zabrániť zmenšovaniu labelu
+     teamCountLabel.style.flexShrink = '0';
 
 
      const teamCountInput = document.createElement('input');
@@ -427,9 +446,9 @@ async function addCategoryCountPair(initialCategory = null) {
      teamCountInput.min = '1';
      teamCountInput.value = '1';
      teamCountInput.required = true;
-     teamCountInput.style.maxWidth = '80px'; // Obmedziť maximálnu šírku inputu
-     teamCountInput.style.flexGrow = '0'; // Input sa nezväčší neúmerne
-     teamCountInput.style.padding = '5px'; // Zladené s polstrovaním selectboxu
+     teamCountInput.style.maxWidth = '80px';
+     teamCountInput.style.flexGrow = '0';
+     teamCountInput.style.padding = '5px';
 
      inputContainer.appendChild(teamCountLabel);
      inputContainer.appendChild(teamCountInput);
@@ -438,11 +457,10 @@ async function addCategoryCountPair(initialCategory = null) {
      removeButton.textContent = 'Odstrániť';
      removeButton.classList.add('action-button', 'delete-button'); // Použiť štýly tlačidiel
      removeButton.type = 'button'; // Aby nespustilo submit formulára
-     removeButton.style.marginLeft = '10px'; // Medzera medzi inputom/kontajnerom a tlačidlom Odstrániť
-     removeButton.style.flexShrink = '0'; // Zabrániť zmenšovaniu tlačidla
-     removeButton.style.alignSelf = 'center'; // Vertikálne centrovať s ostatnými prvkami v páre
+     removeButton.style.marginLeft = '10px'; // Medzera medzi poliami a tlačidlom
+     removeButton.style.flexShrink = '0';
+     removeButton.style.alignSelf = 'center';
 
-     // Listener pre odstranenie tohto paru
      removeButton.onclick = () => {
          pairDiv.remove(); // Odstrani cely div s parom
          updateDynamicCategorySelects(); // Aktualizuje ostatné selectboxy
@@ -450,10 +468,14 @@ async function addCategoryCountPair(initialCategory = null) {
          checkIfAddCategoryCountPairButtonShouldBeVisible(); // Aktualizuje viditeľnosť tlačidla Pridať ďalšiu
      };
 
-     // Pridať kontajnery selectu a inputu a tlačidlo odstrániť do divu páru
-     pairDiv.appendChild(selectContainer);
-     pairDiv.appendChild(inputContainer);
+     // PRIDAŤ selectContainer a inputContainer DO fieldsContainerDiv
+     fieldsContainerDiv.appendChild(selectContainer);
+     fieldsContainerDiv.appendChild(inputContainer);
+
+     // PRIDAŤ fieldsContainerDiv a removeButton DO pairDiv
+     pairDiv.appendChild(fieldsContainerDiv);
      pairDiv.appendChild(removeButton);
+
 
      container.appendChild(pairDiv); // Pridať celý pár div do kontajnera
 
@@ -573,8 +595,8 @@ async function openManageTeamsModal(baseTeamName, individualTeams) {
          // Tabuľka pre tímy v danej kategórii
          const categoryTeamsTable = document.createElement('table');
          categoryTeamsTable.classList.add('group-clubs-table'); // Použiť rovnaké štýly tabuľky ako pre kluby v skupinách
-          categoryTeamsTable.style.tableLayout = 'fixed'; // Zabezpečiť pevnú šírku stĺpcov aj tu
-          categoryTeamsTable.style.width = '100%';
+          categoryTeamsTable.style.tableLayout = 'auto'; // ZMENENÉ: Umožní prispôsobenie šírky stĺpcov
+          categoryTeamsTable.style.width = 'auto'; // ZMENENÉ: Umožní tabuľke roztiahnuť sa podľa obsahu
 
 
          // Hlavička tabuľky v modále
@@ -583,27 +605,32 @@ async function openManageTeamsModal(baseTeamName, individualTeams) {
 
          const teamNameTh = document.createElement('th');
          teamNameTh.textContent = 'Názov tímu';
-          teamNameTh.style.width = 'auto'; // Nechať názov tímu zabrať dostupný priestor
+          // ODSTRÁNENÉ inline šírky TH, riadené CSS s table-layout: auto
+          // teamNameTh.style.width = 'auto';
+
 
          const groupTh = document.createElement('th');
          groupTh.textContent = 'Skupina';
-          groupTh.style.width = '100px'; // Pevná šírka pre stĺpec Skupina
-          groupTh.style.minWidth = '100px';
+          // ODSTRÁNENÉ inline šírky TH, riadené CSS s table-layout: auto
+          // groupTh.style.width = '100px';
+          // groupTh.style.minWidth = '100px';
           groupTh.style.whiteSpace = 'nowrap';
 
 
          const orderTh = document.createElement('th');
          orderTh.textContent = 'Poradie';
          orderTh.style.textAlign = 'center';
-         orderTh.style.width = '60px'; // Menšia šírka pre poradie
-          orderTh.style.minWidth = '60px';
+          // ODSTRÁNENÉ inline šírky TH, riadené CSS s table-layout: auto
+          // orderTh.style.width = '60px';
+          // orderTh.style.minWidth = '60px';
           orderTh.style.whiteSpace = 'nowrap';
 
 
          const actionsTh = document.createElement('th');
          actionsTh.textContent = ''; // Hlavička stĺpca akcie je prázdna
-         actionsTh.style.width = '150px'; // Šírka pre akcie
-          actionsTh.style.minWidth = '150px';
+          // ODSTRÁNENÉ inline šírky TH, riadené CSS s table-layout: auto
+          // actionsTh.style.width = '150px';
+          // actionsTh.style.minWidth = '150px';
           actionsTh.style.whiteSpace = 'nowrap';
 
 
@@ -658,13 +685,18 @@ async function openManageTeamsModal(baseTeamName, individualTeams) {
 
              const nameTd = document.createElement('td');
              nameTd.textContent = team.data.name || 'Neznámy názov'; // Názov individuálneho tímu
+              // ODSTRÁNENÉ inline štýly, budú riadené CSS
+              // nameTd.style.overflow = 'hidden';
+              // nameTd.style.textOverflow = 'ellipsis';
+              // nameTd.style.whiteSpace = 'nowrap'; // <--- ODSTRÁNENÉ
+
 
              const groupTd = document.createElement('td');
               const groupNameParts = (team.data.groupId || '').split(' - '); // Rozdeliť ID skupiny na NázovKategórie - NázovSkupiny
              groupTd.textContent = team.data.groupId ? (groupNameParts.length > 1 ? groupNameParts.slice(1).join(' - ') : team.data.groupId) : 'Nepriradené'; // Zobraziť názov skupiny alebo 'Nepriradené'
               groupTd.style.overflow = 'hidden';
               groupTd.style.textOverflow = 'ellipsis';
-              groupTd.style.whiteSpace = 'nowrap';
+              groupTd.style.whiteSpace = 'nowrap'; // Ponechané nowrap pre tento stĺpec
 
 
              const orderTd = document.createElement('td');
@@ -672,7 +704,7 @@ async function openManageTeamsModal(baseTeamName, individualTeams) {
              orderTd.style.textAlign = 'center'; // Centrovať poradie
 
              const actionsTd = document.createElement('td');
-             actionsTd.style.whiteSpace = 'nowrap'; // Zabrániť zalomeniu tlačidiel
+             actionsTd.style.whiteSpace = 'nowrap'; // Zabrániť zalomeniu tlačidiel akcií
              actionsTd.style.display = 'flex'; // Použiť flexbox na zoradenie tlačidiel
              actionsTd.style.alignItems = 'center'; // Vertikálne centrovať tlačidlá
              actionsTd.style.justifyContent = 'center'; // Horizontálne centrovať skupinu tlačidiel
@@ -846,6 +878,7 @@ window.addEventListener('click', (e) => {
               closeModal(clubModal);
          }
           // Ak sa clubModal zatvori, obnovit zoznam vytvorenych timov, ak bol v stave upravy/priradenia
+          // Predpokladáme, že currentClubModalMode je definované v common.js alebo globálne
           // eslint-disable-next-line no-undef
           if (typeof currentClubModalMode !== 'undefined' && (currentClubModalMode === 'edit' || currentClubModalMode === 'add-assign')) {
                displayCreatedTeams(); // Obnovit zoznam timov ak sme nieco ukladali/menili
