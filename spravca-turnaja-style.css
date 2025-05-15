@@ -82,8 +82,8 @@ body {
              margin-top: 0; Remove this, filter is now inside content
         } */
         .left-menu {
-            /* flex: 0 0 10%;  -- Pôvodné nastavenie */
-            width: 280px; /* Nastavte fixnú šírku, napr. 200px */
+            width: 280px;
+            min-width: 280px;
             background-color: #fff;
             padding: 15px;
             border-radius: 8px;
