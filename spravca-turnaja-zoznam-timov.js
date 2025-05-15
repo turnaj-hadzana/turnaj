@@ -555,11 +555,7 @@ async function displayCreatedTeams() {
     try {
         // Načítať všetky tímy (clubs) z databázy
         const querySnapshot = await getDocs(clubsCollectionRef);
-        console.log("Načítané dokumenty tímov (clubs) z DB:", querySnapshot.docs.map(doc => ({ id: doc.id, data: doc.data() }))); // LOG: Dokumenty tímov
-
         const teams = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        console.log("Spracované tímy (teams array):", teams); // LOG: Pole tímov ako objektov
-
 
          // Načítať všetky kategórie (pre potreby mapovania názvov kategórií a iných funkcií)
          // POZNÁMKA: Táto funkcia vyžaduje, aby kategórie v DB mali pole 'name'.
@@ -567,7 +563,7 @@ async function displayCreatedTeams() {
         if (allAvailableCategories.length === 0) {
              await loadAllCategoriesForDynamicSelects(); // Načítať kategórie, ak ešte nie sú
         }
-        console.log("Aktuálne dostupné kategórie (allAvailableCategories):", allAvailableCategories); // LOG: Zoznam kategórií
+         // Kategórie sa zobrazia z parsovaného názvu tímu, nie z categoryId (ale categoryId je stále užitočné)
 
 
         // Načítať všetky skupiny (aj keď pre zobrazenie v tabuľke budeme parsovať ID skupiny,
@@ -575,9 +571,6 @@ async function displayCreatedTeams() {
         if (allAvailableGroups.length === 0) {
              await loadAllGroups(); // Načítať skupiny na pozadí
         }
-         console.log("Aktuálne dostupné skupiny (allAvailableGroups):", allAvailableGroups); // LOG: Zoznam skupín
-
-         // Mapa skupín nie je nevyhnutná pre zobrazenie v tejto tabuľke, ale môže byť užitočná pre debugging
          const groupsMap = allAvailableGroups.reduce((map, group) => {
             map[group.id] = group.name; // Mapovať ID skupiny na názov skupiny
             return map;
@@ -612,8 +605,8 @@ async function displayCreatedTeams() {
          `;
 
 
-        // Zoradiť tímy abecedne podľa celého názvu (ID) pre konzistentné zobrazenie
-        teams.sort((a, b) => (a.id || '').localeCompare((b.id || ''), 'sk-SK')); // Zoradiť podľa ID (celý názov)
+        // Zoradiť tímy abecedne podľa celého názvu pre konzistentné zobrazenie
+        teams.sort((a, b) => (a.id || '').localeCompare((b.id || ''), 'sk-SK'));
 
 
         teams.forEach(team => {
@@ -638,18 +631,19 @@ async function displayCreatedTeams() {
 
 
             const groupCell = row.insertCell();
-            // Zobraziť názov skupiny - EXTRAHOVAŤ Z assignedGroup ID
+            // Zobraziť názov skupiny - EXTRAHOVAŤ Z groupId ID
             let displayedGroupName = 'Nepriradené'; // Predvolená hodnota
 
-            if (team.assignedGroup && typeof team.assignedGroup === 'string') { // Skontrolovať, či assignedGroup existuje a je reťazec
-                 const groupNameParts = team.assignedGroup.split(' - ');
+            // !!! ZMENA: Použiť team.groupId namiesto team.assignedGroup !!!
+            if (team.groupId && typeof team.groupId === 'string') { // Skontrolovať, či groupId existuje a je reťazec
+                 const groupNameParts = team.groupId.split(' - ');
                  // Ak po rozdelení existuje druhá časť, použiť ju ako názov skupiny
                  if (groupNameParts.length > 1) {
                       displayedGroupName = groupNameParts.slice(1).join(' - '); // Spojiť zvyšné časti, ak ich je viac
                  } else {
                       // Ak sa nepodarilo rozdeliť (formát bez " - "), zobraziť celé ID skupiny alebo špecifickú správu
-                      displayedGroupName = team.assignedGroup; // Zobraziť celé ID skupiny
-                      console.warn(`Tím ID: ${team.id} má assignedGroup ID bez oddelovača " - ": "${team.assignedGroup}". Zobrazujem celé ID ako názov skupiny.`);
+                      displayedGroupName = team.groupId; // Zobraziť celé ID skupiny
+                      console.warn(`Tím ID: ${team.id} má groupId ID bez oddelovača " - ": "${team.groupId}". Zobrazujem celé ID ako názov skupiny.`);
                  }
 
                   // Ak je extrahovaný názov prázdny po orežaní, zobraziť placeholder
@@ -658,20 +652,22 @@ async function displayCreatedTeams() {
                   }
 
 
-            } else if (team.assignedGroup) {
-                 // Ak assignedGroup existuje, ale nie je reťazec (čo by nemalo nastať, ale pre istotu)
+            } else if (team.groupId) {
+                 // Ak groupId existuje, ale nie je reťazec (čo by nemalo nastať, ale pre istotu)
                  displayedGroupName = 'Neznáma skupina (neplatný formát ID)';
-                 console.warn(`Tím ID: ${team.id} má assignedGroup s neplatným formátom (nie reťazec):`, team.assignedGroup);
+                 console.warn(`Tím ID: ${team.id} má groupId s neplatným formátom (nie reťazec):`, team.groupId);
             }
 
 
             groupCell.textContent = displayedGroupName;
-             console.log(`Tím ID: ${team.id}, assignedGroup: ${team.assignedGroup}, Zobrazený názov skupiny (z ID): ${displayedGroupName}`); // LOG: Skupina
+             // !!! ZMENA: Logovať team.groupId namiesto team.assignedGroup !!!
+             console.log(`Tím ID: ${team.id}, groupId: ${team.groupId}, Zobrazený názov skupiny (z ID): ${displayedGroupName}`); // LOG: Skupina
 
 
             const orderCell = row.insertCell();
              // Zobraziť poradie len ak je tím priradený do skupiny a poradie je číslo > 0
-            orderCell.textContent = (team.assignedGroup && typeof team.orderInGroup === 'number' && team.orderInGroup > 0) ? team.orderInGroup : '-';
+             // !!! ZMENA: Použiť team.groupId namiesto team.assignedGroup v podmienke !!!
+            orderCell.textContent = (team.groupId && typeof team.orderInGroup === 'number' && team.orderInGroup > 0) ? team.orderInGroup : '-';
             orderCell.style.textAlign = 'center';
              console.log(`Tím ID: ${team.id}, orderInGroup: ${team.orderInGroup}, Zobrazené poradie: ${orderCell.textContent}`); // LOG: Poradie
 
