@@ -615,8 +615,7 @@ async function displayCreatedTeams() {
              }
 
         // Zoradiť tímy abecedne podľa celého názvu (ID) pre konzistentné zobrazenie
-        teams.sort((a, b) => (a.id || '').localeCompare((b.id || ''), 'sk-SK')); // Zoradiť podľa ID (celý názov)
-
+        teams.sort((a, b) => (a.name || a.id || '').localeCompare((b.name || b.id || ''), 'sk-SK'));
 
         // Prejsť cez každý tím a vytvoriť riadok v tabuľke
         teams.forEach(team => {
