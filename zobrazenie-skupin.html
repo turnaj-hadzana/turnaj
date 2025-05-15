@@ -37,13 +37,13 @@
         /* Štýly pre blok jednotlivej skupiny */
         .group-display {
             /* ... ostatné štýly ... */
-            width: 200px; /* **Nastavíme pevnú šírku na minimálnu požadovanú** */
+            width: 200px; /* **Nastavíme pevnú šírku na 200px** */
             min-width: 200px; /* Zabezpečí, že šírka neklesne pod 200px */
             max-width: 200px; /* **Zabezpečí, že šírka neprekročí 200px a nebude sa rozťahovať** */
 
             /* Flexbox item štýly */
             flex-grow: 0;   /* Nepovoliť rozťahovanie */
-            flex-shrink: 0; /* **Zakážeme zmenšovanie pod flex-basis/width** */
+            flex-shrink: 0; /* **DÔLEŽITÉ: Zakážeme zmenšovanie pod flex-basis/width** */
             flex-basis: auto; /* Základná veľkosť je určená vlastnosťou 'width' */
 
             box-sizing: border-box;
@@ -115,13 +115,18 @@
 
         /* Štýl pre jednotlivé bloky skupín vo vnútri kontajnera s 5 položkami */
         .groups-container.force-3-plus-2-layout .group-display {
-             /* Tieto pravidlá prepíšu pevnú šírku 200px pre prípad 5 skupín */
-             flex-basis: calc(100% / 3 - 15px); /* Vypočítaná základná veľkosť pre 3+2 rozloženie */
-             flex-grow: 0;
-             flex-shrink: 0; /* V tomto špeciálnom prípade nezmenšovať pod vypočítanú basis */
-             min-width: 0; /* Umožniť zmenšenie pre výpočet calc() */
-             max-width: none; /* Zrušíme max-width: 200px z všeobecného pravidla */
-             width: auto; /* Šírka bude určená flex-basis */
+             /* Zrušíme špecifické pravidlá pre šírku/flexbox, aby sa uplatnila pevná šírka 200px */
+             flex-basis: auto; /* Reset basis */
+             flex-grow: 0; /* Keep grow at 0 */
+             flex-shrink: 0; /* Keep shrink at 0 */
+             min-width: 200px; /* Keep min-width */
+             max-width: 200px; /* Keep max-width */
+             width: 200px; /* Keep fixed width */
+
+             /* Pôvodné pravidlá pre calc() šírku a max-width: none; by mali byť teraz odstránené alebo komentované */
+             /* napr. flex-basis: calc(100% / 3 - 15px); */
+             /* napr. max-width: none; */
+
              box-sizing: border-box;
              /* ... ostatné štýly ... */
         }
@@ -129,11 +134,13 @@
         /* Voliteľné: Ak by bolo potrebné iné rozloženie na veľmi malých obrazovkách */
         @media (max-width: 768px) {
              .groups-container.force-3-plus-2-layout .group-display {
-                 flex-basis: calc(100% / 2 - 10px);
+                 /* Tieto pravidlá by mali odkazovať na pevnú šírku 200px, nie na calc() */
+                 flex-basis: auto; /* Reset basis */
+                 flex-grow: 0;
                  flex-shrink: 0;
-                 min-width: 0;
-                 max-width: none;
-                 width: auto;
+                 min-width: 200px;
+                 max-width: 200px;
+                 width: 200px;
              }
         }
 
