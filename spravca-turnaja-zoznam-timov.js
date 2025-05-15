@@ -124,7 +124,6 @@ async function loadAllCategoriesForDynamicSelects() {
         });
         allAvailableCategories.sort((a, b) => (a.name || '').localeCompare((b.name || ''), 'sk-SK'));
     } catch (e) {
-        console.error("Chyba pri načítaní kategórií: ", e);
         alert("Nepodarilo sa načítať kategórie.");
         allAvailableCategories = [];
     }
@@ -145,7 +144,6 @@ async function loadAllGroups() {
             return nameA.localeCompare(nameB, 'sk-SK');
         });
     } catch (e) {
-        console.error("Chyba pri načítaní skupín:", e);
         alert("Nepodarilo sa načítať skupiny.");
         allAvailableGroups = [];
         if (clubGroupSelect) {
@@ -156,7 +154,6 @@ async function loadAllGroups() {
 }
 function populateGroupSelectForClubModal(selectElement, selectedId = '', availableGroups, categoryId = null) {
     if (!selectElement) {
-        console.error("Select element pre skupiny nenájdený!");
         return;
     }
     selectElement.innerHTML = '<option value="">-- Vyberte skupinu --</option>';
@@ -196,7 +193,6 @@ function populateGroupSelectForClubModal(selectElement, selectedId = '', availab
 }
 async function populateUnassignedClubsSelect() {
     if (!unassignedClubSelect) {
-        console.error("Unassigned club select not found!");
         return;
     }
     unassignedClubSelect.innerHTML = '<option value="">-- Vyberte nepriradený tím --</option>';
@@ -224,7 +220,6 @@ async function populateUnassignedClubsSelect() {
             unassignedClubSelect.disabled = false;
         }
     } catch (e) {
-        console.error("Chyba pri načítaní nepriradených tímov:", e);
         const option = document.createElement('option');
         option.value = "";
         option.textContent = "-- Chyba pri načítaní --";
@@ -270,9 +265,7 @@ function resetClubModal() {
     }
 }
 async function openClubModal(identifier = null, mode = 'assign') {
-    console.log(`INFO: Spustená funkcia openClubModal v režime: "${mode}", Identifier: ${identifier}`);
     if (!clubModal || !clubModalTitle || !clubFormContent || !clubFilterContent || !clubForm || !clubNameField || !clubAssignmentFields || !unassignedClubField || !clubNameInput || !clubCategorySelect || !clubGroupSelect || !orderInGroupInput || !unassignedClubSelect || !filterModalTitle || !filterSelect) {
-        console.error("Elementy modálu Klub/Filter nenájdene! Skontrolujte spravca-turnaja-zoznam-timov.html.");
         alert("Nastala chyba pri otváraní modálu. Niektoré elementy používateľského rozhrania chýbajú.");
         return;
     }
@@ -438,14 +431,12 @@ async function openClubModal(identifier = null, mode = 'assign') {
                         };
                     }
                 } else {
-                    console.error("Tím s ID", editingClubId, "sa nenašiel v databáze pre úpravu.");
                     alert("Tím na úpravu sa nenašiel.");
                     closeModal(clubModal);
                     displayCreatedTeams();
                     return;
                 }
             } catch (e) {
-                console.error("Chyba pri načítaní údajov tímu na úpravu:", e);
                 alert("Nepodarilo sa načítať údaje tímu na úpravu.");
                 closeModal(clubModal);
                 displayCreatedTeams();
@@ -513,7 +504,6 @@ async function openClubModal(identifier = null, mode = 'assign') {
                 if (clubNameInput) clubNameInput.focus();
             }, 0);
         } else {
-            console.error(`Neplatný režim modálu klubu: "${mode}"`);
             alert("Vyskytla sa chyba pri otváraní modálu. Neplatný režim.");
             closeModal(clubModal);
             return;
@@ -595,7 +585,6 @@ async function openClubModal(identifier = null, mode = 'assign') {
                      const categoryIdToStore = selectedCategory ? selectedCategory.id : selectedValue;
                      if (currentFilters.category !== categoryIdToStore) {
                           currentFilters.group = null;
-                          console.log("INFO: Filter kategórie zmenený, filter skupiny resetovaný.");
                      }
                       currentFilters.category = (selectedValue !== null && selectedValue.toLowerCase() === 'neznáma kategória')
                            ? 'Neznáma kategória'
@@ -603,8 +592,6 @@ async function openClubModal(identifier = null, mode = 'assign') {
                  } else {
                       currentFilters[filterType] = selectedValue;
                  }
-                console.log(`INFO: Filter zmenený (v modále): Typ="${filterType}", Hodnota="${selectedValue}"`);
-                console.log("INFO: Aktuálne filtre:", currentFilters);
                 closeModal(clubModal);
                 displayCreatedTeams();
             };
@@ -613,7 +600,6 @@ async function openClubModal(identifier = null, mode = 'assign') {
             }, 0);
         }
     } else {
-        console.error(`Neplatný režim modálu klubu: "${mode}"`);
         alert("Vyskytla sa chyba pri otváraní modálu. Neplatný režim.");
         closeModal(clubModal);
         return;
@@ -624,7 +610,6 @@ if (clubForm) {
     clubForm.addEventListener('submit', async (event) => {
         event.preventDefault();
         if (!['assign', 'edit', 'create'].includes(currentClubModalMode)) {
-            console.warn("Formulár Klub bol odoslaný v neformulárovom režime modálu:", currentClubModalMode);
             return;
         }
         const clubName = clubNameInput.value.trim();
@@ -684,7 +669,6 @@ if (clubForm) {
                 clubIdToProcess = unassignedClubSelect.value;
                 const clubDoc = await getDoc(doc(clubsCollectionRef, clubIdToProcess));
                 if (!clubDoc.exists()) {
-                    console.error("Tím s ID", clubIdToProcess, "sa nenašiel v databáze pre priradenie.");
                     alert("Tím na priradenie sa nenašiel. Prosím, skúste znova.");
                     if (clubModal) closeModal(clubModal);
                     resetClubModal();
@@ -712,7 +696,6 @@ if (clubForm) {
                 clubIdToProcess = editingClubId;
                 const clubDoc = await getDoc(doc(clubsCollectionRef, clubIdToProcess));
                 if (!clubDoc.exists()) {
-                    console.error("Tím s ID", clubIdToProcess, "sa nenašiel v databáze pre úpravu.");
                     alert("Tím na úpravu sa nenašiel. Prosím, skúste znova.");
                     if (clubModal) closeModal(clubModal);
                     resetClubModal();
@@ -758,14 +741,12 @@ if (clubForm) {
                     dataToSave.orderInGroup = null;
                 }
             } else {
-                console.error("Neplatný režim modálu pri odosielaní formulára.");
                 alert("Nastala chyba pri spracovaní formulára. Neplatný režim.");
                 if (clubModal) closeModal(clubModal);
                 resetClubModal();
                 return;
             }
             if (!clubIdToProcess) {
-                console.error("Chýba ID tímu na spracovanie po spracovaní formulára.");
                 alert("Vyskytla sa chyba pri určovaní ID tímu na uloženie.");
                 if (clubModal) closeModal(clubModal);
                 resetClubModal();
@@ -785,7 +766,6 @@ if (clubForm) {
                 }
             } else if (operationType === 'replace') {
                 if (!editingClubId) {
-                    console.error("Chýba pôvodné ID tímu pre operáciu replace.");
                     alert("Vyskytla sa chyba pri premenovaní/presune tímu.");
                     if (clubModal) closeModal(clubModal);
                     resetClubModal();
@@ -800,7 +780,6 @@ if (clubForm) {
                 alert(`Tím bol úspešne premenovaný/presunutý na "${clubIdToProcess}".`);
                 editingClubId = clubIdToProcess;
             } else {
-                console.error("Neznámy typ operácie po spracovaní dát:", operationType);
                 alert("Vyskytla sa chyba pri ukladaní dát. Neznámy typ operácie.");
                 if (clubModal) closeModal(clubModal);
                 resetClubModal();
@@ -810,19 +789,15 @@ if (clubForm) {
             resetClubModal();
             displayCreatedTeams();
         } catch (error) {
-            console.error('Chyba pri ukladaní dát tímu: ', error);
             alert(`Chyba pri ukladaní dát! Prosím, skúste znova. Detail: ${error.message}`);
             if (clubModal) closeModal(clubModal);
             resetClubModal();
             displayCreatedTeams();
         }
     });
-} else {
-    console.error("Club form not found!");
 }
 async function displayCreatedTeams() {
     if (!createdTeamsTableBody || !createdTeamsTableHeader) {
-        console.error("Tabuľka pre vytvorené tímy (tbody alebo thead) nenájdene v HTML!");
         return;
     }
     createdTeamsTableBody.innerHTML = '';
@@ -842,7 +817,6 @@ async function displayCreatedTeams() {
               clearFiltersButtonElement.removeEventListener('click', oldListener);
          }
          const newListener = () => {
-             console.log("INFO: Kliknuté na tlačidlo 'Vymazať filtre'.");
              currentFilters = {
                  teamName: null,
                  category: null,
@@ -852,14 +826,10 @@ async function displayCreatedTeams() {
                  column: null,
                  direction: 'asc'
              };
-             console.log("INFO: Filtre a zoraďovanie resetované.", {currentFilters, currentSort});
              displayCreatedTeams();
          };
          clearFiltersButtonElement.addEventListener('click', newListener);
          clearFiltersButtonElement._clickListener = newListener;
-         console.log("INFO: Listener na tlačidlo 'Vymazať filtre' pridaný/aktualizovaný.");
-    } else {
-        console.error("Clear Filters button not found after header update!");
     }
     try {
         const querySnapshot = await getDocs(clubsCollectionRef);
@@ -997,7 +967,6 @@ async function displayCreatedTeams() {
                 if (typeof openClubModal === 'function') {
                     openClubModal(team.id, 'edit');
                 } else {
-                    console.error("Funkcia openClubModal nie je dostupná. Skontrolujte importy.");
                     alert("Funkcia na úpravu tímu nie je dostupná.");
                 }
             };
@@ -1022,7 +991,6 @@ async function displayCreatedTeams() {
           }
          displayAppliedFiltersInHeader();
     } catch (e) {
-        console.error("Chyba pri zobrazovaní tímov: ", e);
         createdTeamsTableBody.innerHTML = '<tr><td colspan="6">Nepodarilo sa načítať tímy.</td></tr>';
         allTeams = [];
         teamsToDisplay = [];
@@ -1030,7 +998,6 @@ async function displayCreatedTeams() {
     }
 }
 function displayAppliedFiltersInHeader() {
-     console.log("INFO: Zobrazujem aplikované filtre v hlavičke.");
      const headerCells = createdTeamsTableHeader.querySelectorAll('th');
      headerCells.forEach(headerCell => {
          const filterType = headerCell.dataset.filterType;
@@ -1058,13 +1025,11 @@ function displayAppliedFiltersInHeader() {
               }
              filterValueSpan.textContent = `${displayedFilterValue}`;
              headerCell.appendChild(filterValueSpan);
-             console.log(`INFO: Zobrazený filter "${filterType}" s hodnotou "${displayedFilterValue}" v hlavičke.`);
          }
      });
 }
 function addHeaderFilterListeners() {
     if (!createdTeamsTableHeader) {
-        console.error("Header element pre pridanie poslucháčov nenájdene!");
         return;
     }
     const headerCells = createdTeamsTableHeader.querySelectorAll('th');
@@ -1110,18 +1075,13 @@ async function deleteTeam(teamId) {
             }
         }
     } catch (e) {
-        console.error(`Chyba pri mazaní tímu s ID ${teamId}:`, e);
         alert("Nepodarilo sa vymazať tím. Prosím, skúste znova.");
     }
 }
 const handleAddButtonClick = () => {
-     console.log("INFO: Kliknuté na tlačidlo '+', spúšťam handler...");
-     console.log("INFO: Volám openClubModal(null, 'create').");
      openClubModal(null, 'create');
-     console.log("INFO: Volanie openClubModal dokončené.");
 };
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log("INFO: DOM plne načítaný pre zoznam tímov.");
     await loadAllCategoriesForDynamicSelects();
     await loadAllGroups();
     await displayCreatedTeams();
@@ -1131,13 +1091,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         addButtonElement.title = "Vytvoriť nový tím";
         addButtonElement.removeEventListener('click', handleAddButtonClick);
         addButtonElement.addEventListener('click', handleAddButtonClick);
-        console.log("INFO: Listener na tlačidlo '+' pridaný.");
-    } else {
-        console.error("Add button not found on teams list page! ID 'addButton' nebolo nájdené.");
     }
     if (clubModalClose) {
         clubModalClose.addEventListener('click', () => {
-            console.log("INFO: Kliknuté na X modálu klubu. Zatváram a resetujem modál.");
             closeModal(clubModal);
             resetClubModal();
             displayCreatedTeams();
@@ -1147,7 +1103,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.addEventListener('click', (event) => {
             const modalContent = clubModal.querySelector('.modal-content');
             if (event.target === clubModal && modalContent && !modalContent.contains(event.target)) {
-                console.log("INFO: Kliknuté mimo obsahu modálu klubu. Zatváram a resetujem modál.");
                 closeModal(clubModal);
                 resetClubModal();
                  displayCreatedTeams();
