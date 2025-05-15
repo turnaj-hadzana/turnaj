@@ -482,7 +482,7 @@ if (teamCreationForm) {
                       batch.set(teamDocRef, {
                           name: baseTeamName + teamSuffixForName.trim(), // Uložiť základný názov + suffix do poľa 'name'
                           categoryId: categoryId, // Uložiť len ID kategórie
-                          assignedGroup: null, // Pôvodne nepriradený do skupiny - POUZIVA assignedGroup PRI UKLADANI
+                          groupId: null, // Pôvodne nepriradený do skupiny - POUZIVA assignedGroup PRI UKLADANI - OPRAVA: POUZIT groupId PRE KONSISTENTNOST
                           orderInGroup: null,
                           createdFromBase: baseTeamName // Uložiť základný názov pre zoskupovanie v Správe tímov
                       });
