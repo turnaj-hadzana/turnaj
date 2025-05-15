@@ -37,16 +37,13 @@
         /* Štýly pre blok jednotlivej skupiny */
         .group-display {
             /* ... ostatné štýly ... */
-            min-width: 200px; /* Tabuľka nebude užšia ako 200px */
-            max-width: 400px; /* **Pridané: Nastavte rozumnú maximálnu šírku** */
-
-            /* Flexbox item štýly - šírka sa prispôsobí obsahu */
-            flex-grow: 0;   /* Nepovoliť rozťahovanie */
-            flex-shrink: 1; /* **Povoliť zmenšovanie** */
-            flex-basis: max-content; /* **Základná veľkosť sa prispôsobí obsahu** */
-
-            width: auto; /* Šírka bude určená Flexboxom na základe obsahu a flex-basis */
-            box-sizing: border-box;
+            min-width: 200px; /* **Základná minimálna šírka, môže byť prepísaná JS** */
+            /* Odstránime šírku a flexbox vlastnosti, ktoré by bránili JS nastaveniu */
+            width: auto;
+            max-width: none; /* Zrušíme max-width */
+            flex-grow: 0;
+            flex-shrink: 0; /* JS bude kontrolovať zmenšovanie/zväčšovanie nastavením pevnej šírky */
+            flex-basis: auto;
 
             margin-bottom: 0;
             padding: 0;
@@ -90,7 +87,7 @@
             align-items: center;
             border-bottom: 1px solid #ccc;
             white-space: nowrap !important; /* Zabráni zalamovaniu textu na úrovni li */
-            overflow: hidden; /* **Skryje pretečený obsah li** */
+            overflow: hidden; /* Skryje pretečený obsah li - pre istotu */
             text-overflow: clip; /* Explicitne zakážeme zobrazenie bodiek pri pretečení */
         }
 
@@ -121,7 +118,7 @@
         }
 
         /* Štýly pre kontajner skupín, ak ich je presne 5, na vynútenie rozloženia 3+2 */
-        /* Tieto pravidlá prepíšu všeobecné Flexbox vlastnosti pre tento špeciálny prípad */
+        /* Tieto pravidlá už nebudú určovať šírku, len ostatné aspekty rozloženia */
         .groups-container.force-3-plus-2-layout {
             display: flex;
             flex-wrap: wrap;
@@ -130,23 +127,24 @@
             align-items: stretch;
         }
 
+        /* Pre bloky v tomto kontajneri odstránime špecifické Flexbox vlastnosti, aby preberali šírku od JS */
         .groups-container.force-3-plus-2-layout .group-display {
-             /* Nastaviť flex-basis tak, aby sa zmestili 3 na riadok */
-             flex-basis: calc(100% / 3 - 15px); /* Vypočítaná základná veľkosť pre 3+2 rozloženie */
+             flex-basis: auto;
              flex-grow: 0;
-             flex-shrink: 0; /* V tomto špeciálnom prípade nezmenšovať pod vypočítanú basis */
-             min-width: 0; /* Umožniť zmenšenie pre výpočet calc() */
-             max-width: none; /* Zrušíme max-width z všeobecného pravidla, aby sa uplatnil calc() */
-             width: auto; /* Šírka bude určená Flexboxom na základe flex-basis */
+             flex-shrink: 0;
+             min-width: 200px; /* Ponecháme základný min-width */
+             max-width: none;
+             width: auto;
              box-sizing: border-box;
         }
 
         /* Voliteľné: Ak by bolo potrebné iné rozloženie na veľmi malých obrazovkách pre prípad 5 skupín */
         @media (max-width: 768px) {
              .groups-container.force-3-plus-2-layout .group-display {
-                 flex-basis: calc(100% / 2 - 10px);
+                 flex-basis: auto; /* Aj tu necháme JS kontrolovať šírku */
+                 flex-grow: 0;
                  flex-shrink: 0;
-                 min-width: 0;
+                 min-width: 200px;
                  max-width: none;
                  width: auto;
              }
@@ -159,9 +157,9 @@
             border: 1px solid #ccc;
             border-radius: 5px;
             background-color: #f9f9f9;
-            max-width: 600px;
-            margin: 0 auto;
-            margin-top: 30px;
+            max-width: 600px; /* Nastavte maximálnu šírku */
+            margin: 0 auto; /* Vycentrovať blok */
+            margin-top: 30px; /* Ponechať horný margin */
         }
 
         .unassigned-teams-display h2 {
@@ -189,7 +187,7 @@
             border-bottom: 1px solid #f5c6cb;
             text-align: left;
             white-space: nowrap !important;
-            overflow: hidden; /* **Skryje pretečený obsah li** */
+            overflow: hidden; /* Skryje pretečený obsah li - pre istotu */
             text-overflow: clip; /* Explicitne zakážeme zobrazenie bodiek pri pretečení */
             display: block;
         }
