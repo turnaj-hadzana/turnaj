@@ -960,7 +960,7 @@ async function populateUnassignedClubsSelect() {
 
 // Funkcia na otvorenie modálneho okna Priradiť/Upraviť Klub
 // Používa sa z tabuľky zoznamu tímov a z tabuľky v modále Správa tímov
-export async function openClubModal(clubId = null, mode = 'assign') {
+async function openClubModal(clubId = null, mode = 'assign') {
     console.log(`Otváram modál Klub v režime: ${mode}, ID: ${clubId}`);
      // Zabezpečiť, že všetky potrebné DOM elementy modálu existujú
      if (!clubModal || !clubModalTitle || !clubForm || !clubNameField || !clubAssignmentFields || !unassignedClubField || !clubNameInput || !clubCategorySelect || !clubGroupSelect || !orderInGroupInput || !unassignedClubSelect) {
