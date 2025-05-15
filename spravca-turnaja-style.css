@@ -1,0 +1,484 @@
+body {
+            font-family: sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f8f9fa;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+        h2 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: #555;
+        }
+         h3 {
+            margin-top: 15px;
+            margin-bottom: 8px;
+            color: #333;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+         }
+        .add-button {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: #28a745;
+            color: white;
+            font-size: 2em;
+            border: none;
+            cursor: pointer;
+            text-align: center;
+            line-height: 50px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2));
+            transition: background-color 0.3s ease;
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000; /* Ensure it's above other content */
+        }
+        .add-button:hover {
+            background-color: #218838;
+        }
+
+        .content-wrapper {
+            display: flex;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 0 10px;
+        }
+        .left-menu {
+            flex: 0 0 200px;
+            margin-right: 20px;
+            padding: 10px;
+            background-color: #fff;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1));
+            border-radius: 8px;
+             height: fit-content; /* Adjust height to content */
+             position: sticky; /* Make it sticky */
+             top: 20px; /* Stick 20px from the top */
+             transition: opacity 0.3s ease; /* Smooth transition for modal open */
+        }
+        .left-menu ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .left-menu li {
+            margin-bottom: 10px;
+        }
+        .left-menu a {
+            text-decoration: none;
+            color: #007bff;
+            font-size: 1.1em;
+            display: block;
+            padding: 8px 5px;
+            border-radius: 4px;
+            transition: background-color 0.2s ease;
+        }
+        .left-menu a:hover {
+            background-color: #e9ecef;
+            color: #0056b3;
+        }
+         .left-menu a:active {
+            color: #004085;
+         }
+
+        main {
+            flex-grow: 1;
+            padding: 10px;
+            background-color: #fff;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1));
+            border-radius: 8px;
+        }
+
+        .section-block {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #fefefe;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        tbody tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        tbody tr:hover {
+            background-color: #e9e9e9;
+        }
+        td:last-child {
+             text-align: center; /* Center actions column */
+        }
+
+        /* Action Buttons in Tables */
+        .action-button {
+             padding: 5px 10px;
+             margin: 2px;
+             cursor: pointer;
+             border: 1px solid #007bff;
+             border-radius: 4px;
+             background-color: #007bff;
+             color: white;
+             font-size: 0.9em;
+             transition: background-color 0.2s ease, border-color 0.2s ease;
+        }
+        .action-button:hover {
+             background-color: #0056b3;
+             border-color: #004085;
+        }
+         .action-button:active {
+             background-color: #004085;
+             border-color: #002752;
+         }
+        .action-button.delete-button {
+             background-color: #dc3545;
+             border-color: #c82333;
+        }
+        .action-button.delete-button:hover {
+             background-color: #c82333;
+             border-color: #bd2130;
+        }
+         .action-button.delete-button:active {
+             background-color: #bd2130;
+             border-color: #a71d2a;
+         }
+
+        /* Form Styling in Modals */
+         form label {
+             display: block;
+             margin-bottom: 5px;
+             font-weight: bold;
+             color: #555;
+         }
+         form input[type="text"],
+         form input[type="number"],
+         form select {
+             width: calc(100% - 22px); /* Adjust for padding and border */
+             padding: 10px;
+             margin-bottom: 15px;
+             border: 1px solid #ccc;
+             border-radius: 4px;
+             box-sizing: border-box; /* Include padding and border in the element's total width and height */
+             font-size: 1em;
+         }
+          form button[type="submit"] {
+              display: block;
+              width: 100%;
+              padding: 10px;
+              background-color: #28a745;
+              color: white;
+              border: none;
+              border-radius: 4px;
+              font-size: 1.1em;
+              cursor: pointer;
+              transition: background-color 0.3s ease;
+          }
+           form button[type="submit"]:hover {
+               background-color: #218838;
+           }
+            form button[type="submit"]:active {
+                background-color: #1e7e34;
+            }
+
+
+        /* Modal Styles */
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 2000; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            overflow: auto; /* Enable scroll if needed */
+            background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+            padding-top: 60px; /* Place modal content below top */
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto; /* 15% from the top and centered */
+            padding: 20px;
+            border: 1px solid #888;
+            width: 90%; /* Could be more responsive */
+            max-width: 500px; /* Max width */
+            border-radius: 8px;
+            position: relative; /* Needed for the close button absolute position */
+        }
+        .modal-content h2 {
+            margin-top: 0;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        /* The Close Button */
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            position: absolute;
+            top: 10px;
+            right: 15px;
+        }
+        .close:hover,
+        .close:focus {
+            color: #000;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        /* Style for when modal is open */
+        body.modal-open {
+            overflow: hidden; /* Prevent scrolling body when modal is open */
+        }
+
+        /* Specific Section Styles */
+        #groupsContent, #clubsContent {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px; /* Space between group/club blocks */
+        }
+        #groupsContent .section-block,
+        #clubsContent .section-block {
+             flex: 1 1 100%; /* Default to full width on small screens */
+             min-width: 280px; /* Minimum width before wrapping */
+             box-sizing: border-box;
+             display: flex; /* Use flex for content inside section block */
+             flex-direction: column;
+        }
+         #groupsContent .category-group-table {
+             margin-top: 10px; /* Less margin than generic table */
+             width: auto; /* Tables within flex items might need width adjustment */
+         }
+        /* Style for table inside group/club blocks */
+         #groupsContent .section-block table,
+         #clubsContent .section-block table {
+             margin-top: 10px;
+             width: 100%; /* Full width within the block */
+         }
+         #groupsContent .section-block th, #groupsContent .section-block td,
+         #clubsContent .section-block th, #clubsContent .section-block td {
+              padding: 8px; /* Slightly less padding */
+         }
+
+        /* Style for Club List in Groups */
+         #clubsContent ul {
+              list-style: none;
+              padding: 0;
+         }
+         #clubsContent li {
+              background-color: #f8f9fa;
+              border: 1px solid #eee;
+              margin-bottom: 5px;
+              padding: 8px;
+              border-radius: 4px;
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              word-break: break-word; /* Break long names */
+         }
+         #clubsContent li span {
+             flex-grow: 1; /* Allow name to take up space */
+             margin-right: 10px;
+         }
+         #clubsContent li .action-buttons {
+              flex-shrink: 0; /* Don't shrink buttons */
+              white-space: nowrap; /* Keep buttons on one line */
+         }
+          #clubsContent li .action-button {
+              padding: 3px 8px; /* Smaller buttons */
+              font-size: 0.8em;
+              margin: 1px; /* Less margin */
+          }
+
+        /* Filter Area */
+        #clubsFilterContainer {
+             margin-bottom: 20px;
+             padding: 15px;
+             border: 1px solid #ddd;
+             border-radius: 5px;
+             background-color: #f9f9f9;
+             display: flex;
+             flex-wrap: wrap;
+             gap: 15px;
+             align-items: center;
+        }
+         #clubsFilterContainer label {
+             margin-right: 5px;
+             font-weight: bold;
+         }
+         #clubsFilterContainer select {
+             padding: 8px;
+             border-radius: 4px;
+             border: 1px solid #ccc;
+             font-size: 1em;
+             flex-grow: 1; /* Allow selects to grow */
+             min-width: 150px; /* Minimum width */
+             max-width: 250px; /* Maximum width */
+             width: auto; /* Override form width */
+             margin-bottom: 0; /* Override form margin */
+         }
+
+        /* Team Creation Specific Styles */
+        #teamCategoryCountContainer {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-top: 15px;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+         #teamCategoryCountContainer h3 {
+             margin-top: 0;
+             border-bottom: none;
+             padding-bottom: 0;
+         }
+        .category-count-pair {
+           display: flex;
+           align-items: center;
+           margin-bottom: 10px;
+           gap: 10px; /* Space between elements */
+        }
+           .category-count-pair label {
+               flex-shrink: 0; /* Prevent label from shrinking */
+                min-width: 80px; /* Give label minimum width */
+                margin-bottom: 0; /* Override form label margin */
+           }
+           .category-count-pair select,
+           .category-count-pair input[type="number"] {
+                display: inline-block;
+                width: auto;
+                margin-bottom: 0;
+                margin-right: 10px;
+                padding: 5px;
+            }
+           .category-count-pair .action-button.delete-button {
+               padding: 3px 8px;
+               font-size: 0.8em;
+           }
+           #teamCategoryCountContainer div {
+               margin-bottom: 10px;
+           }
+           .category-count-pair div:last-of-type {
+                margin-bottom: 0;
+           }
+
+
+        /* Manage Teams Modal Specific Styles */
+        #teamsListInModal {
+             margin-top: 15px;
+        }
+        #teamsListInModal ul {
+             list-style: none;
+             padding: 0;
+             margin: 0;
+        }
+         #teamsListInModal li {
+             background-color: #e9ecef;
+             border: 1px solid #ddd;
+             margin-bottom: 8px;
+             padding: 10px;
+             border-radius: 4px;
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              word-break: break-word;
+         }
+          #teamsListInModal li span {
+              flex-grow: 1;
+              margin-right: 10px;
+          }
+           #teamsListInModal li .action-buttons {
+              flex-shrink: 0;
+              white-space: nowrap;
+           }
+            #teamsListInModal li .action-button {
+                padding: 4px 10px;
+                 font-size: 0.9em;
+                 margin: 2px;
+            }
+
+
+        /* Media Queries for Responsiveness */
+        @media (max-width: 768px) {
+            .content-wrapper {
+                flex-direction: column;
+                padding: 0 5px;
+            }
+            .left-menu {
+                flex: none;
+                width: 100%;
+                margin-right: 0;
+                margin-bottom: 20px;
+                 position: static; /* Remove sticky on smaller screens */
+                 top: auto;
+            }
+            main {
+                padding: 10px;
+            }
+             .modal-content {
+                 width: 95%; /* Wider modal on smaller screens */
+                 margin: 20px auto; /* Less margin top/bottom */
+                 padding: 15px;
+             }
+             form input[type="text"],
+             form input[type="number"],
+             form select {
+                 width: calc(100% - 20px); /* Adjust width */
+             }
+        }
+
+        @media (min-width: 577px) {
+             /* Adjust group block width on medium screens */
+             #groupsContent .section-block {
+                  flex: 1 1 calc(50% - 10px); /* Two blocks per row with gap */
+                  min-width: 0; /* Allow shrinking */
+             }
+              #clubsContent .section-block {
+              flex: 1 1 calc(50% - 10px); /* Two blocks per row with gap */
+              min-width: 0;
+             }
+        }
+    @media (min-width: 993px) {
+         /* Adjust group block width on large screens */
+         #groupsContent .section-block {
+              flex: 0 0 calc((100% - 40px) / 3); /* Three blocks per row with gap */
+              min-width: 0;
+         }
+         #clubsContent .section-block {
+              flex: 0 0 calc((100% - 40px) / 3); /* Three blocks per row with gap */
+              min-width: 0;
+         }
+    }
+
+    /* Style for body when modal is open */
+body.modal-open .left-menu {
+    opacity: 0.5;
+}
+body.modal-open .left-menu a {
+    pointer-events: none; /* Disable clicks on menu when modal is open */
+    cursor: default;
+}
+body.modal-open main {
+    opacity: 0.5; /* Optionally dim the main content */
+     pointer-events: none; /* Disable clicks on main content */
+     user-select: none; /* Prevent text selection */
+}
