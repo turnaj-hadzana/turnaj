@@ -572,7 +572,7 @@ body.modal-open .left-menu a {
             <div id="groupsContent" style="display: none;">
                 </div>
              <div id="clubsContent" style="display: none;">
-                  <div class="filter-container" id="clubsFilterContainerInside" style="display: none;">
+                  <div class="filter-container" id="clubsFilterContainer" style="display: none;">
                         <div class="filter-group">
                             <label for="clubFilterCategorySelect">Kategória:</label>
                             <select id="clubFilterCategorySelect">
@@ -648,7 +648,7 @@ body.modal-open .left-menu a {
         const clubNameInputContainer = document.getElementById('clubNameInputContainer');
         const orderInputContainer = document.getElementById('orderInputContainer');
         const orderInGroupInput = document.getElementById('orderInGroup');
-        const clubsFilterContainerInside = document.getElementById('clubsFilterContainerInside'); // Updated ID
+        const clubsFilterContainer = document.getElementById('clubsFilterContainer'); // Updated ID
         const clubFilterCategorySelect = document.getElementById('clubFilterCategorySelect');
         const clubFilterGroupSelect = document.getElementById('clubFilterGroupSelect');
         const categoriesContentSection = document.getElementById('categoriesContentSection');
@@ -1512,15 +1512,15 @@ body.modal-open .left-menu a {
             } else { console.error("Club form not found!"); }
              async function displayClubs() {
                 clubsContentDiv.innerHTML = ''; // Clear previous content
-                if (!clubsFilterContainerInside) {
+                if (!clubsFilterContainer) {
                      console.error("Filter container inside clubsContent not found!");
                      clubsContentDiv.innerHTML = '<p>Chyba: Kontajner filtrov nebol nájdený.</p>';
                      return;
                 }
 
                 // Append the filter container first
-                clubsContentDiv.appendChild(clubsFilterContainerInside);
-                 clubsFilterContainerInside.style.display = 'flex'; // Ensure filter is visible
+                clubsContentDiv.appendChild(clubsFilterContainer);
+                 clubsFilterContainer.style.display = 'flex'; // Ensure filter is visible
 
                 try {
                     const selectedCategoryId = clubFilterCategorySelect.value;
@@ -2452,7 +2452,7 @@ body.modal-open .left-menu a {
                  if (groupsContentDiv) groupsContentDiv.style.display = 'none';
                  if (clubsContentDiv) clubsContentDiv.style.display = 'none';
                  if (teamCreationContentSection) teamCreationContentSection.style.display = 'none';
-                 if (clubsFilterContainerInside) clubsFilterContainerInside.style.display = 'none'; // Hide filter inside clubsContent
+                 if (clubsFilterContainer) clubsFilterContainer.style.display = 'none'; // Hide filter inside clubsContent
                  // Zatvoriť všetky modálne okná
                  if (categoryModal) closeModal(categoryModal);
                  if (groupModal) closeModal(groupModal);
@@ -2531,7 +2531,7 @@ body.modal-open .left-menu a {
                  else {
                      // Default state or other sections
                      if (addButton) addButton.style.display = 'none';
-                     if (clubsFilterContainerInside) clubsFilterContainerInside.style.display = 'none'; // Ensure filter is hidden
+                     if (clubsFilterContainer) clubsFilterContainer.style.display = 'none'; // Ensure filter is hidden
                      if (addButton) addButton.title = "Pridať položku";
                      // No section class added for default or unknown hash
                  }
