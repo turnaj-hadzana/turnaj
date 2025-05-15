@@ -66,7 +66,7 @@
             border-top-right-radius: 3px;
         }
 
-        /* Štýly pre zoznam tímov v skupine */
+/* Štýly pre zoznam tímov v skupine */
         .group-display ul {
             list-style: none;
             padding: 10px; /* Padding okolo zoznamu */
@@ -81,7 +81,8 @@
             margin-bottom: 5px;
             border-radius: 3px;
             display: flex;
-            justify-content: space-between; /* Oddelí názov tímu od poradia */
+            /* justify-content: space-between; */ /* Odstránime space-between pre zarovnanie doľava */
+            justify-content: flex-start; /* Zarovnanie položiek od začiatku (vľavo) */
             align-items: center;
             border-bottom: 1px solid #ccc; /* Jemný oddeľovač medzi tímami */
         }
@@ -93,13 +94,24 @@
         }
 
 
-         /* Štýl pre zobrazenie poradia v tíme (vedľa názvu) */
-         .group-display li span:last-child:not(:first-child) {
+         /* Štýl pre zobrazenie poradia v tíme (číslo) */
+         /* Odstránime bold z čísla poradia */
+         /* .group-display li span:last-child:not(:first-child) {
               font-weight: bold;
               margin-left: 10px;
-              color: #000; /* Čierna farba pre číslo poradia */
+              color: #000;
+         } */
+         /* Nový štýl pre číslo poradia - ponecháme farbu a margin, odstránime bold */
+         .group-display ul li span:first-child {
+             margin-right: 10px; /* Pridáme margin vpravo od čísla pre oddelenie */
+             color: #000; /* Čierna farba pre číslo poradia */
          }
 
+
+        /* Nový štýl pre názov tímu - bude tučný */
+        .group-display ul li .team-name {
+            font-weight: bold;
+        }
 
         /* Štýly pre sekciu nepriradených tímov */
         .unassigned-teams-display {
