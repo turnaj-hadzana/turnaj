@@ -2,7 +2,7 @@
 
 // Importujte spoločné funkcie a referencie z common.js
 import { db, categoriesCollectionRef, groupsCollectionRef, clubsCollectionRef,
-         getDocs, query, orderBy } from './spravca-turnaja-common.js'; // Import orderBy pre zoradenie
+         getDocs, query, orderBy } from 'spravca-turnaja-common.js'; // Import orderBy pre zoradenie
 
 // Získajte referenciu na element, kam sa bude vkladať obsah
 const dataDisplayArea = document.getElementById('dataDisplayArea');
