@@ -156,14 +156,39 @@ table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 15px;
+    /* Pridáme border na celú tabuľku, ak chceme rámik okolo celej tabuľky namiesto okolo buniek */
+    /* border: 1px solid #ddd; */
 }
 
 th,
 td {
-    border: 1px solid #ddd;
+    /* border: 1px solid #ddd;  <--- ODSTRÁNENÉ všeobecné orámovanie buniek */
+    border: none; /* Explicitne nastavené na none */
     padding: 10px;
     text-align: left;
 }
+
+/* Odstránené špecifické border-bottom z TH a TD */
+#categoryTable th, #clubsTable th, .category-group-table th, .group-clubs-table th, #createdTeamsTable th,
+#manageTeamsModal .group-clubs-table th {
+     background-color: #f2f2f2;
+     color: #333;
+     font-weight: bold;
+     text-align: left;
+     padding: 12px 15px;
+     /* border-bottom: 2px solid #ddd;  <--- ODSTRÁNENÉ orámovanie spodnej časti hlavičky */
+     font-size: 0.9em;
+     white-space: nowrap;
+}
+#categoryTable td, #clubsTable td, .category-group-table td, .group-clubs-table td, #createdTeamsTable td,
+#manageTeamsModal .group-clubs-table td {
+     text-align: left;
+     padding: 10px 15px;
+     /* border-bottom: 1px solid #eee;  <--- ODSTRÁNENÉ orámovanie spodnej časti buniek */
+     font-size: 0.9em;
+     white-space: nowrap;
+}
+
 
 th {
     background-color: #f2f2f2;
@@ -176,7 +201,20 @@ tbody tr:nth-child(even) {
 
 tbody tr:hover {
     background-color: #e9e9e9;
+    /* cursor: pointer; (už je nastavené v špecifických pravidlách nižšie, ponecháme) */
 }
+
+/* Vrátené cursor: pointer pre riadky, kde to bolo definované */
+#categoryTable tbody tr:hover,
+#clubsTable tbody tr:hover,
+.category-group-table tbody tr:hover,
+.group-clubs-table tbody tr:hover,
+#createdTeamsTable tbody tr:hover,
+#manageTeamsModal .group-clubs-table tbody tr:hover
+{
+   cursor: pointer;
+}
+
 
 td:last-child {
     text-align: center; /* Toto centruje obsah bunky, ak nie je pouzity flex */
@@ -244,7 +282,7 @@ td:last-child {
 /* --- Style for Category Group Table (UPRAVENÉ - šírka na TH) --- */
 .category-group-table {
     border-collapse: collapse;
-    border: none;
+    border: none; /* Zabezpečiť, že tabuľka samotná nemá border */
     overflow: hidden;
     width: 100%;
     table-layout: fixed;
@@ -279,7 +317,7 @@ td:last-child {
 /* --- Style for Club List Table (within #clubsContent or modal) (UPRAVENÉ - šírka na TH) --- */
 .group-clubs-table {
     border-collapse: collapse;
-    border: none;
+    border: none; /* Zabezpečiť, že tabuľka samotná nemá border */
     overflow: hidden;
     width: 100%;
     table-layout: fixed;
@@ -287,7 +325,7 @@ td:last-child {
     margin-top: 0;
 }
 
-/* Štýly pre bunky v group-clubs-table, vrátane text-overflow */
+/* Štýly pre bunky v group-clubs-table, vrátane text-overflow - padding ponechaný, border:none je vo všeob. pravidle */
 .group-clubs-table th,
 .group-clubs-table td {
     padding: 8px;
@@ -336,7 +374,7 @@ td:last-child {
 }
 
 
-/* --- Filter Area --- */
+/* Filter Area */
 #clubsFilterContainer {
     margin-bottom: 20px;
     padding: 15px;
@@ -370,7 +408,7 @@ td:last-child {
 #categoryTable {
     border-collapse: collapse;
     width: 100%;
-    border: none;
+    border: none; /* Zabezpečiť pevnú šírku stĺpcov */
     overflow: hidden;
     table-layout: fixed; /* Zabezpečiť pevnú šírku stĺpcov */
 }
@@ -400,14 +438,13 @@ td:last-child {
     margin-right: 0;
 }
 
-
 /* Team Creation Specific Styles */
 #teamCreationContentSection {
     /* Zdedí všeobecné .section-block štýly */
 }
 
 #teamCategoryCountContainer {
-    border: 1px solid #ddd;
+    border: 1px solid #ddd; /* Toto orámovanie ponechané, ak je to zámer (nie je to bunka tabuľky) */
     padding: 15px;
     margin-top: 15px;
     border-radius: 5px;
@@ -469,7 +506,7 @@ td:last-child {
 
 #teamsListInModal li {
     background-color: #e9ecef;
-    border: 1px solid #ddd;
+    border: 1px solid #ddd; /* Toto orámovanie li, nie bunky tabuľky */
     margin-bottom: 8px;
     padding: 10px;
     border-radius: 4px;
