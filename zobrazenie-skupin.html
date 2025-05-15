@@ -97,6 +97,9 @@
         /* Nový štýl pre názov tímu - bude tučný */
         .group-display ul li .team-name {
             font-weight: bold;
+            white-space: nowrap; /* **Zabráni zalamovaniu textu** */
+            display: block; /* Zabezpečí, že zabránenie zalamovaniu funguje */
+            flex-grow: 1; /* Umožní názvu tímu zabrať dostupné miesto */
         }
 
         /* Štýl pre zvýraznený tím */
@@ -180,6 +183,8 @@
             border-radius: 3px;
             border-bottom: 1px solid #f5c6cb;
             text-align: left;
+            white-space: nowrap; /* **Zabráni zalamovaniu textu** */
+            display: block; /* Zabezpečí, že zabránenie zalamovaniu funguje */
         }
 
         /* Odstrániť spodný border z poslednej položky nepriradeného tímu */
