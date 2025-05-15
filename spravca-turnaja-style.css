@@ -249,8 +249,8 @@ td:last-child {
     white-space: nowrap;
     text-align: center;
     /* --- PRIDANÉ/UPRAVENÉ --- */
-    width: 210px; /* Zväčšená šírka stĺpca akcií pre obe tlačidlá + medzera */
-    min-width: 210px; /* Zabezpečiť minimálnu šírku */
+    width: 240px; /* Zväčšená šírka stĺpca akcií pre obe tlačidlá + medzera */
+    min-width: 240px; /* Zabezpečiť minimálnu šírku */
     /* --- KONIEC PRIDANÉ/UPRAVENÉ --- */
     padding: 5px; /* Pridajte padding, ak nie je zdedený */
 }
@@ -294,8 +294,8 @@ td:last-child {
     white-space: nowrap;
     text-align: center;
     /* --- UPRAVENÉ --- */
-    width: 210px; /* Zväčšená šírka stĺpca akcií */
-    min-width: 210px; /* Zabezpečiť minimálnu šírku */
+    width: 240px; /* Zväčšená šírka stĺpca akcií */
+    min-width: 240px; /* Zabezpečiť minimálnu šírku */
     /* --- KONIEC UPRAVENÉ --- */
     flex-shrink: 0;
     padding: 5px; /* Pridajte padding, ak nie je zdedený */
