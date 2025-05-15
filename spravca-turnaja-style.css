@@ -144,7 +144,7 @@ main {
     margin-bottom: 0;
     flex: 1 1 300px;
     /* --- UPRAVENÉ pre skoršie zalamovanie --- */
-    min-width: 400px; /* Zväčšená minimálna šírka z 360px na 380px */
+    min-width: 380px; /* Zväčšená minimálna šírka z 360px na 380px */
     /* --- KONIEC UPRAVENÉ --- */
     padding: 15px; /* Zabezpečiť, že padding je stále aplikovaný */
     box-sizing: border-box; /* Zabezpečiť, že padding je zahrnutý v šírke */
@@ -182,7 +182,7 @@ td:last-child {
     text-align: center; /* Toto centruje obsah bunky, ak nie je pouzity flex */
 }
 
-/* --- Action Buttons in Tables (General styles for buttons) (UPRAVENÉ) --- */
+/* --- Action Buttons in Tables (General styles for buttons) (VRÁTENÉ ORAMOVANIE) --- */
 .action-button {
     padding: 5px 10px;
     border: 1px solid #007bff;
@@ -240,7 +240,7 @@ td:last-child {
 /* --- Koniec úpravy pre nezalamovanie textu v sekcii Skupiny --- */
 
 
-/* --- Style for Category Group Table (UPRAVENÉ) --- */
+/* --- Style for Category Group Table (UPRAVENÉ - šírka na TH) --- */
 .category-group-table {
     border-collapse: collapse;
     border: none;
@@ -251,12 +251,18 @@ td:last-child {
     margin-top: 10px;
 }
 
-/* Ensure the action column has enough width for Category Group Table (UPRAVENÉ) */
+/* Set width on the header cell for the action column */
+.category-group-table th:last-child {
+    width: 200px; /* Šírka stĺpca akcií na TH */
+    min-width: 200px; /* Zabezpečiť minimálnu šírku na TH */
+    white-space: nowrap; /* Zabezpečiť, že text hlavičky sa nezalomí */
+}
+
+/* Ensure the action column's data cell behaves as flex container */
 .category-group-table td:last-child {
     white-space: nowrap;
     /* text-align: center; ODSTRANENÉ */
-    width: 200px; /* Šírka stĺpca akcií */
-    min-width: 200px; /* Zabezpečiť minimálnu šírku */
+    /* Width and min-width sú definované na TH, nie na TD */
     padding: 5px; /* Polstrovanie vo vnútri bunky */
     display: flex;
     align-items: center;
@@ -269,7 +275,7 @@ td:last-child {
 }
 
 
-/* --- Style for Club List Table (within #clubsContent or modal) (UPRAVENÉ) --- */
+/* --- Style for Club List Table (within #clubsContent or modal) (UPRAVENÉ - šírka na TH) --- */
 .group-clubs-table {
     border-collapse: collapse;
     border: none;
@@ -303,12 +309,19 @@ td:last-child {
      flex-grow: 1;
 }
 
-/* Ensure the action column has enough width for Club List Table (UPRAVENÉ) */
+/* Set width on the header cell for the action column */
+.group-clubs-table th:last-child {
+     width: 200px; /* Šírka stĺpca akcií na TH */
+     min-width: 200px; /* Zabezpečiť minimálnu šírku na TH */
+     white-space: nowrap; /* Zabezpečiť, že text hlavičky sa nezalomí */
+     flex-shrink: 0;
+}
+
+/* Ensure the action column's data cell behaves as flex container */
 .group-clubs-table td:last-child {
     white-space: nowrap;
     /* text-align: center; ODSTRANENÉ */
-    width: 200px; /* Šírka stĺpca akcií */
-    min-width: 200px; /* Zabezpečiť minimálnu šírku */
+    /* Width and min-width sú definované na TH, nie na TD */
     flex-shrink: 0;
     padding: 5px; /* Polstrovanie vo vnútri bunky */
     display: flex;
