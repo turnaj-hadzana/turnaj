@@ -1510,31 +1510,36 @@ async function displayCreatedTeams() {
 
 // Pridá event listener na hlavičky tabuľky pre otvorenie filtračného modálu
 function addHeaderFilterListeners() {
-    console.log("Pridávam poslucháčov filtrov na hlavičky tabuľky.");
+    console.log("INFO: Spustená funkcia addHeaderFilterListeners."); // <--- Pridajte tento riadok
     if (!createdTeamsTableHeader) {
         console.error("Header element pre pridanie filtrovacích poslucháčov nenájdený!");
         return;
     }
+    console.log("INFO: Header element nájdený.", createdTeamsTableHeader); // <--- Pridajte tento riadok
+    const headerCells = createdTeamsTableHeader.querySelectorAll('th'); // Získať všetky th elementy
+    console.log("INFO: Nájdené TH elementy:", headerCells.length, headerCells); // <--- Pridajte tento riadok
 
-    const headerCells = createdTeamsTableHeader.querySelectorAll('th'); // Získať všetky th elementy v thead
 
     headerCells.forEach(headerCell => {
-        const filterType = headerCell.dataset.filterType; // Získať typ filtra z data atribútu
+         console.log("INFO: Spracovávam TH element.", headerCell); // <--- Pridajte tento riadok
+        const filterType = headerCell.dataset.filterType;
 
-        if (filterType) { // Ak má th element data-filter-type atribút (tj. je filtrovateľný stĺpec)
-            headerCell.style.cursor = 'pointer'; // Zmeniť kurzor na pointer, aby bolo vidieť, že je klikateľný
-            // Odstrániť prípadné predošlé listenery, aby sa nezdvojovali
+        if (filterType) {
+            console.log("INFO: TH je filtrovateľný:", filterType); // <--- Pridajte tento riadok
+            headerCell.style.cursor = 'pointer';
             headerCell.onclick = null; // Resetovať onclick
-            // Pridať click listener
             headerCell.onclick = () => {
-                console.log(`Kliknuté na hlavičku filtra: ${filterType}`);
-                // Otvoriť modál klubu v režime 'filter' s typom filtra ako identifier
-                // ZMENA: openClubModal v režime filter bude používať teamsToDisplay
-                openClubModal(filterType, 'filter');
+                console.log(`INFO: Kliknuté na hlavičku filtra: ${filterType}`); // <--- Pridajte tento riadok
+                // openClubModal(filterType, 'filter'); // Volanie openClubModal
+                 // ZMENA: Zavolajte funkciu a skontrolujte, či sa volá
+                 console.log(`INFO: Volám openClubModal('${filterType}', 'filter').`); // <--- Pridajte tento riadok
+                 openClubModal(filterType, 'filter');
             };
+        } else {
+             console.log("INFO: TH nie je filtrovateľný."); // <--- Pridajte tento riadok
         }
     });
-    console.log("Poslucháči filtrov na hlavičky tabuľky pridaní.");
+    console.log("INFO: Funkcia addHeaderFilterListeners dokončená."); // <--- Pridajte tento riadok
 }
 
 
