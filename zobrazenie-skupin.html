@@ -37,14 +37,14 @@
         /* Štýly pre blok jednotlivej skupiny */
         .group-display {
             /* ... ostatné štýly ... */
-            min-width: 200px; /* Minimálna šírka, aby sa nezmenšovali príliš */
-            max-width: 300px; /* **Maximálna šírka - zabráni rozťahovaniu nad 300px** */
+            width: 200px; /* **Nastavíme pevnú šírku na minimálnu požadovanú** */
+            min-width: 200px; /* Zabezpečí, že šírka neklesne pod 200px */
+            max-width: 200px; /* **Zabezpečí, že šírka neprekročí 200px a nebude sa rozťahovať** */
 
             /* Flexbox item štýly */
-            /* flex: 0 1 300px; */ /* Pôvodné */
             flex-grow: 0;   /* Nepovoliť rozťahovanie */
-            flex-shrink: 1; /* **Povoliť zmenšovanie** (nutné pre responzivitu pod 300px) */
-            flex-basis: 300px; /* **Preferovaná základná veľkosť** */
+            flex-shrink: 0; /* **Zakážeme zmenšovanie pod flex-basis/width** */
+            flex-basis: auto; /* Základná veľkosť je určená vlastnosťou 'width' */
 
             box-sizing: border-box;
             /* ... ostatné štýly ... */
@@ -115,12 +115,13 @@
 
         /* Štýl pre jednotlivé bloky skupín vo vnútri kontajnera s 5 položkami */
         .groups-container.force-3-plus-2-layout .group-display {
-             /* Nastaviť flex-basis tak, aby sa zmestili 3 na riadok */
-             flex-basis: calc(100% / 3 - 15px); /* Odhadovaná hodnota, môže vyžadovať doladenie */
-             flex-grow: 0; /* V tomto špeciálnom prípade nenechať rásť */
-             flex-shrink: 0; /* **V tomto špeciálnom prípade nezmenšovať pod vypočítanú basis** */
-             min-width: 0; /* Umožniť zmenšenie pre výpočet calc(), min-width z všeobecného pravidla sa uplatní, ak by calc() klesol pod neho */
-             max-width: none; /* **V tomto špečiálnom prípade zrušíme max-width, aby sa uplatnil calc()** */
+             /* Tieto pravidlá prepíšu pevnú šírku 200px pre prípad 5 skupín */
+             flex-basis: calc(100% / 3 - 15px); /* Vypočítaná základná veľkosť pre 3+2 rozloženie */
+             flex-grow: 0;
+             flex-shrink: 0; /* V tomto špeciálnom prípade nezmenšovať pod vypočítanú basis */
+             min-width: 0; /* Umožniť zmenšenie pre výpočet calc() */
+             max-width: none; /* Zrušíme max-width: 200px z všeobecného pravidla */
+             width: auto; /* Šírka bude určená flex-basis */
              box-sizing: border-box;
              /* ... ostatné štýly ... */
         }
@@ -129,9 +130,10 @@
         @media (max-width: 768px) {
              .groups-container.force-3-plus-2-layout .group-display {
                  flex-basis: calc(100% / 2 - 10px);
-                 flex-shrink: 0; /* Aj tu zabrániť zmenšovaniu pod túto basis */
+                 flex-shrink: 0;
                  min-width: 0;
                  max-width: none;
+                 width: auto;
              }
         }
 
