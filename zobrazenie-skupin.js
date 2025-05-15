@@ -11,6 +11,10 @@ const groupFilter = document.getElementById('groupFilter'); // Referencia na fil
 const teamFilter = document.getElementById('teamFilter'); // Referencia na filter tímov
 const clearFiltersButton = document.getElementById('clearFiltersButton'); // Referencia na tlačidlo vymazania filtrov
 
+// *** ZABLOKOVAŤ FILTER SKUPÍN NA ZAČIATKU ***
+groupFilter.disabled = true;
+// *** KONIEC ZABLOKOVANIA ***
+
 
 // Polia pre uchovanie všetkých načítaných dát
 let allCategories = [];
@@ -63,7 +67,7 @@ function populateFilters() {
         categoryFilter.appendChild(option);
     });
 
-    // Naplniť filter skupín (pri prvom načítaní všetky skupiny)
+    // Naplniť filter skupín (pri prvom načítaní všetky skupiny, ale bude zablokovaný)
     populateGroupFilter(''); // Naplní všetky skupiny, ako keby bola vybraná prázdna kategória
 
     // Naplniť filter tímov
@@ -76,14 +80,14 @@ function populateFilters() {
     });
 }
 
-// *** NOVÁ FUNKCIA: Naplnenie filtra skupín podľa vybranej kategórie ***
+// Funkcia: Naplnenie filtra skupín podľa vybranej kategórie
 function populateGroupFilter(categoryId) {
     // Vyčistiť existujúce možnosti okrem prvej ("Všetky skupiny")
     groupFilter.innerHTML = '<option value="">Všetky skupiny</option>';
 
     const groupsToPopulate = categoryId
         ? allGroups.filter(group => group.categoryId === categoryId)
-        : allGroups; // Ak nie je vybraná kategória, zobraz všetky skupiny
+        : allGroups; // Ak nie je vybraná kategória, zobraz všetky skupiny (toto sa stane, kým nie je kategória vybratá, ale filter je zablokovaný)
 
     groupsToPopulate.forEach(group => {
         const option = document.createElement('option');
@@ -92,7 +96,6 @@ function populateGroupFilter(categoryId) {
         groupFilter.appendChild(option);
     });
 }
-// *** KONIEC NOVEJ FUNKCIE ***
 
 
 // Funkcia na zobrazenie skupín a tímov (s implementovaným filtrovaním a zvýraznením tímu)
@@ -176,10 +179,12 @@ function displayGroups() {
             ? allCategories.filter(cat => cat.id === selectedCategoryId)
             : allCategories;
 
+        // Skupiny filtrujeme len ak nie je aktívny filter tímu
         groupsToDisplay = allGroups.filter(group =>
             (!selectedCategoryId || group.categoryId === selectedCategoryId) &&
             (!selectedGroupId || group.id === selectedGroupId)
         );
+
 
          // Tímy na zobrazenie budú filtrované len podľa kategórie a skupiny
          teamsToDisplay = allTeams.filter(team =>
@@ -360,7 +365,20 @@ function displayGroups() {
 
 // Pridanie poslucháčov udalostí pre filtre
 categoryFilter.addEventListener('change', () => {
-    populateGroupFilter(categoryFilter.value); // Aktualizovať filter skupín pri zmene kategórie
+    const selectedCategoryId = categoryFilter.value;
+
+    if (selectedCategoryId === '') {
+        // Ak je vybraná možnosť "Všetky kategórie"
+        groupFilter.value = ''; // Vynulovať výber skupiny
+        groupFilter.disabled = true; // Zablokovať filter skupín
+        populateGroupFilter(''); // Naplniť filter skupín všetkými skupinami (ale budú neaktívne)
+    } else {
+        // Ak je vybraná konkrétna kategória
+        groupFilter.disabled = false; // Odblokovať filter skupín
+        populateGroupFilter(selectedCategoryId); // Naplniť filter skupín iba skupinami danej kategórie
+        groupFilter.value = ''; // Vynulovať výber skupiny
+    }
+
     displayGroups(); // Zobraziť skupiny s novými filtrami
 });
 
@@ -370,7 +388,9 @@ teamFilter.addEventListener('change', displayGroups); // Poslucháč pre filter 
 // Poslucháč pre tlačidlo vymazania filtrov
 clearFiltersButton.addEventListener('click', () => {
     categoryFilter.value = '';
-    populateGroupFilter(''); // Vynulovať filter skupiny a naplniť všetkými skupinami
+    groupFilter.value = ''; // Vynulovať filter skupiny
+    groupFilter.disabled = true; // Zablokovať filter skupiny po vymazaní
+    populateGroupFilter(''); // Naplniť filter skupín všetkými skupinami
     teamFilter.value = '';
     displayGroups(); // Zobraziť všetky skupiny po vymazaní filtrov
 });
@@ -380,5 +400,6 @@ clearFiltersButton.addEventListener('click', () => {
 document.addEventListener('DOMContentLoaded', async () => {
     console.log("INFO: DOM plne načítaný pre zobrazenie skupín.");
     await loadAllTournamentData();
-    displayGroups();
+    // Načítanie dát už volá populateFilters, ktorá nastaví počiatočný stav filtrov
+    displayGroups(); // Zobraziť počiatočný stav (všetky skupiny)
 });
