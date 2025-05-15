@@ -658,9 +658,6 @@ async function openManageTeamsModal(baseTeamName, individualTeams) {
 
              const nameTd = document.createElement('td');
              nameTd.textContent = team.data.name || 'Neznámy názov'; // Názov individuálneho tímu
-              nameTd.style.overflow = 'hidden';
-              nameTd.style.textOverflow = 'ellipsis';
-              nameTd.style.whiteSpace = 'nowrap';
 
              const groupTd = document.createElement('td');
               const groupNameParts = (team.data.groupId || '').split(' - '); // Rozdeliť ID skupiny na NázovKategórie - NázovSkupiny
