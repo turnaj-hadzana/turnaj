@@ -112,7 +112,7 @@ main {
     padding: 0;
     box-shadow: none;
     background-color: transparent;
-    min-width: 0;
+    min-width: 0; /* Pridané min-width: 0 pre lepšie flexbox správanie */
 }
 
 /* --- General Section Block Styling --- */
@@ -144,7 +144,7 @@ main {
     margin-bottom: 0;
     flex: 1 1 300px;
     /* --- UPRAVENÉ pre skoršie zalamovanie --- */
-    min-width: 360px; /* Zväčšená minimálna šírka, aby zalamovanie nastalo skôr */
+    min-width: 380px; /* Zväčšená minimálna šírka z 360px na 380px */
     /* --- KONIEC UPRAVENÉ --- */
     padding: 15px; /* Zabezpečiť, že padding je stále aplikovaný */
     box-sizing: border-box; /* Zabezpečiť, že padding je zahrnutý v šírke */
@@ -263,7 +263,7 @@ td:last-child {
     justify-content: center;
     gap: 5px; /* Medzera medzi tlačidlami */
 }
-/* Odstránenie margin-right pre action buttony v tejto konkrétnej bunke */
+/* Odstránenie margin-right pre action buttony v tejto konkrétnej bunke (už ho netreba kvôli gap) */
 .category-group-table td:last-child .action-button {
     margin-right: 0;
 }
@@ -522,6 +522,7 @@ td:last-child {
         flex-basis: auto;
         width: 100%;
         padding: 0;
+        min-width: 0; /* Zabezpecit, ze main sa nezmensuje pod obsah */
     }
 
     /* Section blocky (všeobecné aj v skupinách/kluboch) sa zoraďujú vertikálne */
@@ -529,7 +530,7 @@ td:last-child {
     #groupsContent .section-block,
     #clubsContent .section-block {
         flex: 1 1 100%;
-        min-width: auto;
+        min-width: auto; /* Na mobiloch min-width riadi obsah */
         margin-bottom: 10px;
     }
 
@@ -582,6 +583,7 @@ td:last-child {
          flex-grow: 1;
          flex-basis: 0;
          padding: 0;
+          min-width: 0; /* Zabezpecit, ze main sa nezmensuje pod obsah */
      }
 
     /* Štandardné section-blocky (ak nie sú vo flex kontajneri ako #groupsContent) */
@@ -591,7 +593,7 @@ td:last-child {
     }
 
     /* #groupsContent .section-block a #clubsContent .section-block
-       použijú pravidlá flex: 1 1 300px; min-width: 360px; definované mimo media queries
+       použijú pravidlá flex: 1 1 300px; min-width: 380px; definované mimo media queries
     */
 
      /* Zabezpečiť, aby posledný blok v flex riadku nemal zbytočný spodný okraj */
