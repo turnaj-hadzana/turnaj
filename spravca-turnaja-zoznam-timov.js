@@ -1458,7 +1458,7 @@ async function displayCreatedTeams() {
 
             // Tlačidlo Upraviť
             const editButton = document.createElement('button');
-            editButton.textContent = 'Upraviť / Priradiť'; // Text tlačidla
+            editButton.textContent = 'Upraviť'; // Text tlačidla
             editButton.classList.add('action-button'); // Všeobecná trieda pre tlačidlá akcií
             // Pridať listener pre kliknutie - otvorí modál klubu v režime 'edit' s ID tímu
             editButton.onclick = () => {
