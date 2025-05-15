@@ -280,6 +280,20 @@ body {
               padding: 8px; /* Slightly less padding */
          }
 
+         /* --- Úprava pre nezalamovanie textu v sekcii Skupiny --- */
+         #groupsContent .section-block h2 { /* Názov kategórie nad tabuľkou */
+             white-space: nowrap;
+             overflow: hidden;
+             text-overflow: ellipsis;
+         }
+         #groupsContent .category-group-table td:first-child { /* Prvý stĺpec v tabuľke skupín (názov skupiny) */
+             white-space: nowrap;
+             overflow: hidden;
+             text-overflow: ellipsis;
+         }
+         /* --- Koniec úpravy pre nezalamovanie textu --- */
+
+
         /* Style for Club List in Groups */
          #clubsContent ul {
               list-style: none;
