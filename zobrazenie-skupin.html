@@ -33,6 +33,7 @@
             flex-wrap: wrap; /* Zalamovať skupiny na ďalší riadok, ak sa nezmestia */
             gap: 20px; /* Medzera medzi skupinami */
             justify-content: flex-start; /* Zarovnať skupiny od začiatku riadku */
+            justify-content: center;
             align-items: stretch; /* Zabezpečiť, aby bloky skupín mali rovnakú výšku */
         }
 
@@ -119,7 +120,10 @@
              padding: 15px;
              border: 1px solid #ccc;
              border-radius: 5px;
-             background-color: #f9f9f9; /* Svetlejšie pozadie ako skupiny */
+             background-color: #f9f9f9; 
+             max-width: 600px;
+             margin: 0 auto;
+             margin-top: 30px
         }
 
         .unassigned-teams-display h2 {
