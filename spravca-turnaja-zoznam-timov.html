@@ -21,6 +21,25 @@
         <main>
             <section id="teamCreationContentSection" class="section-block">
                   <h2>Vytvorené tímy</h2>
+
+                  <div id="filterContainer" class="filter-container">
+                      <div class="filter-group">
+                          <label for="teamNameFilter">Názov tímu:</label>
+                          <input type="text" id="teamNameFilter" placeholder="Zadajte názov">
+                      </div>
+                      <div class="filter-group">
+                          <label for="categoryFilter">Kategória:</label>
+                          <select id="categoryFilter">
+                              <option value="">Všetky kategórie</option>
+                              </select>
+                      </div>
+                       <div class="filter-group">
+                           <label for="groupFilter">Skupina:</label>
+                           <select id="groupFilter">
+                               <option value="">Všetky skupiny</option>
+                               </select>
+                       </div>
+                  </div>
                   <table id="createdTeamsTable">
                        <thead>
                             <tr id="createdTeamsTableHeader">
