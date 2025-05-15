@@ -55,6 +55,7 @@ async function loadAllTournamentData() {
 // Funkcia na naplnenie filtrovacích select boxov
 function populateFilters() {
     // Naplniť filter kategórií
+    categoryFilter.innerHTML = '<option value="">Všetky kategórie</option>'; // Vyčistiť a pridať default
     allCategories.forEach(category => {
         const option = document.createElement('option');
         option.value = category.id;
@@ -62,15 +63,11 @@ function populateFilters() {
         categoryFilter.appendChild(option);
     });
 
-    // Naplniť filter skupín
-    allGroups.forEach(group => {
-        const option = document.createElement('option');
-        option.value = group.id;
-        option.textContent = group.name || group.id;
-        groupFilter.appendChild(option);
-    });
+    // Naplniť filter skupín (pri prvom načítaní všetky skupiny)
+    populateGroupFilter(''); // Naplní všetky skupiny, ako keby bola vybraná prázdna kategória
 
     // Naplniť filter tímov
+    teamFilter.innerHTML = '<option value="">Všetky tímy</option>'; // Vyčistiť a pridať default
     allTeams.forEach(team => {
         const option = document.createElement('option');
         option.value = team.id;
@@ -78,6 +75,24 @@ function populateFilters() {
         teamFilter.appendChild(option);
     });
 }
+
+// *** NOVÁ FUNKCIA: Naplnenie filtra skupín podľa vybranej kategórie ***
+function populateGroupFilter(categoryId) {
+    // Vyčistiť existujúce možnosti okrem prvej ("Všetky skupiny")
+    groupFilter.innerHTML = '<option value="">Všetky skupiny</option>';
+
+    const groupsToPopulate = categoryId
+        ? allGroups.filter(group => group.categoryId === categoryId)
+        : allGroups; // Ak nie je vybraná kategória, zobraz všetky skupiny
+
+    groupsToPopulate.forEach(group => {
+        const option = document.createElement('option');
+        option.value = group.id;
+        option.textContent = group.name || group.id;
+        groupFilter.appendChild(option);
+    });
+}
+// *** KONIEC NOVEJ FUNKCIE ***
 
 
 // Funkcia na zobrazenie skupín a tímov (s implementovaným filtrovaním a zvýraznením tímu)
@@ -115,6 +130,14 @@ function displayGroups() {
                     groupsToDisplay = [teamGroup];
                     // Tímy na zobrazenie budú VŠETKY tímy z tejto skupiny
                     teamsToDisplay = allTeams.filter(team => team.groupId === selectedTeam.groupId);
+                     // Ak je aktívny filter kategórie alebo skupiny a nezhoduje sa s kategóriou/skupinou tímu, nič nezobrazíme
+                     if ((selectedCategoryId && selectedCategoryId !== teamCategory.id) || (selectedGroupId && selectedGroupId !== teamGroup.id)) {
+                          categoriesToDisplay = [];
+                          groupsToDisplay = [];
+                          teamsToDisplay = [];
+                     }
+
+
                 } else {
                     // Ak sa nenašla skupina alebo kategória tímu, nič nezobrazíme
                     groupsDisplayContent.innerHTML = '<p>Nenašli sa informácie o skupine alebo kategórii pre vybraný tím.</p>';
@@ -122,15 +145,25 @@ function displayGroups() {
                 }
             } else {
                 // Ak vybraný tím nie je priradený do skupiny
-                categoriesToDisplay = allCategories; // Zobrazíme všetky kategórie (ale bez skupín)
-                groupsToDisplay = []; // Žiadne skupiny na zobrazenie
+                 // Zobrazíme kategórie na základe categoryFilter
+                 categoriesToDisplay = selectedCategoryId
+                     ? allCategories.filter(cat => cat.id === selectedCategoryId)
+                     : allCategories;
+
+                 groupsToDisplay = []; // Žiadne skupiny na zobrazenie
+
                 // Tímy na zobrazenie budú len nepriradené tímy (vrátane vybraného, ak je nepriradený)
                 teamsToDisplay = allTeams.filter(team => !team.groupId || (typeof team.groupId === 'string' && team.groupId.trim() === ''));
 
-                 // Ak je vybraný nepriradený tím, ale filter kategórie je aktívny a tím do nej nepatrí, nič nezobrazíme
-                 if (selectedCategoryId && selectedTeam.categoryId !== selectedCategoryId) {
-                     teamsToDisplay = [];
-                 }
+                 // Filtrovať nepriradené tímy aj podľa kategórie
+                 teamsToDisplay = teamsToDisplay.filter(team =>
+                     (!selectedCategoryId || team.categoryId === selectedCategoryId)
+                 );
+
+                  // Ak vybraný tím nie je v zozname nepriradených tímov na zobrazenie (po filtrovaní), nič nezobrazíme
+                  if (!teamsToDisplay.some(team => team.id === selectedTeamId)) {
+                      teamsToDisplay = [];
+                  }
             }
         } else {
              groupsDisplayContent.innerHTML = '<p>Vybraný tím sa nenašiel.</p>';
@@ -324,15 +357,20 @@ function displayGroups() {
 
 }
 
+
 // Pridanie poslucháčov udalostí pre filtre
-categoryFilter.addEventListener('change', displayGroups);
+categoryFilter.addEventListener('change', () => {
+    populateGroupFilter(categoryFilter.value); // Aktualizovať filter skupín pri zmene kategórie
+    displayGroups(); // Zobraziť skupiny s novými filtrami
+});
+
 groupFilter.addEventListener('change', displayGroups); // Poslucháč pre filter skupiny
-teamFilter.addEventListener('change', displayGroups);
+teamFilter.addEventListener('change', displayGroups); // Poslucháč pre filter tímov
 
 // Poslucháč pre tlačidlo vymazania filtrov
 clearFiltersButton.addEventListener('click', () => {
     categoryFilter.value = '';
-    groupFilter.value = ''; // Vynulovať filter skupiny
+    populateGroupFilter(''); // Vynulovať filter skupiny a naplniť všetkými skupinami
     teamFilter.value = '';
     displayGroups(); // Zobraziť všetky skupiny po vymazaní filtrov
 });
