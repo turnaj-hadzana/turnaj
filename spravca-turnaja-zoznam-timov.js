@@ -542,7 +542,7 @@ async function displayCreatedTeams() {
 
     createdTeamsTableBody.innerHTML = ''; // Vyčistiť telo tabuľky pred naplnením
     // Hlavička sa vytvára len raz pri prvom načítaní, alebo ak bola vyčistená
-    if (createdTeamsTableHeader.innerHTML === '') {
+    if (createdTeamsTableHeader.innerHTML.trim() === '') {
          createdTeamsTableHeader.innerHTML = `
               <th>Názov tímu</th>
               <th>Kategória</th>
@@ -589,7 +589,7 @@ async function displayCreatedTeams() {
         // Ak nie sú žiadne tímy, zobraziť správu
         if (teams.length === 0) {
              // Vytvoriť hlavičku, aj keď sú tímy prázdne (ak už neexistuje)
-             if (createdTeamsTableHeader.innerHTML === '') {
+             if (createdTeamsTableHeader.innerHTML.trim() === '') {
                   createdTeamsTableHeader.innerHTML = `
                        <th>Názov tímu</th>
                        <th>Kategória</th>
@@ -604,7 +604,7 @@ async function displayCreatedTeams() {
         }
 
          // Vytvoriť hlavičku tabuľky, ak existujú tímy a hlavička ešte nebola vytvorená
-         if (createdTeamsTableHeader.innerHTML === '') {
+         if (createdTeamsTableHeader.innerHTML.trim() === '') {
                   createdTeamsTableHeader.innerHTML = `
                        <th>Názov tímu</th>
                        <th>Kategória</th>
@@ -751,7 +751,7 @@ async function displayCreatedTeams() {
         // Spracovanie chýb pri načítaní alebo zobrazovaní tímov
         console.error("Chyba pri zobrazovaní tímov: ", e);
          // Vytvoriť hlavičku pri chybe, aby bol colspan správny (ak ešte nebola vytvorená)
-         if (createdTeamsTableHeader.innerHTML === '') {
+         if (createdTeamsTableHeader.innerHTML.trim() === '') {
                   createdTeamsTableHeader.innerHTML = `
                        <th>Názov tímu</th>
                        <th>Kategória</th>
