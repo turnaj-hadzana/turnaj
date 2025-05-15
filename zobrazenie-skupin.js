@@ -597,11 +597,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     displayGroups();
 });
 
-// *** Odporúčané: Pridať poslucháča na zmenu veľkosti okna pre responzivitu dynamickej šírky ***
-// window.addEventListener('resize', () => {
-//     // Pri zmene veľkosti okna prepočítame a nastavíme šírku znova
-//     const uniformWidth = findMaxTableContentWidth();
-//      if (uniformWidth > 0) {
-//         setUniformTableWidth(uniformWidth);
-//      }
-// });
+window.addEventListener('resize', () => {
+     const uniformWidth = findMaxTableContentWidth();
+      if (uniformWidth > 0) {
+         setUniformTableWidth(uniformWidth);
+      }
+ });
