@@ -165,5 +165,5 @@ export async function populateCategorySelect(selectElement, selectedCategoryId =
     }
 
 
-// Exportujte potrebné veci
-export { db, query, where, getDocs, getDoc, setDoc, deleteDoc, updateDoc, writeBatch, addDoc };
+// Exportujte potrebné veci (PRIDANÉ 'doc')
+export { db, query, where, getDocs, getDoc, setDoc, deleteDoc, updateDoc, writeBatch, addDoc, doc };
