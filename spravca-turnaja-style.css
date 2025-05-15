@@ -149,10 +149,9 @@ main {
 
 /* --- Tables (General) --- */
 table {
-    width: 100%; /* Zabezpečí, že tabuľka sa pokúsi vyplniť šírku rodiča */
+    width: 100%;
     border-collapse: collapse;
     margin-top: 15px;
-    /* table-layout: fixed;  Ak chcete aplikovať na VŠETKY tabuľky */
 }
 
 th,
@@ -179,32 +178,33 @@ td:last-child {
     text-align: center;
 }
 
-/* Action Buttons in Tables */
+/* Action Buttons in Tables (General styles for buttons) */
 .action-button {
     padding: 5px 10px;
-    margin: 2px;
+    margin: 2px; /* Zväčšený okraj medzi tlačidlami */
     cursor: pointer;
-    border: 1px solid #007bff;
+    border: 1px solid #007bff; /* Pridaný border pre konzistentný vzhľad */
     border-radius: 4px;
     background-color: #007bff;
     color: white;
     font-size: 0.9em;
     transition: background-color 0.2s ease, border-color 0.2s ease;
+    display: inline-block; /* Zabezpečí, že tlačidlá sú vedľa seba vo flex alebo table cell */
 }
 
 .action-button:hover {
     background-color: #0056b3;
-    border-color: #004085;
+    border-color: #004085; /* Zmena farby borderu pri hover */
 }
 
 .action-button:active {
     background-color: #004085;
-    border-color: #002752;
+    border-color: #002752; /* Zmena farby borderu pri active */
 }
 
 .action-button.delete-button {
     background-color: #dc3545;
-    border-color: #c82333;
+    border-color: #c82333; /* Farba borderu pre delete button */
 }
 
 .action-button.delete-button:hover {
@@ -216,6 +216,7 @@ td:last-child {
     background-color: #bd2130;
     border-color: #a71d2a;
 }
+
 
 /* --- Úprava pre nezalamovanie textu v sekcii Skupiny (ponechané) --- */
 #groupsContent .section-block h2 {
@@ -235,23 +236,35 @@ td:last-child {
 /* --- Style for Category Group Table (UPRAVENÉ) --- */
 .category-group-table {
     border-collapse: collapse;
-    border: none; /* Odstrániť vlastný border, použiť border zo .section-block */
-    overflow: hidden; /* Dôležité pre text-overflow: ellipsis na td */
-    width: 100%; /* Zabezpečí, že zaberá plnú šírku rodiča */
-    table-layout: fixed; /* Zabezpečí, že tabuľka sa roztiahne a stĺpce majú pevnú šírku/rozdelia si priestor */
+    border: none;
+    overflow: hidden;
+    width: 100%;
+    table-layout: fixed; /* Zabezpečí, že tabuľka zaberie plnú šírku rodiča */
     font-size: 0.9em;
-    margin-top: 10px; /* Okraj pod h2 */
+    margin-top: 10px;
 }
+
+/* Ensure the action column has enough width for Category Group Table (UPRAVENÉ) */
+.category-group-table td:last-child {
+    white-space: nowrap;
+    text-align: center;
+    /* --- PRIDANÉ/UPRAVENÉ --- */
+    width: 180px; /* Zväčšená šírka stĺpca akcií pre obe tlačidlá + medzera */
+    min-width: 180px; /* Zabezpečiť minimálnu šírku */
+    /* --- KONIEC PRIDANÉ/UPRAVENÉ --- */
+    padding: 5px; /* Pridajte padding, ak nie je zdedený */
+}
+
 
 /* --- Style for Club List Table (within #clubsContent or modal) (UPRAVENÉ) --- */
 .group-clubs-table {
     border-collapse: collapse;
-    border: none; /* Odstrániť vlastný border, použiť border zo .section-block */
-    overflow: hidden; /* Dôležité pre text-overflow: ellipsis na td */
-    width: 100%; /* Zabezpečí, že zaberá plnú šírku rodiča */
-    table-layout: fixed; /* Zabezpečí, že tabuľka sa roztiahne a stĺpce majú pevnú šírku/rozdelia si priestor */
+    border: none;
+    overflow: hidden;
+    width: 100%;
+    table-layout: fixed; /* Zabezpečí, že tabuľka zaberie plnú šírku rodiča */
     font-size: 0.9em;
-    margin-top: 0; /* Bez horného okraja, ak nasleduje h2 */
+    margin-top: 0;
 }
 
 /* Štýly pre bunky v group-clubs-table, vrátane text-overflow */
@@ -259,30 +272,33 @@ td:last-child {
 .group-clubs-table td {
     padding: 8px;
     font-size: 0.9em;
-    overflow: hidden; /* Potrebné pre text-overflow */
-    text-overflow: ellipsis; /* Zobrazí tri bodky, ak sa text nezmestí */
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .group-clubs-table td:first-child {
     text-align: center;
     padding: 8px 5px;
-    width: 30px; /* Fixná šírka pre poradové číslo, aby sa nezmenšovalo */
-     flex-shrink: 0; /* Zabráni zmenšovaniu */
+    width: 30px;
+    flex-shrink: 0;
 }
 
 .group-clubs-table td:nth-child(2) {
      white-space: nowrap;
      overflow: hidden;
      text-overflow: ellipsis;
-     /* max-width: 150px; */ /* Môžete použiť max-width, alebo nechať flex, aby si rozdelil miesto */
-     flex-grow: 1; /* Názov tímu môže rásť */
+     flex-grow: 1;
 }
 
 .group-clubs-table td:last-child {
     white-space: nowrap;
     text-align: center;
-    width: 150px; /* Fixná šírka pre stĺpec s akciami */
-    flex-shrink: 0; /* Zabráni zmenšovaniu */
+    /* --- UPRAVENÉ --- */
+    width: 180px; /* Zväčšená šírka stĺpca akcií */
+    min-width: 180px; /* Zabezpečiť minimálnu šírku */
+    /* --- KONIEC UPRAVENÉ --- */
+    flex-shrink: 0;
+    padding: 5px; /* Pridajte padding, ak nie je zdedený */
 }
 
 
