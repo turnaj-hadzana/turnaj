@@ -212,14 +212,22 @@
             border-radius: 5px;
             background-color: #e9ecef;
             display: flex;
-            gap: 15px;
+            gap: 15px; /* Medzera medzi flex položkami (novými divmi a tlačidlom) */
             align-items: center;
             flex-wrap: wrap;
             justify-content: center;
         }
 
+        /* Štýly pre nové kontajnery label + select */
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 5px; /* Medzera medzi labelom a selectom v rámci skupiny */
+        }
+
         .filter-section label {
             font-weight: bold;
+            /* Odstránime špecifické štýly pre label v media query, budú sa dediť z .filter-group */
         }
 
         .filter-section select {
@@ -255,19 +263,24 @@
         @media (max-width: 768px) {
             .filter-section {
                 flex-direction: column;
-                align-items: stretch; /* Roztiahne položky na celú šírku kontajnera */
-                gap: 10px; /* Menší odstup medzi položkami pri zvislom usporiadaní */
+                align-items: stretch; /* Roztiahne položky (nové divy a tlačidlo) na celú šírku */
+                gap: 10px; /* Menší odstup medzi novými divmi a tlačidlom */
             }
 
-            .filter-section label,
-            .filter-section select,
+            /* Nové kontajnery filter-group a tlačidlo zaberú celú šírku */
+            .filter-group,
             .filter-section button {
-                width: 100%; /* Každý element filtra zaberie celú šírku */
-                box-sizing: border-box; /* Započíta padding a border do šírky */
+                width: 100%;
+                box-sizing: border-box;
             }
 
-            .filter-section label {
-                 text-align: left; /* Zarovná text labelu doľava */
+             /* V rámci filter-group sa label a select opäť rozložia podľa obsahu alebo dostupného miesta */
+            .filter-group label {
+                text-align: left; /* Zarovná text labelu doľava v zvislom usporiadaní */
+            }
+
+            .filter-group select {
+                flex-grow: 1; /* Select box sa roztiahne, aby vyplnil zvyšné miesto vedľa labelu */
             }
         }
 
@@ -281,20 +294,23 @@
             <section class="section-block">
 
                  <div class="filter-section">
-                     <label for="categoryFilter">Vyber kategóriu:</label>
-                     <select id="categoryFilter">
-                         <option value="">Všetky kategórie</option>
-                     </select>
+                     <div class="filter-group"> <label for="categoryFilter">Vyber kategóriu:</label>
+                         <select id="categoryFilter">
+                             <option value="">Všetky kategórie</option>
+                         </select>
+                     </div>
 
-                     <label for="groupFilter">Vyber skupinu:</label>
-                     <select id="groupFilter">
-                         <option value="">Všetky skupiny</option>
-                     </select>
+                     <div class="filter-group"> <label for="groupFilter">Vyber skupinu:</label>
+                         <select id="groupFilter">
+                             <option value="">Všetky skupiny</option>
+                         </select>
+                     </div>
 
-                     <label for="teamFilter">Vyber tím:</label>
-                     <select id="teamFilter">
-                         <option value="">Všetky tímy</option>
-                     </select>
+                     <div class="filter-group"> <label for="teamFilter">Vyber tím:</label>
+                         <select id="teamFilter">
+                             <option value="">Všetky tímy</option>
+                         </select>
+                     </div>
 
                      <button id="clearFiltersButton">Vymazať filtre</button>
                  </div>
