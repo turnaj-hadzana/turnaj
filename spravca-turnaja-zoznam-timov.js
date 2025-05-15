@@ -223,7 +223,7 @@ function resetClubModal() {
           unassignedClubSelect.onchange = null;
      }
      if (clubAssignmentFields) clubAssignmentFields.style.display = 'block'; // Predvolene zobraziť priradenie
-     if (clubModalTitle) clubModalTitle.textContent = 'Upraviť tím / Priradiť klub'; // Predvolený titulok
+     if (clubModalTitle) clubModalTitle.textContent = 'Upraviť tím'; // Predvolený titulok
      if (clubForm) {
          const submitButton = clubForm.querySelector('button[type="submit"]');
          if (submitButton) submitButton.textContent = 'Uložiť zmeny / Priradiť'; // Predvolený text tlačidla
@@ -302,7 +302,7 @@ async function openClubModal(clubId = null, mode = 'assign') {
      }
      // Logika pre režim "Upraviť" (edit)
      else if (mode === 'edit' && clubId) {
-        clubModalTitle.textContent = 'Upraviť tím / Priradiť klub';
+        clubModalTitle.textContent = 'Upraviť tím';
         clubNameField.style.display = 'block';
         clubAssignmentFields.style.display = 'block';
         unassignedClubField.style.display = 'none'; // Skryť pole
