@@ -394,28 +394,30 @@ async function addCategoryCountPair(initialCategory = null) {
 
      // Kontajner pre Label a Select
      const selectContainer = document.createElement('div');
-     // selectContainer.style.display = 'flex'; // ODSTRÁNENÉ - bude riadené CSS
-     // selectContainer.style.alignItems = 'center'; // ODSTRÁNENÉ - bude riadené CSS
-     // selectContainer.style.gap = '10px'; // ODSTRÁNENÉ - bude riadené CSS
-     // selectContainer.style.flexWrap = 'wrap'; // ODSTRÁNENÉ - menej relevantné v column smere
-     // selectContainer.style.flex = '1 1 auto'; // ODSTRÁNENÉ - bude riadené CSS
+     // ODSTRÁNENÉ inline Flexbox štýly, budú riadené CSS
+     // selectContainer.style.display = 'flex';
+     // selectContainer.style.alignItems = 'center';
+     // selectContainer.style.gap = '10px';
+     // selectContainer.style.flexWrap = 'wrap';
+     // selectContainer.style.flex = '1 1 auto';
 
 
      const categorySelectLabel = document.createElement('label');
      categorySelectLabel.textContent = 'Kategória:';
-     categorySelectLabel.style.flexShrink = '0'; // Ponechané inline, ak je to zámer
+     categorySelectLabel.style.flexShrink = '0'; // Ponechané, ak je to zámer
+
 
      const categorySelect = document.createElement('select');
      categorySelect.classList.add('team-category-select-dynamic'); // Identifikačná trieda pre JS
      categorySelect.name = 'category';
      categorySelect.required = true;
-     // categorySelect.style.flexGrow = '1'; // ODSTRÁNENÉ - bude riadené CSS
-     // categorySelect.style.minWidth = '150px'; // ODSTRÁNENÉ - bude riadené CSS
-     categorySelect.style.padding = '5px'; // Ponechané inline, ak je to zámer
+     // ODSTRÁNENÉ inline šírky/flexbox štýly, budú riadené CSS
+     // categorySelect.style.flexGrow = '1';
+     // categorySelect.style.minWidth = '150px';
+     categorySelect.style.padding = '5px'; // Ponechané, ak je to zámer
 
      categorySelect.addEventListener('change', () => {
          updateDynamicCategorySelects();
-         // updateRemoveButtonVisibility(); // Toto by malo byt v updateDynamicCategorySelects alebo volane po nom
      });
 
      selectContainer.appendChild(categorySelectLabel);
@@ -423,16 +425,17 @@ async function addCategoryCountPair(initialCategory = null) {
 
      // Kontajner pre Label a Input
      const inputContainer = document.createElement('div');
-     // inputContainer.style.display = 'flex'; // ODSTRÁNENÉ - bude riadené CSS
-     // inputContainer.style.alignItems = 'center'; // ODSTRÁNENÉ - bude riadené CSS
-     // inputContainer.style.gap = '10px'; // ODSTRÁNENÉ - bude riadené CSS
-     // inputContainer.style.flexWrap = 'wrap'; // ODSTRÁNENÉ - menej relevantné v column smere
-     // inputContainer.style.flex = '1 1 auto'; // ODSTRÁNENÉ - bude riadené CSS
+     // ODSTRÁNENÉ inline Flexbox štýly, budú riadené CSS
+     // inputContainer.style.display = 'flex';
+     // inputContainer.style.alignItems = 'center';
+     // inputContainer.style.gap = '10px';
+     // inputContainer.style.flexWrap = 'wrap';
+     // inputContainer.style.flex = '1 1 auto';
 
 
      const teamCountLabel = document.createElement('label');
      teamCountLabel.textContent = 'Počet tímov:';
-     teamCountLabel.style.flexShrink = '0'; // Ponechané inline, ak je to zámer
+     teamCountLabel.style.flexShrink = '0'; // Ponechané, ak je to zámer
 
 
      const teamCountInput = document.createElement('input');
@@ -442,9 +445,10 @@ async function addCategoryCountPair(initialCategory = null) {
      teamCountInput.min = '1';
      teamCountInput.value = '1';
      teamCountInput.required = true;
-     // teamCountInput.style.maxWidth = '80px'; // ODSTRÁNENÉ - bude riadené CSS
-     // teamCountInput.style.flexGrow = '0'; // ODSTRÁNENÉ - bude riadené CSS
-     teamCountInput.style.padding = '5px'; // Ponechané inline, ak je to zámer
+     // ODSTRÁNENÉ inline šírky/flexbox štýly, budú riadené CSS
+     // teamCountInput.style.maxWidth = '80px';
+     // teamCountInput.style.flexGrow = '0';
+     teamCountInput.style.padding = '5px'; // Ponechané, ak je to zámer
 
      inputContainer.appendChild(teamCountLabel);
      inputContainer.appendChild(teamCountInput);
@@ -453,19 +457,18 @@ async function addCategoryCountPair(initialCategory = null) {
      removeButton.textContent = 'Odstrániť';
      removeButton.classList.add('action-button', 'delete-button'); // Použiť štýly tlačidiel
      removeButton.type = 'button'; // Aby nespustilo submit formulára
-     // removeButton.style.marginLeft = '10px'; // ODSTRÁNENÉ - bude riadené CSS
-     // removeButton.style.flexShrink = '0'; // ODSTRÁNENÉ - bude riadené CSS
-     // removeButton.style.alignSelf = 'center'; // ODSTRÁNENÉ - bude riadené CSS
+     // ODSTRÁNENÉ inline margin a align-self, budú riadené CSS
+     // removeButton.style.marginLeft = '10px';
+     // removeButton.style.flexShrink = '0';
+     // removeButton.style.alignSelf = 'center';
 
      removeButton.onclick = () => {
          pairDiv.remove(); // Odstrani cely div s parom
          updateDynamicCategorySelects(); // Aktualizuje ostatné selectboxy a viditeľnosť tlačidiel
-         // updateRemoveButtonVisibility(); // Toto by malo byt volane v updateDynamicCategorySelects
-         // checkIfAddCategoryCountPairButtonShouldBeVisible(); // Toto by malo byt volane v updateDynamicCategorySelects
      };
 
 
-     // PRIDAŤ selectContainer a inputContainer DO pairDiv
+     // Pridať selectContainer, inputContainer a removeButton DO pairDiv
      pairDiv.appendChild(selectContainer);
      pairDiv.appendChild(inputContainer);
      pairDiv.appendChild(removeButton);
@@ -474,34 +477,27 @@ async function addCategoryCountPair(initialCategory = null) {
      container.appendChild(pairDiv); // Pridať celý pár div do kontajnera
 
      // ... zvyšok funkcie ostáva rovnaký ...
-      // Získať aktuálne vybrané kategórie v ostatných selectboxoch (pred naplnením tohto nového)
-      const allSelectElementsBeforeAdding = container.querySelectorAll('.team-category-select-dynamic');
-      const categoriesSelectedInOthers = Array.from(allSelectElementsBeforeAdding)
-          .map(select => select.value)
-          .filter(value => value !== '' && value !== initialCategory); // Vylúčiť prázdnu a počiatočnú kategóriu
+     // Získať aktuálne vybrané kategórie v ostatných selectboxoch (pred naplnením tohto nového)
+     const allSelectElementsBeforeAdding = container.querySelectorAll('.team-category-select-dynamic');
+     const categoriesSelectedInOthers = Array.from(allSelectElementsBeforeAdding)
+         .map(select => select.value)
+         .filter(value => value !== '' && value !== initialCategory); // Vylúčiť prázdnu a počiatočnú kategóriu
 
-      // Naplnit novy selectbox s dostupnymi (nevybranymi) kategoriami
-      populateDynamicCategorySelect(
-         categorySelect,
-         initialCategory, // Ak je zadaná počiatočná kategória, vybrať ju
-         allAvailableCategories,
-         categoriesSelectedInOthers // Vylúčiť kategorie už vybrané v iných riadkoch
-      );
+     // Naplnit novy selectbox s dostupnymi (nevybranymi) kategoriami
+     populateDynamicCategorySelect(
+        categorySelect,
+        initialCategory, // Ak je zadaná počiatočná kategória, vybrať ju
+        allAvailableCategories,
+        categoriesSelectedInOthers // Vylúčiť kategorie už vybrané v iných riadkoch
+     );
 
-       // Znovu aktualizovať všetky dynamické selecty po pridani noveho paru
-       // Toto zabezpečí, že aj v ostatných selectoch sa správne nastavia disabled možnosti
-       updateDynamicCategorySelects();
+      // Znovu aktualizovať všetky dynamické selecty po pridani noveho paru
+      updateDynamicCategorySelects();
 
-       // Znovu skontrolovať viditeľnosť tlačidiel Odstranit
-       // updateRemoveButtonVisibility(); // Volané v updateDynamicCategorySelects
-
-       // Skontrolovať viditeľnosť tlačidla Pridať ďalšiu kategóriu
-       // checkIfAddCategoryCountPairButtonShouldBeVisible(); // Volané v updateDynamicCategorySelects
-
-        // Zamerať na novopridaný selectbox pre lepšiu použiteľnosť
-        setTimeout(() => {
-             categorySelect.focus();
-        }, 0);
+       // Zamerať na novopridaný selectbox pre lepšiu použiteľnosť
+       setTimeout(() => {
+            categorySelect.focus();
+       }, 0);
 }
 
 // Funkcia na otvorenie modálneho okna Vytvoriť tímy
