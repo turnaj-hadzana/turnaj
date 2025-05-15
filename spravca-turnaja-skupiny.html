@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Správca turnaja - Skupiny</title>
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="spravca-turnaja-style.css">
+</head>
+<body>
+    <h1>Správca turnaja</h1>
+    <div class="content-wrapper">
+        <nav class="left-menu">
+            <ul>
+                <li><a href="spravca-turnaja-kategorie.html">Kategórie</a></li>
+                <li><a href="spravca-turnaja-skupiny.html">Skupiny</a></li>
+                <li><a href="spravca-turnaja-zoznam-timov.html">Zoznam tímov</a></li>
+                <li><a href="spravca-turnaja-timy-do-skupin.html">Tímy do skupín</a></li>
+                <li><a href="#zapasy">Zápasy (už čoskoro)</a></li>
+                <li><a href="#pavuk">Pavúk (už čoskoro)</a></li>
+            </ul>
+        </nav>
+        <main>
+            <div id="groupsContent">
+                  </div>
+            </main>
+    </div>
+
+    <button id="addButton" class="add-button" title="Pridať skupinu">+</button>
+
+    <div id="groupModal" class="modal">
+        <div class="modal-content">
+            <span class="close group-modal-close">&times;</span>
+            <h2 id="groupModalTitle">Pridať skupinu</h2>
+            <form id="groupForm">
+                <div>
+                     <label for="groupCategory">Kategória:</label>
+                     <select id="groupCategory" required>
+                          </select>
+                </div>
+                <div>
+                    <label for="groupName">Názov skupiny:</label>
+                    <input type="text" id="groupName" required>
+                </div>
+                <button type="submit">Uložiť</button>
+            </form>
+        </div>
+    </div>
+    <script type="module" src="spravca-turnaja-common.js"></script>
+    <script type="module" src="spravca-turnaja-skupiny.js"></script>
+</body>
+</html>
