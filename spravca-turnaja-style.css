@@ -477,9 +477,8 @@ td:last-child {
     /* Zdedí všeobecné .section-block štýly */
 }
 
-/* Tento kontajner #teamCategoryCountContainer má stále svoje polstrovanie a orámovanie */
 #teamCategoryCountContainer {
-    border: 1px solid #ddd;
+    border: 1px solid #ddd; /* Toto orámovanie ponechané, ak je to zámer (nie je to bunka tabuľky) */
     padding: 10px; /* ZMENENÉ: Menšie vnútorné polstrovanie */
     margin-top: 10px; /* ZMENENÉ: Menšia medzera nad kontajnerom */
     border-radius: 5px;
