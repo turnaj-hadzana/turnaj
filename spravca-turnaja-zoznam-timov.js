@@ -590,13 +590,11 @@ async function displayCreatedTeams() {
              // Vytvoriť hlavičku, aj keď sú tímy prázdne (ak už neexistuje)
              if (createdTeamsTableHeader.innerHTML === '') {
                   createdTeamsTableHeader.innerHTML = `
-                       <tr>
                            <th>Názov tímu</th>
                            <th>Kategória</th>
                            <th>Skupina</th>
                            <th>Poradie v skupine</th>
                             <th>Akcie</th>
-                       </tr>
                   `;
              }
              // Zobraziť správu "Žiadne tímy" s colspanom
@@ -607,13 +605,11 @@ async function displayCreatedTeams() {
          // Vytvoriť hlavičku tabuľky, ak existujú tímy a hlavička ešte nebola vytvorená
          if (createdTeamsTableHeader.innerHTML === '') {
               createdTeamsTableHeader.innerHTML = `
-                   <tr>
                        <th>Názov tímu</th>
                        <th>Kategória</th>
                        <th>Skupina</th>
                        <th>Poradie v skupine</th>
                         <th>Akcie</th>
-                   </tr>
               `;
          }
 
@@ -757,13 +753,11 @@ async function displayCreatedTeams() {
          // Vytvoriť hlavičku pri chybe, aby bol colspan správny (ak ešte nebola vytvorená)
          if (createdTeamsTableHeader.innerHTML === '') {
               createdTeamsTableHeader.innerHTML = `
-                   <tr>
                        <th>Názov tímu</th>
                        <th>Kategória</th>
                        <th>Skupina</th>
                        <th>Poradie v skupine</th>
                         <th>Akcie</th>
-                   </tr>
               `;
          }
          // Zobraziť chybovú správu s colspanom
