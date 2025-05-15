@@ -121,8 +121,8 @@ function displayGroups() {
 
                          if (typeof team.orderInGroup === 'number' && team.orderInGroup > 0) {
                               const orderSpan = document.createElement('span');
-                              orderSpan.textContent = `${team.orderInGroup}`;
                               teamItem.appendChild(orderSpan);
+                              orderSpan.textContent = `${team.orderInGroup}`;
                          }
 
                          teamList.appendChild(teamItem);
