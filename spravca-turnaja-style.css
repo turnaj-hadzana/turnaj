@@ -639,7 +639,7 @@ td:last-child {
     form input[type="number"],
     form select {
         width: calc(100% - 20px);
-        padding: 8px;
+        padding: 8px; /* Zmenené padding na 8px pre mobil */
         margin-bottom: 10px;
     }
 
@@ -687,6 +687,15 @@ td:last-child {
      #clubsContent .section-block:last-child {
           margin-bottom: 0;
      }
+
+     /* Vstupné polia a selecty vo formulároch - desktop */
+    .modal-content form input[type="text"],
+    .modal-content form input[type="number"],
+    .modal-content form select {
+        width: calc(100% - 22px);
+        padding: 10px; /* Vrátené padding na 10px pre desktop */
+        margin-bottom: 20px;
+    }
 }
 
 /* Odstránená media query pre min-width: 993px, ktorá definovala 3 stĺpce */
@@ -706,4 +715,18 @@ body.modal-open main {
     opacity: 0.5;
     pointer-events: none;
     user-select: none;
+}
+
+#groupModal #groupCategory {
+    width: calc(100% - 22px); /* Zabezpečiť, aby zodpovedala šírke inputu názvu skupiny */
+    padding: 10px; /* Polstrovanie pre vizuálne zladenie */
+    box-sizing: border-box; /* Zahrnúť polstrovanie do celkových rozmerov */
+    /* --- PRIDANÉ/UPRAVENÉ pre nastavenie výšky a zladenie --- */
+    height: 40px; /* Experimentálna výška, ktorá by sa mala zhodovať s inputom/tlačidlom */
+    line-height: 20px; /* Môže pomôcť s vertikálnym centrovaním textu v selectboxe */
+    /* --- KONIEC PRIDANÉ/UPRAVENÉ --- */
+    margin-bottom: 20px; /* Spodný okraj ako u ostatných prvkov formulára */
+    border: 1px solid #ccc; /* Orámovanie ako u inputu */
+    border-radius: 4px; /* Zaoblené rohy ako u inputu */
+    font-size: 1em; /* Veľkosť písma ako u inputu */
 }
