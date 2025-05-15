@@ -662,9 +662,13 @@ if (clubForm) {
         if (typeof orderInGroup !== 'number' || orderInGroup <= 0) {
             orderInGroup = null;
         }
-        let clubIdToProcess = editingClubId;
+
+        let clubIdToProcess = editingClubId; // Inicializácia premennej pre ID, s ktorým sa bude pracovať
         let dataToSave = {};
         let operationType = currentClubModalMode;
+        let newDocumentId; // Deklarujeme newDocumentId na úrovni handlera, aby bolo prístupné aj v 'replace' logike vnútri 'edit' bloku, ak idChanged
+
+
         try {
             if (operationType === 'create') {
                 if (!clubName) {
@@ -674,13 +678,16 @@ if (clubForm) {
                 }
                 const selectedCategory = allAvailableCategories.find(cat => cat.id === selectedCategoryIdInModal);
                 const categoryNameForId = selectedCategory ? selectedCategory.name || selectedCategory.id : (selectedCategoryIdInModal || null);
-                let newDocumentId;
+                // let newDocumentId; // Pôvodná deklarácia tu, presunutá vyššie
                 if (categoryNameForId && typeof categoryNameForId === 'string' && categoryNameForId.trim() !== '') {
                     newDocumentId = `${categoryNameForId} - ${clubName}`;
                 } else {
                     newDocumentId = clubName;
                 }
+                // newDocumentId je teraz definované a priradené
+
                 const existingDoc = await getDoc(doc(clubsCollectionRef, newDocumentId));
+
                 if (existingDoc.exists()) {
                     alert(`Tím s názvom "${newDocumentId}" už existuje. Prosím, zvoľte iný názov alebo kategóriu.`);
                     if (clubNameInput) clubNameInput.focus();
@@ -693,7 +700,8 @@ if (clubForm) {
                     orderInGroup: orderInGroup,
                     createdFromBase: clubName
                 };
-                clubIdToProcess = newDocumentId;
+                clubIdToProcess = newDocumentId; // clubIdToProcess dostane hodnotu nového ID
+
             } else if (operationType === 'assign') {
                 if (!unassignedClubSelect || !unassignedClubSelect.value || unassignedClubSelect.value.startsWith('--')) {
                     alert("Prosím, vyberte nepriradený tím k priradeniu.");
@@ -709,7 +717,7 @@ if (clubForm) {
                     if (orderInGroupInput) orderInGroupInput.focus();
                     return;
                 }
-                clubIdToProcess = unassignedClubSelect.value;
+                clubIdToProcess = unassignedClubSelect.value; // clubIdToProcess dostane ID vybraného nepriradeného tímu
                 const clubDoc = await getDoc(doc(clubsCollectionRef, clubIdToProcess));
                 if (!clubDoc.exists()) {
                     console.error("Tím s ID", clubIdToProcess, "sa nenašiel v databáze pre priradenie.");
@@ -730,14 +738,14 @@ if (clubForm) {
                 if (dataToSave.groupId === null) {
                     dataToSave.orderInGroup = null;
                 }
-                operationType = 'update';
+                operationType = 'update'; // V režime assign sa vykoná operácia update na existujúcom dokumente
             } else if (operationType === 'edit' && editingClubId) {
                 if (!clubName) {
                     alert("Zadajte názov tímu.");
                     if (clubNameInput) clubNameInput.focus();
                     return;
                 }
-                clubIdToProcess = editingClubId;
+                clubIdToProcess = editingClubId; // Zatiaľ použijeme pôvodné ID
                 const clubDoc = await getDoc(doc(clubsCollectionRef, clubIdToProcess));
                 if (!clubDoc.exists()) {
                     console.error("Tím s ID", clubIdToProcess, "sa nenašiel v databáze pre úpravu.");
@@ -753,15 +761,19 @@ if (clubForm) {
                 const newSelectedCategoryId = selectedCategoryIdInModal;
                 const newSelectedGroupId = selectedGroupIdInModal;
                 const newOrderInGroup = (newSelectedGroupId && typeof orderInGroup === 'number' && orderInGroup > 0) ? orderInGroup : null;
+
                 const categoryForNewId = allAvailableCategories.find(cat => cat.id === newSelectedCategoryId);
                 const categoryNameForNewId = categoryForNewId ? categoryForNewId.name || categoryForNewId.id : (newSelectedCategoryId || null);
+
                 let potentialNewDocumentId;
                 if (categoryNameForNewId && typeof categoryNameForNewId === 'string' && categoryNameForNewId.trim() !== '') {
                     potentialNewDocumentId = `${categoryNameForNewId} - ${newClubNameValue}`;
                 } else {
                     potentialNewDocumentId = newClubNameValue;
                 }
+
                 const idChanged = potentialNewDocumentId !== originalClubId;
+
                 if (idChanged) {
                     const existingDocWithNewId = await getDoc(doc(clubsCollectionRef, potentialNewDocumentId));
                     if (existingDocWithNewId.exists()) {
@@ -769,23 +781,26 @@ if (clubForm) {
                         if (clubNameInput) clubNameInput.focus();
                         return;
                     }
-                    newDocumentId = potentialNewDocumentId;
-                    operationType = 'replace';
-                    clubIdToProcess = newDocumentId;
+                    newDocumentId = potentialNewDocumentId; // newDocumentId je definované a priradené v tomto bloku
+                    operationType = 'replace'; // Ak sa ID zmenilo, vykoná sa operácia nahradenia (delete + set)
+                    clubIdToProcess = newDocumentId; // clubIdToProcess dostane hodnotu nového ID
                 } else {
-                    operationType = 'update';
-                    clubIdToProcess = originalClubId;
+                    operationType = 'update'; // Ak sa ID nezmenilo, vykoná sa operácia update
+                    // clubIdToProcess si ponechá pôvodné editingClubId
                 }
+
                 dataToSave = {
                     name: newClubNameValue,
                     categoryId: newSelectedCategoryId,
                     groupId: newSelectedGroupId,
                     orderInGroup: newOrderInGroup,
-                    createdFromBase: clubData.createdFromBase || clubData.name || clubData.id
+                    createdFromBase: clubData.createdFromBase || clubData.name || clubData.id // Zachovať pôvodné createdFromBase ak existuje
                 };
+                 // Ak sa zrušilo priradenie do skupiny, vynulovať poradie v skupine
                 if (dataToSave.groupId === null) {
                     dataToSave.orderInGroup = null;
                 }
+
             } else {
                 console.error("Neplatný režim modálu pri odosielaní formulára.");
                 alert("Nastala chyba pri spracovaní formulára. Neplatný režim.");
@@ -793,6 +808,8 @@ if (clubForm) {
                 resetClubModal();
                 return;
             }
+
+            // Tu už MUSÍ byť clubIdToProcess definované bez ohľadu na operationType
             if (!clubIdToProcess) {
                 console.error("Chýba ID tímu na spracovanie po spracovaní formulára.");
                 alert("Vyskytla sa chyba pri určovaní ID tímu na uloženie.");
@@ -800,19 +817,22 @@ if (clubForm) {
                 resetClubModal();
                 return;
             }
+
+            // Vykonanie operácie na základe operationType
             if (operationType === 'create') {
-                const newClubDocRef = doc(clubsCollectionRef, clubIdToProcess);
+                const newClubDocRef = doc(clubsCollectionRef, clubIdToProcess); // Používa clubIdToProcess (čo je newDocumentId)
                 await setDoc(newClubDocRef, dataToSave);
                 alert(`Tím "${clubIdToProcess}" bol úspešne vytvorený.`);
             } else if (operationType === 'assign' || operationType === 'update') {
-                const clubDocRef = doc(clubsCollectionRef, clubIdToProcess);
+                const clubDocRef = doc(clubsCollectionRef, clubIdToProcess); // Používa clubIdToProcess (pôvodné ID alebo ID nepriradeného)
                 await updateDoc(clubDocRef, dataToSave);
                 if (operationType === 'assign') {
                     alert("Tím bol úspešne priradený.");
-                } else {
+                } else { // operationType === 'update' (úprava bez zmeny ID)
                     alert("Zmeny boli úspešne uložené.");
                 }
             } else if (operationType === 'replace') {
+                // Táto časť kódu sa vykoná, ak sa zmenilo ID tímu (napr. pri zmene kategórie/názvu)
                 if (!editingClubId) {
                     console.error("Chýba pôvodné ID tímu pre operáciu replace.");
                     alert("Vyskytla sa chyba pri premenovaní/presune tímu.");
@@ -820,14 +840,15 @@ if (clubForm) {
                     resetClubModal();
                     return;
                 }
-                const originalClubDocRef = doc(clubsCollectionRef, editingClubId);
-                const newClubDocRef = doc(clubsCollectionRef, clubIdToProcess);
-                const batch = writeBatch(db);
+                const originalClubDocRef = doc(clubsCollectionRef, editingClubId); // Pôvodný dokument
+                const newClubDocRef = doc(clubsCollectionRef, clubIdToProcess); // Nový dokument (s novým ID)
+                const batch = writeBatch(db); // Použijeme batch pre atómovú operáciu (vymazanie starého a vytvorenie nového)
                 batch.delete(originalClubDocRef);
-                batch.set(newClubDocRef, dataToSave);
+                batch.set(newClubDocRef, dataToSave); // Používa clubIdToProcess (čo je newDocumentId)
                 await batch.commit();
+
                 alert(`Tím bol úspešne premenovaný/presunutý na "${clubIdToProcess}".`);
-                editingClubId = clubIdToProcess;
+                editingClubId = clubIdToProcess; // Aktualizovať editingClubId pre prípad ďalších úprav
             } else {
                 console.error("Neznámy typ operácie po spracovaní dát:", operationType);
                 alert("Vyskytla sa chyba pri ukladaní dát. Neznámy typ operácie.");
@@ -835,14 +856,20 @@ if (clubForm) {
                 resetClubModal();
                 return;
             }
+
+            // Ak všetko prebehlo úspešne
             if (clubModal) closeModal(clubModal);
             resetClubModal();
-            displayCreatedTeams();
+            displayCreatedTeams(); // Znovu zobraziť tabuľku s aktualizovanými dátami
+
         } catch (error) {
             console.error('Chyba pri ukladaní dát tímu: ', error);
             alert(`Chyba pri ukladaní dát! Prosím, skúste znova. Detail: ${error.message}`);
+            // V prípade chyby zatvoriť modál a resetovať stav
             if (clubModal) closeModal(clubModal);
             resetClubModal();
+            // Volanie displayCreatedTeams() tu by mohlo byť užitočné na zobrazenie aktuálneho stavu
+            displayCreatedTeams();
         }
     });
 } else {
