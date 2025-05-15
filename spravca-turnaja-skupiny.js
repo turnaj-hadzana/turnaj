@@ -3,7 +3,7 @@
 // Importujte spoločné funkcie a referencie z common.js
 import { db, categoriesCollectionRef, groupsCollectionRef, clubsCollectionRef,
          openModal, closeModal, populateCategorySelect, populateGroupSelect, // Importované populate funkcie
-         query, where, getDocs, getDoc, setDoc, deleteDoc, updateDoc, writeBatch } from './spravca-turnaja-common.js';
+         query, where, getDocs, getDoc, setDoc, deleteDoc, updateDoc, writeBatch, doc } from './spravca-turnaja-common.js'; // <-- PRIDANÉ 'doc' sem
 
 // Získajte referencie na elementy špecifické pre túto stránku
 const addButton = document.getElementById('addButton');
@@ -86,7 +86,7 @@ async function displayGroupsByCategory() {
         const groupsSnapshot = await getDocs(groupsCollectionRef);
         const groupsByCategory = {};
 
-         groupsSnapshot.forEach(doc => {
+         groupsSnapshot.forEach(doc => { // Toto 'doc' je parameter callbacku, je v poriadku
               const groupData = doc.data();
               const groupId = doc.id;
               const categoryId = groupData.categoryId;
@@ -119,7 +119,7 @@ async function displayGroupsByCategory() {
               groupNameTh.textContent = 'Názov skupiny';
                const actionsTh = document.createElement('th');
                actionsTh.textContent = '';
-               actionsTh.style.width = '150px';
+               //actionsTh.style.width = '150px'; // TOTO ODSTRÁNTE - šírku riadi CSS
                headerRow.appendChild(groupNameTh);
                headerRow.appendChild(actionsTh);
               thead.appendChild(headerRow);
@@ -167,11 +167,11 @@ async function displayGroupsByCategory() {
 
                                  const clubsInGroupQuery = query(clubsCollectionRef, where('groupId', '==', group.id));
                                  const clubsSnapshot = await getDocs(clubsInGroupQuery);
-                                 clubsSnapshot.forEach(doc => {
+                                 clubsSnapshot.forEach(doc => { // Toto 'doc' je parameter callbacku, je v poriadku
                                       batch.update(doc.ref, { groupId: null, orderInGroup: null });
                                  });
 
-                                 batch.delete(doc(groupsCollectionRef, group.id));
+                                 batch.delete(doc(groupsCollectionRef, group.id)); // <-- Tu sa používa 'doc'
 
                                  await batch.commit();
 
@@ -277,7 +277,7 @@ if (groupForm) {
         }
 
         const compositeGroupId = `${selectedCategoryId} - ${groupName}`;
-        const groupDocRef = doc(groupsCollectionRef, compositeGroupId);
+        const groupDocRef = doc(groupsCollectionRef, compositeGroupId); // <-- Tu sa používa 'doc'
 
         try {
             const existingDoc = await getDoc(groupDocRef);
@@ -303,7 +303,7 @@ if (groupForm) {
                     return;
                 }
 
-                const oldGroupDocRef = doc(groupsCollectionRef, oldGroupId);
+                const oldGroupDocRef = doc(groupsCollectionRef, oldGroupId); // <-- Tu sa používa 'doc'
                 if (oldGroupId !== compositeGroupId) {
                      if (existingDoc.exists()) {
                          alert(`Skupina s názvom "${groupName}" už v kategórii "${selectedCategoryId}" existuje (iná skupina)! Názvy skupín musia byť unikátne v rámci kategórie.`);
@@ -317,11 +317,11 @@ if (groupForm) {
 
                      const clubsInGroupQuery = query(clubsCollectionRef, where('groupId', '==', oldGroupId));
                      const clubsSnapshot = await getDocs(clubsInGroupQuery);
-                     clubsSnapshot.forEach(clubDoc => {
-                          batch.update(clubDoc.ref, { groupId: compositeGroupId, categoryId: selectedCategoryId });
+                     clubsSnapshot.forEach(doc => { // Toto 'doc' je parameter callbacku, je v poriadku
+                          batch.update(doc.ref, { groupId: compositeGroupId, categoryId: selectedCategoryId });
                      });
 
-                     batch.delete(oldGroupDocRef);
+                     batch.delete(oldGroupDocRef); // <-- Tu sa používa 'doc'
 
                      await batch.commit();
 
