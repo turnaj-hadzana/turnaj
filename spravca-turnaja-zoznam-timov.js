@@ -444,7 +444,7 @@ async function openClubModal(clubId = null, mode = 'assign') {
 if (clubForm) {
      clubForm.addEventListener('submit', async (event) => {
          event.preventDefault();
-         console.log("Odosielam formulár Priradiť/Upraviť Klub v režime:", currentClubModalMode);
+         console.log("Odosielam formulár Priradiť klub v režime:", currentClubModalMode);
 
          const clubName = clubNameInput.value.trim();
          const selectedCategoryIdInModal = clubCategorySelect ? clubCategorySelect.value : null;
