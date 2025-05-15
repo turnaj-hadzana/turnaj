@@ -55,24 +55,24 @@ h3 {
     display: flex;
     width: 100%;
     margin: 20px 0;
-    padding: 0 20px; /* Pridanie bočného polstrovania pre väčšie obrazovky */
-    box-sizing: border-box; /* Zabezpečí, že padding je súčasťou šírky */
-    gap: 20px; /* Medzera medzi menu a hlavným obsahom */
+    padding: 0 20px;
+    box-sizing: border-box;
+    gap: 20px;
 }
 
 /* --- Left Menu --- */
 .left-menu {
-    /* flex properties a width budú definované v media queries */
+    /* flex properties a width definované v media queries */
     background-color: #fff;
     padding: 15px;
     border-radius: 8px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    position: sticky; /* Bude sticky na väčších obrazovkách */
-    top: 90px; /* Prilepí sa 90px od vrchu */
-    align-self: flex-start; /* Zarovná sa na začiatok flex kontajnera (hore) */
-    max-height: calc(100vh - 110px); /* Maximálna výška s ohľadom na header/pätičku */
-    overflow-y: auto; /* Pridá skrolovanie, ak je obsah menu dlhší */
-    z-index: 1002; /* Zabezpečí, že menu je nad ostatnými elementmi */
+    position: sticky;
+    top: 90px;
+    align-self: flex-start;
+    max-height: calc(100vh - 110px);
+    overflow-y: auto;
+    z-index: 1002;
 }
 
 .left-menu ul {
@@ -93,7 +93,7 @@ h3 {
     padding: 8px 5px;
     border-radius: 4px;
     transition: background-color 0.2s ease;
-    white-space: nowrap; /* Zabráni zalamovaniu textu v menu */
+    white-space: nowrap;
 }
 
 .left-menu a:hover {
@@ -107,22 +107,22 @@ h3 {
 
 /* --- Main Content Area --- */
 main {
-    flex-grow: 1; /* Hlavný obsah vyplní zostávajúce miesto */
+    flex-grow: 1;
     /* flex-basis bude definovaný v media queries */
-    padding: 0; /* Polstrovanie budú mať vnútorné section-blocky */
+    padding: 0;
     box-shadow: none;
     background-color: transparent;
-    min-width: 0; /* Dôležité pre flex item, aby sa umožnilo zmenšovanie */
+    min-width: 0;
 }
 
 /* --- General Section Block Styling --- */
 .section-block {
-    margin-bottom: 20px; /* Spodný okraj medzi section-blockmi v štandardnom toku */
+    margin-bottom: 20px;
     padding: 15px;
     border: 1px solid #ddd;
     border-radius: 5px;
     background-color: #fefefe;
-    box-sizing: border-box; /* Zabezpečí, že padding a border sú súčasťou veľkosti elementu */
+    box-sizing: border-box;
     /* flex properties budú definované v parent kontajneroch alebo media queries */
 }
 
@@ -130,20 +130,27 @@ main {
 #groupsContent,
 #clubsContent {
     display: flex;
-    flex-wrap: wrap; /* Umožní zalamovanie do viacerých stĺpcov */
-    gap: 20px; /* Medzera medzi stĺpcami a riadkami blokov */
-    padding: 0; /* Polstrovanie je na .content-wrapper */
+    flex-wrap: wrap;
+    gap: 20px;
+    padding: 0;
     margin-bottom: 20px;
-    align-items: flex-start; /* Zarovná bloky hore */
-    width: 100%; /* Zabezpečí, že flex kontajner vyplní šírku main */
+    align-items: flex-start;
+    width: 100%;
 }
 
-/* --- Individual Section Blocks within Multi-Column Containers --- */
+/* --- Individual Section Blocks within Multi-Column Containers (UPRAVENÉ) --- */
 #groupsContent .section-block,
 #clubsContent .section-block {
-    margin-bottom: 0; /* Odstránenie spodného okraja, keď sú bloky vo flex riadku */
-    /* flex properties budú definované v media queries pre počet stĺpcov */
+    margin-bottom: 0; /* Odstránenie spodného okraja */
+    /* --- UPRAVENÉ PRE FLEXIBILNÉ ROZLOŽENIE --- */
+    /* flex-grow: 1 -> Blok môže rásť, aby vyplnil priestor */
+    /* flex-shrink: 1 -> Blok sa môže zmenšovať */
+    /* flex-basis: 300px -> Základná preferovaná šírka */
+    flex: 1 1 300px; /* Základná flexibilná šírka */
+    min-width: 280px; /* Nesmie byť užšie ako 280px (upravte podľa potreby) */
+    /* --- KONIEC UPRAVENÉ --- */
 }
+
 
 /* --- Tables --- */
 table {
@@ -173,7 +180,7 @@ tbody tr:hover {
 }
 
 td:last-child {
-    text-align: center; /* Center actions column */
+    text-align: center;
 }
 
 /* Action Buttons in Tables */
@@ -231,27 +238,26 @@ td:last-child {
 
 
 /* Style for Club List (within tables in #clubsContent or modal) */
-/* Tieto štýly sa vzťahujú na tabuľky v sekcii Tímy do skupín */
 .group-clubs-table th,
 .group-clubs-table td {
-    padding: 8px; /* Menej polstrovania v týchto tabuľkách */
+    padding: 8px;
     font-size: 0.9em;
 }
 
 .group-clubs-table td:first-child {
-    text-align: center; /* Poladrovanie čísla */
-    padding: 8px 5px; /* Menej polstrovania pre číslo */
+    text-align: center;
+    padding: 8px 5px;
 }
 
 .group-clubs-table td:nth-child(2) {
-     white-space: nowrap; /* Nezalamovat názov tímu */
+     white-space: nowrap;
      overflow: hidden;
      text-overflow: ellipsis;
      max-width: 150px; /* Prípadné obmedzenie šírky stĺpca názvu tímu */
 }
 
 .group-clubs-table td:last-child {
-    white-space: nowrap; /* Nezalamovat tlačidlá akcií */
+    white-space: nowrap;
     text-align: center;
 }
 
@@ -281,7 +287,7 @@ td:last-child {
     font-size: 1em;
     flex-grow: 1;
     min-width: 150px;
-    max-width: 250px; /* Prípadné obmedzenie max šírky selectboxu */
+    max-width: 250px;
     width: auto;
     margin-bottom: 0;
 }
@@ -310,7 +316,7 @@ td:last-child {
     align-items: center;
     margin-bottom: 10px;
     gap: 10px;
-    flex-wrap: wrap; /* Umožní zalamovanie prvkov v riadku na malých obrazovkách */
+    flex-wrap: wrap;
 }
 
 .category-count-pair label {
@@ -322,16 +328,16 @@ td:last-child {
 .category-count-pair select,
 .category-count-pair input[type="number"] {
     display: inline-block;
-    width: auto; /* Nech sa šírka prispôsobí obsahu/flexu */
-    flex-grow: 1; /* Umožniť rast */
+    width: auto;
+    flex-grow: 1;
     margin-bottom: 0;
     margin-right: 10px;
     padding: 5px;
 }
 
 .category-count-pair input[type="number"] {
-     max-width: 80px; /* Obmedzenie šírky pre počet */
-     flex-grow: 0; /* Nezaberá zbytočné miesto */
+     max-width: 80px;
+     flex-grow: 0;
 }
 
 .category-count-pair .action-button.delete-button {
@@ -384,7 +390,7 @@ td:last-child {
 .modal {
     display: none;
     position: fixed;
-    z-index: 2000; /* Zvýšený z-index pre istotu */
+    z-index: 2000;
     left: 0;
     top: 0;
     width: 100%;
@@ -399,11 +405,11 @@ td:last-child {
     margin: 5% auto;
     padding: 20px;
     border: 1px solid #888;
-    width: 90%; /* Základná šírka modálu */
-    max-width: 500px; /* Maximálna šírka modálu */
+    width: 90%;
+    max-width: 500px;
     border-radius: 8px;
     position: relative;
-    overflow-x: auto; /* Zabezpečí skrolovanie, ak je obsah modálu príliš široký */
+    overflow-x: auto;
 }
 
 .modal-content h2 {
@@ -430,147 +436,115 @@ td:last-child {
     cursor: pointer;
 }
 
-/* --- Media Queries for Responsiveness --- */
+/* --- Media Queries --- */
 
 /* Mobilné zariadenia (max 768px) */
 @media (max-width: 768px) {
     .content-wrapper {
-        flex-direction: column; /* Menu a obsah sú pod sebou */
-        padding: 0 10px; /* Menšie bočné polstrovanie */
-        gap: 10px; /* Menšia medzera medzi elementmi */
+        flex-direction: column;
+        padding: 0 10px;
+        gap: 10px;
     }
 
     .left-menu {
-        flex: none; /* Reset flex vlastností */
-        width: 100%; /* Menu zaberá plnú šírku */
+        flex: none;
+        width: 100%;
         margin-right: 0;
-        margin-bottom: 10px; /* Medzera pod menu */
-        position: static; /* Vypnutie sticky pozície */
-        max-height: none; /* Umožniť menu plnú výšku */
-        padding: 10px; /* Úprava polstrovania menu */
+        margin-bottom: 10px;
+        position: static;
+        max-height: none;
+        padding: 10px;
     }
 
     main {
-        flex-basis: auto; /* Hlavný obsah si berie výšku podľa obsahu */
-        width: 100%; /* Hlavný obsah zaberá plnú šírku pod menu */
-        padding: 0; /* Polstrovanie majú section-blocky */
+        flex-basis: auto;
+        width: 100%;
+        padding: 0;
     }
 
     /* Section blocky (všeobecné aj v skupinách/kluboch) sa zoraďujú vertikálne */
     .section-block,
-    #groupsContent .section-block,
-    #clubsContent .section-block {
+    #groupsContent .section-block, /* Prekrytie flexbox pravidiel zhora */
+    #clubsContent .section-block {  /* Prekrytie flexbox pravidiel zhora */
         flex: 1 1 100%; /* Každý blok zaberá plnú šírku */
-        min-width: auto; /* Povoliť zmenšovanie pod pôvodný min-width */
-        margin-bottom: 10px; /* Medzera medzi blokmi */
+        min-width: auto;
+        margin-bottom: 10px;
     }
 
-    /* Zabezpečiť, aby posledný blok nemal zbytočný spodný okraj */
     .section-block:last-child,
     #groupsContent .section-block:last-child,
     #clubsContent .section-block:last-child {
-         margin-bottom: 10px; /* Konzistentný okraj */
+         margin-bottom: 10px;
     }
 
 
     /* Modálne okno na malých obrazovkách */
     .modal-content {
-        width: 95%; /* Širší modál */
-        margin: 10% auto; /* Úprava horného okraja */
-        padding: 15px; /* Menšie polstrovanie modálu */
+        width: 95%;
+        margin: 10% auto;
+        padding: 15px;
     }
 
     /* Vstupné polia a selecty vo formulároch */
     form input[type="text"],
     form input[type="number"],
     form select {
-        width: calc(100% - 20px); /* Úprava šírky */
-        padding: 8px; /* Menšie polstrovanie */
-        margin-bottom: 10px; /* Menší spodný okraj */
+        width: calc(100% - 20px);
+        padding: 8px;
+        margin-bottom: 10px;
     }
 
     /* Filter kategórií/skupín v sekcii Tímy do skupín */
      #clubsFilterContainer select {
-          max-width: none; /* Umožniť selectom zaberať viac miesta, ak je to potrebné */
-          flex-basis: 150px; /* Základná šírka pre zalamovanie */
+          max-width: none;
+          flex-basis: 150px;
      }
 }
 
 /* Tablety a stredné desktopy (769px a viac) */
+/* V tejto media query a vyššie sa uplatnia flexbox pravidlá definované hore pre #groupsContent .section-block */
 @media (min-width: 769px) {
-    .content-wrapper {
-        flex-direction: row; /* Menu vedľa obsahu */
-        gap: 20px; /* Medzera medzi menu a obsahom */
-        padding: 0 20px; /* Bočné polstrovanie */
-    }
+     .content-wrapper {
+         flex-direction: row;
+         gap: 20px;
+         padding: 0 20px;
+     }
 
-    .left-menu {
-        flex: 0 0 200px; /* Fixná šírka menu */
-        margin-right: 0; /* Medzera je definovaná v content-wrapper gap */
-        position: sticky; /* Aktivácia sticky pozície */
-        max-height: calc(100vh - 110px); /* Obnovenie max výšky */
-    }
+     .left-menu {
+          flex: 0 0 200px;
+          margin-right: 0;
+          position: sticky;
+          max-height: calc(100vh - 110px);
+     }
 
-    main {
-        flex-grow: 1; /* Hlavný obsah zaberá zvyšné miesto */
-        flex-basis: 0; /* Umožní zmenšovanie */
-        padding: 0; /* Bez polstrovania na main */
-    }
+     main {
+         flex-grow: 1;
+         flex-basis: 0;
+         padding: 0;
+     }
 
     /* Štandardné section-blocky (ak nie sú vo flex kontajneri ako #groupsContent) */
     .section-block {
-         margin-bottom: 20px; /* Medzera medzi blokmi */
-         flex: none; /* Reset flex vlastností, ak nie sú špecificky vo flex kontajneri */
+         margin-bottom: 20px;
+         flex: none; /* Reset flex vlastností */
     }
 
-    /* Dva stĺpce pre skupiny a kluby na stredných obrazovkách */
-    #groupsContent .section-block,
-    #clubsContent .section-block {
-        flex: 1 1 calc(50% - 10px); /* Každý blok zaberá polovicu šírky mínus polovica medzery (20px gap) */
-        min-width: 300px; /* Minimálna šírka stĺpca */
-        margin-bottom: 0; /* Odstránenie spodného okraja */
-    }
-     /* Zabezpečiť, aby posledný blok v riadku nemal zbytočný spodný okraj */
+    /* #groupsContent .section-block a #clubsContent .section-block
+       použijú pravidlá flex: 1 1 300px; min-width: 280px; definované mimo media queries
+       Toto zabezpečí, že sa zoradia vedľa seba toľko, koľko sa zmestí.
+       Pravidlá pre 2 a 3 stĺpce (577px a 993px) sú odstránené,
+       lebo flexbox to spraví automaticky.
+    */
+
+     /* Zabezpečiť, aby posledný blok v flex riadku nemal zbytočný spodný okraj */
      #groupsContent .section-block:last-child,
      #clubsContent .section-block:last-child {
           margin-bottom: 0;
      }
 }
 
-/* Veľké desktopy (993px a viac) */
-@media (min-width: 993px) {
-    .content-wrapper {
-        /* Zdedí vlastnosti z 769px breakpointu (flex-direction: row, gap) */
-        padding: 0 20px; /* Konzistentné bočné polstrovanie */
-    }
-
-    .left-menu {
-        /* Zdedí vlastnosti z 769px breakpointu */
-    }
-
-    main {
-        /* Zdedí vlastnosti z 769px breakpointu */
-    }
-
-     .section-block {
-          margin-bottom: 20px; /* Konzistentný spodný okraj */
-     }
-
-
-    /* Tri stĺpce pre skupiny a kluby na veľkých obrazovkách */
-    #groupsContent .section-block,
-    #clubsContent .section-block {
-        flex: 1 1 calc((100% - 40px) / 3); /* Každý blok zaberá tretinu šírky mínus medzery (2x20px gap) */
-        min-width: 300px; /* Minimálna šírka stĺpca */
-        margin-bottom: 0; /* Odstránenie spodného okraja */
-    }
-
-     /* Zabezpečiť, aby posledný blok v riadku nemal zbytočný spodný okraj */
-      #groupsContent .section-block:last-child,
-      #clubsContent .section-block:last-child {
-           margin-bottom: 0;
-      }
-}
+/* Odstránená media query pre min-width: 993px, ktorá definovala 3 stĺpce pre #groupsContent a #clubsContent */
+/* Flexbox s flex: 1 1 300px a min-width: 280px automaticky vytvorí 3 stĺpce, ak sa zmestia */
 
 
 /* --- Štýl tela, keď je otvorené modálne okno (ponechané) --- */
