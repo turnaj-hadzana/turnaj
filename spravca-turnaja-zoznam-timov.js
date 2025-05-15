@@ -622,9 +622,9 @@ async function displayCreatedTeams() {
 
 
             const teamNameCell = row.insertCell();
-            // Zobraziť celý názov tímu z ID dokumentu
-            teamNameCell.textContent = team.id || 'Neznámy názov'; // Použiť team.id pre celý názov
-             console.log(`Tím ID: ${team.id}, Zobrazený Názov (z ID): ${teamNameCell.textContent}`); // LOG: Názov tímu
+            // Zobraziť názov tímu z poľa 'name' dokumentu (podľa logu toto obsahuje časť bez kategórie)
+            teamNameCell.textContent = team.name || 'Neznámy názov'; // Použiť team.name
+             console.log(`Tím ID: ${team.id}, Zobrazený Názov (z name): ${teamNameCell.textContent}`); // LOG: Názov tímu
 
 
             const categoryCell = row.insertCell();
