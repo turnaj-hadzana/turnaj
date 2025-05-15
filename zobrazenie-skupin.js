@@ -1,4 +1,4 @@
-// zobrazenie-skupin.js (Opravené zobrazenie, zobrazuje ID ak chýba názov kategórie)
+// zobrazenie-skupin.js (Pridaný kontajner pre skupiny v rámci kategórie)
 
 // Importy z common.js
 import { db, categoriesCollectionRef, groupsCollectionRef, clubsCollectionRef,
@@ -18,7 +18,6 @@ async function loadAllTournamentData() {
         // Načítať kategórie
         const categoriesSnapshot = await getDocs(categoriesCollectionRef);
         allCategories = categoriesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        // ZMENA v sortovaní: použiť category.id ako zálohu, ak chýba name
         allCategories.sort((a, b) => (a.name || a.id || '').localeCompare((b.name || b.id || ''), 'sk-SK')); // Zoradiť kategórie abecedne (podľa názvu, ak chýba, tak podľa ID)
 
         // Načítať skupiny
@@ -64,18 +63,23 @@ function displayGroups() {
         categoryDiv.classList.add('category-display');
 
         const categoryTitle = document.createElement('h2');
-        // ZMENA: Zobraz názov ak existuje, inak ID kategórie
-        categoryTitle.textContent = category.name || category.id;
+        categoryTitle.textContent = category.name || category.id; // Zobraz názov ak existuje, inak ID kategórie
         categoryDiv.appendChild(categoryTitle);
+
+        // Vytvoriť kontajner pre skupiny v tejto kategórii
+        const groupsContainerDiv = document.createElement('div');
+        groupsContainerDiv.classList.add('groups-container');
+        categoryDiv.appendChild(groupsContainerDiv); // Pridať kontajner do divu kategórie
+
 
         // Nájdi skupiny patriace do tejto kategórie
         const groupsInCategory = allGroups.filter(group => group.categoryId === category.id);
 
          if (groupsInCategory.length === 0) {
               const noGroupsPara = document.createElement('p');
-              // ZMENA: Zobraz názov kategórie (alebo ID) v správe, ak chýba názov
-              noGroupsPara.textContent = `V kategórii "${category.name || category.id}" zatiaľ nie sú vytvorené žiadne skupiny.`;
-              categoryDiv.appendChild(noGroupsPara);
+              noGroupsPara.textContent = `V kategórii "${category.name || category.id}" zatiaľ nie sú vytvorené žiadne skupiny.`; // Zobraz názov kategórie (alebo ID) v správe
+             // Pridať správu do kontajnera skupín, nie priamo do divu kategórie
+              groupsContainerDiv.appendChild(noGroupsPara);
          } else {
              // Zoradiť skupiny v rámci kategórie (napr. podľa názvu)
               groupsInCategory.sort((a, b) => (a.name || a.id || '').localeCompare((b.name || b.id || ''), 'sk-SK'));
@@ -85,8 +89,7 @@ function displayGroups() {
                 groupDiv.classList.add('group-display');
 
                 const groupTitle = document.createElement('h3');
-                // ZMENA: Zobraz názov skupiny ak existuje, inak ID skupiny
-                groupTitle.textContent = group.name || group.id;
+                groupTitle.textContent = group.name || group.id; // Zobraz názov skupiny ak existuje, inak ID skupiny
                 groupDiv.appendChild(groupTitle);
 
                 // Nájdi tímy priradené k tejto skupine
@@ -127,7 +130,8 @@ function displayGroups() {
                      groupDiv.appendChild(teamList);
                  }
 
-                categoryDiv.appendChild(groupDiv);
+                // Pridať groupDiv do kontajnera skupín, nie priamo do categoryDiv
+                groupsContainerDiv.appendChild(groupDiv);
             });
          }
 
@@ -148,7 +152,6 @@ function displayGroups() {
 
         // Zoradiť nepriradené tímy abecedne, prípadne podľa kategórie
         unassignedTeams.sort((a, b) => {
-             // ZMENA: Pri sortovaní a zobrazovaní použiť názov ak existuje, inak ID kategórie
              const categoryA = a.categoryId ? (allCategories.find(cat => cat.id === a.categoryId)?.name || a.categoryId) : 'Z'; // Tímy bez kat na koniec
              const categoryB = b.categoryId ? (allCategories.find(cat => cat.id === b.categoryId)?.name || b.categoryId) : 'Z';
              const nameA = (a.name || a.id || '').toLowerCase();
@@ -165,7 +168,6 @@ function displayGroups() {
         let currentCategory = null;
 
         unassignedTeams.forEach(team => {
-             // ZMENA: Pri zobrazovaní nadpisu kategórie pre nepriradené tímy použiť názov ak existuje, inak ID
              const teamCategory = team.categoryId ? (allCategories.find(cat => cat.id === team.categoryId)?.name || team.categoryId) : 'Bez kategórie';
 
              if (teamCategory !== currentCategory) {
