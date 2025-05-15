@@ -1,24 +1,9 @@
 // spravca-turnaja-zoznam-timov.js (Celý kód)
 
-// Import necessary functions and references from common.js
-// Uistite sa, že spravca-turnaja-common.js exportuje tieto:
-// db, clubsCollectionRef, categoriesCollectionRef, groupsCollectionRef,
-// openModal, closeModal,
-// Ak openClubModal, populateCategorySelect, populateGroupSelect, populateUnassignedClubsSelect
-// editingClubId, currentClubModalMode, unassignedClubSelect
-// sú definované a exportované v common.js, importujte ich tiež.
-// Inak bude potrebné ich definovať (alebo importovať z iného príslušného súboru, napr. spravca-turnaja-timy-do-skupin.js)
-// tak, aby boli prístupné v tomto súbore.
-// V tomto kóde predpokladáme, že openClubModal, editingClubId, currentClubModalMode, unassignedClubSelect a populateUnassignedClubsSelect
-// sú buď globálne dostupné alebo definované v common.js a exportované.
 import { db, clubsCollectionRef, categoriesCollectionRef, groupsCollectionRef,
-         openModal, closeModal, // Základné funkcie by mali byť v common.js
-         // Importujte ďalšie premenné/funkcie, ak sú exportované z common.js:
-         // openClubModal, editingClubId, currentClubModalMode, unassignedClubSelect, populateUnassignedClubsSelect,
+         openModal, closeModal,
          doc, getDocs, query, where, getDoc, setDoc, deleteDoc, updateDoc, writeBatch } from './spravca-turnaja-common.js';
 
-
-// --- Získajte referencie na elementy špecifické pre túto stránku ---
 const addButton = document.getElementById('addButton'); // Tlačidlo "+"
 const teamCreationContentSection = document.getElementById('teamCreationContentSection'); // Hlavná sekcia zoznamu tímov
 const createdTeamsTableBody = document.getElementById('createdTeamsTableBody'); // Telo tabuľky vytvorených tímov
@@ -36,14 +21,8 @@ const manageTeamsModalCloseBtn = manageTeamsModal ? manageTeamsModal.querySelect
 const baseTeamNameInModalSpan = document.getElementById('baseTeamNameInModal'); // Titulok v modále Správa tímov
 const teamsListInModalDiv = document.getElementById('teamsListInModal'); // Kontajner pre zoznam individuálnych tímov v modále Správa tímov
 
-// Referencie na elementy v clubModal (ak je definovaný v tomto HTML a otvára sa odtiaľto)
-// Ak je clubModal definovaný len v spravca-turnaja-timy-do-skupin.html, tieto referencie tu nebudú potrebné,
-// ale funkcia openClubModal by mala byť dostupná (napr. v common.js)
 const clubModal = document.getElementById('clubModal'); // Predpokladáme, že clubModal je v tomto HTML súbore
-// const clubModalCloseBtn = clubModal ? clubModal.querySelector('.club-modal-close') : null; // Zatváranie clubModal riadi clubModal JS alebo common.js
 
-
-// Variabilné stavy špecifické pre túto stránku (ak sú potrebné)
 let allAvailableCategories = []; // Pre ukladanie zoznamu kategórií pre dynamické selecty vo vytváraní tímov
 
 
