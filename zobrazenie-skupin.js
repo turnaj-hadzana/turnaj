@@ -1,4 +1,4 @@
-// zobrazenie-skupin.js (Kompletný kód s filtrami, URL, zvýraznením a rozložením 3+2)
+// zobrazenie-skupin.js (Kompletný kód s filtrami, URL, zvýraznením, rozložením 3+2 A JS pre dynamickú šírku)
 
 // Importy z common.js
 import { db, categoriesCollectionRef, groupsCollectionRef, clubsCollectionRef,
@@ -148,6 +148,91 @@ function saveFiltersToUrl() {
 }
 
 
+// *** NOVÁ JS LOGIKA PRE DYNAMICKÚ ŠÍRKU ***
+
+// Funkcia na zistenie maximálnej šírky potrebnej pre zobrazenie obsahu všetkých tabuliek skupín
+function findMaxTableContentWidth() {
+    let maxWidth = 0;
+    // Získame všetky elementy tabuliek skupín, ktoré sú už pridané do DOM
+    const groupTables = groupsDisplayContent.querySelectorAll('.group-display');
+
+    groupTables.forEach(table => {
+        // Aby sme zistili skutočnú šírku potrebnú pre obsah, musíme tabuľke dočasne
+        // povoliť roztiahnuť sa podľa obsahu a zmerať jej šírku.
+
+        // Uložíme si pôvodné štýly, aby sme ich mohli obnoviť
+        const originalStyles = {
+            flexBasis: table.style.flexBasis,
+            width: table.style.width,
+            minWidth: table.style.minWidth,
+            maxWidth: table.style.maxWidth,
+            flexShrink: table.style.flexShrink,
+            flexGrow: table.style.flexGrow
+        };
+
+        // Nastavíme štýly, ktoré umožnia tabuľke určiť si šírku podľa obsahu bez obmedzení
+        table.style.flexBasis = 'max-content'; // Základná veľkosť podľa najširšieho obsahu
+        table.style.width = 'auto'; // Šírka auto
+        table.style.minWidth = 'auto'; // Žiadne min. obmedzenie šírky pre meranie
+        table.style.maxWidth = 'none'; // Žiadne max. obmedzenie šírky pre meranie
+        table.style.flexShrink = '0'; // Zabráni zmenšovaniu počas merania
+        table.style.flexGrow = '0'; // Zabráni zväčšovaniu počas merania
+
+        // Zabezpečíme, že prehliadač prekreslí a prepočíta rozmery
+        // Prístup k offsetWidth často vynúti toto prekreslenie
+        const requiredWidth = table.offsetWidth;
+
+        // Obnovíme pôvodné štýly
+        table.style.flexBasis = originalStyles.flexBasis;
+        table.style.width = originalStyles.width;
+        table.style.minWidth = originalStyles.minWidth;
+        table.style.maxWidth = originalStyles.maxWidth;
+        table.style.flexShrink = originalStyles.flexShrink;
+        table.style.flexGrow = originalStyles.flexGrow;
+
+
+        // Ak je nameraná šírka väčšia ako doterajšie maximum, aktualizujeme maximum
+        if (requiredWidth > maxWidth) {
+            maxWidth = requiredWidth;
+        }
+    });
+
+    // Pridáme malý extra priestor k maximálnej šírke pre istotu (napr. padding/border)
+    // Hodnotu 20px môžete doladiť
+    const safetyPadding = 20;
+    return maxWidth + safetyPadding;
+}
+
+// Funkcia na nastavenie jednotnej šírky pre všetky tabuľky skupín
+function setUniformTableWidth(width) {
+    // Získame všetky elementy tabuliek skupín
+    const groupTables = groupsDisplayContent.querySelectorAll('.group-display');
+
+    groupTables.forEach(table => {
+        // Nastavíme vypočítanú jednotnú šírku ako pevnú šírku pre každú tabuľku
+        // Použijeme style.cssText alebo jednotlivo, dôležité je prekonať existujúce CSS pravidlá
+        // (aj s !important v CSS by to mohlo byť problematické, lepšie je nastaviť priamo cez style)
+
+        table.style.width = `${width}px`;
+        table.style.minWidth = `${width}px`; // Minimálna šírka bude táto pevná šírka
+        table.style.maxWidth = `${width}px`; // Maximálna šírka bude táto pevná šírka
+
+        // Nastavíme flexbox vlastnosti tak, aby tabuľka držala túto pevnú šírku
+        table.style.flexBasis = 'auto'; // Základňa sa bude riadiť nastavenou šírkou
+        table.style.flexShrink = '0'; // Zakážeme zmenšovanie pod túto šírku
+        table.style.flexGrow = '0'; // Zakážeme zväčšovanie nad túto šírku
+    });
+
+     // Poznámka: S pevnou šírkou a flex-shrink: 0 sa rozloženie 3+2 už nebude riadiť výpočtom v calc(),
+     // ale tým, koľko ňouveľkých tabuliek sa zmestí do riadku. CSS pravidlo pre force-3-plus-2-layout
+     // v CSS súbore by už nemalo obsahovať vlastnosti flex-basis, flex-shrink, min-width, max-width, width,
+     // aby nekonfliktovalo s JS nastavenou šírkou. V CSS treba odstrániť tieto vlastnosti z pravidla
+     // .groups-container.force-3-plus-2-layout .group-display
+}
+
+// *** KONIEC JS LOGIKY PRE DYNAMICKÚ ŠÍRKU ***
+
+
 // Funkcia na zobrazenie skupín a tímov (s implementovaným filtrovaním a zvýraznením tímu)
 function displayGroups() {
     if (!groupsDisplayContent) {
@@ -249,6 +334,9 @@ function displayGroups() {
           groupsDisplayContent.innerHTML = `<p>${message}</p>`;
           // ULOŽIŤ FILTRE DO URL PRED PREDČASNÝM UKONČENÍM
           saveFiltersToUrl();
+          // *** Zavolať funkciu na nastavenie šírky aj v tomto prípade, aj keď nie sú skupiny ***
+          setUniformTableWidth(findMaxTableContentWidth()); // Bude 0, ak nie sú tabuľky, čo je OK.
+          // *** Koniec volania ***
           return;
      }
 
@@ -269,7 +357,7 @@ function displayGroups() {
         // Nájdi skupiny patriace do tejto kategórie, ktoré sa majú zobraziť
         const groupsInCategoryToDisplay = groupsToDisplay.filter(group => group.categoryId === category.id);
 
-        // NOVÁ LOGIKA: Pridať triedu pre 5 skupín pre špeciálne rozloženie
+        // NOVÁ LOGIKA: Pridať triedu pre 5 skupín pre špeciálne rozloženie (len pre vizuálne odlíšenie kontajnera ak treba, šírku nastaví JS)
         if (groupsInCategoryToDisplay.length === 5) {
             groupsContainerDiv.classList.add('force-3-plus-2-layout');
         } else {
@@ -396,8 +484,8 @@ function displayGroups() {
                 const categoryHeader = document.createElement('li');
                 categoryHeader.style.fontWeight = 'bold';
                 categoryHeader.style.marginTop = '10px';
-                categoryHeader.style.backgroundColor = '#e9ecef';
-                categoryHeader.style.color = '#495057';
+                categoryHeader.style.backgroundColor = '#e9ecef !important'; // Použiť !important lebo li má iné pozadie
+                categoryHeader.style.color = '#495057 !important'; // Použiť !important
                 categoryHeader.textContent = `Kategória: ${teamCategory}`;
                 unassignedList.appendChild(categoryHeader);
                 currentCategory = teamCategory;
@@ -414,7 +502,6 @@ function displayGroups() {
                  teamItem.classList.remove('highlighted-team');
             }
 
-
             unassignedList.appendChild(teamItem);
         });
         unassignedDiv.appendChild(unassignedList);
@@ -430,10 +517,17 @@ function displayGroups() {
           groupsDisplayContent.innerHTML = `<p>${message}</p>`;
      }
 
-     // ULOŽIŤ FILTRE DO URL PO ZOBRAZENÍ - PRESUNUTÉ NA KONIEC FUNKCIE
+     // ULOŽIŤ FILTRE DO URL PO ZOBRAZENÍ
      saveFiltersToUrl();
 
+     // *** VOLANIE FUNKCIÍ NA DYNAMICKÚ ŠÍRKU PO VYTVORENÍ TABULIEK ***
+     const uniformWidth = findMaxTableContentWidth();
+     if (uniformWidth > 0) { // Nastavíme šírku iba ak sú nejaké tabuľky a našla sa max šírka
+        setUniformTableWidth(uniformWidth);
+     }
+     // *** KONIEC VOLANIA ***
 }
+
 
 // Pridanie poslucháčov udalostí pre filtre
 categoryFilter.addEventListener('change', () => {
@@ -500,6 +594,14 @@ document.addEventListener('DOMContentLoaded', async () => {
          teamFilter.value = '';
     }
 
-
     displayGroups();
 });
+
+// *** Odporúčané: Pridať poslucháča na zmenu veľkosti okna pre responzivitu dynamickej šírky ***
+// window.addEventListener('resize', () => {
+//     // Pri zmene veľkosti okna prepočítame a nastavíme šírku znova
+//     const uniformWidth = findMaxTableContentWidth();
+//      if (uniformWidth > 0) {
+//         setUniformTableWidth(uniformWidth);
+//      }
+// });
