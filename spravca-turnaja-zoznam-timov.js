@@ -862,7 +862,6 @@ async function displayCreatedTeams() {
         <th data-filter-type="category">Kategória</th>
         <th data-filter-type="group">Skupina</th>
         <th data-sort-type="orderInGroup">Poradie v skupine</th>
-        <th>Akcie</th>
         <th><button id="clearFiltersButton" class="action-button">Vymazať filtre</button></th>
     `;
 
