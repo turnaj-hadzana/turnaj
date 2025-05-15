@@ -260,7 +260,7 @@ async function openClubModal(clubId = null, mode = 'assign') {
 
      // Logika pre režim "Priradiť" (assign)
      if (mode === 'assign') {
-        clubModalTitle.textContent = 'Priradiť nepriradený tím/klub';
+        clubModalTitle.textContent = 'Priradiť nepriradený tím';
         clubNameField.style.display = 'none';
         clubAssignmentFields.style.display = 'block';
         unassignedClubField.style.display = 'block'; // Zobraziť pole
