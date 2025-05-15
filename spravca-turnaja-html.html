@@ -61,9 +61,14 @@
                             </tbody>
                   </table>
              </section>
+             <section id="rosterContentSection" class="section-block" style="display: none;">
+                 <h2>Správa súpisiek</h2>
+                 <p>Vyberte tím pre zobrazenie a správu súpisky. Použite tlačidlo "+" na pridanie hráča k vybranému tímu.</p>
+                 </section>
         </main>
     </div>
     <button id="addButton" class="add-button" title="Pridať položku">+</button>
+
     <div id="categoryModal" class="modal">
         <div class="modal-content">
             <span class="close category-modal-close">&times;</span>
@@ -98,7 +103,7 @@
      <div id="clubModal" class="modal">
          <div class="modal-content">
              <span class="close club-modal-close">&times;</span>
-             <h2 id="clubModalTitle">Pridať tím</h2>
+             <h2 id="clubModalTitle">Priradiť tím do skupiny</h2>
              <form id="clubForm">
                  <div id="unassignedClubSelectContainer">
                      <label for="unassignedClubSelect">Vyberte nepriradený tím:</label>
@@ -150,6 +155,54 @@
                      </div>
            </div>
       </div>
+
+      <div id="rosterModal" class="modal">
+          <div class="modal-content">
+              <span class="close roster-modal-close">&times;</span>
+              <h2 id="rosterModalTitle">Pridať hráča do tímu</h2>
+              <form id="rosterTeamSelectForm"> <div>
+                       <label for="rosterTeamSelect">Vyberte tím:</label>
+                       <select id="rosterTeamSelect" required>
+                            <option value="">-- Vyberte tím --</option>
+                            </select>
+                   </div>
+                    <p id="selectedTeamCategory" style="margin-top: -10px; margin-bottom: 15px; font-style: italic;"></p>
+              </form>
+
+              <div id="playerManagementArea" style="display: none;"> <h3>Aktuálna súpiska</h3>
+                   <div id="rosterTableContainer" style="max-height: 200px; overflow-y: auto; margin-bottom: 15px;">
+                       <table id="rosterTable" class="group-clubs-table"> <thead>
+                               <tr>
+                                   <th style="width: 50px;">#</th>
+                                   <th>Meno</th>
+                                   <th>Priezvisko</th>
+                                   <th style="width: 100px;">Akcie</th>
+                               </tr>
+                           </thead>
+                           <tbody id="rosterTableBody">
+                                </tbody>
+                       </table>
+                   </div>
+
+                   <h3>Pridať nového hráča</h3>
+                   <form id="playerForm"> <div>
+                           <label for="playerNumber">Číslo:</label>
+                           <input type="number" id="playerNumber" min="0" required style="width: calc(50% - 22px);">
+                       </div>
+                       <div>
+                           <label for="playerName">Meno:</label>
+                           <input type="text" id="playerName" required>
+                       </div>
+                       <div>
+                           <label for="playerSurname">Priezvisko:</label>
+                           <input type="text" id="playerSurname" required>
+                       </div>
+                       <button type="submit">Pridať hráča</button>
+                   </form>
+              </div>
+          </div>
+      </div>
+
     <script src="spravca-turnaja-script.js" type="module"></script>
 </body>
 </html>
