@@ -1,8 +1,7 @@
 // zobrazenie-skupin.js
 
 // Importujte spoločné funkcie a referencie z common.js
-import { db, categoriesCollectionRef, groupsCollectionRef, clubsCollectionRef,
-         getDocs, query, orderBy } from './spravca-turnaja-common.js'; // Import orderBy pre zoradenie
+import { getFirestore, collection, doc, setDoc, getDoc, getDocs, deleteDoc, query, where, addDoc, updateDoc, writeBatch, orderBy } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js';
 
 // Získajte referenciu na element, kam sa bude vkladať obsah
 const dataDisplayArea = document.getElementById('dataDisplayArea');
@@ -182,5 +181,4 @@ document.addEventListener('DOMContentLoaded', () => {
     displayGroupedData();
 });
 
-// Ak potrebujete exportovať displayGroupedData pre volanie z inej stránky, môžete to pridať
-// export { displayGroupedData };
+export { db, query, where, getDocs, getDoc, setDoc, deleteDoc, updateDoc, writeBatch, addDoc, doc, orderBy };
