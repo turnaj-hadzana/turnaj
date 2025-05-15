@@ -1,4 +1,4 @@
-body {
+        body {
             font-family: sans-serif;
             margin: 0;
             padding: 0;
@@ -132,13 +132,13 @@ body {
              min-width: 250px;
              box-sizing: border-box;
         }
-        #categoryTable, .category-group-table, #clubsTable, #createdTeamsTable {
+        #categoryTable, .category-group-table, #clubsTable, #createdTeamsTable, #rosterTable { /* Added #rosterTable */
             border-collapse: collapse;
             width: 100%;
             border: none;
             overflow: hidden;
         }
-         .group-clubs-table {
+         .group-clubs-table, #rosterTable { /* Added #rosterTable */
             border-collapse: collapse;
             border: none;
             overflow: hidden;
@@ -169,7 +169,7 @@ body {
              margin-bottom: 15px;
              font-size: 0.9em;
          }
-        #categoryTable th, #clubsTable th, .category-group-table th, .group-clubs-table th, #createdTeamsTable th,
+        #categoryTable th, #clubsTable th, .category-group-table th, .group-clubs-table th, #createdTeamsTable th, #rosterTable th, /* Added #rosterTable th */
          #manageTeamsModal .group-clubs-table th
          {
             background-color: #f2f2f2;
@@ -181,7 +181,7 @@ body {
              font-size: 0.9em;
              white-space: nowrap;
         }
-        #categoryTable td, #clubsTable td, .category-group-table td, .group-clubs-table td, #createdTeamsTable td,
+        #categoryTable td, #clubsTable td, .category-group-table td, .group-clubs-table td, #createdTeamsTable td, #rosterTable td, /* Added #rosterTable td */
          #manageTeamsModal .group-clubs-table td
          {
             text-align: left;
@@ -199,7 +199,7 @@ body {
          #createdTeamsTable tbody td:not(:first-child):not(:last-child) {
              text-align: center;
          }
-         .group-clubs-table tbody td:first-child {
+         .group-clubs-table tbody td:first-child, #rosterTable tbody td:first-child { /* Added #rosterTable tbody td:first-child */
              text-align: center;
              padding: 10px 5px;
          }
@@ -214,6 +214,7 @@ body {
         .category-group-table tbody tr:last-child td,
         .group-clubs-table tbody tr:last-child td,
         #createdTeamsTable tbody tr:last-child td,
+        #rosterTable tbody tr:last-child td, /* Added #rosterTable tbody tr:last-child td */
          #manageTeamsModal .group-clubs-table tbody tr:last-child td
          {
              border-bottom: none;
@@ -223,6 +224,7 @@ body {
         .category-group-table tbody tr:hover,
         .group-clubs-table tbody tr:hover,
         #createdTeamsTable tbody tr:hover,
+        #rosterTable tbody tr:hover, /* Added #rosterTable tbody tr:hover */
          #manageTeamsModal .group-clubs-table tbody tr:hover
          {
             background-color: #f9f9f9;
@@ -233,9 +235,13 @@ body {
         .category-group-table td:last-child,
         .group-clubs-table td:last-child,
         #createdTeamsTable td:last-child,
+        #rosterTable td:last-child, /* Added #rosterTable td:last-child */
          #manageTeamsModal .group-clubs-table td:last-child
          {
              white-space: nowrap;
+        }
+         #rosterTable td:last-child {
+              text-align: center; /* Align actions to center */
          }
         #clubsContent {
             display: flex;
@@ -277,6 +283,30 @@ body {
         #teamCreationContentSection table {
              width: 100%;
          }
+
+         /* Added styling for roster section and modal */
+         #rosterContentSection {
+              /* Base styles, display controlled by JS */
+               padding: 20px; /* Add padding for visual separation */
+         }
+         #rosterModal .modal-content {
+             max-width: 600px; /* Wider modal for roster table */
+         }
+         #rosterModal h2 {
+              margin-bottom: 15px;
+         }
+          #rosterModal h3 {
+               margin-top: 20px;
+               margin-bottom: 10px;
+          }
+          #rosterModal form div {
+               margin-bottom: 15px;
+          }
+          #rosterModal form div:last-of-type {
+               margin-bottom: 0;
+          }
+
+
         .action-button {
             padding: 5px 10px;
             margin-right: 5px;
@@ -436,3 +466,4 @@ body.modal-open .left-menu a {
         body.groups-section-active .content-wrapper { margin-top: 20px; }
         body.teams-list-section-active .content-wrapper { margin-top: 20px; }
         body.clubs-section-active .content-wrapper { margin-top: 20px; } /* Adjusted margin-top because filter is inside */
+         body.roster-section-active .content-wrapper { margin-top: 20px; } /* Added class for roster section */
