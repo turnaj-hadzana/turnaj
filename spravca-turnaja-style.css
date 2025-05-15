@@ -456,3 +456,10 @@ td:last-child {
     border-radius: 4px;
     font-size: 1em;
 }
+.applied-filter-value {
+    display: block;
+    font-size: 0.8em;
+    color: #555;
+    margin-top: 2px;
+    font-weight: normal;
+}
