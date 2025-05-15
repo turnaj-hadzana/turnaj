@@ -297,7 +297,7 @@ async function addCategoryCountPair(initialCategoryId = null) {
 
 
 // Funkcia na otvorenie modálneho okna Vytvoriť tímy
-export async function openTeamCreationModal() {
+async function openTeamCreationModal() {
      console.log("Otváram modál Vytvoriť tímy");
      // Zabezpečiť, že všetky potrebné DOM elementy existujú
      if (!teamCreationModal || !teamCreationForm || !teamCategoryCountContainer || !teamNameInput) {
