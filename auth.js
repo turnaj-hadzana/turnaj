@@ -76,7 +76,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     localStorage.setItem('username', username);
                     updateHeaderMenu(username);
                     if (username === "admin") {
-                        window.location.href = 'spravca-turnaja.html';
+                        window.location.href = 'spravca-turnaja-kategorie.html';
                     } else {
                         window.location.href = 'index.html';
                     }
