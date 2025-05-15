@@ -144,7 +144,7 @@ main {
     margin-bottom: 0;
     flex: 1 1 300px;
     /* --- UPRAVENÉ pre skoršie zalamovanie --- */
-    min-width: 380px; /* Zväčšená minimálna šírka z 360px na 380px */
+    min-width: 400px; /* Zväčšená minimálna šírka z 360px na 380px */
     /* --- KONIEC UPRAVENÉ --- */
     padding: 15px; /* Zabezpečiť, že padding je stále aplikovaný */
     box-sizing: border-box; /* Zabezpečiť, že padding je zahrnutý v šírke */
