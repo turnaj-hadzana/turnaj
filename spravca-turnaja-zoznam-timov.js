@@ -1170,7 +1170,7 @@ function displayAppliedFiltersInHeader() {
               }
 
 
-             filterValueSpan.textContent = `(Filter: ${displayedFilterValue})`;
+             filterValueSpan.textContent = `${displayedFilterValue}`;
 
              headerCell.appendChild(filterValueSpan);
              console.log(`INFO: Zobrazený filter "${filterType}" s hodnotou "${displayedFilterValue}" v hlavičke.`);
