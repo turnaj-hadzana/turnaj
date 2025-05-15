@@ -252,16 +252,16 @@ td:last-child {
 /* Ensure the action column has enough width for Category Group Table (UPRAVENÉ) */
 .category-group-table td:last-child {
     white-space: nowrap;
-    /* text-align: center; ODSTRANENÉ - centrácia bude riadená flexboxom */
-    width: 180px; /* Šírka stĺpca akcií */
-    min-width: 180px; /* Zabezpečiť minimálnu šírku */
-    padding: 5px; /* Polstrovanie vo vnútri bunky */
-    /* --- PRIDANÉ/UPRAVENÉ pre Flexbox v bunke --- */
+    /* text-align: center; ODSTRANENÉ */
+    /* --- PRIDANÉ/UPRAVENÉ --- */
+    width: 200px; /* Zväčšená šírka stĺpca akcií na 200px */
+    min-width: 200px; /* Zabezpečiť minimálnu šírku na 200px */
+    /* --- KONIEC PRIDANÉ/UPRAVENÉ --- */
+    padding: 5px; /* Polstrovanie vo vnútri bunky (5px na všetkých stranách) */
     display: flex; /* Použiť flexbox na zoradenie tlačidiel */
     align-items: center; /* Vertikálne centrovať tlačidlá */
     justify-content: center; /* Horizontálne centrovať skupinu tlačidiel v rámci paddingu */
     gap: 5px; /* Medzera medzi tlačidlami */
-    /* --- KONIEC PRIDANÉ/UPRAVENÉ --- */
 }
 /* Odstránenie margin-right pre action buttony v tejto konkrétnej bunke (už ho netreba kvôli gap) */
 .category-group-table td:last-child .action-button {
@@ -307,16 +307,16 @@ td:last-child {
 .group-clubs-table td:last-child {
     white-space: nowrap;
     /* text-align: center; ODSTRANENÉ */
-    width: 180px; /* Šírka stĺpca akcií */
-    min-width: 180px; /* Zabezpečiť minimálnu šírku */
+    /* --- UPRAVENÉ --- */
+    width: 200px; /* Zväčšená šírka stĺpca akcií na 200px */
+    min-width: 200px; /* Zabezpečiť minimálnu šírku na 200px */
+    /* --- KONIEC UPRAVENÉ --- */
     flex-shrink: 0;
     padding: 5px; /* Polstrovanie vo vnútri bunky */
-    /* --- PRIDANÉ/UPRAVENÉ pre Flexbox v bunke --- */
     display: flex; /* Použiť flexbox na zoradenie tlačidiel */
     align-items: center; /* Vertikálne centrovať tlačidlá */
     justify-content: center; /* Horizontálne centrovať skupinu tlačidiel v rámci paddingu */
     gap: 5px; /* Medzera medzi tlačidlami */
-    /* --- KONIEC PRIDANÉ/UPRAVENÉ --- */
 }
 /* Odstránenie margin-right pre action buttony v tejto konkrétnej bunke */
 .group-clubs-table td:last-child .action-button {
@@ -405,8 +405,7 @@ td:last-child {
 .category-count-pair .action-button.delete-button {
     padding: 3px 8px;
     font-size: 0.8em;
-     /* margin-left: auto;  Pridajte margin-left auto, aby sa tlačidlo zarovnalo doprava v flex kontajneri */
-      margin-left: 10px; /* Alebo nastavte fixnú medzeru */
+    margin-left: 10px; /* Medzera pred tlačidlom Odstrániť v tomto konkrétnom kontexte */
 }
 
 
@@ -443,7 +442,7 @@ td:last-child {
     white-space: nowrap;
     /* --- PRIDANÉ pre medzeru medzi tlačidlami v li --- */
     display: flex;
-    gap: 5px;
+    gap: 5px; /* Medzera medzi tlačidlami v li */
     align-items: center;
     /* --- KONIEC PRIDANÉ --- */
 }
