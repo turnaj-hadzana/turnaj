@@ -213,24 +213,29 @@ function resetClubModal() {
     if (clubGroupSelect) {
          clubGroupSelect.innerHTML = '<option value="">-- Vyberte skupinu --</option>';
          if (clubGroupSelect) clubGroupSelect.disabled = true; // Znova zakázať
+         if (clubGroupSelect) clubGroupSelect.onchange = null; // Odstrániť listener na zmenu skupiny
     }
      // Skryť polia specifické pre režimy pri resete a zakázať/resetovať selecty
      if (clubNameField) clubNameField.style.display = 'block'; // Predvolene zobraziť názov tímu
      if (unassignedClubField) unassignedClubField.style.display = 'none'; // Predvolene skryť výber nepriradeného
      if (unassignedClubSelect) {
           unassignedClubSelect.innerHTML = '<option value="">-- Vyberte nepriradený tím --</option>';
-          unassignedClubSelect.disabled = true; // PRIDANÉ: Zakázať na resete
+          unassignedClubSelect.disabled = true; // Zakázať na resete
           unassignedClubSelect.onchange = null;
      }
      if (clubAssignmentFields) clubAssignmentFields.style.display = 'block'; // Predvolene zobraziť priradenie
-     if (clubModalTitle) clubModalTitle.textContent = 'Upraviť tím'; // Predvolený titulok
+     if (clubModalTitle) clubModalTitle.textContent = 'Upraviť tím / Priradiť klub'; // Predvolený titulok
      if (clubForm) {
          const submitButton = clubForm.querySelector('button[type="submit"]');
-         if (submitButton) submitButton.textContent = 'Uložiť zmeny'; // Predvolený text tlačidla
+         if (submitButton) submitButton.textContent = 'Uložiť zmeny / Priradiť'; // Predvolený text tlačidla
      }
       // Zabezpečiť, že polia Skupina a Poradie nie sú required (HTML atribút bol odstránený)
       if (clubGroupSelect) clubGroupSelect.removeAttribute('required');
-      if (orderInGroupInput) orderInGroupInput.removeAttribute('required');
+      if (orderInGroupInput) { // PRIDANÉ: Resetovať a zakázať pole poradia
+          orderInGroupInput.value = ''; // Vyčistiť hodnotu
+          orderInGroupInput.disabled = true; // Zakázať
+          orderInGroupInput.removeAttribute('required'); // Zabezpečiť, že required je odstránené
+     }
 }
 
 
