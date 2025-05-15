@@ -212,10 +212,21 @@
             border-radius: 5px;
             background-color: #e9ecef;
             display: flex;
-            gap: 15px; /* Medzera medzi flex položkami */
+            gap: 15px; /* Medzera medzi flex položkami (filter-group divmi a tlačidlom) */
             align-items: center;
             flex-wrap: wrap;
             justify-content: center;
+        }
+
+        /* Štýly pre kontajnery label + select (pre horizontálne usporiadanie) */
+        .filter-group {
+            display: flex; /* Label a select sú vedľa seba v riadku */
+            align-items: center;
+            gap: 5px; /* Medzera medzi labelom a selectom */
+             /* V horizontálnom usporiadaní sa šírka nastaví automaticky podľa obsahu a dostupného miesta */
+             flex-basis: auto;
+             flex-grow: 0;
+             flex-shrink: 1; /* Povoliť zmenšenie, ak je málo miesta */
         }
 
         .filter-section label {
@@ -227,6 +238,8 @@
             border-radius: 4px;
             border: 1px solid #ccc;
             font-size: 1em;
+             /* V horizontálnom usporiadaní sa select box roztiahne, aby vyplnil dostupný priestor */
+            flex-grow: 1;
         }
 
         .filter-section button {
@@ -238,6 +251,10 @@
             cursor: pointer;
             font-size: 1em;
             transition: background-color 0.3s ease;
+             /* V horizontálnom usporiadaní sa tlačidlo nezmenšuje ani nerozťahuje */
+            flex-grow: 0;
+            flex-shrink: 0;
+             flex-basis: auto;
         }
 
         .filter-section button:hover {
@@ -254,37 +271,46 @@
         /* MEDIA QUERY: Filtre sa zoradia pod seba na menších obrazovkách */
         @media (max-width: 768px) {
             .filter-section {
-                flex-direction: column; /* Všetky priame deti (label, select, button) pod sebou */
-                align-items: stretch; /* Roztiahne prvky na celú šírku kontajnera */
-                /* Gap už nepotrebujeme medzi label a select, lebo sú pod sebou */
-                gap: 10px; /* Medzera medzi prvkami v stĺpcovom usporiadaní (napr. select a ďalší label) */
+                flex-direction: column; /* Hlavné prvky (filter-group divy a tlačidlo) pod sebou */
+                align-items: stretch; /* Roztiahne filter-group divy a tlačidlo na celú šírku */
+                gap: 10px; /* Medzera medzi filter-group divmi a tlačidlom */
             }
 
-             /* Každý element filtra (label, select, button) zaberie celú šírku v stĺpcovom zobrazení */
-            .filter-section label,
-            .filter-section select,
+            /* V zvislom usporiadaní filter-group divy a tlačidlo zaberú celú šírku */
+            .filter-group,
             .filter-section button {
                 width: 100%;
                 box-sizing: border-box;
                 margin: 0; /* Odstránime prípadné defaultné marginy */
             }
 
-            .filter-section label {
-                 text-align: left; /* Zarovná text labelu doľava */
-                 margin-bottom: 5px; /* Malá medzera medzi labelom a selectom pod ním */
+            /* V zvislom usporiadaní sa prvky VO VNÚTRI filter-group usporiadajú pod sebou */
+            .filter-group {
+                flex-direction: column; /* Label a select pod sebou */
+                align-items: flex-start; /* Zarovná label a select doľava */
+                gap: 5px; /* Medzera medzi labelom a selectom v rámci bloku */
             }
-             /* Upravíme medzeru aj pre select, aby bol pod labelom */
-             .filter-section select {
-                 margin-bottom: 10px; /* Medzera po selecte pred ďalším labelom */
-             }
 
-             /* Prvá labela nepotrebuje horný margin */
-             .filter-section label:first-of-type {
-                 margin-top: 0;
-             }
-             /* Posledný select/button nepotrebuje spodný margin */
-             .filter-section button:last-child {
-                 margin-bottom: 0;
+            /* V zvislom usporiadaní label a select v rámci filter-group zaberú celú šírku */
+            .filter-group label,
+            .filter-group select {
+                 width: 100%;
+                 box-sizing: border-box;
+                 margin: 0; /* Odstránime prípadné defaultné marginy */
+            }
+
+            .filter-group label {
+                 font-weight: bold; /* Tučnosť zostáva */
+            }
+
+            .filter-group select {
+                 /* Flex-grow: 1 už nepotrebujeme v stĺpcovom usporiadaní vnútri filter-group */
+                 flex-grow: 0;
+            }
+
+             /* Malé úpravy medzier medzi prvkami v stĺpcovom usporiadaní */
+             .filter-group:not(:last-of-type) {
+                 margin-bottom: 5px; /* Medzera po každom filter-group okrem posledného */
              }
         }
 
@@ -298,20 +324,23 @@
             <section class="section-block">
 
                  <div class="filter-section">
-                     <label for="categoryFilter">Vyber kategóriu:</label>
-                     <select id="categoryFilter">
-                         <option value="">Všetky kategórie</option>
-                     </select>
+                     <div class="filter-group"> <label for="categoryFilter">Vyber kategóriu:</label>
+                         <select id="categoryFilter">
+                             <option value="">Všetky kategórie</option>
+                         </select>
+                     </div>
 
-                     <label for="groupFilter">Vyber skupinu:</label>
-                     <select id="groupFilter">
-                         <option value="">Všetky skupiny</option>
-                     </select>
+                     <div class="filter-group"> <label for="groupFilter">Vyber skupinu:</label>
+                         <select id="groupFilter">
+                             <option value="">Všetky skupiny</option>
+                         </select>
+                     </div>
 
-                     <label for="teamFilter">Vyber tím:</label>
-                     <select id="teamFilter">
-                         <option value="">Všetky tímy</option>
-                     </select>
+                     <div class="filter-group"> <label for="teamFilter">Vyber tím:</label>
+                         <select id="teamFilter">
+                             <option value="">Všetky tímy</option>
+                         </select>
+                     </div>
 
                      <button id="clearFiltersButton">Vymazať filtre</button>
                  </div>
