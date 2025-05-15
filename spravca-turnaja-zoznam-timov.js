@@ -570,17 +570,19 @@ async function displayCreatedTeams() {
         console.log("Aktuálne dostupné kategórie (allAvailableCategories):", allAvailableCategories); // LOG: Zoznam kategórií
 
 
-        // Načítať všetky skupiny, aby sme mohli zobraziť názov skupiny
+        // Načítať všetky skupiny (aj keď pre zobrazenie v tabuľke budeme parsovať ID skupiny,
+        // loadAllGroups je potrebné pre iné funkcie, napr. v modále klubu)
         if (allAvailableGroups.length === 0) {
              await loadAllGroups(); // Načítať skupiny na pozadí
         }
          console.log("Aktuálne dostupné skupiny (allAvailableGroups):", allAvailableGroups); // LOG: Zoznam skupín
 
+         // Mapa skupín nie je nevyhnutná pre zobrazenie v tejto tabuľke, ale môže byť užitočná pre debugging
          const groupsMap = allAvailableGroups.reduce((map, group) => {
             map[group.id] = group.name; // Mapovať ID skupiny na názov skupiny
             return map;
         }, {});
-        console.log("Mapa skupín (ID -> Názov):", groupsMap); // LOG: Mapa skupín
+        // console.log("Mapa skupín (ID -> Názov):", groupsMap); // LOG: Mapa skupín
 
 
         if (teams.length === 0) {
@@ -629,16 +631,42 @@ async function displayCreatedTeams() {
 
             const categoryCell = row.insertCell();
             // Zobraziť kategóriu - POUŽIŤ categoryId a allAvailableCategories
+            // Táto časť vyžaduje správne načítané kategórie (oprava ukladania kategórií je kľúčová!)
             const category = allAvailableCategories.find(cat => cat.id === team.categoryId);
             categoryCell.textContent = category ? category.name : (team.categoryId || 'Neznáma kategória'); // Ak sa nenájde v zozname, zobraziť aspoň ID alebo placeholder
              console.log(`Tím ID: ${team.id}, categoryId: ${team.categoryId}, Názov kategórie (z allAvailableCategories): ${category ? category.name : 'Nenájdená'}`); // LOG: Kategória
 
 
             const groupCell = row.insertCell();
-            // Zobraziť názov skupiny - POUŽIŤ assignedGroup a groupsMap
-            const displayedGroupName = team.assignedGroup ? (groupsMap[team.assignedGroup] || 'Neznáma skupina') : 'Nepriradené';
+            // Zobraziť názov skupiny - EXTRAHOVAŤ Z assignedGroup ID
+            let displayedGroupName = 'Nepriradené'; // Predvolená hodnota
+
+            if (team.assignedGroup && typeof team.assignedGroup === 'string') { // Skontrolovať, či assignedGroup existuje a je reťazec
+                 const groupNameParts = team.assignedGroup.split(' - ');
+                 // Ak po rozdelení existuje druhá časť, použiť ju ako názov skupiny
+                 if (groupNameParts.length > 1) {
+                      displayedGroupName = groupNameParts.slice(1).join(' - '); // Spojiť zvyšné časti, ak ich je viac
+                 } else {
+                      // Ak sa nepodarilo rozdeliť (formát bez " - "), zobraziť celé ID skupiny alebo špecifickú správu
+                      displayedGroupName = team.assignedGroup; // Zobraziť celé ID skupiny
+                      console.warn(`Tím ID: ${team.id} má assignedGroup ID bez oddelovača " - ": "${team.assignedGroup}". Zobrazujem celé ID ako názov skupiny.`);
+                 }
+
+                  // Ak je extrahovaný názov prázdny po orežaní, zobraziť placeholder
+                  if (displayedGroupName.trim() === '') {
+                      displayedGroupName = 'Neznáma skupina (prázdny názov po extrakcii)';
+                  }
+
+
+            } else if (team.assignedGroup) {
+                 // Ak assignedGroup existuje, ale nie je reťazec (čo by nemalo nastať, ale pre istotu)
+                 displayedGroupName = 'Neznáma skupina (neplatný formát ID)';
+                 console.warn(`Tím ID: ${team.id} má assignedGroup s neplatným formátom (nie reťazec):`, team.assignedGroup);
+            }
+
+
             groupCell.textContent = displayedGroupName;
-             console.log(`Tím ID: ${team.id}, assignedGroup: ${team.assignedGroup}, Názov skupiny (z groupsMap): ${displayedGroupName}`); // LOG: Skupina
+             console.log(`Tím ID: ${team.id}, assignedGroup: ${team.assignedGroup}, Zobrazený názov skupiny (z ID): ${displayedGroupName}`); // LOG: Skupina
 
 
             const orderCell = row.insertCell();
