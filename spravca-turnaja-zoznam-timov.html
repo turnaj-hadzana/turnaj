@@ -13,94 +13,102 @@
     <div class="content-wrapper">
         <nav class="left-menu">
             <ul>
-                <li><a href="spravca-turnaja-kategorie.html">Vytvorenie kategórií</a></li>
-                <li><a href="spravca-turnaja-skupiny.html">Vytvorenie skupín</a></li>
-                <li><a href="spravca-turnaja-zoznam-timov.html">Vytvorenie tímov</a></li>
+                <li><a href="spravca-turnaja-kategorie.html">Kategórie</a></li>
+                <li><a href="spravca-turnaja-skupiny.html">Skupiny</a></li>
+                <li><a href="spravca-turnaja-zoznam-timov.html">Zoznam tímov</a></li>
             </ul>
         </nav>
         <main>
             <section id="teamCreationContentSection" class="section-block">
-                  <h2>Vytvorené tímy</h2>
-                  <table id="createdTeamsTable">
-                       <thead>
-                            <tr id="createdTeamsTableHeader">
-                                 </tr>
-                       </thead>
-                       <tbody id="createdTeamsTableBody">
-                            </tbody>
-                  </table>
-             </section>
-         </main>
+                <h2>Vytvorené tímy</h2>
+                <table id="createdTeamsTable">
+                    <thead>
+                        <tr id="createdTeamsTableHeader">
+                            <th data-filter-type="teamName">Názov tímu</th>
+                            <th data-filter-type="category">Kategória</th>
+                            <th data-filter-type="group">Skupina</th>
+                            <th>Poradie v skupine</th>
+                            <th>Akcie</th>
+                        </tr>
+                    </thead>
+                    <tbody id="createdTeamsTableBody">
+                    </tbody>
+                </table>
+            </section>
+        </main>
     </div>
-
     <button id="addButton" class="add-button" title="Vytvoriť tímy">+</button>
-
-    <div id="teamCreationModal" class="modal">
-          <div class="modal-content">
-              <span class="close team-creation-modal-close">&times;</span>
-              <h2 id="teamCreationModalTitle">Vytvoriť tímy</h2>
-              <form id="teamCreationForm">
-                  <div>
-                      <label for="teamNameInput">Základný názov tímu:</label>
-                      <input type="text" id="teamNameInput" required>
-                  </div>
-                   <div id="teamCategoryCountContainer">
-                       </div>
-                           <button type="button" id="addCategoryCountPairButton" class="action-button">Pridať ďalšiu kategóriu</button>
-                           <button type="submit">Vytvoriť tímy</button>
-              </form>
-          </div>
-      </div>
-
-      <div id="manageTeamsModal" class="modal">
-           <div class="modal-content">
-               <span class="close manage-teams-modal-close">&times;</span>
-                <h2 id="baseTeamNameInModal">Tímy: </h2>
-                <div id="teamsListInModal">
-                     </div>
-           </div>
-      </div>
-
-      <div id="clubModal" class="modal">
-            <div class="modal-content">
-                <span class="close club-modal-close">&times;</span>
-                <h2 id="clubModalTitle">Upraviť tím</h2>
+    <div id="teamCreationModal" class="modal">
+        <div class="modal-content">
+            <span class="close team-creation-modal-close">&times;</span>
+            <h2 id="teamCreationModalTitle">Vytvoriť tímy</h2>
+            <form id="teamCreationForm">
+                <div>
+                    <label for="teamNameInput">Základný názov tímu:</label>
+                    <input type="text" id="teamNameInput" required>
+                </div>
+                <div id="teamCategoryCountContainer">
+                </div>
+                <button type="button" id="addCategoryCountPairButton" class="action-button">Pridať ďalšiu kategóriu</button>
+                <button type="submit">Vytvoriť tímy</button>
+            </form>
+        </div>
+    </div>
+    <div id="manageTeamsModal" class="modal">
+        <div class="modal-content">
+            <span class="close manage-teams-modal-close">&times;</span>
+            <h2 id="baseTeamNameInModal">Tímy: </h2>
+            <div id="teamsListInModal">
+            </div>
+        </div>
+    </div>
+    <div id="clubModal" class="modal">
+        <div class="modal-content">
+            <span class="close club-modal-close">&times;</span>
+            <h2 id="clubModalTitle">Upraviť tím / Priradiť klub</h2>
+            <div id="clubFormContent">
                 <form id="clubForm">
                     <div id="clubNameField">
-                         <label for="clubName">Názov tímu:</label>
-                         <input type="text" id="clubName" required>
-                     </div>
-
-                     <div id="clubAssignmentFields">
-                           <div class="form-group">
-                               <label for="clubCategorySelect">Kategória:</label>
-                                <select id="clubCategorySelect" disabled></select> </div>
-                           <div class="form-group">
-                                <label for="clubGroupSelect">Skupina:</label>
-                                <select id="clubGroupSelect">
-                                    <option value="">-- Vyberte skupinu --</option>
-                                </select>
-                           </div>
-                            <div class="form-group">
-                                <label for="orderInGroup">Poradie v skupine:</label>
-                                <input type="number" id="orderInGroup" min="1">
-                            </div>
-                       </div>
-
+                        <label for="clubName">Názov tímu/klubu:</label>
+                        <input type="text" id="clubName" required>
+                    </div>
+                    <div id="clubAssignmentFields">
+                        <div class="form-group">
+                            <label for="clubCategorySelect">Kategória:</label>
+                            <select id="clubCategorySelect"></select>
+                        </div>
+                        <div class="form-group">
+                            <label for="clubGroupSelect">Skupina:</label>
+                            <select id="clubGroupSelect">
+                                <option value="">-- Vyberte skupinu --</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="orderInGroup">Poradie v skupine:</label>
+                            <input type="number" id="orderInGroup" min="1">
+                        </div>
+                    </div>
                     <div id="unassignedClubField">
-                        <label for="unassignedClubSelect">Vyberte nepriradený tím:</label>
+                        <label for="unassignedClubSelect">Vyberte nepriradený tím/klub:</label>
                         <select id="unassignedClubSelect" required>
                             <option value="">-- Vyberte nepriradený tím --</option>
                         </select>
                     </div>
-
-                    <button type="submit" style="margin-top: 20px;">Uložiť zmeny</button>
+                    <button type="submit" style="margin-top: 20px;">Uložiť zmeny / Priradiť</button>
                 </form>
             </div>
+            <div id="clubFilterContent" style="display: none;">
+                <h2 id="filterModalTitle">Filter</h2>
+                <div class="form-group">
+                    <label for="filterSelect">Vyberte hodnotu:</label>
+                    <select id="filterSelect">
+                        <option value="">-- Zobraziť všetko --</option>
+                    </select>
+                </div>
+            </div>
         </div>
-
-
+    </div>
     <script type="module" src="spravca-turnaja-common.js"></script>
     <script type="module" src="spravca-turnaja-zoznam-timov.js"></script>
-     </body>
+</body>
 </html>
