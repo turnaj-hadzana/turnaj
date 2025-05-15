@@ -138,12 +138,16 @@ main {
     width: 100%;
 }
 
-/* --- Individual Section Blocks within Multi-Column Containers --- */
+/* --- Individual Section Blocks within Multi-Column Containers (UPRAVENÉ) --- */
 #groupsContent .section-block,
 #clubsContent .section-block {
     margin-bottom: 0;
     flex: 1 1 300px;
-    min-width: 280px;
+    /* --- UPRAVENÉ pre skoršie zalamovanie --- */
+    min-width: 360px; /* Zväčšená minimálna šírka, aby zalamovanie nastalo skôr */
+    /* --- KONIEC UPRAVENÉ --- */
+    padding: 15px; /* Zabezpečiť, že padding je stále aplikovaný */
+    box-sizing: border-box; /* Zabezpečiť, že padding je zahrnutý v šírke */
 }
 
 
@@ -181,13 +185,11 @@ td:last-child {
 /* --- Action Buttons in Tables (General styles for buttons) (UPRAVENÉ) --- */
 .action-button {
     padding: 5px 10px;
-    /* margin-right: 5px;  ODSTRANENÉ - medzeru budeme riadiť pomocou 'gap' vo flexboxe */
     border: 1px solid #007bff;
     border-radius: 4px;
     cursor: pointer;
     font-size: 0.9em;
-    transition: background-color 0.3s ease, border-color 0.3s ease; /* Pridana farba do transition */
-    /* display: inline-block;  Netreba, flex itemy su flex */
+    transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .action-button:not(.delete-button) {
@@ -197,19 +199,19 @@ td:last-child {
 
 .action-button:not(.delete-button):hover {
     background-color: #0056b3;
-    border-color: #004085; /* Zmena farby borderu pri hover */
+    border-color: #004085;
 }
 
 .action-button:not(.delete-button):active {
     background-color: #004085;
-    border-color: #002752; /* Zmena farby borderu pri active */
+    border-color: #002752;
 }
 
 
 .action-button.delete-button {
     background-color: #dc3545;
     color: white;
-    border-color: #c82333; /* Farba borderu pre delete button */
+    border-color: #c82333;
 }
 
 .action-button.delete-button:hover {
@@ -253,17 +255,15 @@ td:last-child {
 .category-group-table td:last-child {
     white-space: nowrap;
     /* text-align: center; ODSTRANENÉ */
-    /* --- PRIDANÉ/UPRAVENÉ --- */
-    width: 200px; /* Zväčšená šírka stĺpca akcií na 200px */
-    min-width: 200px; /* Zabezpečiť minimálnu šírku na 200px */
-    /* --- KONIEC PRIDANÉ/UPRAVENÉ --- */
-    padding: 5px; /* Polstrovanie vo vnútri bunky (5px na všetkých stranách) */
-    display: flex; /* Použiť flexbox na zoradenie tlačidiel */
-    align-items: center; /* Vertikálne centrovať tlačidlá */
-    justify-content: center; /* Horizontálne centrovať skupinu tlačidiel v rámci paddingu */
+    width: 200px; /* Šírka stĺpca akcií */
+    min-width: 200px; /* Zabezpečiť minimálnu šírku */
+    padding: 5px; /* Polstrovanie vo vnútri bunky */
+    display: flex;
+    align-items: center;
+    justify-content: center;
     gap: 5px; /* Medzera medzi tlačidlami */
 }
-/* Odstránenie margin-right pre action buttony v tejto konkrétnej bunke (už ho netreba kvôli gap) */
+/* Odstránenie margin-right pre action buttony v tejto konkrétnej bunke */
 .category-group-table td:last-child .action-button {
     margin-right: 0;
 }
@@ -307,15 +307,13 @@ td:last-child {
 .group-clubs-table td:last-child {
     white-space: nowrap;
     /* text-align: center; ODSTRANENÉ */
-    /* --- UPRAVENÉ --- */
-    width: 200px; /* Zväčšená šírka stĺpca akcií na 200px */
-    min-width: 200px; /* Zabezpečiť minimálnu šírku na 200px */
-    /* --- KONIEC UPRAVENÉ --- */
+    width: 200px; /* Šírka stĺpca akcií */
+    min-width: 200px; /* Zabezpečiť minimálnu šírku */
     flex-shrink: 0;
     padding: 5px; /* Polstrovanie vo vnútri bunky */
-    display: flex; /* Použiť flexbox na zoradenie tlačidiel */
-    align-items: center; /* Vertikálne centrovať tlačidlá */
-    justify-content: center; /* Horizontálne centrovať skupinu tlačidiel v rámci paddingu */
+    display: flex;
+    align-items: center;
+    justify-content: center;
     gap: 5px; /* Medzera medzi tlačidlami */
 }
 /* Odstránenie margin-right pre action buttony v tejto konkrétnej bunke */
@@ -405,7 +403,7 @@ td:last-child {
 .category-count-pair .action-button.delete-button {
     padding: 3px 8px;
     font-size: 0.8em;
-    margin-left: 10px; /* Medzera pred tlačidlom Odstrániť v tomto konkrétnom kontexte */
+    margin-left: 10px;
 }
 
 
@@ -440,11 +438,9 @@ td:last-child {
 #teamsListInModal li .action-buttons {
     flex-shrink: 0;
     white-space: nowrap;
-    /* --- PRIDANÉ pre medzeru medzi tlačidlami v li --- */
     display: flex;
-    gap: 5px; /* Medzera medzi tlačidlami v li */
+    gap: 5px;
     align-items: center;
-    /* --- KONIEC PRIDANÉ --- */
 }
 /* Odstránenie margin-right pre action buttony v li */
 #teamsListInModal li .action-buttons .action-button {
@@ -595,7 +591,7 @@ td:last-child {
     }
 
     /* #groupsContent .section-block a #clubsContent .section-block
-       použijú pravidlá flex: 1 1 300px; min-width: 280px; definované mimo media queries
+       použijú pravidlá flex: 1 1 300px; min-width: 360px; definované mimo media queries
     */
 
      /* Zabezpečiť, aby posledný blok v flex riadku nemal zbytočný spodný okraj */
