@@ -83,8 +83,8 @@ body {
         } */
         .left-menu {
             /* flex: 0 0 10%;  -- Pôvodné nastavenie */
-            width: 280px; /* Nastavte fixnú šírku, napr. 200px */
-            min-width: 280px; /* Zabezpečí minimálnu šírku */
+            width: 170px; /* Nastavte fixnú šírku, napr. 200px */
+            min-width: 170px; /* Zabezpečí minimálnu šírku */
             background-color: #fff;
             padding: 15px;
             border-radius: 8px;
