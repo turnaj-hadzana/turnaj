@@ -251,6 +251,19 @@
             margin-bottom: 20px;
         }
 
+        /* MEDIA QUERY: Filtre sa zoradia pod seba na menších obrazovkách */
+        @media (max-width: 768px) {
+            .filter-section {
+                flex-direction: column;
+                align-items: stretch; /* Roztiahne položky na celú šírku kontajnera */
+                gap: 10px; /* Menší odstup medzi položkami pri zvislom usporiadaní */
+            }
+
+            .filter-section label {
+                 text-align: left; /* Zarovná text labelu doľava */
+            }
+        }
+
     </style>
 </head>
 <body>
