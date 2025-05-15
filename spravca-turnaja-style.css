@@ -160,7 +160,8 @@ table {
 
 th,
 td {
-    border: 1px solid #ddd;
+    /* border: 1px solid #ddd;  ODSTRANENÉ ORAMOVANIE BUNIEK */
+    border: none; /* Explicitne nastavené na none */
     padding: 10px;
     text-align: left;
 }
@@ -243,7 +244,7 @@ td:last-child {
 /* --- Style for Category Group Table (UPRAVENÉ - šírka na TH) --- */
 .category-group-table {
     border-collapse: collapse;
-    border: none;
+    border: none; /* Zabezpečiť, že tabuľka samotná nemá border */
     overflow: hidden;
     width: 100%;
     table-layout: fixed;
@@ -278,7 +279,7 @@ td:last-child {
 /* --- Style for Club List Table (within #clubsContent or modal) (UPRAVENÉ - šírka na TH) --- */
 .group-clubs-table {
     border-collapse: collapse;
-    border: none;
+    border: none; /* Zabezpečiť, že tabuľka samotná nemá border */
     overflow: hidden;
     width: 100%;
     table-layout: fixed;
@@ -371,7 +372,7 @@ td:last-child {
 }
 
 #teamCategoryCountContainer {
-    border: 1px solid #ddd;
+    border: 1px solid #ddd; /* Toto orámovanie ponechané, ak je to zámer */
     padding: 15px;
     margin-top: 15px;
     border-radius: 5px;
@@ -433,7 +434,7 @@ td:last-child {
 
 #teamsListInModal li {
     background-color: #e9ecef;
-    border: 1px solid #ddd;
+    border: 1px solid #ddd; /* Toto orámovanie li */
     margin-bottom: 8px;
     padding: 10px;
     border-radius: 4px;
