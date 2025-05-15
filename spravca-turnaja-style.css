@@ -494,26 +494,26 @@ td:last-child {
 /* Container for each dynamic Category/Count pair (ZMENENÉ Flex Direction a zarovnanie) */
 .category-count-pair {
     display: flex;
-    flex-direction: column; /* ZMENENÉ: Zoraďte potomkov (select block, input block, button) pod sebou */
-    align-items: flex-start; /* ZMENENÉ: Zarovnajte potomkov na začiatok (vľavo) */
-    margin-bottom: 10px;
-    /* gap: 10px; ODSTRANENÉ - medzera medzi blokmi je riadená margin-bottom na vnútorných divoch */
-    flex-wrap: wrap; /* Ponechané pre prípad, ale v column smere má iný efekt */
-    padding: 10px; /* Pridané polstrovanie do kontajnera */
-    border: 1px solid #eee; /* Pridané orámovanie do kontajnera */
-    border-radius: 5px; /* Zaoblené rohy kontajnera */
-    background-color: #f9f9f9; /* Farba pozadia kontajnera */
+    flex-direction: column; /* Zoraď potomkov (inner divs a tlačidlo) pod sebou */
+    align-items: flex-start; /* Zarovnaj potomkov na začiatok (vľavo) */
+    margin-bottom: 15px; /* Medzera medzi jednotlivými pármi kategória/počet */
+    padding: 10px;
+    border: 1px solid #eee;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+    gap: 10px; /* Medzera medzi stohovanými potomkami (select block, input block, button) */
+    flex-wrap: wrap; /* Ponechané */
 }
 
 /* Inner containers for Label+Select and Label+Input (ZMENENÉ Flex direction na column) */
 .category-count-pair > div { /* Cieľ: selectContainer a inputContainer */
     display: flex;
-    flex-direction: column; /* ZMENENÉ: Zoraďte label a control pod sebou */
-    align-items: flex-start; /* ZMENENÉ: Zarovnajte label a control na začiatok (vľavo) */
-    gap: 5px; /* Pridaná medzera medzi labelom a controlom */
+    flex-direction: column; /* ZMENENÉ: Zoraď label a control pod sebou */
+    align-items: flex-start; /* ZMENENÉ: Zarovnaj label a control na začiatok (vľavo) */
+    gap: 5px; /* Medzera medzi labelom a controlom */
     flex-wrap: wrap; /* Menej relevantné */
-    width: 100%; /* Zabezpečiť, že tieto vnútorné kontajnery zaberú celú šírku Flex kontajnera (column) */
-    margin-bottom: 10px; /* Pridaná medzera POD každým blokom (kategória, počet) */
+    width: 100%; /* Zabezpečiť, že tieto vnútorné kontajnery zaberú celú šírku */
+    /* margin-bottom: 0; ODSTRÁNENÉ - medzera medzi blokmi je riadená gap parenta (.category-count-pair) */
 }
 
 /* Odstrániť spodný okraj z posledného vnútorného divu v páre */
@@ -524,8 +524,9 @@ td:last-child {
 .category-count-pair label {
     flex-shrink: 0;
     min-width: auto; /* Neobmedzovať šírku labelu */
-    margin-bottom: 0; /* Odstrániť spodný okraj, medzera je riešená v gap parenta */
+    margin-bottom: 0; /* Odstrániť spodný okraj */
     margin-right: 0; /* Zabezpečiť, že labely nemajú pravý okraj */
+    font-weight: bold; /* Vrátiť tučné písmo pre labely, ak to je zámer */
 }
 
 /* Modify styles for select and input */
@@ -533,7 +534,7 @@ td:last-child {
 .category-count-pair input[type="number"] {
     display: block; /* ZMENENÉ: Aby zaberali celý riadok v rámci svojho Flex kontajnera (column) */
     width: 100%; /* ZMENENÉ: Aby zaberali celú šírku svojho Flex kontajnera (column) */
-    flex-grow: 1; /* Ponechané */
+    flex-grow: 1;
     margin-bottom: 0; /* Odstrániť spodný okraj */
     margin-right: 0; /* Odstrániť pravý okraj */
     padding: 5px;
@@ -541,7 +542,7 @@ td:last-child {
 }
 
 .category-count-pair input[type="number"] {
-     max-width: none; /* ZMENENÉ: Zrušiť obmedzenie maximálnej šírky */
+     max-width: none; /* ZMENENÉ: Zrušiť obmedzenie maximálnej šírky, aby zaberalo 100% */
      flex-grow: 0; /* Ponechané */
 }
 
@@ -549,9 +550,9 @@ td:last-child {
 .category-count-pair .action-button.delete-button {
     padding: 3px 8px;
     font-size: 0.8em;
-    margin-left: 0; /* ZMENENÉ: Odstrániť ľavý okraj */
-    margin-top: 10px; /* PRIDANÉ: Pridať priestor nad tlačidlom, aby sa oddelilo od inputu */
-    align-self: flex-start; /* ZMENENÉ: Zarovnať tlačidlo na začiatok stĺpca (vľavo) */
+    margin-left: 0; /* Odstrániť ľavý okraj */
+    margin-top: 0; /* ODSTRÁNENÉ - medzera je riadená gap parenta */
+    align-self: flex-start; /* Zarovnaj tlačidlo na začiatok stĺpca (vľavo) */
 }
 
 
