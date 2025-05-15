@@ -3,10 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Skupiny</title>
+    <title>Správca turnaja - Zobrazenie skupín</title>
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="spravca-turnaja-style.css">
     <style>
+        /* Základné štýly pre zobrazenie skupín */
         .category-display {
             margin-bottom: 30px;
             padding: 15px;
@@ -23,13 +25,28 @@
             margin-bottom: 15px;
         }
 
+        /* NOVÉ ŠTÝLY pre usporiadanie skupín vedľa seba */
+        .groups-container {
+            display: flex; /* Použiť Flexbox */
+            flex-wrap: wrap; /* Zalamovať skupiny na ďalší riadok, ak sa nezmestia */
+            gap: 20px; /* Medzera medzi skupinami */
+            justify-content: flex-start; /* Zarovnať skupiny od začiatku riadku */
+        }
+
         .group-display {
-            margin-bottom: 20px;
+            /* Flexbox item štýly */
+            flex: 0 1 300px; /* Nezväčšovať, zmenšovať, preferovaná šírka 300px */
+            /* Pôvodné štýly pre group-display */
+            margin-bottom: 0; /* Odstrániť spodný margin, pretože gap ho nahradí */
             padding: 10px;
             border: 1px solid #ddd;
             border-radius: 4px;
             background-color: #fff;
+            /* Box-sizing zabezpečí, že padding sa započíta do šírky */
+            box-sizing: border-box;
         }
+         /* Koniec NOVÝCH ŠTÝLOV */
+
 
         .group-display h3 {
             color: #0056b3;
@@ -86,11 +103,19 @@
     </style>
 </head>
 <body>
-    <script src="script.js"></script>
-    <h1>Skupiny</h1>
+    <h1>Správca turnaja</h1>
     <div class="content-wrapper">
+        <nav class="left-menu">
+            <ul>
+                <li><a href="spravca-turnaja-kategorie.html">Vytvorenie kategórií</a></li>
+                <li><a href="spravca-turnaja-skupiny.html">Vytvorenie skupín</a></li>
+                <li><a href="spravca-turnaja-zoznam-timov.html">Vytvorenie tímov</a></li>
+                <li><a href="zobrazenie-skupin.html">Zobrazenie skupín</a></li>
+            </ul>
+        </nav>
         <main>
             <section class="section-block">
+                 <h2>Prehľad skupín a tímov</h2>
                  <div id="groupsDisplayContent">
                      </div>
             </section>
