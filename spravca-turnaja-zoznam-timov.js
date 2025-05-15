@@ -79,7 +79,7 @@ function parseTeamName(fullTeamName) {
 // Funkcia na zostavenie názvu tímu z kategórie a základného názvu + suffixu (napr. "U12 CH - Spartak A")
 function buildFullTeamName(categoryPrefix, baseName, suffix = '') {
      const name = `${categoryPrefix} - ${baseName}${suffix ? ' ' + suffix : ''}`;
-     // Odstrániť dvojité medzery vzniknuté spájaním
+     // Odstrániť dvojité medzery vzniknuté spájaním a orieznuť
      return name.replace(/\s\s+/g, ' ').trim();
 }
 
@@ -93,10 +93,22 @@ async function loadAllCategoriesForDynamicSelects() {
          const querySnapshot = await getDocs(categoriesCollectionRef);
          querySnapshot.forEach((doc) => {
              // Použiť ID dokumentu ako hodnotu (napr. "U10", "U12 CH") a name pole ako text zobrazenia
-             allAvailableCategories.push({ id: doc.id, name: doc.data().name });
+             const categoryData = doc.data();
+             // Pridáme kategóriu iba ak existuje a má platné 'name' pole
+             if (categoryData && typeof categoryData.name === 'string' && categoryData.name.trim() !== '') {
+                allAvailableCategories.push({ id: doc.id, name: categoryData.name.trim() });
+             } else {
+                 console.warn("Kategória dokument s ID", doc.id, "má chýbajúce, neplatné alebo prázdne 'name' pole.");
+             }
          });
          // Zoradiť kategórie podľa mena pre lepší prehľad
-         allAvailableCategories.sort((a, b) => a.name.localeCompare(b.name, 'sk-SK'));
+         // Oprava: Ošetrenie prípadu, ak by a.name alebo b.name boli null/undefined
+         allAvailableCategories.sort((a, b) => {
+             const nameA = (a && typeof a.name === 'string') ? a.name : ''; // Ak a alebo a.name chýba, použi prázdny reťazec
+             const nameB = (b && typeof b.name === 'string') ? b.name : ''; // Ak b alebo b.name chýba, použi prázdny reťazec
+             return nameA.localeCompare(nameB, 'sk-SK');
+         });
+
          console.log("Načítané kategórie:", allAvailableCategories);
          // Po načítaní kategórií, aktualizovať všetky dynamické selectboxy
          updateDynamicCategorySelects();
@@ -111,6 +123,7 @@ async function loadAllCategoriesForDynamicSelects() {
 
 // Funkcia na naplnenie selectboxu s kategóriami
 function populateDynamicCategorySelect(selectElement, selectedId = '', availableCategories, categoriesToDisable = []) {
+     if (!selectElement) return;
      selectElement.innerHTML = '<option value="">-- Vyberte kategóriu --</option>'; // Predvolená možnosť
      availableCategories.forEach(category => {
          const option = document.createElement('option');
@@ -129,8 +142,8 @@ function populateDynamicCategorySelect(selectElement, selectedId = '', available
            // Ak počiatočná hodnota nebola platná alebo nebola zadaná, uistiť sa, že je vybraná predvolená možnosť
            selectElement.value = "";
       }
-      // Zablokovať select, ak je k dispozícii len jedna možnosť (predvolená)
-      if (selectElement.options.length <= 1) {
+      // Zablokovať select, ak je k dispozícii len jedna možnosť (predvolená) a nie je vybratá žiadna platná kategória
+      if (selectElement.options.length <= 1 && !selectedId) {
           selectElement.disabled = true;
       } else {
           selectElement.disabled = false;
@@ -140,7 +153,7 @@ function populateDynamicCategorySelect(selectElement, selectedId = '', available
 
 // Funkcia na aktualizáciu všetkých dynamických selectboxov s dostupnými kategóriami
 function updateDynamicCategorySelects() {
-    const allSelectElements = teamCategoryCountContainer.querySelectorAll('.team-category-select-dynamic');
+    const allSelectElements = teamCategoryCountContainer ? teamCategoryCountContainer.querySelectorAll('.team-category-select-dynamic') : [];
     const currentlySelectedCategoryIds = Array.from(allSelectElements).map(select => select.value).filter(value => value !== '');
 
     allSelectElements.forEach(selectElement => {
@@ -160,7 +173,7 @@ function updateDynamicCategorySelects() {
 
 // Funkcia na kontrolu viditeľnosti tlačidla Odstrániť
 function updateRemoveButtonVisibility() {
-    const removeButtons = teamCategoryCountContainer.querySelectorAll('.category-count-pair .delete-button');
+    const removeButtons = teamCategoryCountContainer ? teamCategoryCountContainer.querySelectorAll('.category-count-pair .delete-button') : [];
     // Tlačidlo Odstrániť zobrazíme len ak je viac ako jeden pár kategória/počet
     if (removeButtons.length > 1) {
         removeButtons.forEach(button => button.style.visibility = 'visible');
@@ -172,7 +185,7 @@ function updateRemoveButtonVisibility() {
 
 // Funkcia na kontrolu viditeľnosti tlačidla Pridať ďalšiu kategóriu
 function checkIfAddCategoryCountPairButtonShouldBeVisible() {
-    const allSelectElements = teamCategoryCountContainer.querySelectorAll('.team-category-select-dynamic');
+    const allSelectElements = teamCategoryCountContainer ? teamCategoryCountContainer.querySelectorAll('.team-category-select-dynamic') : [];
     const numberOfPairs = allSelectElements.length;
     const numberOfAvailableCategories = allAvailableCategories.length;
 
@@ -291,7 +304,7 @@ async function addCategoryCountPair(initialCategoryId = null) { // initialCatego
            // Ak tu stále nie sú, je problém v logike otvárania/načítania
            console.warn("Kategórie nie sú načítané pri pridávaní nového páru.");
            // Pokus o načítanie, ale nemusí byť dokončené hneď
-           loadAllCategoriesForDynamicSelects();
+           // loadAllCategoriesForDynamicSelects(); // Volá sa pri otvorení modalu
       }
 
       // Získať aktuálne vybrané kategórie v ostatných selectboxoch (pred naplnením tohto nového)
@@ -405,7 +418,8 @@ if (teamCreationForm) {
             }
              if (selectedCategoryIds.has(categoryId)) {
                   // Nájsť názov kategórie na zobrazenie v chybovej správe
-                 const categoryName = allAvailableCategories.find(cat => cat.id === categoryId)?.name || categoryId;
+                 const category = allAvailableCategories.find(cat => cat.id === categoryId);
+                 const categoryName = category ? category.name : categoryId;
                  alert(`Kategória "${categoryName}" bola vybraná viackrát. Pre každú kategóriu môžete zadať iba jeden počet.`);
                     // Nájsť prvý select s touto duplicitnou hodnotou a zamerať ho
                     const firstDuplicateSelect = teamCategoryCountContainer.querySelector(`.team-category-select-dynamic[value="${categoryId}"]`);
@@ -426,7 +440,8 @@ if (teamCreationForm) {
                // Kontrola, či sa nevytvára príliš veľa tímov pre abecedné označenie (A-Z)
                if (teamCount > 26) {
                    // Nájsť názov kategórie na zobrazenie v chybovej správe
-                    const categoryName = allAvailableCategories.find(cat => cat.id === categoryId)?.name || categoryId;
+                    const category = allAvailableCategories.find(cat => cat.id === categoryId);
+                    const categoryName = category ? category.name : categoryId;
                     alert(`Pre kategóriu "${categoryName}": Pre abecedné označenie je možné vytvoriť maximálne 26 tímov naraz (A-Z). Prosím, znížte počet tímov.`);
                     if (countInput) countInput.focus();
                     hasError = true;
@@ -459,19 +474,17 @@ if (teamCreationForm) {
                  const categoryId = teamPlan.categoryId;
                  const teamCount = teamPlan.count;
                   // Získať názov kategórie pre zostavenie celého názvu tímu a ID
-                  const categoryName = allAvailableCategories.find(cat => cat.id === categoryId)?.name || categoryId;
+                  const category = allAvailableCategories.find(cat => cat.id === categoryId);
+                  const categoryName = category ? category.name : categoryId; // Ak sa názov nenájde, použiť ID
 
 
                  for (let i = 1; i <= teamCount; i++) {
-                      let teamName;
                       let teamSuffixForName = ''; // Suffix pre názov tímu (napr. " A")
-                      let documentSuffix = ''; // Suffix pre Firestore document ID (rovnaký ako suffix názvu)
 
                       // Pridať abecedné označenie (suffix) ak sa vytvára viac ako jeden tím pre tento základný názov a kategóriu
                       if (teamCount > 1) {
                            const letter = String.fromCharCode(65 + (i - 1)); // Generovať 'A', 'B', 'C', ...
                            teamSuffixForName = ` ${letter}`; // Suffix pre názov (s medzerou)
-                           documentSuffix = ` ${letter}`; // Suffix pre ID (s medzerou)
                       }
 
                        // Zostaviť celý názov tímu (napr. "U12 CH - Spartak A")
@@ -576,20 +589,19 @@ async function displayCreatedTeams() {
         const querySnapshot = await getDocs(clubsCollectionRef);
         const teams = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-         // Načítať všetky kategórie, aby sme mohli zobraziť názov kategórie v hlavičke (ak je to potrebné)
+         // Načítať všetky kategórie (pre potreby mapovania názvov kategórií a iných funkcií)
         if (allAvailableCategories.length === 0) {
-             // Načítať kategórie, ale nemusíme čakať, ak sa použijú len pre mapovanie
-             loadAllCategoriesForDynamicSelects(); // Načítať na pozadí pre budúce použitie
+             await loadAllCategoriesForDynamicSelects(); // Načítať kategórie, ak ešte nie sú
         }
-         // Kategórie sa zobrazia z parsovaného názvu tímu, nie z categoryId
+         // Kategórie sa zobrazia z parsovaného názvu tímu, nie z categoryId (ale categoryId je stále užitočné)
+
 
         // Načítať všetky skupiny, aby sme mohli zobraziť názov skupiny
         if (allAvailableGroups.length === 0) {
-             // Načítať skupiny na pozadí
-             loadAllGroups();
+             await loadAllGroups(); // Načítať skupiny na pozadí
         }
          const groupsMap = allAvailableGroups.reduce((map, group) => {
-            map[group.id] = group.name;
+            map[group.id] = group.name; // Mapovať ID skupiny na názov skupiny
             return map;
         }, {});
 
@@ -635,7 +647,6 @@ async function displayCreatedTeams() {
 
             const teamNameCell = row.insertCell();
             // Zobraziť len základný názov tímu v stĺpci "Názov tímu"
-            // Ak má názov formát "Kategória - Názov", zobrazíme "Názov". Ak nie, zobrazíme celý názov.
             teamNameCell.textContent = baseName;
 
 
@@ -736,6 +747,7 @@ async function deleteTeam(teamId) {
 
 // Funkcia na otvorenie modálneho okna Správa tímov pre konkrétny základný názov
 // Predpokladáme, že táto funkcia je volaná z displayCreatedTeams
+// EXPORTOVANÁ pre prípad použitia v spravca-turnaja-script.js
 async function openManageTeamsModal(baseName) {
     console.log("Otváram modál Správa tímov pre základný názov:", baseName);
     if (!manageTeamsModal || !baseTeamNameInModal || !teamsListInModal) {
@@ -857,8 +869,10 @@ async function openManageTeamsModal(baseName) {
                     nameTd.textContent = team.name || 'Neznámy názov'; // Zobraziť celý názov tímu
 
                     const groupTd = document.createElement('td');
-                     const groupNameParts = (team.assignedGroup || '').split(' - '); // Predpoklad formatu ID skupiny "Kategoria - Nazov"
-                    groupTd.textContent = team.assignedGroup ? (groupNameParts.length > 1 ? groupNameParts.slice(1).join(' - ') : team.assignedGroup) : 'Nepriradené'; // Zobraziť názov skupiny alebo 'Nepriradené'
+                     // Predpoklad formatu ID skupiny "Kategoria - Nazov" - zobraziť len názov skupiny
+                    const groupNameParts = (team.assignedGroup || '').split(' - ');
+                    const displayedGroupName = team.assignedGroup ? (groupNameParts.length > 1 ? groupNameParts.slice(1).join(' - ') : team.assignedGroup) : 'Nepriradené';
+                    groupTd.textContent = displayedGroupName;
 
 
                     const orderTd = document.createElement('td');
@@ -895,11 +909,17 @@ async function openManageTeamsModal(baseName) {
                     deleteButton.onclick = async () => {
                         if (confirm(`Naozaj chcete vymazať tím "${team.name}"?`)) {
                             await deleteTeam(team.id); // Použiť funkciu deleteTeam
-                             // Po vymazaní v Správe tímov modále, treba odstrániť položku zo zoznamu
+                             // Po vymazaní v Správe tímov modále, treba odstrániť riadok z tabuľky
                             tr.remove();
                              // Ak po vymazaní nezostali žiadne tímy s týmto základným názvom, zatvoriť modál
-                             const remainingTeams = teamsListInModal.querySelectorAll('li, table tbody tr'); // Skontrolovať li aj tr v tabuľkách
-                             if (remainingTeams.length === 0) {
+                             const remainingTeams = teamsListInModal.querySelectorAll('table tbody tr'); // Skontrolujte len riadky tabuliek
+                             // Skontrolujte, či zostali nejaké tabuľky s riadkami
+                             let remainingRowCount = 0;
+                              teamsListInModal.querySelectorAll('table tbody').forEach(tbody => {
+                                  remainingRowCount += tbody.querySelectorAll('tr').length;
+                              });
+
+                             if (remainingRowCount === 0) {
                                   closeManageTeamsModal();
                              }
                             // Znovu zobraziť zoznam tímov na pozadí
@@ -967,10 +987,19 @@ async function loadAllGroups() {
          const querySnapshot = await getDocs(groupsCollectionRef);
          querySnapshot.forEach((doc) => {
               // Uložiť ID skupiny a názov (ktorý už zrejme obsahuje kategóriu v ID)
-             allAvailableGroups.push({ id: doc.id, name: doc.data().name });
+             const groupData = doc.data();
+              if (groupData && typeof groupData.name === 'string' && groupData.name.trim() !== '') {
+                   allAvailableGroups.push({ id: doc.id, name: groupData.name.trim() }); // Uložiť aj názov skupiny
+              } else {
+                   console.warn("Skupina dokument s ID", doc.id, "má chýbajúce, neplatné alebo prázdne 'name' pole.");
+              }
          });
          // Zoradiť skupiny podľa mena pre lepší prehľad
-         allAvailableGroups.sort((a, b) => a.name.localeCompare(b.name, 'sk-SK'));
+         allAvailableGroups.sort((a, b) => {
+              const nameA = (a && typeof a.name === 'string') ? a.name : '';
+              const nameB = (b && typeof b.name === 'string') ? b.name : '';
+              return nameA.localeCompare(nameB, 'sk-SK');
+         });
          console.log("Načítané skupiny:", allAvailableGroups);
           // Po načítaní skupín naplniť selectbox v modále klubu
           if (clubGroupSelect) {
@@ -1030,7 +1059,7 @@ async function populateUnassignedClubsSelect() {
 
              unassignedTeams.forEach(team => {
                  const option = document.createElement('option');
-                 option.value = team.id; // ID dokumentu tímu
+                 option.value = team.id; // ID dokumentu tímu (čo je celé meno tímu)
                  option.textContent = team.name; // Celý názov tímu (vrátane kategórie)
                  unassignedClubSelect.appendChild(option);
              });
@@ -1051,6 +1080,7 @@ async function populateUnassignedClubsSelect() {
 // Funkcia na otvorenie modálneho okna Priradiť/Upraviť Klub
 // Táto funkcia by pravdepodobne mala byť v spravca-turnaja-script.js alebo common.js a exportovaná
 // Alebo ju môžeme nechať tu, ak je primárne používaná z tohto súboru (Zoznam tímov)
+// EXPORTOVANÁ pre prípad použitia v spravca-turnaja-script.js
 async function openClubModal(clubId = null, mode = 'assign') {
     console.log(`Otváram modál Klub v režime: ${mode}, ID: ${clubId}`);
      if (!clubModal || !clubModalTitle || !clubForm || !clubNameField || !clubAssignmentFields || !unassignedClubField || !clubNameInput || !clubCategorySelect || !clubGroupSelect || !orderInGroupInput || !unassignedClubSelect) {
@@ -1072,6 +1102,11 @@ async function openClubModal(clubId = null, mode = 'assign') {
          populateGroupSelect(clubGroupSelect, null, allAvailableGroups);
      }
 
+     // Načítať kategórie pri otvorení modálu, ak ešte nie sú (potrebné pre zobrazenie kategórie v režime edit/assign)
+     if (allAvailableCategories.length === 0) {
+         await loadAllCategoriesForDynamicSelects();
+     }
+
 
      if (mode === 'assign') {
         clubModalTitle.textContent = 'Priradiť nepriradený tím/klub';
@@ -1089,9 +1124,11 @@ async function openClubModal(clubId = null, mode = 'assign') {
              const selectedId = unassignedClubSelect.value;
              if (selectedId) {
                  try {
+                      // Načítať údaje o vybranom nepriradenom tíme, aby sme zistili jeho kategóriu
                       const clubDoc = await getDoc(doc(clubsCollectionRef, selectedId));
                        if (clubDoc.exists()) {
                             const clubData = clubDoc.data();
+                            // Získať názov kategórie na základe uloženého categoryId
                             const categoryName = allAvailableCategories.find(cat => cat.id === clubData.category)?.name || 'Neznáma kategória';
                             // Zobraziť aktuálnu kategóriu vybraného tímu (len zobraziť, nie vybrať)
                             clubCategorySelect.innerHTML = `<option value="${clubData.category}">${categoryName}</option>`;
@@ -1142,6 +1179,7 @@ async function openClubModal(clubId = null, mode = 'assign') {
                       populateGroupSelect(clubGroupSelect, clubData.assignedGroup, allAvailableGroups);
                  }
 
+
                 // Zobraziť aktuálne poradie v skupine
                 orderInGroupInput.value = (typeof clubData.orderInGroup === 'number' && clubData.orderInGroup > 0) ? clubData.orderInGroup : '';
 
@@ -1172,6 +1210,231 @@ async function openClubModal(clubId = null, mode = 'assign') {
 }
 
 
+// Listener pre odoslanie formulára Priradiť/Upraviť Klub
+if (clubForm) {
+     clubForm.addEventListener('submit', async (event) => {
+         event.preventDefault();
+         console.log("Odosielam formulár Priradiť/Upraviť Klub...");
+
+         const clubName = clubNameInput.value.trim(); // Názov tímu (celý názov v režime edit)
+         const categoryId = clubCategorySelect ? clubCategorySelect.value : null; // categoryId zobrazené, nie menené v modale klubu
+         const groupId = clubGroupSelect ? clubGroupSelect.value : null;
+         let orderInGroup = orderInGroupInput ? parseInt(orderInGroupInput.value, 10) : null; // Používame let, ak bude potrebné nulovať
+
+         let clubIdToUpdate = editingClubId; // V režime edit sa aktualizuje editingClubId
+         let updatedData = {};
+         let clubCategoryFromDb = categoryId; // Predvolene pouzijeme categoryId z modalu, ale v rezime assign ju nacitame
+
+         if (currentClubModalMode === 'assign') {
+             // V režime assign sa aktualizuje vybraný nepriradený tím
+             clubIdToUpdate = unassignedClubSelect ? unassignedClubSelect.value : null;
+             if (!clubIdToUpdate) {
+                 alert("Prosím, vyberte nepriradený tím/klub na priradenie.");
+                 if (unassignedClubSelect) unassignedClubSelect.focus();
+                 return;
+             }
+              // V režime assign neupravujeme názov tímu
+
+              // Pri priradzovaní potrebujeme zistiť uloženú kategóriu tímu z DB
+               try {
+                   const clubDoc = await getDoc(doc(clubsCollectionRef, clubIdToUpdate));
+                   if (clubDoc.exists()) {
+                       const clubData = clubDoc.data();
+                       clubCategoryFromDb = clubData.category; // Získame ID kategórie z DB
+                       updatedData.name = clubData.name; // Použijeme existujúci názov
+                   } else {
+                       console.error("Vybraný nepriradený tím s ID", clubIdToUpdate, "sa nenašiel v databáze.");
+                       alert("Vybraný nepriradený tím sa nenašiel. Prosím, skúste znova.");
+                       return;
+                   }
+               } catch (e) {
+                    console.error("Chyba pri načítaní nepriradeného tímu pre priradenie:", e);
+                    alert("Chyba pri načítaní údajov tímu. Prosím, skúste znova.");
+                    return;
+               }
+
+
+             updatedData = {
+                 ...updatedData, // Zachovať názov a kategóriu načítané z DB
+                 assignedGroup: groupId || null, // null ak nie je vybraná skupina
+                 orderInGroup: (groupId && typeof orderInGroup === 'number' && orderInGroup > 0) ? orderInGroup : null, // null ak nie je vybraná skupina, neplatné alebo nulové poradie
+             };
+
+
+         } else if (currentClubModalMode === 'edit' && clubIdToUpdate) {
+             // V režime edit sa aktualizuje aj názov tímu (celý názov)
+             if (!clubName) {
+                 alert("Prosím, zadajte názov tímu/klubu.");
+                 if (clubNameInput) clubNameInput.focus();
+                 return;
+             }
+
+              // Pri úprave potrebujeme zistiť uloženú kategóriu tímu z DB
+               try {
+                   const clubDoc = await getDoc(doc(clubsCollectionRef, clubIdToUpdate));
+                   if (clubDoc.exists()) {
+                       const clubData = clubDoc.data();
+                       clubCategoryFromDb = clubData.category; // Získame ID kategórie z DB
+                   } else {
+                       console.error("Tím s ID", clubIdToUpdate, "sa nenašiel v databáze pre úpravu.");
+                       alert("Tím sa nenašiel. Prosím, skúste znova.");
+                       return;
+                   }
+               } catch (e) {
+                    console.error("Chyba pri načítaní tímu pre úpravu:", e);
+                    alert("Chyba pri načítaní údajov tímu. Prosím, skúste znova.");
+                    return;
+               }
+
+
+             updatedData = {
+                 name: clubName, // Uložiť celý upravený názov tímu
+                 categoryId: clubCategoryFromDb, // Uložiť pôvodnú kategóriu (nemala by sa meniť v tomto modale)
+                 assignedGroup: groupId || null, // null ak nie je vybraná skupina
+                 orderInGroup: (groupId && typeof orderInGroup === 'number' && orderInGroup > 0) ? orderInGroup : null, // null ak nie je vybraná skupina, neplatné alebo nulové poradie
+                  // createdFromBase sa v tomto modale nemení
+             };
+
+         } else {
+             console.error("Neznámy režim modálu klubu alebo chýbajúce ID tímu/klubu na aktualizáciu.");
+             alert("Vyskytla sa chyba pri určovaní, ktorý tím/klub aktualizovať.");
+             return;
+         }
+
+         // Vynulovať poradie, ak nie je vybraná skupina
+         if (updatedData.assignedGroup === null) {
+             updatedData.orderInGroup = null;
+         }
+
+
+         if (clubIdToUpdate) {
+             const clubDocRef = doc(clubsCollectionRef, clubIdToUpdate);
+
+             // Ak sa v režime edit mení názov tímu, musíme vymazať starý dokument a vytvoriť nový s novým ID (ktoré je názov)
+             // Toto je komplexná operácia a vyžaduje overenie, či nové ID už neexistuje
+              if (currentClubModalMode === 'edit' && updatedData.name !== clubIdToUpdate) {
+                   console.log(`Mení sa názov tímu z "${clubIdToUpdate}" na "${updatedData.name}". Vymažem starý a vytvorím nový dokument.`);
+                   const newDocumentId = updatedData.name;
+                    const newClubDocRef = doc(clubsCollectionRef, newDocumentId);
+
+                    // Skontrolovať, či nové ID už neexistuje
+                    const existingDoc = await getDoc(newClubDocRef);
+                     if (existingDoc.exists()) {
+                          alert(`Tím s názvom "${newDocumentId}" už existuje. Prosím, zvoľte iný názov.`);
+                          if (clubNameInput) clubNameInput.focus();
+                          return;
+                     }
+
+                    // Použiť batch pre atomické vymazanie starého a vytvorenie nového dokumentu
+                     const batch = writeBatch(db);
+                     batch.delete(clubDocRef); // Vymazať starý dokument
+                     batch.set(newClubDocRef, {
+                          ...updatedData,
+                          id: newDocumentId // ID nového dokumentu je nový názov
+                          // Pôvodné createdFromBase by malo byť zachované z pôvodného dokumentu
+                     });
+
+                     // Potrebujeme získať aj pôvodné createdFromBase pre nový dokument
+                     try {
+                          const oldClubDoc = await getDoc(clubDocRef);
+                           if (oldClubDoc.exists()) {
+                                batch.set(newClubDocRef, {
+                                    ...updatedData,
+                                    id: newDocumentId,
+                                    createdFromBase: oldClubDoc.data().createdFromBase || null // Použiť pôvodné createdFromBase
+                               });
+                           } else {
+                                console.warn("Pôvodný dokument tímu pre získanie createdFromBase sa nenašiel.");
+                                 batch.set(newClubDocRef, {
+                                     ...updatedData,
+                                     id: newDocumentId,
+                                      createdFromBase: null // Ak sa nenájde, nastaviť na null
+                                });
+                           }
+                     } catch(e) {
+                          console.error("Chyba pri získavaní pôvodného createdFromBase:", e);
+                           batch.set(newClubDocRef, {
+                                ...updatedData,
+                                id: newDocumentId,
+                                 createdFromBase: null // Ak nastane chyba, nastaviť na null
+                           });
+                     }
+
+
+                     await batch.commit(); // Vykonanie batch operácie
+
+
+                    console.log(`Tím bol úspešne premenovaný z "${clubIdToUpdate}" na "${newDocumentId}".`);
+                     editingClubId = newDocumentId; // Aktualizovať editingClubId na nové ID po úspešnom premenovaní
+
+
+              } else {
+                   // Ak sa názov tímu nemení (alebo režim je assign), len aktualizovať existujúci dokument
+                   await updateDoc(clubDocRef, updatedData);
+                   console.log("Tím/Klub s ID", clubIdToUpdate, "bol úspešne aktualizovaný/priradený.");
+              }
+
+
+             alert("Zmeny boli úspešne uložené.");
+
+             closeModal(clubModal); // Zatvoriť modálne okno
+             displayCreatedTeams(); // Znovu zobraziť zoznam tímov
+              // Ak bol režim 'assign', znovu naplniť zoznam nepriradených tímov, lebo jeden už bol priradený
+              if (currentClubModalMode === 'assign') {
+                   // openClubModal(null, 'assign'); // Znovu otvorit modal v rezime assign
+                   // Alebo jednoducho aktualizovat selectbox:
+                   if(typeof populateUnassignedClubsSelect === 'function') {
+                        populateUnassignedClubsSelect(); // Predpokladá existenciu funkcie
+                   } else {
+                        console.error("Funkcia populateUnassignedClubsSelect nie je dostupná.");
+                   }
+              }
+               // Ak bol režim 'edit' a editovalo sa z modalu Správa tímov, aktualizovať aj ten modal
+               // (Toto by vyžadovalo komplexnejšiu logiku sledovania pôvodu otvorenia modalu klubu)
+
+
+         } else {
+             console.error("Chýba ID tímu/klubu na aktualizáciu.");
+             alert("Vyskytla sa chyba pri ukladaní zmien: chýba ID tímu/klubu.");
+         }
+
+
+     });
+} else { console.error("Club form not found!"); }
+
+
+// Listener pre zatvorenie modálneho okna Priradiť/Upraviť Klub
+if (clubModalClose) {
+     clubModalClose.addEventListener('click', () => {
+          closeModal(clubModal); // Funkcia closeModal by mala byť v common.js
+          // Po zatvorení modalu vynulovať editingClubId a currentClubModalMode
+          editingClubId = null;
+          currentClubModalMode = null;
+           // Po zatvorení modalu klubu (ktorý mohol byť otvorený z modalu Správa tímov)
+           // môže byť potrebné znovu zobraziť modál Správa tímov, ak bol otvorený
+           // Táto logika by bola komplexnejšia a závisela by od toho, ako modaly na seba nadväzujú.
+           // Zatiaľ len aktualizujeme zoznam tímov na pozadí.
+           displayCreatedTeams();
+     });
+}
+
+if (clubModal) {
+     window.addEventListener('click', (event) => {
+         if (event.target === clubModal) {
+             closeModal(clubModal); // Funkcia closeModal by mala byť v common.js
+              // Po zatvorení modalu vynulovať editingClubId a currentClubModalMode
+             editingClubId = null;
+             currentClubModalMode = null;
+              // Po zatvorení modalu klubu (ktorý mohol byť otvorený z modalu Správa tímov)
+              // môže byť potrebné znovu zobraziť modál Správa tímov, ak bol otvorený
+              // Táto logika by bola komplexnejšia a závisela by od toho, ako modaly na seba nadväzujú.
+              // Zatiaľ len aktualizujeme zoznam tímov na pozadí.
+             displayCreatedTeams();
+         }
+     });
+}
+
+
 // --- Inicializácia ---
 
 // Listener na udalost DOMContentLoaded
@@ -1179,14 +1442,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log("DOM plne načítaný pre zoznam tímov.");
 
     // Zobraziť vytvorené tímy pri načítaní stránky
+    // Načítanie kategórií a skupín sa vykonáva už v displayCreatedTeams
     displayCreatedTeams();
-
-    // Načítať všetky kategórie a skupiny pri načítaní stránky
-    // (Môžu byť potrebné pre modály alebo iné časti)
-    // Načítajú sa už v openClubModal a loadAllCategoriesForDynamicSelects/loadAllGroups
-    // ale pre istotu ich môžeme načítať aj tu, ak sú potrebné pre iné inicializačné logiky
-    // loadAllCategoriesForDynamicSelects(); // Toto sa vola v openTeamCreationModal
-    // loadAllGroups(); // Toto sa vola v openClubModal
 
     // ODSTRÁNENÉ - Logika tlačidla "+" je teraz riadená v spravca-turnaja-script.js
     /*
