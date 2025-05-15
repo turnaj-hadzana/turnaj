@@ -46,9 +46,10 @@ body {
 
         .content-wrapper {
             display: flex;
-            max-width: 1200px;
-            margin: 20px auto;
-            padding: 0 10px;
+            max-width: none; /* Odstránenie maximálnej šírky */
+            width: 100%; /* Nastavenie šírky na 100% */
+            margin: 20px 0; /* Margin len hore/dole, nie auto */
+            padding: 0 20px; /* Pridanie bočného polstrovania */
         }
         .left-menu {
             flex: 0 0 200px;
