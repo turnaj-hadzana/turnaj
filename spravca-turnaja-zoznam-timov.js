@@ -562,12 +562,12 @@ async function displayCreatedTeams() {
 
 
          // Načítať všetky kategórie (pre potreby mapovania názvov kategórií a iných funkcií)
+         // POZNÁMKA: Táto funkcia vyžaduje, aby kategórie v DB mali pole 'name'.
+         // Ak nemajú, allAvailableCategories zostane prázdne a názvy kategórií sa nebudú zobrazovať správne.
         if (allAvailableCategories.length === 0) {
              await loadAllCategoriesForDynamicSelects(); // Načítať kategórie, ak ešte nie sú
         }
         console.log("Aktuálne dostupné kategórie (allAvailableCategories):", allAvailableCategories); // LOG: Zoznam kategórií
-
-         // Kategórie sa zobrazia z parsovaného názvu tímu, nie z categoryId (ale categoryId je stále užitočné)
 
 
         // Načítať všetky skupiny, aby sme mohli zobraziť názov skupiny
@@ -610,8 +610,8 @@ async function displayCreatedTeams() {
          `;
 
 
-        // Zoradiť tímy abecedne podľa celého názvu pre konzistentné zobrazenie
-        teams.sort((a, b) => (a.name || '').localeCompare((b.name || ''), 'sk-SK'));
+        // Zoradiť tímy abecedne podľa celého názvu (ID) pre konzistentné zobrazenie
+        teams.sort((a, b) => (a.id || '').localeCompare((b.id || ''), 'sk-SK')); // Zoradiť podľa ID (celý názov)
 
 
         teams.forEach(team => {
@@ -620,14 +620,11 @@ async function displayCreatedTeams() {
             const row = createdTeamsTableBody.insertRow();
             row.dataset.teamId = team.id; // Uložiť ID tímu do riadku pre jednoduchšiu manipuláciu
 
-            // Parsuj názov tímu na zobrazenie - TOTO POTREBUJE ÚPRAVU PODĽA PREDCHÁDZAJÚCICH NÁVRHOV
-            // const { categoryPrefix, baseName } = parseTeamName(team.name);
-
 
             const teamNameCell = row.insertCell();
-            // Zobraziť názov tímu z poľa 'name' dokumentu
-            teamNameCell.textContent = team.name || 'Neznámy názov';
-             console.log(`Tím ID: ${team.id}, Názov: ${team.name}`); // LOG: Názov tímu
+            // Zobraziť celý názov tímu z ID dokumentu
+            teamNameCell.textContent = team.id || 'Neznámy názov'; // Použiť team.id pre celý názov
+             console.log(`Tím ID: ${team.id}, Zobrazený Názov (z ID): ${teamNameCell.textContent}`); // LOG: Názov tímu
 
 
             const categoryCell = row.insertCell();
@@ -675,7 +672,7 @@ async function displayCreatedTeams() {
             deleteButton.textContent = 'Vymazať';
             deleteButton.classList.add('action-button', 'delete-button');
             deleteButton.onclick = async () => {
-                if (confirm(`Naozaj chcete vymazať tím "${team.name}"?`)) {
+                if (confirm(`Naozaj chcete vymazať tím "${team.id}"?`)) { // Potvrdenie pouziva team.id pre cely nazov
                     await deleteTeam(team.id); // Použiť existujúcu funkciu deleteTeam
                     // displayCreatedTeams(); // Znovu zobraziť zoznam po vymazaní - volá sa už v deleteTeam
                 }
