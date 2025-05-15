@@ -534,24 +534,13 @@ if (teamCreationForm) {
 async function displayCreatedTeams() {
     console.log("Zobrazujem vytvorené tímy...");
     // Získať referencie na telo a hlavičku tabuľky
-    const createdTeamsTableBody = document.getElementById('createdTeamsTableBody');
-    const createdTeamsTableHeader = document.getElementById('createdTeamsTableHeader');
-
     if (!createdTeamsTableBody || !createdTeamsTableHeader) {
         console.error("Tabuľka pre vytvorené tímy nenájdená!");
-        // Skús vytvoriť aspoň div s chybou, ak tabuľka neexistuje
-        const teamCreationSection = document.getElementById('teamCreationContentSection');
-        if (teamCreationSection) {
-             teamCreationSection.innerHTML = '<p class="error-message">Chyba: Elementy tabuľky pre tímy sa nenašli.</p>';
-        }
-        return; // Ukončiť, ak sa elementy nenájdu
+        return;
     }
 
-    createdTeamsTableBody.innerHTML = ''; // Vyčistiť telo tabuľky pred pridaním nových riadkov
-
-    // --- KÓD NA NASTAVENIE HLAVIČKY TABUĽKY (OPRAVENÉ) ---
-    // Hlavička sa vytvorí len raz pri prvom načítaní, alebo ak bola vyčistená
-    // Vkladáme priamo TH elementy do TR elementu hlavičky
+    createdTeamsTableBody.innerHTML = ''; // Vyčistiť telo tabuľky pred naplnením
+    // Hlavička sa vytvára len raz pri prvom načítaní, alebo ak bola vyčistená
     if (createdTeamsTableHeader.innerHTML === '') {
          createdTeamsTableHeader.innerHTML = `
               <th>Názov tímu</th>
@@ -560,158 +549,221 @@ async function displayCreatedTeams() {
               <th>Poradie v skupine</th>
               <th>Akcie</th>
          `;
-         console.log("Hlavička tabuľky nastavená."); // Pridaný log pre kontrolu
     }
-    // --- KONIEC KÓDU NA NASTAVENIE HLAVIČKY ---
 
 
     try {
-        // Načítať všetky kluby (tímy) z Firebase
-        console.log("Načítavam dokumenty tímov (clubs) z DB...");
+        // Načítať všetky tímy (clubs) z databázy
         const querySnapshot = await getDocs(clubsCollectionRef);
+        console.log("Načítané dokumenty tímov (clubs) z DB:", querySnapshot.docs.map(doc => ({ id: doc.id, data: doc.data() }))); // LOG: Dokumenty tímov
+
+        // Mapovať dokumenty na polia objektov tímov
         const teams = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        console.log("Načítané dokumenty tímov (clubs) z DB:", teams);
+        console.log("Spracované tímy (teams array):", teams); // LOG: Pole tímov ako objektov
 
-        // Ak je potrebné, načítať kategórie a skupiny (ak už neboli načítané pri DOMContentLoaded)
+
+         // Načítať všetky kategórie (pre potreby mapovania názvov kategórií a iných funkcií)
+         // Tieto by mali byť načítané už pri otvorení stránky, ak nie, načítať ich.
         if (allAvailableCategories.length === 0) {
-             await loadAllCategoriesForDynamicSelects();
+             await loadAllCategoriesForDynamicSelects(); // Načíta kategórie ak ešte nie sú
         }
+        console.log("Aktuálne dostupné kategórie (allAvailableCategories):", allAvailableCategories); // LOG: Zoznam kategórií
+
+
+        // Načítať všetky skupiny (aj keď pre zobrazenie v tabuľke budeme parsovať ID skupiny)
+        // Tieto by mali byť načítané už pri otvorení stránky, ak nie, načítať ich.
         if (allAvailableGroups.length === 0) {
-             await loadAllGroups();
+             await loadAllGroups(); // Načíta skupiny na pozadí
         }
+         console.log("Aktuálne dostupné skupiny (allAvailableGroups):", allAvailableGroups); // LOG: Zoznam skupín
 
-        console.log("Spracované tímy (teams array):", teams);
-        console.log("Aktuálne dostupné kategórie (allAvailableCategories):", allAvailableCategories);
-        console.log("Aktuálne dostupné skupiny (allAvailableGroups):", allAvailableGroups);
+         // Mapa skupín (ID -> Názov) pre rýchle vyhľadávanie názvov (používa sa v Správe tímov modále)
+         const groupsMap = allAvailableGroups.reduce((map, group) => {
+            map[group.id] = group.name; // Mapovať ID skupiny na názov skupiny
+            return map;
+        }, {});
+        // console.log("Mapa skupín (ID -> Názov):", groupsMap); // LOG: Mapa skupín
 
 
-        // Ak nie sú nájdené žiadne tímy
+        // Ak nie sú žiadne tímy, zobraziť správu
         if (teams.length === 0) {
-             // Ak už nebola hlavička nastavená, nastaviť ju aj v tomto prípade (redundantné, ale pre istotu)
+             // Vytvoriť hlavičku, aj keď sú tímy prázdne (ak už neexistuje)
              if (createdTeamsTableHeader.innerHTML === '') {
                   createdTeamsTableHeader.innerHTML = `
                        <th>Názov tímu</th>
                        <th>Kategória</th>
                        <th>Skupina</th>
                        <th>Poradie v skupine</th>
-                        <th>Akcie</th>
+                       <th>Akcie</th>
                   `;
-                  console.log("Hlavička tabuľky nastavená (prípad prázdnych tímov)."); // Pridaný log
              }
-            createdTeamsTableBody.innerHTML = '<tr><td colspan="5">Zatiaľ nie sú vytvorené žiadne tímy.</td></tr>';
-            console.log("Zobrazená správa o žiadnych tímoch.");
-            return; // Ukončiť, ak nie sú tímy
+             // Zobraziť správu "Žiadne tímy" s colspanom
+            createdTeamsTableBody.innerHTML = '<tr><td colspan="5">Zatiaľ nie sú vytvorené žiadne tímy.</td></tr>'; // Colspan na 5 stĺpcov
+            return; // Ukončiť funkciu
         }
 
-        // Ak sú tímy nájdené, zoradiť ich (voliteľné, podľa potreby)
-        // Napr. podľa kategórie, potom skupiny a potom poradia
-        teams.sort((a, b) => {
-            const categoryA = a.categoryId || '';
-            const categoryB = b.categoryId || '';
-            const groupA = a.groupId || '';
-            const groupB = b.groupId || '';
-            const orderA = a.orderInGroup || 0;
-            const orderB = b.orderInGroup || 0;
+         // Vytvoriť hlavičku tabuľky, ak existujú tímy a hlavička ešte nebola vytvorená
+         if (createdTeamsTableHeader.innerHTML === '') {
+                  createdTeamsTableHeader.innerHTML = `
+                       <th>Názov tímu</th>
+                       <th>Kategória</th>
+                       <th>Skupina</th>
+                       <th>Poradie v skupine</th>
+                       <th>Akcie</th>
+                  `;
+             }
 
-            if (categoryA < categoryB) return -1;
-            if (categoryA > categoryB) return 1;
-            if (groupA < groupB) return -1;
-            if (groupA > groupB) return 1;
-            if (orderA < orderB) return -1;
-            if (orderA > orderB) return 1;
-            return 0;
-        });
+        // Zoradiť tímy abecedne podľa celého názvu (ID) pre konzistentné zobrazenie
+        teams.sort((a, b) => (a.id || '').localeCompare((b.id || ''), 'sk-SK')); // Zoradiť podľa ID (celý názov)
 
-        // Vygenerovať riadky tabuľky pre každý tím
+
+        // Prejsť cez každý tím a vytvoriť riadok v tabuľke
         teams.forEach(team => {
-            const tr = document.createElement('tr');
+            // console.log("Spracovávam tím pre zobrazenie:", team); // LOG: Aktuálny tím v cykle
 
-            const nameTd = document.createElement('td');
-            nameTd.textContent = team.name || 'Bez názvu'; // Zobraziť názov alebo placeholder
-            tr.appendChild(nameTd);
+            const row = createdTeamsTableBody.insertRow(); // Vložiť nový riadok do tela tabuľky
+            row.dataset.teamId = team.id; // Uložiť ID tímu do riadku pre jednoduchšiu manipuláciu (napr. pri mazaní)
 
-            // Nájsť názov kategórie podľa ID
+
+            // Bunka pre Názov tímu
+            const teamNameCell = row.insertCell();
+            // Zobraziť názov tímu z poľa 'name' dokumentu (podľa logu toto obsahuje časť bez kategórie)
+            teamNameCell.textContent = team.name || 'Neznámy názov'; // Použiť team.name, ak existuje, inak placeholder
+             // console.log(`Tím ID: ${team.id}, Zobrazený Názov (z name): ${teamNameCell.textContent}`); // LOG: Názov tímu
+
+
+            // Bunka pre Kategóriu
+            const categoryCell = row.insertCell();
+            // Zobraziť kategóriu - POUŽIŤ categoryId a allAvailableCategories
+            // !!! Toto zobrazi názov kategórie LEN AK dokumenty kategórií majú pole 'name' !!!
             const category = allAvailableCategories.find(cat => cat.id === team.categoryId);
-            const categoryName = category ? category.name : (team.categoryId || 'Neznáma kategória');
-            const categoryTd = document.createElement('td');
-            categoryTd.textContent = categoryName;
-            tr.appendChild(categoryTd);
-
-            // Nájsť názov skupiny podľa ID
-             const group = allAvailableGroups.find(grp => grp.id === team.groupId);
-             // Ak skupina nájdená, použiť jej meno, inak zobraziť ID alebo placeholder
-             const groupName = group ? group.name : (team.groupId ? team.groupId.split(' - ').slice(1).join(' - ') : 'Nepriradená'); // Skúsiť zobraziť len názov skupiny z ID ak neexistuje
-             const groupTd = document.createElement('td');
-             groupTd.textContent = groupName;
-             tr.appendChild(groupTd);
-
-            const orderTd = document.createElement('td');
-            orderTd.textContent = team.orderInGroup != null ? team.orderInGroup : '-'; // Zobraziť poradie alebo '-'
-            tr.appendChild(orderTd);
-
-            // Pridať bunku pre akcie (napr. tlačidlo Upraviť, Odstrániť, Priradiť do skupiny atď.)
-            const actionsTd = document.createElement('td');
-            actionsTd.classList.add('actions-cell'); // Pridaj triedu pre štýlovanie akčných tlačidiel
-
-            // Tlačidlo Upraviť/Priradiť
-             const manageButton = document.createElement('button');
-             manageButton.textContent = team.groupId ? 'Upraviť Priradenie' : 'Priradiť do skupiny';
-             manageButton.classList.add('button-small', 'button-manage');
-             manageButton.onclick = () => {
-                  // Tu implementovať logiku na otvorenie modalu pre úpravu priradenia tímu
-                  // Potrebujete funkciu openClubModal alebo podobnú, ktorá zobrazí modal pre úpravu/priradenie
-                  // Táto funkcia musí byť definovaná a prístupná (napr. exportovaná z common.js alebo definovaná globálne)
-                  // Zatiaľ len placeholder log
-                  // console.log(`Kliknuté na Priradiť/Upraviť pre tím: ${team.id}`);
-                  // openClubModal(team.id, team); // Zavolajte funkciu na otvorenie modalu
-                  alert(`Funkcia na priradenie/úpravu tímu ${team.name} ešte nie je plne implementovaná.`);
-             };
-             actionsTd.appendChild(manageButton);
+            categoryCell.textContent = category ? category.name : (team.categoryId || 'Neznáma kategória'); // Ak sa nájde v zozname kategórií (s menom), zobraziť meno, inak zobraziť ID alebo placeholder
+             // console.log(`Tím ID: ${team.id}, categoryId: ${team.categoryId}, Názov kategórie (z allAvailableCategories): ${category ? category.name : 'Nenájdená'}`); // LOG: Kategória
 
 
-            // Tlačidlo Odstrániť (voliteľné, ak chcete umožniť odstránenie tímov zo zoznamu)
-            // const deleteButton = document.createElement('button');
-            // deleteButton.textContent = 'Odstrániť';
-            // deleteButton.classList.add('button-small', 'button-delete');
-            // deleteButton.onclick = async () => {
-            //      if (confirm(`Naozaj chcete odstrániť tím "${team.name || team.id}"?`)) {
-            //           try {
-            //                await deleteDoc(doc(db, 'tournamentData', 'mainTournamentData', 'clubs', team.id));
-            //                alert(`Tím "${team.name || team.id}" bol odstránený.`);
-            //                displayCreatedTeams(); // Obnoviť zoznam
-            //           } catch (error) {
-            //                console.error("Chyba pri odstraňovaní tímu:", error);
-            //                alert("Nepodarilo sa odstrániť tím.");
-            //           }
-            //      }
-            // };
-            // actionsTd.appendChild(deleteButton);
+            // Bunka pre Skupinu
+            const groupCell = row.insertCell();
+            // Zobraziť názov skupiny - EXTRAHOVAŤ Z groupId ID
+            let displayedGroupName = 'Nepriradené'; // Predvolená hodnota pre nepriradené tímy
+
+            // !!! ZMENA: Použiť team.groupId namiesto team.assignedGroup na základe logov !!!
+            if (team.groupId && typeof team.groupId === 'string') { // Skontrolovať, či groupId existuje a je reťazec
+                 const groupNameParts = team.groupId.split(' - '); // Rozdeliť reťazec podľa " - "
+                 // Ak po rozdelení existuje druhá časť (a ďalšie), použiť ju/ich ako názov skupiny
+                 if (groupNameParts.length > 1) {
+                      displayedGroupName = groupNameParts.slice(1).join(' - '); // Spojiť zvyšné časti, ak ich je viac
+                 } else {
+                      // Ak sa nepodarilo rozdeliť (formát bez " - "), zobraziť celé ID skupiny alebo špecifickú správu
+                      displayedGroupName = team.groupId; // Zobraziť celé ID skupiny ako názov
+                      console.warn(`Tím ID: ${team.id} má groupId ID bez oddelovača " - ": "${team.groupId}". Zobrazujem celé ID ako názov skupiny.`);
+                 }
+
+                  // Ak je extrahovaný názov prázdny po orežaní bielych znakov, zobraziť placeholder
+                  if (displayedGroupName.trim() === '') {
+                      displayedGroupName = 'Neznáma skupina (prázdny názov po extrakcii)';
+                  }
 
 
-            tr.appendChild(actionsTd);
+            } else if (team.groupId) {
+                 // Ak groupId existuje, ale nie je reťazec (čo by nemalo nastať, ale pre istotu pri chybných dátach)
+                 displayedGroupName = 'Neznáma skupina (neplatný formát ID)';
+                 console.warn(`Tím ID: ${team.id} má groupId s neplatným formátom (nie reťazec):`, team.groupId);
+            }
+            // Ak team.groupId neexistuje, displayedGroupName zostane 'Nepriradené'
 
-            createdTeamsTableBody.appendChild(tr);
+            groupCell.textContent = displayedGroupName; // Nastaviť text bunky s názvom skupiny
+             // console.log(`Tím ID: ${team.id}, groupId: ${team.groupId}, Zobrazený názov skupiny (z ID): ${displayedGroupName}`); // LOG: Skupina
+
+
+            // Bunka pre Poradie v skupine
+            const orderCell = row.insertCell();
+             // Zobraziť poradie len ak je tím priradený do skupiny (má groupId) A poradie je číslo > 0
+             // !!! ZMENA: Použiť team.groupId v podmienke namiesto team.assignedGroup !!!
+            orderCell.textContent = (team.groupId && typeof team.orderInGroup === 'number' && team.orderInGroup > 0) ? team.orderInGroup : '-'; // Zobraziť poradie, ak je platné, inak '-'
+            orderCell.style.textAlign = 'center'; // Centrovať text v bunke poradia
+             // console.log(`Tím ID: ${team.id}, orderInGroup: ${team.orderInGroup}, Zobrazené poradie: ${orderCell.textContent}`); // LOG: Poradie
+
+
+            // Bunka pre Akcie
+            const actionsCell = row.insertCell();
+            actionsCell.classList.add('actions-cell'); // Pridať triedu pre prípadné štýlovanie bunky s akciami
+            actionsCell.style.textAlign = 'center'; // Centrovanie obsahu akcie
+
+            // Tlačidlo "Upraviť / Priradiť"
+            const editButton = document.createElement('button');
+            editButton.textContent = 'Upraviť / Priradiť';
+            editButton.classList.add('action-button'); // Pridať triedu pre štýlovanie
+            // openClubModal by malo byť dostupné globálne alebo importované
+            // Pri kliknutí na tlačidlo úpravy, otvoriť modál klubu v režime 'edit' pre daný tím
+            editButton.onclick = () => {
+                 // openClubModal funkcia by mala byť definovaná v spravca-turnaja-script.js alebo common.js a dostupná
+                 if (typeof openClubModal === 'function') {
+                      openClubModal(team.id, 'edit'); // Volanie funkcie na otvorenie modálu klubu
+                 } else {
+                      console.error("Funkcia openClubModal nie je dostupná.");
+                      alert("Funkcia na úpravu tímu nie je dostupná.");
+                 }
+            };
+
+
+            // Tlačidlo "Vymazať"
+            const deleteButton = document.createElement('button');
+            deleteButton.textContent = 'Vymazať';
+            deleteButton.classList.add('action-button', 'delete-button'); // Pridať triedy pre štýlovanie
+            // Pri kliknutí na tlačidlo vymazať, potvrdiť a vymazať tím
+            deleteButton.onclick = async () => {
+                if (confirm(`Naozaj chcete vymazať tím "${team.id}"?`)) { // Potvrdenie pouziva team.id pre cely nazov
+                    await deleteTeam(team.id); // Volanie funkcie na vymazanie tímu
+                    // displayCreatedTeams(); // Znovu zobraziť zoznam po vymazaní - volá sa už v deleteTeam
+                }
+            };
+
+            // Použiť Flexbox v bunke s akciami na zarovnanie tlačidiel
+            actionsCell.style.display = 'flex';
+            actionsCell.style.justifyContent = 'center'; // Centrovať tlačidlá horizontálne
+            actionsCell.style.alignItems = 'center'; // Centrovať tlačidlá vertikálne
+            actionsCell.style.gap = '5px'; // Medzera medzi tlačidlami
+
+            // Pridať tlačidlá do bunky Akcie
+            actionsCell.appendChild(editButton);
+            actionsCell.appendChild(deleteButton);
+
+
+            // Pridať všetky bunky k riadku
+            row.appendChild(teamNameCell);
+            row.appendChild(categoryCell);
+            row.appendChild(groupCell);
+            row.appendChild(orderCell);
+            row.appendChild(actionsCell); // Pridať akčnú bunku ako poslednú
+
+
+            // Pridať riadok do tela tabuľky
+            createdTeamsTableBody.appendChild(row);
         });
 
-        console.log("Tímy úspešne zobrazené v tabuľke.");
+
+         // Ak existujú tímy, ale po filtrovaní by neboli žiadne, zobrazila by sa správa v filterTeams,
+         // ale kedze tu nemame filtrovanie, len zobrazenie vsetkych, tato vetva sa pouzije len ak teams.length > 0.
+
 
     } catch (e) {
+        // Spracovanie chýb pri načítaní alebo zobrazovaní tímov
         console.error("Chyba pri zobrazovaní tímov: ", e);
-        // V prípade chyby zobraziť chybovú správu
-         // Ak už nebola hlavička nastavená, nastaviť ju aj v tomto prípade chyby (redundantné, ale pre istotu)
+         // Vytvoriť hlavičku pri chybe, aby bol colspan správny (ak ešte nebola vytvorená)
          if (createdTeamsTableHeader.innerHTML === '') {
-              createdTeamsTableHeader.innerHTML = `
-                   <th>Názov tímu</th>
-                   <th>Kategória</th>
-                   <th>Skupina</th>
-                   <th>Poradie v skupine</th>
-                    <th>Akcie</th>
-              `;
-              console.log("Hlavička tabuľky nastavená (prípad chyby)."); // Pridaný log
-         }
-        createdTeamsTableBody.innerHTML = '<tr><td colspan="5">Nepodarilo sa načítať tímy.</td></tr>';
+                  createdTeamsTableHeader.innerHTML = `
+                       <th>Názov tímu</th>
+                       <th>Kategória</th>
+                       <th>Skupina</th>
+                       <th>Poradie v skupine</th>
+                       <th>Akcie</th>
+                  `;
+             }
+         // Zobraziť chybovú správu s colspanom
+        createdTeamsTableBody.innerHTML = '<tr><td colspan="5">Nepodarilo sa načítať tímy.</td></tr>'; // Colspan na 5 stĺpcov
     }
 }
+
 
 // Funkcia na vymazanie tímu (klubu) z databázy
 async function deleteTeam(teamId) {
