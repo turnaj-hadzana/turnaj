@@ -509,8 +509,8 @@ td:last-child {
 /* Inner containers for Label+Select and Label+Input (ZMENENÉ Flex direction na column a medzery) */
 .category-count-pair > div { /* Cieľ: selectContainer a inputContainer */
     display: flex;
-    flex-direction: column; /* ZMENENÉ: Zoraď label a control pod sebou */
-    align-items: flex-start; /* ZMENENÉ: Zarovnaj label a control na začiatok (vľavo) */
+    flex-direction: column;
+    align-items: flex-start;
     gap: 3px; /* ZMENENÉ: Ešte menšia medzera medzi labelom a controlom */
     flex-wrap: wrap;
     width: 100%;
@@ -561,7 +561,7 @@ td:last-child {
 /* Spacing for buttons at the bottom of the team creation form */
 #teamCreationForm #addCategoryCountPairButton,
 #teamCreationForm button[type="submit"] {
-    /* ODSTRÁNENÝ pôvodný inline style margin-top */
+    /* ODSTRÁNENÝ pôvodný inline style margin-top v HTML */
     /* Pridáme margin-top cez CSS */
     margin-top: 10px; /* Menšia medzera nad tlačidlom Pridať */
 }
@@ -617,16 +617,25 @@ td:last-child {
 /* --- Modal Styles - pokracovanie vseobecnych stylov po specialnych --- */
 /* Style for the Category Select in the Group Modal (NOVÉ/UPRAVENÉ) */
 /* Tieto styly sa tykaju ineho modalu, ponechane alebo mierne upravene */
+.modal-content form div {
+     margin-bottom: 10px; /* ZMENENÉ: Menšia medzera pod divmi vo formulári (pre základný názov tímu a group/club modaly) */
+}
+
+.modal-content form div:last-of-type {
+     margin-bottom: 0; /* Zabezpečiť, že posledný div nemá spodný okraj */
+}
+
+
 #groupModal #groupCategory,
 #clubModal #clubCategory,
 #clubModal #clubGroup,
 #clubModal #orderInGroup,
 #clubModal #clubName,
 #clubModal #unassignedClubSelect {
-    width: calc(100% - 16px); /* Prispôsobiť šírku k novému paddingu */
+    width: calc(100% - 16px); /* Prispôsobiť šírku kvôli paddingu */
     padding: 8px; /* Zjednotené polstrovanie */
     box-sizing: border-box;
-    margin-bottom: 10px; /* Zjednotená medzera */
+    margin-bottom: 0; /* Medzera je riadená na parent div-e */
     border: 1px solid #ccc;
     border-radius: 4px;
     font-size: 0.9em; /* Zjednotené písmo */
@@ -684,22 +693,28 @@ td:last-child {
         max-width: none; /* Zrušiť max-width na mobiloch */
     }
 
-    /* Vstupné polia a selecty vo formulároch */
+    /* Vstupné polia a selecty vo formulároch v modaloch */
      .modal-content form input[type="text"],
      .modal-content form input[type="number"],
-     .modal-content form select,
+     .modal-content form select
+     {
+        width: calc(100% - 16px); /* Prispôsobenie šírky kvôli paddingu */
+        padding: 8px; /* ZMENENÉ: Menšie polstrovanie */
+        margin-bottom: 0; /* Medzera je riadená na parent div-e */
+        font-size: 1em; /* Vrátiť štandardnú veľkosť písma na mobiloch */
+    }
+     /* Konkretne selecty/inputy v group/club modale */
      #groupModal #groupCategory,
      #clubModal #clubCategory,
      #clubModal #clubGroup,
      #clubModal #orderInGroup,
      #clubModal #clubName,
-     #clubModal #unassignedClubSelect
-     {
-        width: calc(100% - 16px); /* Prispôsobenie šírky */
-        padding: 8px; /* ZMENENÉ: Menšie polstrovanie */
-        margin-bottom: 8px; /* ZMENENÉ: Menšia medzera pod inputom/selectom */
-        font-size: 1em; /* Vrátiť štandardnú veľkosť písma na mobiloch */
-    }
+     #clubModal #unassignedClubSelect {
+         width: calc(100% - 16px); /* Prispôsobenie šírky */
+         padding: 8px; /* Zjednotené polstrovanie */
+         margin-bottom: 0; /* Medzera je riadená na parent div-e */
+         font-size: 1em;
+     }
 
 
     /* Filter kategórií/skupín v sekcii Tímy do skupín */
@@ -748,21 +763,26 @@ td:last-child {
           margin-bottom: 0;
      }
 
-     /* Vstupné polia a selecty vo formulároch - desktop */
-     .modal-content form input[type="text"],
-     .modal-content form input[type="number"],
-     .modal-content form select,
+     /* Vstupné polia a selecty vo formulároch v modaloch - desktop */
+    .modal-content form input[type="text"],
+    .modal-content form input[type="number"],
+    .modal-content form select {
+        width: calc(100% - 16px); /* Prispôsobenie šírky kvôli paddingu */
+        padding: 8px; /* Zmenené polstrovanie */
+        margin-bottom: 0; /* Medzera je riadená na parent div-e */
+        font-size: 1em;
+    }
+     /* Konkretne selecty/inputy v group/club modale */
      #groupModal #groupCategory,
      #clubModal #clubCategory,
      #clubModal #clubGroup,
      #clubModal #orderInGroup,
      #clubModal #clubName,
-     #clubModal #unassignedClubSelect
-     {
-        width: calc(100% - 16px); /* Prispôsobenie šírky */
-        padding: 8px; /* Zjednotené polstrovanie */
-        margin-bottom: 10px; /* Zjednotená medzera */
-        font-size: 1em; /* Štandardná veľkosť písma */
+     #clubModal #unassignedClubSelect {
+         width: calc(100% - 16px); /* Prispôsobenie šírky */
+         padding: 8px; /* Zjednotené polstrovanie */
+         margin-bottom: 0; /* Medzera je riadená na parent div-e */
+         font-size: 1em;
      }
 
 }
