@@ -82,8 +82,8 @@ body {
              margin-top: 0; Remove this, filter is now inside content
         } */
         .left-menu {
-            width: 200px;
-            min-width: 200px;
+            width: 1700px;
+            min-width: 170px;
             background-color: #fff;
             padding: 15px;
             border-radius: 8px;
