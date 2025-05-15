@@ -3,7 +3,7 @@
 // Importujte spoločné funkcie a referencie z common.js
 import { db, categoriesCollectionRef, groupsCollectionRef, clubsCollectionRef,
          openModal, closeModal, // populateCategorySelect, populateGroupSelect už nie sú potrebné importovať tu
-         query, where, getDocs, getDoc, setDoc, deleteDoc, updateDoc, writeBatch } from './spravca-turnaja-common.js';
+         query, where, getDocs, getDoc, setDoc, deleteDoc, updateDoc, writeBatch, doc } from './spravca-turnaja-common.js'; // <-- PRIDANÉ 'doc' sem
 
 // Získajte referencie na elementy špecifické pre túto stránku
 const addButton = document.getElementById('addButton');
@@ -188,7 +188,7 @@ if (categoryForm) {
         }
 
         if (currentCategoryModalMode === 'add') {
-            const categoryDocRef = doc(categoriesCollectionRef, categoryName);
+            const categoryDocRef = doc(categoriesCollectionRef, categoryName); // <-- Tu sa používa 'doc'
             try {
                 const existingDoc = await getDoc(categoryDocRef);
                 if (existingDoc.exists()) {
@@ -228,7 +228,7 @@ if (categoryForm) {
                 return;
             }
 
-            const newCategoryDocRef = doc(categoriesCollectionRef, newCategoryName);
+            const newCategoryDocRef = doc(categoriesCollectionRef, newCategoryName); // <-- Tu sa používa 'doc'
             try {
                 const existingDoc = await getDoc(newCategoryDocRef);
                 if (existingDoc.exists()) {
@@ -237,7 +237,7 @@ if (categoryForm) {
                     return;
                 }
 
-                const oldCategoryDocRef = doc(categoriesCollectionRef, oldCategoryName);
+                const oldCategoryDocRef = doc(categoriesCollectionRef, oldCategoryName); // <-- Tu sa používa 'doc'
                 const batch = writeBatch(db);
 
                 batch.set(newCategoryDocRef, {});
@@ -249,7 +249,7 @@ if (categoryForm) {
                      const oldGroupId = groupDoc.id;
                      const groupData = groupDoc.data();
                      const newGroupId = `${newCategoryName} - ${groupData.name}`;
-                     const newGroupDocRef = doc(groupsCollectionRef, newGroupId);
+                     const newGroupDocRef = doc(groupsCollectionRef, newGroupId); // <-- Tu sa používa 'doc'
 
                       const clubsInGroupQuery = query(clubsCollectionRef, where('groupId', '==', oldGroupId));
                       const clubsSnapshot = await getDocs(clubsInGroupQuery);
@@ -263,12 +263,12 @@ if (categoryForm) {
 
                  const unassignedClubsQuery = query(clubsCollectionRef, where('categoryId', '==', oldCategoryName), where('groupId', '==', null));
                  const unassignedClubsSnapshot = await getDocs(unassignedClubsQuery);
-                  unassignedClubsSnapshot.forEach(doc => {
+                  unassignedClubsSnapshot.forEach(doc => { // Toto 'doc' je iné (parameter callbacku), to je v poriadku
                      batch.update(doc.ref, { categoryId: newCategoryName });
                   });
 
 
-                batch.delete(oldCategoryDocRef);
+                batch.delete(oldCategoryDocRef); // <-- Tu sa používa 'doc'
 
                 await batch.commit();
 
