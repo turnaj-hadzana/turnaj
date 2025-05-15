@@ -138,12 +138,17 @@ main {
     width: 100%;
 }
 
-/* --- Individual Section Blocks within Multi-Column Containers --- */
+/* --- Individual Section Blocks within Multi-Column Containers (UPRAVENÉ) --- */
 #groupsContent .section-block,
 #clubsContent .section-block {
-    margin-bottom: 0;
-    flex: 1 1 300px;
-    min-width: 280px;
+    margin-bottom: 0; /* Odstránenie spodného okraja */
+    /* --- UPRAVENÉ PRE FLEXIBILNÉ ROZLOŽENIE --- */
+    /* flex-grow: 1 -> Blok môže rásť, aby vyplnil priestor */
+    /* flex-shrink: 1 -> Blok sa môže zmenšovať */
+    /* flex-basis: 300px -> Základná preferovaná šírka */
+    flex: 1 1 300px; /* Základná flexibilná šírka */
+    min-width: 280px; /* Nesmie byť užšie ako 280px (upravte podľa potreby) */
+    /* --- KONIEC UPRAVENÉ --- */
 }
 
 
@@ -152,7 +157,6 @@ table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 15px;
-    /* table-layout: fixed;  Ak chcete aplikovať na VŠETKY tabuľky */
 }
 
 th,
@@ -232,26 +236,12 @@ td:last-child {
 
 /* --- Koniec úpravy pre nezalamovanie textu --- */
 
-/* --- Style for table inside group/club blocks (UPRAVENÉ) --- */
-#groupsContent .category-group-table, /* Pridaná trieda pre tabuľky v skupinách */
-#clubsContent .section-block table /* Existujúce pravidlo pre tabuľky v kluboch */
- {
-    margin-top: 10px;
-    width: 100%;
-    /* --- PRIDANÉ/UPRAVENÉ --- */
-    table-layout: fixed; /* Zabezpečí, že tabuľka zaberie plnú šírku rodiča */
-    /* --- KONIEC PRIDANÉ/UPRAVENÉ --- */
-}
-
 
 /* Style for Club List (within tables in #clubsContent or modal) */
 .group-clubs-table th,
 .group-clubs-table td {
     padding: 8px;
     font-size: 0.9em;
-     /* Pridajte overflow a text-overflow, ak ich tam ešte nemáte */
-     overflow: hidden;
-     text-overflow: ellipsis;
 }
 
 .group-clubs-table td:first-child {
@@ -263,7 +253,7 @@ td:last-child {
      white-space: nowrap;
      overflow: hidden;
      text-overflow: ellipsis;
-     max-width: 150px;
+     max-width: 150px; /* Prípadné obmedzenie šírky stĺpca názvu tímu */
 }
 
 .group-clubs-table td:last-child {
@@ -474,9 +464,9 @@ td:last-child {
 
     /* Section blocky (všeobecné aj v skupinách/kluboch) sa zoraďujú vertikálne */
     .section-block,
-    #groupsContent .section-block,
-    #clubsContent .section-block {
-        flex: 1 1 100%;
+    #groupsContent .section-block, /* Prekrytie flexbox pravidiel zhora */
+    #clubsContent .section-block {  /* Prekrytie flexbox pravidiel zhora */
+        flex: 1 1 100%; /* Každý blok zaberá plnú šírku */
         min-width: auto;
         margin-bottom: 10px;
     }
@@ -512,6 +502,7 @@ td:last-child {
 }
 
 /* Tablety a stredné desktopy (769px a viac) */
+/* V tejto media query a vyššie sa uplatnia flexbox pravidlá definované hore pre #groupsContent .section-block */
 @media (min-width: 769px) {
      .content-wrapper {
          flex-direction: row;
@@ -535,11 +526,14 @@ td:last-child {
     /* Štandardné section-blocky (ak nie sú vo flex kontajneri ako #groupsContent) */
     .section-block {
          margin-bottom: 20px;
-         flex: none;
+         flex: none; /* Reset flex vlastností */
     }
 
     /* #groupsContent .section-block a #clubsContent .section-block
        použijú pravidlá flex: 1 1 300px; min-width: 280px; definované mimo media queries
+       Toto zabezpečí, že sa zoradia vedľa seba toľko, koľko sa zmestí.
+       Pravidlá pre 2 a 3 stĺpce (577px a 993px) sú odstránené,
+       lebo flexbox to spraví automaticky.
     */
 
      /* Zabezpečiť, aby posledný blok v flex riadku nemal zbytočný spodný okraj */
@@ -549,7 +543,8 @@ td:last-child {
      }
 }
 
-/* Odstránená media query pre min-width: 993px, ktorá definovala 3 stĺpce */
+/* Odstránená media query pre min-width: 993px, ktorá definovala 3 stĺpce pre #groupsContent a #clubsContent */
+/* Flexbox s flex: 1 1 300px a min-width: 280px automaticky vytvorí 3 stĺpce, ak sa zmestia */
 
 
 /* --- Štýl tela, keď je otvorené modálne okno (ponechané) --- */
