@@ -749,7 +749,7 @@ async function displayCreatedTeams() {
               <th>Kategória</th>
               <th>Skupina</th>
               <th>Poradie v skupine</th>
-              <th>Akcie</th>
+              <th></th>
          `;
     }
 
@@ -782,7 +782,7 @@ async function displayCreatedTeams() {
                        <th>Kategória</th>
                        <th>Skupina</th>
                        <th>Poradie v skupine</th>
-                       <th>Akcie</th>
+                       <th></th>
                   `;
              }
             createdTeamsTableBody.innerHTML = '<tr><td colspan="5">Zatiaľ nie sú vytvorené žiadne tímy.</td></tr>';
@@ -796,7 +796,7 @@ async function displayCreatedTeams() {
                        <th>Kategória</th>
                        <th>Skupina</th>
                        <th>Poradie v skupine</th>
-                       <th>Akcie</th>
+                       <th></th>
                   `;
              }
 
@@ -890,7 +890,7 @@ async function displayCreatedTeams() {
                        <th>Kategória</th>
                        <th>Skupina</th>
                        <th>Poradie v skupine</th>
-                       <th>Akcie</th>
+                       <th></th>
                   `;
              }
         createdTeamsTableBody.innerHTML = '<tr><td colspan="5">Nepodarilo sa načítať tímy.</td></tr>';
