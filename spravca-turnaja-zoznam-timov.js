@@ -302,7 +302,7 @@ async function openClubModal(clubId = null, mode = 'assign') {
      }
      // Logika pre režim "Upraviť" (edit)
      else if (mode === 'edit' && clubId) {
-        clubModalTitle.textContent = 'Upraviť tím / Priradiť klub';
+        clubModalTitle.textContent = 'Upraviť tím';
         clubNameField.style.display = 'block';
         clubAssignmentFields.style.display = 'block';
         unassignedClubField.style.display = 'none'; // Skryť pole
