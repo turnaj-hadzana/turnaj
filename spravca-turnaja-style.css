@@ -1,4 +1,3 @@
-/* Filter Container Styles */
 .filter-container {
     margin-bottom: 20px;
     padding: 15px;
@@ -7,90 +6,63 @@
     background-color: #f9f9f9;
     display: flex;
     flex-wrap: wrap;
-    gap: 15px; /* Medzera medzi skupinami filtrov */
-    align-items: flex-end; /* Zarovnaj položky na spodný okraj */
+    gap: 15px;
+    align-items: flex-end;
 }
-
-/* Individual Filter Group */
 .filter-group {
     display: flex;
-    flex-direction: column; /* Uloží label a input/select pod seba */
-    gap: 5px; /* Medzera medzi labelom a inputom/selectom */
-    flex-grow: 1; /* Umožní filter skupinám roztiahnuť sa */
-    flex-basis: 200px; /* Základná šírka pred roztiahnutím/zmenšením */
+    flex-direction: column;
+    gap: 5px;
+    flex-grow: 1;
+    flex-basis: 200px;
 }
-
 .filter-group label {
     font-weight: bold;
-    font-size: 0.9em; /* Menšie písmo pre label */
-    margin-bottom: 0; /* Medzera riadená cez gap v parentovi */
+    font-size: 0.9em;
+    margin-bottom: 0;
 }
-
 .filter-group input[type="text"],
 .filter-group select {
     padding: 8px;
     border-radius: 4px;
     border: 1px solid #ccc;
     font-size: 1em;
-    width: 100%; /* Aby zaberali celú šírku svojho kontajnera */
-    box-sizing: border-box; /* Zahrnúť padding do šírky */
+    width: 100%;
+    box-sizing: border-box;
 }
-
-/* Prispôsobenie šírky pre selecty, aby neboli príliš široké na veľkých obrazovkách */
 .filter-group select {
-    max-width: 300px; /* Maximálna šírka pre selecty */
+    max-width: 300px;
 }
-
-/* Responsive adjustments for filter container */
 @media (max-width: 600px) {
     .filter-container {
-        flex-direction: column; /* Na malých obrazovkách uložiť filtre pod seba */
-        align-items: stretch; /* Roztiahnuť položky na celú šírku */
+        flex-direction: column;
+        align-items: stretch;
     }
-
     .filter-group {
-        flex-basis: auto; /* Zrušiť základnú šírku */
+        flex-basis: auto;
     }
-
-     .filter-group select {
-          max-width: none; /* Zrušiť max-width na malých obrazovkách */
-     }
+    .filter-group select {
+        max-width: none;
+    }
 }
-
-
-/* Filter Area */
-/* Zdedí styles from .filter-container */
 #clubsFilterContainer {
-     /* Možno pridať nejaké špecifické pravidlá, ak sú potrebné */
 }
-
 #clubsFilterContainer label {
-    /* Zdedí styles from .filter-group label */
 }
-
 #clubsFilterContainer select {
-    /* Zdedí styles from .filter-group select */
-    /* Ak je potrebná špecifická šírka pre selecty v tomto kontajneri */
-     /* max-width: 250px; */
 }
-
-/* --- Štýl tela, keď je otvorené modálne okno (ponechané) --- */
 body.modal-open .left-menu {
     opacity: 0.5;
     pointer-events: none;
 }
-
 body.modal-open .left-menu a {
     cursor: default;
 }
-
 body.modal-open main {
     opacity: 0.5;
     pointer-events: none;
     user-select: none;
 }
-
-/* --- General Layout Container --- */
 .content-wrapper {
     display: flex;
     width: 100%;
@@ -99,8 +71,6 @@ body.modal-open main {
     box-sizing: border-box;
     gap: 20px;
 }
-
-/* --- Left Menu --- */
 .left-menu {
     background-color: #fff;
     padding: 15px;
@@ -113,17 +83,14 @@ body.modal-open main {
     overflow-y: auto;
     z-index: 1002;
 }
-
 .left-menu ul {
     list-style: none;
     padding: 0;
     margin: 0;
 }
-
 .left-menu li {
     margin-bottom: 10px;
 }
-
 .left-menu a {
     text-decoration: none;
     color: #007bff;
@@ -134,17 +101,13 @@ body.modal-open main {
     transition: background-color 0.2s ease;
     white-space: nowrap;
 }
-
 .left-menu a:hover {
     background-color: #e9ecef;
     color: #0056b3;
 }
-
 .left-menu a:active {
     color: #004085;
 }
-
-/* --- Main Content Area --- */
 main {
     flex-grow: 1;
     padding: 0;
@@ -152,8 +115,6 @@ main {
     background-color: transparent;
     min-width: 0;
 }
-
-/* --- General Section Block Styling --- */
 .section-block {
     margin-bottom: 20px;
     padding: 15px;
@@ -162,8 +123,6 @@ main {
     background-color: #fefefe;
     box-sizing: border-box;
 }
-
-/* --- Specific Flex Containers for Multi-Column Sections (Groups, Clubs) --- */
 #groupsContent,
 #clubsContent {
     display: flex;
@@ -174,8 +133,6 @@ main {
     align-items: flex-start;
     width: 100%;
 }
-
-/* --- Individual Section Blocks within Multi-Column Containers --- */
 #groupsContent .section-block,
 #clubsContent .section-block {
     margin-bottom: 0;
@@ -184,72 +141,51 @@ main {
     padding: 15px;
     box-sizing: border-box;
 }
-
-
-/* --- Tables (General) --- */
 table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 15px;
 }
-
 th,
 td {
     border: none;
     padding: 10px;
     text-align: left;
 }
-
 #categoryTable th, #clubsTable th, .category-group-table th, .group-clubs-table th, #createdTeamsTable th,
 #manageTeamsModal .group-clubs-table th, #clubModal .group-clubs-table th {
-     background-color: #f2f2f2;
-     color: #333;
-     font-weight: bold;
-     text-align: left;
-     padding: 12px 15px;
-     font-size: 0.9em;
-     white-space: nowrap;
+    background-color: #f2f2f2;
+    color: #333;
+    font-weight: bold;
+    text-align: left;
+    padding: 12px 15px;
+    font-size: 0.9em;
+    white-space: nowrap;
 }
 #categoryTable td, #clubsTable td, .category-group-table td, .group-clubs-table td, #createdTeamsTable td,
 #manageTeamsModal .group-clubs-table td, #clubModal .group-clubs-table td {
-     text-align: left;
-     padding: 10px 15px;
-     font-size: 0.9em;
-     white-space: nowrap;
+    text-align: left;
+    padding: 10px 15px;
+    font-size: 0.9em;
+    white-space: nowrap;
 }
-
-
 th {
     background-color: #f2f2f2;
     font-weight: bold;
 }
-
 tbody tr:nth-child(even) {
     background-color: #f9f9f9;
 }
-
 tbody tr:hover {
     background-color: #e9e9e9;
 }
-
-
-#categoryTable tbody tr:hover,
-#clubsTable tbody tr:hover,
-.category-group-table tbody tr:hover,
-.group-clubs-table tbody tr:hover,
-#createdTeamsTable tbody tr:hover,
-#manageTeamsModal .group-clubs-table tbody tr:hover,
-#clubModal .group-clubs-table tbody tr:hover
-{
-   cursor: pointer;
+#createdTeamsTable th[data-filter-type]:hover {
+    cursor: pointer;
+    background-color: #e2e2e2;
 }
-
-
 td:last-child {
     text-align: center;
 }
-
-/* --- Action Buttons in Tables (General styles for buttons) --- */
 .action-button {
     padding: 5px 10px;
     border: 1px solid #007bff;
@@ -258,56 +194,41 @@ td:last-child {
     font-size: 0.9em;
     transition: background-color 0.3s ease, border-color 0.3s ease;
 }
-
 .action-button:not(.delete-button) {
     background-color: #007bff;
     color: white;
 }
-
 .action-button:not(.delete-button):hover {
     background-color: #0056b3;
     border-color: #004085;
 }
-
 .action-button:not(.delete-button):active {
     background-color: #004085;
     border-color: #002752;
 }
-
-
 .action-button.delete-button {
     background-color: #dc3545;
     color: white;
     border-color: #c82333;
 }
-
 .action-button.delete-button:hover {
     background-color: #c82333;
     border-color: #bd2130;
 }
-
 .action-button.delete-button:active {
     background-color: #bd2130;
     border-color: #a71d2a;
 }
-
-
-/* --- Úprava pre nezalamovanie textu v sekcii Skupiny --- */
 #groupsContent .section-block h2 {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
-
 #groupsContent .category-group-table td:first-child {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
-/* --- Koniec úpravy pre nezalamovanie textu v sekcii Skupiny --- */
-
-
-/* --- Style for Category Group Table (UPRAVENÉ - šírka na TH) --- */
 .category-group-table {
     border-collapse: collapse;
     border: none;
@@ -317,15 +238,11 @@ td:last-child {
     font-size: 0.9em;
     margin-top: 10px;
 }
-
-/* Set width on the header cell for the action column */
 .category-group-table th:last-child {
     width: 200px;
     min-width: 200px;
     white-space: nowrap;
 }
-
-/* Ensure the action column's data cell behaves as flex container */
 .category-group-table td:last-child {
     white-space: nowrap;
     padding: 5px;
@@ -334,443 +251,254 @@ td:last-child {
     justify-content: center;
     gap: 5px;
 }
-/* Odstránenie margin-right pre action buttony v tejto konkrétnej bunke */
-.category-group-table td:last-child .action-button {
-    margin-right: 0;
-}
-
-
-/* --- Style for Club List Table (within #clubsContent or modal) --- */
 .group-clubs-table {
     border-collapse: collapse;
     border: none;
-    width: auto;
-    table-layout: auto;
-    font-size: 0.9em;
-    margin-top: 0;
-}
-
-/* Štýly pre bunky v group-clubs-table, vrátane text-overflow */
-.group-clubs-table th,
-.group-clubs-table td {
-    padding: 8px;
-    font-size: 0.9em;
     overflow: hidden;
-    text-overflow: ellipsis;
+    width: 100%;
+    table-layout: fixed;
+    font-size: 0.9em;
+    margin-top: 10px;
+}
+.group-clubs-table th:last-child {
+    width: 200px;
+    min-width: 200px;
     white-space: nowrap;
 }
-
-/* Zabezpečiť, aby sa prvý stĺpec (Názov tímu) v tabuľkách Správa tímov modálu nezarezával a nezalamoval */
-#manageTeamsModal .group-clubs-table td:first-child,
-#clubModal .group-clubs-table td:first-child {
-    overflow: visible;
-    text-overflow: clip;
+.group-clubs-table td:last-child {
     white-space: nowrap;
-}
-
-
-/* Adjust column widths for table-layout: auto */
-.group-clubs-table th:first-child,
-.group-clubs-table td:first-child {
-    text-align: left;
-    padding: 8px 5px;
-    width: auto;
-    min-width: 100px;
-}
-
-.group-clubs-table th:nth-child(2), /* Hlavička stĺpca Skupina */
-.group-clubs-table td:nth-child(2) { /* Bunka stĺpca Skupina */
-     white-space: nowrap;
-     overflow: hidden;
-     text-overflow: ellipsis;
-     width: 100px;
-     min-width: 100px;
-}
-
-.group-clubs-table th:nth-child(3), /* Hlavička stĺpca Poradie */
-.group-clubs-table td:nth-child(3) { /* Bunka stĺpca Poradie */
-     white-space: nowrap;
-     overflow: hidden;
-     text-overflow: ellipsis;
-     width: 60px;
-     min-width: 60px;
-     text-align: center;
-}
-
-
-/* Set width on the header cell for the action column */
-.group-clubs-table th:last-child,
-.group-clubs-table td:last-child {
-     width: 150px;
-     min-width: 150px;
-     white-space: nowrap;
-     flex-shrink: 0;
-     text-align: center;
-}
-
-/* Ensure the action column's data cell behaves as flex container */
-.group-clubs-table td:last-child {
-    flex-shrink: 0;
     padding: 5px;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 5px;
 }
-/* Odstránenie margin-right pre action buttony v tejto konkrétnej bunke */
-.group-clubs-table td:last-child .action-button {
-    margin-right: 0;
-}
-
-
-/* Style for Category Table */
-#categoryTable {
+#createdTeamsTable {
     border-collapse: collapse;
     width: 100%;
     border: none;
     overflow: hidden;
     table-layout: fixed;
+    font-size: 0.9em;
+    margin-top: 15px;
 }
-
-/* Set width on the header cell for the action column */
-#categoryTable th:last-child {
+#createdTeamsTable th,
+#createdTeamsTable td {
+}
+#createdTeamsTable thead {
+}
+#createdTeamsTableHeader {
+}
+#createdTeamsTable th:last-child,
+#manageTeamsModal .group-clubs-table th:last-child, #clubModal .group-clubs-table th:last-child {
     width: 200px;
     min-width: 200px;
     white-space: nowrap;
 }
-
-/* Ensure the action column's data cell behaves as flex container */
-#categoryTable td:last-child {
-     white-space: nowrap;
-     padding: 5px;
-     display: flex;
-     align-items: center;
-     justify-content: center;
-     gap: 5px;
+#createdTeamsTable td:last-child,
+#manageTeamsModal .group-clubs-table td:last-child, #clubModal .group-clubs-table td:last-child {
+    white-space: nowrap;
+    padding: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
 }
-/* Odstránenie margin-right pre action buttony v tejto konkrétnej bunke */
-#categoryTable td:last-child .action-button {
-    margin-right: 0;
-}
-
-/* Team Creation Specific Styles */
 #teamCreationContentSection {
-    /* Zdedí všeobecné .section-block štýly */
 }
-
+#teamCreationForm label,
+#teamCreationForm input,
+#teamCreationForm select {
+    display: block;
+    margin-bottom: 10px;
+}
 #teamCategoryCountContainer {
-    border: 1px solid #ddd;
+    margin-top: 15px;
     padding: 10px;
-    margin-top: 10px;
-    border-radius: 5px;
-    background-color: #f9f9f9;
+    border: 1px solid #eee;
+    border-radius: 4px;
+    background-color: #fcfcfc;
 }
-
-#teamCategoryCountContainer h3 {
-    margin-top: 0;
-    border-bottom: none;
-    padding-bottom: 0;
-}
-
-/* Container for each dynamic Category/Count pair */
 .category-count-pair {
     display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    margin-bottom: 8px;
-    padding: 8px;
-    border: 1px solid #eee;
-    border-radius: 5px;
-    background-color: #fff;
-    gap: 5px;
-    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 10px;
 }
-
-/* Inner containers for Label+Select and Label+Input */
-.category-count-pair > div {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 3px;
-    flex-wrap: wrap;
-    width: 100%;
-}
-
-.category-count-pair label {
-    flex-shrink: 0;
-    min-width: auto;
-    margin-bottom: 0;
-    margin-right: 0;
-    font-weight: bold;
-    font-size: 0.9em;
-}
-
-/* Modify styles for select and input */
-.category-count-pair select,
-.category-count-pair input[type="number"] {
-    display: block;
-    width: 100%;
+.category-count-pair select {
     flex-grow: 1;
-    margin-bottom: 0;
-    margin-right: 0;
-    padding: 4px;
-    box-sizing: border-box;
-    font-size: 0.9em;
+    max-width: 200px;
+    padding: 5px;
 }
-
 .category-count-pair input[type="number"] {
-     max-width: none;
-     flex-grow: 0;
+    width: 60px;
+    padding: 5px;
 }
-
-/* Modify delete button styling */
-.category-count-pair .action-button.delete-button {
-    padding: 2px 6px;
-    font-size: 0.7em;
-    margin-left: 0;
-    margin-top: 0;
-    align-self: flex-start;
-}
-
-/* Spacing for buttons at the bottom of the team creation form */
-#teamCreationForm #addCategoryCountPairButton,
-#teamCreationForm button[type="submit"] {
-    margin-top: 10px;
-}
-
-/* Ensure the submit button still has a bit more space above */
-#teamCreationForm button[type="submit"] {
-    margin-top: 15px;
-}
-
-
-/* Manage Teams Modal Specific Styles */
-#teamsListInModal {
-    margin-top: 15px;
-}
-
-#teamsListInModal ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
-#teamsListInModal li {
-    background-color: #e9ecef;
-    border: 1px solid #ddd;
-    margin-bottom: 8px;
-    padding: 8px;
+.category-count-pair .remove-button {
+    padding: 5px;
+    background-color: #dc3545;
+    color: white;
+    border: none;
     border-radius: 4px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    word-break: break-word;
+    cursor: pointer;
     font-size: 0.9em;
 }
-
-#teamsListInModal li span {
-    flex-grow: 1;
-    margin-right: 8px;
+.category-count-pair .remove-button:hover {
+    background-color: #c82333;
 }
-
-#teamsListInModal li .action-buttons {
-    flex-shrink: 0;
-    white-space: nowrap;
+.add-button {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background-color: #28a745;
+    color: white;
+    font-size: 2em;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
     display: flex;
-    gap: 4px;
+    justify-content: center;
+    align-items: center;
+    transition: background-color 0.3s ease;
+}
+.add-button:hover {
+    background-color: #218838;
+}
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1001;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.4);
+    justify-content: center;
     align-items: center;
 }
-
-/* --- Modal Styles - pokracovanie vseobecnych stylov po specialnych --- */
+.modal-content {
+    background-color: #fefefe;
+    margin: auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 90%;
+    max-width: 600px;
+    border-radius: 8px;
+    position: relative;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+.modal-content h2 {
+    margin-top: 0;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
 .modal-content form div {
-     margin-bottom: 10px;
+    margin-bottom: 15px;
 }
-
-.modal-content form div:last-of-type {
-     margin-bottom: 0;
+.modal-content form label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
 }
-
-
-#groupModal #groupCategory,
-#clubModal #clubCategory,
-#clubModal #clubGroup,
-#clubModal #orderInGroup,
-#clubModal #clubName,
-#clubModal #unassignedClubSelect {
-    width: calc(100% - 16px);
-    padding: 8px;
-    box-sizing: border-box;
-    margin-bottom: 0;
+.modal-content form input[type="text"],
+.modal-content form input[type="number"],
+.modal-content form select {
+    width: calc(100% - 22px);
+    padding: 10px;
     border: 1px solid #ccc;
     border-radius: 4px;
-    font-size: 0.9em;
+    box-sizing: border-box;
+    font-size: 1em;
 }
-
-
-/* --- Media Queries --- */
-
-/* Mobilné zariadenia (max 768px) */
+.modal-content form button[type="submit"] {
+    background-color: #007bff;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1em;
+    transition: background-color 0.3s ease;
+}
+.modal-content form button[type="submit"]:hover {
+    background-color: #0056b3;
+}
+.modal-content .close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    cursor: pointer;
+}
+.modal-content .close:hover,
+.modal-content .close:focus {
+    color: black;
+    text-decoration: none;
+}
+.modal-content .form-group {
+    margin-bottom: 15px;
+}
 @media (max-width: 768px) {
     .content-wrapper {
         flex-direction: column;
         padding: 0 10px;
+    }
+    .left-menu {
+        position: static;
+        margin-bottom: 20px;
+        width: 100%;
+        max-height: none;
+        overflow-y: visible;
+    }
+    main {
+        width: 100%;
+    }
+    #groupsContent,
+    #clubsContent {
+        flex-direction: column;
         gap: 10px;
     }
-
-    .left-menu {
-        flex: none;
-        width: 100%;
-        margin-right: 0;
-        margin-bottom: 10px;
-        position: static;
-        max-height: none;
-        padding: 10px;
-    }
-
-    main {
-        flex-basis: auto;
-        width: 100%;
-        padding: 0;
-        min-width: 0;
-    }
-
-    /* Section blocky (všeobecné aj v skupinách/kluboch) sa zoraďujú vertikálne */
-    .section-block,
     #groupsContent .section-block,
     #clubsContent .section-block {
-        flex: 1 1 100%;
-        min-width: auto;
-        margin-bottom: 10px;
+        min-width: 100%;
     }
-
-    .section-block:last-child,
-    #groupsContent .section-block:last-child,
-    #clubsContent .section-block:last-child {
-         margin-bottom: 10px;
-    }
-
-
-    /* Modálne okno na malých obrazovkách */
     .modal-content {
         width: 95%;
-        margin: 5% auto;
-        padding: 10px;
-        max-width: none;
     }
-
-    /* Vstupné polia a selecty vo formulároch v modaloch */
-     .modal-content form input[type="text"],
-     .modal-content form input[type="number"],
-     .modal-content form select
-     {
-        width: calc(100% - 16px);
-        padding: 8px;
-        margin-bottom: 0;
-        font-size: 1em;
-    }
-     /* Konkretne selecty/inputy v group/club modale */
-     #groupModal #groupCategory,
-     #clubModal #clubCategory,
-     #clubModal #clubGroup,
-     #clubModal #orderInGroup,
-     #clubModal #clubName,
-     #clubModal #unassignedClubSelect {
-         width: calc(100% - 16px);
-         padding: 8px;
-         margin-bottom: 0;
-         font-size: 1em;
-     }
-
-    /* Filter v zozname tímov na mobiloch */
-     .filter-container {
-          flex-direction: column;
-          align-items: stretch;
-          gap: 10px;
-     }
-     .filter-group {
-          flex-basis: auto;
-     }
-      .filter-group select,
-      .filter-group input[type="text"] {
-           max-width: none;
-      }
-
-
-}
-
-/* Tablety a stredné desktopy (769px a viac) */
-@media (min-width: 769px) {
-     .content-wrapper {
-         flex-direction: row;
-         gap: 20px;
-         padding: 0 20px;
-     }
-
-     .left-menu {
-          flex: 0 0 200px;
-          margin-right: 0;
-          position: sticky;
-          max-height: calc(100vh - 110px);
-     }
-
-     main {
-         flex-grow: 1;
-         flex-basis: 0;
-         padding: 0;
-          min-width: 0;
-     }
-
-    /* Štandardné section-blocky (ak nie sú vo flex kontajneri ako #groupsContent) */
-    .section-block {
-         margin-bottom: 20px;
-         flex: none;
-    }
-
-    /* #groupsContent .section-block a #clubsContent .section-block
-       použijú pravidlá flex: 1 1 300px; min-width: 380px; definované mimo media queries
-    */
-
-     /* Zabezpečiť, aby posledný blok v flex riadku nemal zbytočný spodný okraj */
-     #groupsContent .section-block:last-child,
-     #clubsContent .section-block:last-child {
-          margin-bottom: 0;
-     }
-
-     /* Vstupné polia a selecty vo formulároch v modaloch - desktop */
     .modal-content form input[type="text"],
     .modal-content form input[type="number"],
     .modal-content form select {
-        width: calc(100% - 16px);
-        padding: 8px;
-        margin-bottom: 0;
-        font-size: 1em;
+        width: calc(100% - 20px);
     }
-     /* Konkretne selecty/inputy v group/club modale */
-     #groupModal #groupCategory,
-     #clubModal #clubCategory,
-     #clubModal #clubGroup,
-     #clubModal #orderInGroup,
-     #clubModal #clubName,
-     #clubModal #unassignedClubSelect {
-         width: calc(100% - 16px);
-         padding: 8px;
-         margin-bottom: 0;
-         font-size: 1em;
-     }
-
-      /* Filter v zozname tímov na desktopoch */
-     .filter-container {
-          flex-direction: row; /* Späť na riadok */
-          align-items: flex-end; /* Zarovnaj na spodok */
-          gap: 15px;
-     }
-      .filter-group {
-           flex-basis: 200px; /* Základná šírka pre filter skupinu */
-           flex-grow: 1; /* Umožni roztiahnutie */
-     }
-
-      .filter-group select {
-           max-width: 300px; /* Obmedziť šírku selectov */
-      }
-
+    .category-count-pair {
+        flex-direction: column;
+        gap: 5px;
+        align-items: stretch;
+    }
+    .category-count-pair select,
+    .category-count-pair input[type="number"] {
+        max-width: none;
+        width: 100%;
+    }
+}
+#clubModal .modal-content #clubFormContent,
+#clubModal .modal-content #clubFilterContent {
+    width: 100%;
+}
+#filterSelect {
+    width: calc(100% - 16px);
+    padding: 8px;
+    box-sizing: border-box;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 1em;
 }
