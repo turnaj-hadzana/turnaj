@@ -197,7 +197,7 @@ if (categoryForm) {
                     return;
                 }
 
-                await setDoc(categoryDocRef, { });
+                await setDoc(categoryDocRef, { name: categoryName });
 
                 alert(`Kategória "${categoryName}" úspešne pridaná.`);
                 if (categoryModal) closeModal(categoryModal);
@@ -240,7 +240,7 @@ if (categoryForm) {
                 const oldCategoryDocRef = doc(categoriesCollectionRef, oldCategoryName); // <-- Tu sa používa 'doc'
                 const batch = writeBatch(db);
 
-                batch.set(newCategoryDocRef, {});
+                batch.set(newCategoryDocRef, { name: newCategoryName });
 
                 const groupsQuery = query(groupsCollectionRef, where('categoryId', '==', oldCategoryName));
                 const groupsSnapshot = await getDocs(groupsQuery);
