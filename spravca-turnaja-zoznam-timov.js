@@ -788,7 +788,7 @@ async function openClubModal(identifier = null, mode = 'assign') {
 
 
          // Nastaviť titulok VNÚTORNEJ filtračnej sekcie (filterModalTitle) - môže zostať "Filter" alebo špecifickejší
-         filterModalTitle.textContent = 'Vyberte hodnotu filtra'; // Nastavíme univerzálnejší text pre vnútorný titulok
+         filterModalTitle.textContent = ''; // Nastavíme univerzálnejší text pre vnútorný titulok
 
 
          let filterOptions = []; // Pole pre možnosti filtračného selectu
