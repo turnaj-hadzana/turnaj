@@ -124,7 +124,7 @@ function populateGroupFilter(categoryId) {
 }
 
 
-// *** NOVÁ FUNKCIA: Získať hodnoty filtrov z URL ***
+// Funkcia: Získať hodnoty filtrov z URL
 function getFiltersFromUrl() {
     const params = new URLSearchParams(window.location.search);
     const category = params.get('category') || '';
@@ -132,9 +132,8 @@ function getFiltersFromUrl() {
     const team = params.get('team') || '';
     return { category, group, team };
 }
-// *** KONIEC NOVEJ FUNKCIE ***
 
-// *** NOVÁ FUNKCIA: Uložiť hodnoty filtrov do URL ***
+// Funkcia: Uložiť hodnoty filtrov do URL
 function saveFiltersToUrl() {
     const params = new URLSearchParams();
     const selectedCategoryId = categoryFilter.value;
@@ -154,7 +153,6 @@ function saveFiltersToUrl() {
     // Nahradiť aktuálny stav v histórii, aby sa pri návrate späť nenačítali staré filtre
     history.replaceState(null, '', '?' + params.toString());
 }
-// *** KONIEC NOVEJ FUNKCIE ***
 
 
 // Funkcia na zobrazenie skupín a tímov (s implementovaným filtrovaním a zvýraznením tímu)
@@ -292,11 +290,20 @@ function displayGroups() {
 
         const groupsContainerDiv = document.createElement('div');
         groupsContainerDiv.classList.add('groups-container');
-        categoryDiv.appendChild(groupsContainerDiv);
-
 
         // Nájdi skupiny patriace do tejto kategórie, ktoré sa majú zobraziť
         const groupsInCategoryToDisplay = groupsToDisplay.filter(group => group.categoryId === category.id);
+
+        // *** NOVÁ LOGIKA: Pridať triedu pre 5 skupín pre špeciálne rozloženie ***
+        if (groupsInCategoryToDisplay.length === 5) {
+            groupsContainerDiv.classList.add('force-3-plus-2-layout');
+        } else {
+            groupsContainerDiv.classList.remove('force-3-plus-2-layout'); // Odstrániť triedu, ak už nie je 5 skupín
+        }
+        // *** KONIEC NOVEJ LOGIKY ***
+
+
+        categoryDiv.appendChild(groupsContainerDiv);
 
         groupsInCategoryToDisplay.sort((a, b) => (a.name || a.id || '').localeCompare((b.name || b.id || ''), 'sk-SK')); // Zoradiť skupiny v kategórii
 
@@ -519,7 +526,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (initialFilters.category) {
         groupFilter.disabled = false;
         populateGroupFilter(initialFilters.category);
-        groupFilter.value = initialFilters.group; // Nastaviť hodnotu skupiny z URL
+        // Po naplnení skontroluj, či hodnota skupiny z URL existuje ako možnosť
+        const groupOptionExists = Array.from(groupFilter.options).some(option => option.value === initialFilters.group);
+         if (groupOptionExists) {
+              groupFilter.value = initialFilters.group; // Nastaviť hodnotu skupiny z URL
+         } else {
+              groupFilter.value = ''; // Ak hodnota z URL neexistuje v možnostiach, vynulovať
+         }
+
     } else {
         // Ak nie je kategória v URL, zabezpečiť zablokovanie a naplnenie všetkými skupinami
          groupFilter.value = ''; // Zabezpečiť, že je hodnota prázdna
