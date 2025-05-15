@@ -170,7 +170,7 @@ td {
 
 /* Odstránené špecifické border-bottom z TH a TD */
 #categoryTable th, #clubsTable th, .category-group-table th, .group-clubs-table th, #createdTeamsTable th,
-#manageTeamsModal .group-clubs-table th {
+#manageTeamsModal .group-clubs-table th, #clubModal .group-clubs-table th { /* Pridané #clubModal */
      background-color: #f2f2f2;
      color: #333;
      font-weight: bold;
@@ -181,7 +181,7 @@ td {
      white-space: nowrap;
 }
 #categoryTable td, #clubsTable td, .category-group-table td, .group-clubs-table td, #createdTeamsTable td,
-#manageTeamsModal .group-clubs-table td {
+#manageTeamsModal .group-clubs-table td, #clubModal .group-clubs-table td { /* Pridané #clubModal */
      text-align: left;
      padding: 10px 15px;
      /* border-bottom: 1px solid #eee;  <--- ODSTRÁNENÉ orámovanie spodnej časti buniek */
@@ -210,7 +210,8 @@ tbody tr:hover {
 .category-group-table tbody tr:hover,
 .group-clubs-table tbody tr:hover,
 #createdTeamsTable tbody tr:hover,
-#manageTeamsModal .group-clubs-table tbody tr:hover
+#manageTeamsModal .group-clubs-table tbody tr:hover,
+#clubModal .group-clubs-table tbody tr:hover /* Pridané #clubModal */
 {
    cursor: pointer;
 }
@@ -330,9 +331,21 @@ td:last-child {
 .group-clubs-table td {
     padding: 8px;
     font-size: 0.9em;
+    /* Tieto pravidlá sa teraz prepíšu pre :first-child v modále Správa tímov */
     overflow: hidden;
     text-overflow: ellipsis;
+    white-space: nowrap;
 }
+
+/* Zabezpečiť, aby sa prvý stĺpec (Názov tímu) v tabuľkách Správa tímov modálu nezarezával */
+#manageTeamsModal .group-clubs-table td:first-child,
+#clubModal .group-clubs-table td:first-child { /* Pridané #clubModal */
+    overflow: visible; /* Zobraziť pretekajúci obsah */
+    text-overflow: clip; /* Nerezať text a nepridávať bodky */
+    white-space: normal; /* Povoliť zalomenie textu */
+    word-break: break-word; /* Zabezpečiť, že sa dlhé slová zlomia, ak je to potrebné */
+}
+
 
 .group-clubs-table td:first-child {
     text-align: center;
@@ -584,6 +597,22 @@ td:last-child {
     cursor: pointer;
 }
 
+/* Style for the Category Select in the Group Modal (NOVÉ/UPRAVENÉ) */
+#groupModal #groupCategory {
+    width: calc(100% - 22px); /* Zabezpečiť, aby zodpovedala šírke inputu názvu skupiny */
+    padding: 10px; /* Polstrovanie pre vizuálne zladenie */
+    box-sizing: border-box; /* Zahrnúť polstrovanie do celkových rozmerov */
+    /* --- PRIDANÉ/UPRAVENÉ pre nastavenie výšky a zladenie --- */
+    height: 40px; /* Experimentálna výška, ktorá by sa mala zhodovať s inputom/tlačidlom */
+    line-height: 20px; /* Môže pomôcť s vertikálnym centrovaním textu v selectboxe */
+    /* --- KONIEC PRIDANÉ/UPRAVENÉ --- */
+    margin-bottom: 20px; /* Spodný okraj ako u ostatných prvkov formulára */
+    border: 1px solid #ccc; /* Orámovanie ako u inputu */
+    border-radius: 4px; /* Zaoblené rohy ako u inputu */
+    font-size: 1em; /* Veľkosť písma ako u inputu */
+}
+
+
 /* --- Media Queries --- */
 
 /* Mobilné zariadenia (max 768px) */
@@ -717,6 +746,7 @@ body.modal-open main {
     user-select: none;
 }
 
+/* Style for the Category Select in the Group Modal (NOVÉ/UPRAVENÉ) */
 #groupModal #groupCategory {
     width: calc(100% - 22px); /* Zabezpečiť, aby zodpovedala šírke inputu názvu skupiny */
     padding: 10px; /* Polstrovanie pre vizuálne zladenie */
