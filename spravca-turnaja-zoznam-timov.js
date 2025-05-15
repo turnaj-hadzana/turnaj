@@ -1,4 +1,4 @@
-// spravca-turnaja-zoznam-timov.js (Upravené filtrovacie selecty pre Kategóriu a Skupinu v modále)
+// spravca-turnaja-zoznam-timov.js (Zobrazenie aplikovaných filtrov v hlavičke tabuľky)
 
 import {db, clubsCollectionRef, categoriesCollectionRef, groupsCollectionRef, openModal, closeModal, populateCategorySelect, doc, getDocs, query, where, getDoc, setDoc, deleteDoc, updateDoc, writeBatch} from './spravca-turnaja-common.js';
 
@@ -28,18 +28,18 @@ const addButton = document.getElementById('addButton');
 
 const clearFiltersButton = document.getElementById('clearFiltersButton');
 
-let allAvailableCategories = []; // Všetky kategórie načítané z DB
-let allAvailableGroups = []; // Všetky skupiny načítané z DB
-let allTeams = []; // Všetky tímy načítané z DB
-let teamsToDisplay = []; // Tímy po aplikovaní filtrov a zoraďovaní
+let allAvailableCategories = [];
+let allAvailableGroups = [];
+let allTeams = [];
+let teamsToDisplay = [];
 
 let editingClubId = null;
 let currentClubModalMode = null;
 
 let currentFilters = {
     teamName: null,
-    category: null, // Uloží vybranú kategóriu pre filter (ID kategórie alebo null)
-    group: null // Uloží vybranú skupinu pre filter (ID skupiny alebo 'Nepriradené' alebo null)
+    category: null,
+    group: null
 };
 
 let currentSort = {
@@ -63,8 +63,6 @@ function parseTeamName(fullTeamName) {
     return { categoryPrefix: null, baseName: fullTeamName.trim() };
 }
 
-// Funkcie pre získanie unikátnych hodnôt (používané pri plnení filtračných selectov)
-// Tieto funkcie teraz prijímajú pole tímov, z ktorých majú hodnoty získať
 function getUniqueBaseTeamNames(teams) {
     const baseNames = teams.map(team => {
         return team.createdFromBase || parseTeamName(team.id).baseName || '';
@@ -78,7 +76,6 @@ function getUniqueTeamCategories(teams, categories) {
         const category = categories.find(cat => cat.id === id);
         return category ? category.name : (id || 'Neznáma kategória');
     });
-    // Pridať "Neznáma kategória" len ak existujú tímy bez kategórie v danom poli tímov
      const hasUnknownCategoryInTeams = teams.some(team => !team.categoryId || (typeof team.categoryId === 'string' && team.categoryId.trim() === ''));
      if (hasUnknownCategoryInTeams && !categoryNames.includes('Neznáma kategória')) {
          categoryNames.push('Neznáma kategória');
@@ -86,7 +83,6 @@ function getUniqueTeamCategories(teams, categories) {
     return [...new Set(categoryNames.filter(name => name && name.trim() !== '' || name === 'Neznáma kategória'))]
         .sort((a, b) => a.localeCompare(b, 'sk-SK'));
 }
-
 
 function getUniqueTeamGroups(teams, groups) {
     const groupNames = new Set();
@@ -99,8 +95,6 @@ function getUniqueTeamGroups(teams, groups) {
             if (group) {
                 groupNames.add(group.name || group.id);
             } else {
-                 // Ak sa skupina nenašla v allAvailableGroups, použiť groupId z tímu
-                 // Toto ošetruje prípad dátovej nekonzistencie
                  const parts = team.groupId.split(' - ');
                  if (parts.length > 1) {
                       const parsedGroupName = parts.slice(1).join(' - ').trim();
@@ -174,7 +168,7 @@ function populateGroupSelectForClubModal(selectElement, selectedId = '', availab
     selectElement.innerHTML = '<option value="">-- Vyberte skupinu --</option>';
     const filteredGroups = categoryId
         ? availableGroups.filter(group => group.categoryId === categoryId)
-        : availableGroups; // Ak nie je kategória špecifikovaná, použiť všetky dostupné skupiny
+        : availableGroups;
 
     const sortedFilteredGroups = filteredGroups.sort((a, b) => {
         const nameA = (a.name || a.id) || '';
@@ -188,7 +182,7 @@ function populateGroupSelectForClubModal(selectElement, selectedId = '', availab
         const categoryName = category ? category.name : categoryId;
         const option = document.createElement('option');
         option.value = "";
-        option.textContent = categoryId && !categoryId.startsWith('--') ? ` -- Žiadne skupiny v kategórii "${categoryName}" --` : `-- Vyberte skupinu --`; // V Assign/Create móde môže byť kategória nevybraná
+        option.textContent = categoryId && !categoryId.startsWith('--') ? ` -- Žiadne skupiny v kategórii "${categoryName}" --` : `-- Vyberte skupinu --`;
         option.disabled = true;
         selectElement.appendChild(option);
         selectElement.disabled = true;
@@ -566,71 +560,49 @@ async function openClubModal(identifier = null, mode = 'assign') {
         let filterOptions = [];
 
         if (filterType === 'teamName') {
-            // Pre Názov tímu vždy zobraz všetky unikátne názvy zo všetkých tímov
             filterOptions = getUniqueBaseTeamNames(allTeams);
         } else if (filterType === 'category') {
-            // Pre Kategóriu vždy zobraz všetky unikátne kategórie zo všetkých tímov
             filterOptions = getUniqueTeamCategories(allTeams, allAvailableCategories);
         } else if (filterType === 'group') {
-            // Pre Skupinu: Zobraziť skupiny len na základe aktuálneho filtra Kategórie
-             const currentCategoryFilter = currentFilters.category; // ID aktuálne filtrovanej kategórie
+             const currentCategoryFilter = currentFilters.category;
 
              if (currentCategoryFilter && typeof currentCategoryFilter === 'string' && currentCategoryFilter.trim() !== '') {
-                 // Ak je aplikovaný filter Kategórie, zobraziť skupiny patriace k tejto kategórii
-                 // Filtrovať tímy, ktoré zodpovedajú aktuálnemu filtru kategórie
-                  const teamsMatchingCategoryFilter = allTeams.filter(team => {
-                       const teamCategoryId = team.categoryId;
-                        // Porovnať categoryId tímu s aktuálnou filtrovanou kategóriou
-                       if (currentCategoryFilter.toLowerCase() === 'neznáma kategória') {
-                            return !teamCategoryId || (typeof teamCategoryId === 'string' && teamCategoryId.trim() === '');
-                       } else {
-                           return teamCategoryId === currentCategoryFilter;
-                       }
-                  });
+                 // Ak je aplikovaný filter Kategórie
+                 const teamsMatchingCategoryFilter = allTeams.filter(team => {
+                      const teamCategoryId = team.categoryId;
+                      // Porovnať categoryId tímu s aktuálnou filtrovanou kategóriou
+                      if (currentCategoryFilter.toLowerCase() === 'neznáma kategória') {
+                           return !teamCategoryId || (typeof teamCategoryId === 'string' && teamCategoryId.trim() === '');
+                      } else {
+                          return teamCategoryId === currentCategoryFilter;
+                      }
+                 });
 
-                 // Získať unikátne skupiny iba z týchto tímov, ktoré patria k filtrovanej kategórii
-                  filterOptions = getUniqueTeamGroups(teamsMatchingCategoryFilter, allAvailableGroups);
+                 // Získať unikátne skupiny iba z týchto tímov
+                 let optionsFromTeams = getUniqueTeamGroups(teamsMatchingCategoryFilter, allAvailableGroups);
 
-                 // Ak je filter kategórie "Neznáma kategória", skupinový filter by mal obsahovať len "Nepriradené"
-                 if (currentCategoryFilter.toLowerCase() === 'neznáma kategória') {
-                     // Zistiť, či existuje akýkoľvek tím BEZ KATEGÓRIE a BEZ SKUPINY
-                      const hasUnassignedUnknownCategoryTeams = allTeams.some(team =>
-                           (!team.categoryId || (typeof team.categoryId === 'string' && team.categoryId.trim() === '')) &&
-                           (!team.groupId || (typeof team.groupId === 'string' && team.groupId.trim() === ''))
-                      );
-                       if (hasUnassignedUnknownCategoryTeams && !filterOptions.includes('Nepriradené')) {
-                            filterOptions = ['Nepriradené']; // Zobraziť iba "Nepriradené" ak existujú nepriradené tímy bez kategórie
-                       } else if (!hasUnassignedUnknownCategoryTeams) {
-                           filterOptions = []; // Ak neexistujú nepriradené tímy bez kategórie, zobraziť prázdne
-                       }
-                      // V tomto prípade netreba hľadať skupiny z allAvailableGroups, lebo tímy bez kategórie by nemali mať priradené skupiny
-                 } else {
-                      // Získať zoznam skupín, ktoré majú túto kategóriu v DB (ak existujú) a pridať ich
-                       const groupsInCategory = allAvailableGroups.filter(group => group.categoryId === currentCategoryFilter);
-                       groupsInCategory.forEach(group => {
-                            const groupName = group.name || group.id;
-                            if (!filterOptions.includes(groupName)) {
-                                 groupOptions.push(groupName);
-                            }
-                       });
+                 // Získaj zoznam skupín, ktoré majú túto kategóriu v DB (ak existujú)
+                  const groupsInCategory = allAvailableGroups.filter(group => group.categoryId === currentCategoryFilter);
+                  let groupOptionsFromDB = groupsInCategory.map(group => group.name || group.id);
 
-                      // Zabezpečiť, že "Nepriradené" je možnosť, ak existujú tímy v tejto kategórii bez skupiny
-                       const hasUnassignedInCategory = teamsMatchingCategoryFilter.some(team =>
-                            !team.groupId || (typeof team.groupId === 'string' && team.groupId.trim() === '')
-                       );
-                       if (hasUnassignedInCategory && !filterOptions.includes('Nepriradené')) {
-                            filterOptions.push('Nepriradené');
-                       }
-                      // Zoradiť výsledné možnosti
-                       filterOptions.sort((a, b) => a.localeCompare(b, 'sk-SK'));
-                 }
+                 // Spoj možnosti z tímov a z DB skupín, zabezpeč unikátnosť a zoradenie
+                  filterOptions = [...new Set([...optionsFromTeams, ...groupOptionsFromDB])];
+
+                 // Zabezpečiť, že "Nepriradené" je možnosť, ak existujú tímy v tejto kategórii bez skupiny
+                  const hasUnassignedInCategory = teamsMatchingCategoryFilter.some(team =>
+                       !team.groupId || (typeof team.groupId === 'string' && team.groupId.trim() === '')
+                  );
+                  if (hasUnassignedInCategory && !filterOptions.includes('Nepriradené')) {
+                       filterOptions.push('Nepriradené');
+                  }
+
+                 filterOptions.sort((a, b) => a.localeCompare(b, 'sk-SK'));
 
              } else {
                  // Ak nie je aplikovaný filter Kategórie, zobraziť všetky unikátne skupiny zo všetkých tímov
                  filterOptions = getUniqueTeamGroups(allTeams, allAvailableGroups);
              }
         }
-
 
         if (filterSelect) {
             filterSelect.innerHTML = '<option value="">-- Zobraziť všetko --</option>';
@@ -640,21 +612,18 @@ async function openClubModal(identifier = null, mode = 'assign') {
                 option.textContent = optionValue;
                 filterSelect.appendChild(option);
             });
-            // Predvybrať aktuálne aplikovaný filter pre TENTO TYP FILTRA
             if (currentFilters[filterType] !== null && filterSelect.querySelector(`option[value="${currentFilters[filterType]}"]`)) {
                 filterSelect.value = currentFilters[filterType];
             } else {
-                filterSelect.value = ""; // Ak nie je filter aktívny pre tento typ, vybrať "Zobraziť všetko"
+                filterSelect.value = "";
             }
 
             filterSelect.onchange = () => {
                 const selectedValue = filterSelect.value === "" ? null : filterSelect.value;
 
-                 // Špeciálne spracovanie pre filter Kategória
                  if (filterType === 'category') {
-                     // Ak sa zmení filter kategórie, resetovať filter skupiny
                      if (currentFilters.category !== selectedValue) {
-                          currentFilters.group = null; // Resetovať filter skupiny pri zmene kategórie
+                          currentFilters.group = null;
                           console.log("INFO: Filter kategórie zmenený, filter skupiny resetovaný.");
                      }
                  }
@@ -886,30 +855,51 @@ async function displayCreatedTeams() {
         return;
     }
     createdTeamsTableBody.innerHTML = '';
-    // Pre istotu zakaždým nastavíme header, ak by chýbal
-    if (createdTeamsTableHeader.innerHTML.trim() === '' || !document.getElementById('clearFiltersButton')) {
-         createdTeamsTableHeader.innerHTML = `
-             <th data-filter-type="teamName">Názov tímu</th>
-             <th data-filter-type="category">Kategória</th>
-             <th data-filter-type="group">Skupina</th>
-             <th data-sort-type="orderInGroup">Poradie v skupine</th>
-             <th>Akcie</th>
-             <th><button id="clearFiltersButton" class="action-button">Vymazať filtre</button></th>
-         `;
-         addHeaderFilterListeners();
-          const clearFiltersButtonElement = document.getElementById('clearFiltersButton');
-          if(clearFiltersButtonElement) {
-             clearFiltersButtonElement.addEventListener('click', () => {
-                 console.log("INFO: Kliknuté na tlačidlo 'Vymazať filtre'.");
-                 currentFilters = { teamName: null, category: null, group: null };
-                 currentSort = { column: null, direction: 'asc' };
-                 console.log("INFO: Filtre a zoraďovanie resetované.", {currentFilters, currentSort});
-                 displayCreatedTeams();
-             });
-              console.log("INFO: Listener na tlačidlo 'Vymazať filtre' pridaný po obnove headera.");
-          } else {
-               console.error("Clear Filters button not found after header update!");
-          }
+
+    // Vždy nastavíme základnú štruktúru headera
+    createdTeamsTableHeader.innerHTML = `
+        <th data-filter-type="teamName">Názov tímu</th>
+        <th data-filter-type="category">Kategória</th>
+        <th data-filter-type="group">Skupina</th>
+        <th data-sort-type="orderInGroup">Poradie v skupine</th>
+        <th>Akcie</th>
+        <th><button id="clearFiltersButton" class="action-button">Vymazať filtre</button></th>
+    `;
+
+    // Získame referencie na header bunky PO nastavení innerHTML
+    const headerCells = createdTeamsTableHeader.querySelectorAll('th');
+
+    // Pridáme listenery na filtrovanie/zoraďovanie hlavičiek (okrem posledného stĺpca s tlačidlom)
+    addHeaderFilterListeners(); // Táto funkcia už pracuje s aktuálnymi TH elementmi
+
+    // Pridáme listener na tlačidlo Vymazať filtre, ak ešte nebol pridaný
+    const clearFiltersButtonElement = document.getElementById('clearFiltersButton');
+    // Zabezpečíme, že listener pridáme IBA RAZ aj po prípadnom opakovanom volaní displayCreatedTeams
+    // Odstránime existujúci listener (ak existuje) pred pridaním nového
+    if (clearFiltersButtonElement) {
+         const oldListener = clearFiltersButtonElement._clickListener; // Získa uložený listener, ak existuje
+         if(oldListener) {
+              clearFiltersButtonElement.removeEventListener('click', oldListener);
+         }
+         const newListener = () => { // Definujeme nový listener
+             console.log("INFO: Kliknuté na tlačidlo 'Vymazať filtre'.");
+             currentFilters = {
+                 teamName: null,
+                 category: null,
+                 group: null
+             };
+             currentSort = {
+                 column: null,
+                 direction: 'asc'
+             };
+             console.log("INFO: Filtre a zoraďovanie resetované.", {currentFilters, currentSort});
+             displayCreatedTeams();
+         };
+         clearFiltersButtonElement.addEventListener('click', newListener);
+         clearFiltersButtonElement._clickListener = newListener; // Uložíme referenciu na listener
+         console.log("INFO: Listener na tlačidlo 'Vymazať filtre' pridaný/aktualizovaný.");
+    } else {
+        console.error("Clear Filters button not found after header update!");
     }
 
 
@@ -923,33 +913,10 @@ async function displayCreatedTeams() {
             await loadAllGroups();
         }
         if (allTeams.length === 0) {
-             if (createdTeamsTableHeader.innerHTML.trim() === '' || !document.getElementById('clearFiltersButton')) {
-                  createdTeamsTableHeader.innerHTML = `
-                       <th data-filter-type="teamName">Názov tímu</th>
-                       <th data-filter-type="category">Kategória</th>
-                       <th data-filter-type="group">Skupina</th>
-                       <th data-sort-type="orderInGroup">Poradie v skupine</th>
-                       <th>Akcie</th>
-                       <th><button id="clearFiltersButton" class="action-button">Vymazať filtre</button></th>
-                   `;
-                   addHeaderFilterListeners();
-                    const clearFiltersButtonElement = document.getElementById('clearFiltersButton');
-                    if(clearFiltersButtonElement) {
-                       clearFiltersButtonElement.addEventListener('click', () => {
-                           console.log("INFO: Kliknuté na tlačidlo 'Vymazať filtre'.");
-                           currentFilters = { teamName: null, category: null, group: null };
-                           currentSort = { column: null, direction: 'asc' };
-                           console.log("INFO: Filtre a zoraďovanie resetované.", {currentFilters, currentSort});
-                           displayCreatedTeams();
-                       });
-                        console.log("INFO: Listener na tlačidlo 'Vymazať filtre' pridaný pri prázdnych tímoch.");
-                    } else {
-                         console.error("Clear Filters button not found when teams are empty!");
-                    }
-             }
-
             createdTeamsTableBody.innerHTML = '<tr><td colspan="6">Zatiaľ nie sú vytvorené žiadne tímy.</td></tr>';
             teamsToDisplay = [];
+             // Zobraziť aktuálne aplikované filtre v hlavičke, aj keď nie sú tímy
+             displayAppliedFiltersInHeader();
             return;
         }
 
@@ -1019,36 +986,14 @@ async function displayCreatedTeams() {
             });
         }
         if (teamsToDisplay.length === 0) {
-             if (createdTeamsTableHeader.innerHTML.trim() === '' || !document.getElementById('clearFiltersButton')) {
-                  createdTeamsTableHeader.innerHTML = `
-                       <th data-filter-type="teamName">Názov tímu</th>
-                       <th data-filter-type="category">Kategória</th>
-                       <th data-filter-type="group">Skupina</th>
-                       <th data-sort-type="orderInGroup">Poradie v skupine</th>
-                       <th>Akcie</th>
-                       <th><button id="clearFiltersButton" class="action-button">Vymazať filtre</button></th>
-                   `;
-                   addHeaderFilterListeners();
-                    const clearFiltersButtonElement = document.getElementById('clearFiltersButton');
-                    if(clearFiltersButtonElement) {
-                       clearFiltersButtonElement.addEventListener('click', () => {
-                           console.log("INFO: Kliknuté na tlačidlo 'Vymazať filtre'.");
-                           currentFilters = { teamName: null, category: null, group: null };
-                           currentSort = { column: null, direction: 'asc' };
-                           console.log("INFO: Filtre a zoraďovanie resetované.", {currentFilters, currentSort});
-                           displayCreatedTeams();
-                       });
-                         console.log("INFO: Listener na tlačidlo 'Vymazať filtre' pridaný pri žiadnych zodpovedajúcich tímoch.");
-                    } else {
-                         console.error("Clear Filters button not found when no teams match filter!");
-                    }
-             }
-
             createdTeamsTableBody.innerHTML = '<tr><td colspan="6">Žiadne tímy zodpovedajúce filtru.</td></tr>';
+             // Zobraziť aktuálne aplikované filtre v hlavičke
+            displayAppliedFiltersInHeader();
             return;
         }
-        const headerCells = createdTeamsTableHeader.querySelectorAll('th');
-        headerCells.forEach(cell => {
+
+        const headerCellsForSortingIndicator = createdTeamsTableHeader.querySelectorAll('th'); // Získame ich znovu po prípadnom innerHTML
+        headerCellsForSortingIndicator.forEach(cell => {
             cell.classList.remove('sort-asc', 'sort-desc');
         });
         if (currentSort.column) {
@@ -1057,6 +1002,7 @@ async function displayCreatedTeams() {
                 sortHeader.classList.add(`sort-${currentSort.direction}`);
             }
         }
+
         teamsToDisplay.forEach(team => {
             const row = createdTeamsTableBody.insertRow();
             row.dataset.teamId = team.id;
@@ -1110,6 +1056,7 @@ async function displayCreatedTeams() {
             };
             actionsCell.appendChild(deleteButton);
         });
+
          const clearFiltersCell = createdTeamsTableBody.querySelector('td:last-child');
          if (clearFiltersCell) {
               clearFiltersCell.colSpan = 1;
@@ -1119,37 +1066,50 @@ async function displayCreatedTeams() {
               noTeamsRow.colSpan = 6;
           }
 
+         // Zobraziť aktuálne aplikované filtre v hlavičke
+         displayAppliedFiltersInHeader();
+
+
     } catch (e) {
         console.error("Chyba pri zobrazovaní tímov: ", e);
-        if (createdTeamsTableHeader.innerHTML.trim() === '' || !document.getElementById('clearFiltersButton')) {
-             createdTeamsTableHeader.innerHTML = `
-                  <th data-filter-type="teamName">Názov tímu</th>
-                  <th data-filter-type="category">Kategória</th>
-                  <th data-filter-type="group">Skupina</th>
-                  <th data-sort-type="orderInGroup">Poradie v skupine</th>
-                  <th>Akcie</th>
-                  <th><button id="clearFiltersButton" class="action-button">Vymazať filtre</button></th>
-              `;
-              addHeaderFilterListeners();
-               const clearFiltersButtonElement = document.getElementById('clearFiltersButton');
-               if(clearFiltersButtonElement) {
-                  clearFiltersButtonElement.addEventListener('click', () => {
-                      console.log("INFO: Kliknuté na tlačidlo 'Vymazať filtre'.");
-                      currentFilters = { teamName: null, category: null, group: null };
-                      currentSort = { column: null, direction: 'asc' };
-                      console.log("INFO: Filtre a zoraďovanie resetované.", {currentFilters, currentSort});
-                      displayCreatedTeams();
-                  });
-                   console.log("INFO: Listener na tlačidlo 'Vymazať filtre' pridaný pri chybe zobrazenia.");
-               } else {
-                    console.error("Clear Filters button not found on display error!");
-               }
-         }
+
         createdTeamsTableBody.innerHTML = '<tr><td colspan="6">Nepodarilo sa načítať tímy.</td></tr>';
         allTeams = [];
         teamsToDisplay = [];
+        // Zobraziť aktuálne aplikované filtre v hlavičke aj pri chybe
+        displayAppliedFiltersInHeader();
     }
 }
+
+// Nová funkcia na zobrazenie aplikovaných filtrov v hlavičke tabuľky
+function displayAppliedFiltersInHeader() {
+     console.log("INFO: Zobrazujem aplikované filtre v hlavičke.");
+     const headerCells = createdTeamsTableHeader.querySelectorAll('th');
+
+     headerCells.forEach(headerCell => {
+         const filterType = headerCell.dataset.filterType;
+         // Najprv odstránime akékoľvek predchádzajúce zobrazené hodnoty filtra
+         const existingFilterDisplay = headerCell.querySelector('.applied-filter-value');
+         if (existingFilterDisplay) {
+             existingFilterDisplay.remove();
+         }
+
+         // Ak je pre túto hlavičku definovaný filterType A je pre ňu nastavený filter v currentFilters
+         if (filterType && currentFilters[filterType] !== null) {
+             const filterValue = currentFilters[filterType];
+
+             // Vytvoríme element na zobrazenie hodnoty filtra
+             const filterValueSpan = document.createElement('span');
+             filterValueSpan.classList.add('applied-filter-value'); // Pridať triedu pre štýlovanie
+             filterValueSpan.textContent = `(Filter: ${filterValue})`; // Zobraziť hodnotu filtra
+
+             // Pripojíme element k hlavičke
+             headerCell.appendChild(filterValueSpan);
+             console.log(`INFO: Zobrazený filter "${filterType}" s hodnotou "${filterValue}" v hlavičke.`);
+         }
+     });
+}
+
 
 function addHeaderFilterListeners() {
     if (!createdTeamsTableHeader) {
@@ -1160,12 +1120,14 @@ function addHeaderFilterListeners() {
     headerCells.forEach(headerCell => {
         const filterType = headerCell.dataset.filterType;
         const sortType = headerCell.dataset.sortType;
+        // Odstránime predošlé listenery, ak existujú, pred pridaním nového
         headerCell.removeEventListener('click', handleHeaderClick);
+        // Pridáme listener len ak je hlavička interaktívna (filtrovateľná alebo zoraďovateľná)
         if (filterType || sortType === 'orderInGroup') {
             headerCell.style.cursor = 'pointer';
             headerCell.addEventListener('click', handleHeaderClick);
         } else {
-            headerCell.style.cursor = 'default';
+             headerCell.style.cursor = 'default'; // Zabezpečiť predvolený kurzor pre neinteraktívne TH
         }
     });
 }
@@ -1219,9 +1181,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadAllCategoriesForDynamicSelects();
     await loadAllGroups();
 
-    await displayCreatedTeams();
+    await displayCreatedTeams(); // Prvé zobrazenie tabuľky
 
-    addHeaderFilterListeners();
+    // Listenery na hlavičky a tlačidlo Vymazať filtre sú teraz pridané/aktualizované V displayCreatedTeams()
+    // addHeaderFilterListeners(); // Už netreba volať tu, volá sa v displayCreatedTeams
+    // Clear Filters button listener sa tiež pridáva/aktualizuje v displayCreatedTeams
 
     const addButtonElement = document.getElementById('addButton');
     if (addButtonElement) {
@@ -1232,27 +1196,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.log("INFO: Listener na tlačidlo '+' pridaný.");
     } else {
         console.error("Add button not found on teams list page! ID 'addButton' nebolo nájdené.");
-    }
-
-    const clearFiltersButtonElement = document.getElementById('clearFiltersButton');
-    if (clearFiltersButtonElement) {
-        clearFiltersButtonElement.addEventListener('click', () => {
-            console.log("INFO: Kliknuté na tlačidlo 'Vymazať filtre'.");
-            currentFilters = {
-                teamName: null,
-                category: null,
-                group: null
-            };
-            currentSort = {
-                column: null,
-                direction: 'asc'
-            };
-            console.log("INFO: Filtre a zoraďovanie resetované.", {currentFilters, currentSort});
-            displayCreatedTeams();
-        });
-         console.log("INFO: Listener na tlačidlo 'Vymazať filtre' pridaný.");
-    } else {
-        console.error("Clear Filters button not found! ID 'clearFiltersButton' nebolo nájdené.");
     }
 
 
