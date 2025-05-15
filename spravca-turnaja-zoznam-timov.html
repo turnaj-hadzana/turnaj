@@ -28,9 +28,9 @@
                             <th data-filter-type="teamName">Názov tímu</th>
                             <th data-filter-type="category">Kategória</th>
                             <th data-filter-type="group">Skupina</th>
-                            <th data-sort-type="orderInGroup">Poradie v skupine</th> 
-                            <th></th>
-                        </tr>
+                            <th data-sort-type="orderInGroup">Poradie v skupine</th>
+                            <th>Akcie</th>
+                            <th><button id="clearFiltersButton" class="action-button">Vymazať filtre</button></th> </tr>
                     </thead>
                     <tbody id="createdTeamsTableBody">
                     </tbody>
@@ -38,45 +38,22 @@
             </section>
         </main>
     </div>
-    <button id="addButton" class="add-button" title="Vytvoriť tímy">+</button>
-    <div id="teamCreationModal" class="modal">
-        <div class="modal-content">
-            <span class="close team-creation-modal-close">&times;</span>
-            <h2 id="teamCreationModalTitle">Vytvoriť tímy</h2>
-            <form id="teamCreationForm">
-                <div>
-                    <label for="teamNameInput">Základný názov tímu:</label>
-                    <input type="text" id="teamNameInput" required>
-                </div>
-                <div id="teamCategoryCountContainer">
-                </div>
-                <button type="button" id="addCategoryCountPairButton" class="action-button">Pridať ďalšiu kategóriu</button>
-                <button type="submit">Vytvoriť tímy</button>
-            </form>
-        </div>
-    </div>
-    <div id="manageTeamsModal" class="modal">
-        <div class="modal-content">
-            <span class="close manage-teams-modal-close">&times;</span>
-            <h2 id="baseTeamNameInModal">Tímy: </h2>
-            <div id="teamsListInModal">
-            </div>
-        </div>
-    </div>
+    <button id="addButton" class="add-button" title="Vytvoriť nový tím">+</button>
     <div id="clubModal" class="modal">
         <div class="modal-content">
             <span class="close club-modal-close">&times;</span>
             <h2 id="clubModalTitle">Upraviť tím / Priradiť klub</h2>
             <div id="clubFormContent">
                 <form id="clubForm">
-                    <div id="clubNameField">
+                    <div id="clubNameField" class="form-group">
                         <label for="clubName">Názov tímu/klubu:</label>
                         <input type="text" id="clubName" required>
                     </div>
                     <div id="clubAssignmentFields">
                         <div class="form-group">
                             <label for="clubCategorySelect">Kategória:</label>
-                            <select id="clubCategorySelect"></select>
+                            <select id="clubCategorySelect" disabled>
+                            </select>
                         </div>
                         <div class="form-group">
                             <label for="clubGroupSelect">Skupina:</label>
@@ -90,7 +67,7 @@
                         </div>
                     </div>
                     <div id="unassignedClubField">
-                        <label for="unassignedClubSelect">Vyberte nepriradený tím/klub:</label>
+                        <label for="unassignedClubSelect">Vyberte nepriradený tím:</label>
                         <select id="unassignedClubSelect" required>
                             <option value="">-- Vyberte nepriradený tím --</option>
                         </select>
