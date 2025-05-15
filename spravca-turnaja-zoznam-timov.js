@@ -590,11 +590,11 @@ async function displayCreatedTeams() {
              // Vytvoriť hlavičku, aj keď sú tímy prázdne (ak už neexistuje)
              if (createdTeamsTableHeader.innerHTML === '') {
                   createdTeamsTableHeader.innerHTML = `
-                           <th>Názov tímu</th>
-                           <th>Kategória</th>
-                           <th>Skupina</th>
-                           <th>Poradie v skupine</th>
-                            <th>Akcie</th>
+                       <th>Názov tímu</th>
+                       <th>Kategória</th>
+                       <th>Skupina</th>
+                       <th>Poradie v skupine</th>
+                       <th>Akcie</th>
                   `;
              }
              // Zobraziť správu "Žiadne tímy" s colspanom
@@ -604,15 +604,14 @@ async function displayCreatedTeams() {
 
          // Vytvoriť hlavičku tabuľky, ak existujú tímy a hlavička ešte nebola vytvorená
          if (createdTeamsTableHeader.innerHTML === '') {
-              createdTeamsTableHeader.innerHTML = `
+                  createdTeamsTableHeader.innerHTML = `
                        <th>Názov tímu</th>
                        <th>Kategória</th>
                        <th>Skupina</th>
                        <th>Poradie v skupine</th>
-                        <th>Akcie</th>
-              `;
-         }
-
+                       <th>Akcie</th>
+                  `;
+             }
 
         // Zoradiť tímy abecedne podľa celého názvu (ID) pre konzistentné zobrazenie
         teams.sort((a, b) => (a.id || '').localeCompare((b.id || ''), 'sk-SK')); // Zoradiť podľa ID (celý názov)
@@ -752,14 +751,14 @@ async function displayCreatedTeams() {
         console.error("Chyba pri zobrazovaní tímov: ", e);
          // Vytvoriť hlavičku pri chybe, aby bol colspan správny (ak ešte nebola vytvorená)
          if (createdTeamsTableHeader.innerHTML === '') {
-              createdTeamsTableHeader.innerHTML = `
+                  createdTeamsTableHeader.innerHTML = `
                        <th>Názov tímu</th>
                        <th>Kategória</th>
                        <th>Skupina</th>
                        <th>Poradie v skupine</th>
-                        <th>Akcie</th>
-              `;
-         }
+                       <th>Akcie</th>
+                  `;
+             }
          // Zobraziť chybovú správu s colspanom
         createdTeamsTableBody.innerHTML = '<tr><td colspan="5">Nepodarilo sa načítať tímy.</td></tr>'; // Colspan na 5 stĺpcov
     }
