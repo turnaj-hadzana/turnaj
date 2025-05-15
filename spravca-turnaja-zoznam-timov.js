@@ -2,7 +2,7 @@
 
 // Import necessary functions and references from common.js
 import { db, clubsCollectionRef, categoriesCollectionRef, groupsCollectionRef,
-         openModal, closeModal,
+         openModal, closeModal, // openModal a closeModal by mali byť definované v common.js alebo inom module
          doc, getDocs, query, where, getDoc, setDoc, deleteDoc, updateDoc, writeBatch } from './spravca-turnaja-common.js';
 
 
@@ -227,7 +227,7 @@ function filterTeams() {
               // Filter pre nepriradené tímy (groupId musí byť null alebo undefined/chýba)
               groupMatch = team.groupId === null || typeof team.groupId === 'undefined';
          } else if (groupFilterValue !== '') {
-              // Filter pre konkrétnu skupinu (team.groupId musí presne zodpovedať hodnote filtra skupiny - čo je ID skupiny)
+              // Filter pre konkrétnu skupinu (team.groupId musí presne zodpovedať hodnote filtra skupiny - čo je ID skupiny
               groupMatch = team.groupId && team.groupId === groupFilterValue;
          }
 
@@ -519,91 +519,8 @@ export async function openManageTeamsModal(baseName) {
                  headerRow.appendChild(teamNameTh);
                  headerRow.appendChild(groupTh);
                  headerRow.appendChild(orderTh);
-                 headerRow.appendChild(actionsTh);
-                 thead.appendChild(headerRow);
-                 categoryTeamsTable.appendChild(thead);
-
-                const tbody = document.createElement('tbody');
-
-                 teamsInThisCategory.sort((a, b) => {
-                     const isAssignedA = a.groupId !== null && typeof a.groupId !== 'undefined'; // Použiť groupId
-                     const isAssignedB = b.groupId !== null && typeof b.groupId !== 'undefined'; // Použiť groupId
-                     if (isAssignedA !== isAssignedB) {
-                         return isAssignedA ? 1 : -1;
-                     }
-
-                     if (isAssignedA) {
-                         const groupA = a.groupId || ''; // Použiť groupId
-                         const groupB = b.groupId || ''; // Použiť groupId
-                         const orderA = typeof a.orderInGroup === 'number' ? a.orderInGroup : Infinity;
-                         const orderB = typeof b.orderInGroup === 'number' ? b.orderInGroup : Infinity;
-
-                         if (groupA !== groupB) {
-                             return groupA.localeCompare(groupB, 'sk-SK');
-                         }
-                         if (orderA !== orderB) {
-                             return orderA - orderB;
-                         }
-                     }
-
-                     const nameA = a.name || '';
-                     const nameB = b.name || '';
-                     return nameA.localeCompare(nameB, 'sk-SK');
-                 });
-
-
-                teamsInThisCategory.forEach(team => {
-                    const tr = document.createElement('tr');
-                    tr.dataset.teamId = team.id;
-
-                    const nameTd = document.createElement('td');
-                    nameTd.textContent = team.name || team.id || 'Neznámy názov'; // Zobraziť celý názov tímu (name, id ako fallback)
-
-                    const groupTd = document.createElement('td');
-                    // Použiť team.groupId pre extrakciu názvu skupiny v Správe tímov modále
-                    const groupNameParts = (team.groupId || '').split(' - '); // Použiť groupId
-                    const displayedGroupName = team.groupId ? (groupNameParts.length > 1 ? groupNameParts.slice(1).join(' - ') : team.groupId) : 'Nepriradené'; // Použiť groupId
-                    groupTd.textContent = displayedGroupName;
-
-
-                    const orderTd = document.createElement('td');
-                    // Použiť team.groupId v podmienke pre poradie v Správe tímov modále
-                    orderTd.textContent = (team.groupId && typeof team.orderInGroup === 'number' && team.orderInGroup > 0) ? team.orderInGroup : '-'; // Použiť groupId
-                    orderTd.style.textAlign = 'center';
-
-                    const actionsTd = document.createElement('td');
-                    actionsTd.classList.add('actions-cell');
-                    actionsTd.style.whiteSpace = 'nowrap';
-                    actionsTd.style.display = 'flex';
-                    actionsTd.style.justifyContent = 'center';
-                    actionsTd.style.alignItems = 'center';
-                    actionsTd.style.gap = '5px';
-
-
-                    const editButton = document.createElement('button');
-                    editButton.textContent = 'Upraviť / Priradiť';
-                    editButton.classList.add('action-button');
-                    editButton.onclick = () => {
-                        closeManageTeamsModal();
-                         if (typeof openClubModal === 'function') {
-                             openClubModal(team.id, 'edit');
-                         } else {
-                              console.error("Funkcia openClubModal nie je dostupná.");
-                             alert("Funkcia na úpravu tímu nie je dostupná.");
-                         }
-                    };
-
-                    const deleteButton = document.createElement('button');
-                    deleteButton.textContent = 'Vymazať';
-                    deleteButton.classList.add('action-button', 'delete-button');
-                    deleteButton.onclick = async () => {
-                        if (confirm(`Naozaj chcete vymazať tím "${team.id}"?`)) {
-                            await deleteTeam(team.id);
-                            // Po vymazaní v Správe tímov modále, znovu načítať a zobraziť Správu tímov modál
-                             // Namiesto tr.remove(), čo by nezohľadnilo ostatné tímy v kategórii/základnom názve
-                            await openManageTeamsModal(baseName); // Znovu otvoriť modal s aktualizovaným zoznamom
-                        }
-                    };
+                 actionsTh.appendChild(editButton);
+                 actionsTd.appendChild(deleteButton);
 
                     actionsTd.appendChild(editButton);
                     actionsTd.appendChild(deleteButton);
