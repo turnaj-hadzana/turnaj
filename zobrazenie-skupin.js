@@ -270,7 +270,7 @@ function displayGroups() {
           // Ak je aktívny akýkoľvek filter a nenašli sa žiadne zodpovedajúce kategórie/skupiny/tímy
           let message = 'Žiadne skupiny ani tímy nezodpovedajú vybraným filtrom.';
            if (selectedTeamNameFilter !== '') {
-               message = `Nenašli sa žiadne tímy zodpovedajúce filtru "${selectedTeamNameFilter}".`;
+               message = `Vo zvolenej kategórii nie je prihlásený hľadaný tím.`;
            }
           groupsDisplayContent.innerHTML = `<p>${message}</p>`;
           return;
@@ -464,7 +464,7 @@ function displayGroups() {
      if (groupsDisplayContent.innerHTML === '') {
           let message = 'Žiadne skupiny ani tímy nezodpovedajú vybraným filtrom.';
           if (selectedTeamNameFilter !== '') {
-              message = `Nenašli sa žiadne tímy zodpovedajúce filtru "${selectedTeamNameFilter}".`;
+              message = `Vo zvolenej kategórii nie je prihlásený hľadaný tím.`;
           }
           groupsDisplayContent.innerHTML = `<p>${message}</p>`;
      }
