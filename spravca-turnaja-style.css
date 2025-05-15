@@ -160,8 +160,7 @@ table {
 
 th,
 td {
-    /* border: 1px solid #ddd;  ODSTRANENÉ ORAMOVANIE BUNIEK */
-    border: none; /* Explicitne nastavené na none */
+    border: 1px solid #ddd;
     padding: 10px;
     text-align: left;
 }
@@ -191,6 +190,7 @@ td:last-child {
     cursor: pointer;
     font-size: 0.9em;
     transition: background-color 0.3s ease, border-color 0.3s ease;
+    /* margin-right: 5px; ODSTRANENÉ - medzera medzi tlačidlami riadená cez gap v príslušných TD */
 }
 
 .action-button:not(.delete-button) {
@@ -244,7 +244,7 @@ td:last-child {
 /* --- Style for Category Group Table (UPRAVENÉ - šírka na TH) --- */
 .category-group-table {
     border-collapse: collapse;
-    border: none; /* Zabezpečiť, že tabuľka samotná nemá border */
+    border: none;
     overflow: hidden;
     width: 100%;
     table-layout: fixed;
@@ -279,7 +279,7 @@ td:last-child {
 /* --- Style for Club List Table (within #clubsContent or modal) (UPRAVENÉ - šírka na TH) --- */
 .group-clubs-table {
     border-collapse: collapse;
-    border: none; /* Zabezpečiť, že tabuľka samotná nemá border */
+    border: none;
     overflow: hidden;
     width: 100%;
     table-layout: fixed;
@@ -336,7 +336,7 @@ td:last-child {
 }
 
 
-/* Filter Area */
+/* --- Filter Area --- */
 #clubsFilterContainer {
     margin-bottom: 20px;
     padding: 15px;
@@ -366,13 +366,48 @@ td:last-child {
     margin-bottom: 0;
 }
 
+/* --- Style for Category Table (UPRAVENÉ - Flexbox a padding na TD, šírka na TH) --- */
+#categoryTable {
+    border-collapse: collapse;
+    width: 100%;
+    border: none;
+    overflow: hidden;
+    table-layout: fixed; /* Zabezpečiť pevnú šírku stĺpcov */
+}
+
+/* Set width on the header cell for the action column */
+#categoryTable th:last-child {
+    width: 200px; /* Šírka stĺpca akcií na TH */
+    min-width: 200px; /* Zabezpečiť minimálnu šírku na TH */
+    white-space: nowrap; /* Zabezpečiť, že text hlavičky sa nezalomí */
+}
+
+/* Ensure the action column's data cell behaves as flex container */
+#categoryTable td:last-child {
+     white-space: nowrap;
+     /* text-align: center; ODSTRANENÉ */
+     /* Padding adjusted to match other action cells */
+     padding: 5px;
+     /* --- PRIDANÉ pre Flexbox v bunke --- */
+     display: flex; /* Použiť flexbox na zoradenie tlačidiel */
+     align-items: center; /* Vertikálne centrovať tlačidlá */
+     justify-content: center; /* Horizontálne centrovať skupinu tlačidiel v rámci paddingu */
+     gap: 5px; /* Medzera medzi tlačidlami */
+     /* --- KONIEC PRIDANÉ --- */
+}
+/* Odstránenie margin-right pre action buttony v tejto konkrétnej bunke (už ho netreba kvôli gap) */
+#categoryTable td:last-child .action-button {
+    margin-right: 0;
+}
+
+
 /* Team Creation Specific Styles */
 #teamCreationContentSection {
     /* Zdedí všeobecné .section-block štýly */
 }
 
 #teamCategoryCountContainer {
-    border: 1px solid #ddd; /* Toto orámovanie ponechané, ak je to zámer */
+    border: 1px solid #ddd;
     padding: 15px;
     margin-top: 15px;
     border-radius: 5px;
@@ -434,7 +469,7 @@ td:last-child {
 
 #teamsListInModal li {
     background-color: #e9ecef;
-    border: 1px solid #ddd; /* Toto orámovanie li */
+    border: 1px solid #ddd;
     margin-bottom: 8px;
     padding: 10px;
     border-radius: 4px;
