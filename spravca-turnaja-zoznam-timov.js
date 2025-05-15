@@ -1299,6 +1299,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 // Exportujte potrebné funkcie pre použitie v spravca-turnaja-script.js alebo inde
 // Exportovanie funkcie openTeamCreationModal, displayCreatedTeams, openManageTeamsModal, closeManageTeamsModal, openClubModal
 // Tieto funkcie sú potrebné pre navigáciu a interakciu medzi stránkami a modulmi.
-export { openTeamCreationModal, displayCreatedTeams, openManageTeamsModal, openClubModal };
+export { openTeamCreationModal, displayCreatedTeams, openClubModal };
 // Exportujte aj ďalšie premenné, ak sú potrebné inde (napr. allAvailableCategories, allAvailableGroups)
 // export { allAvailableCategories, allAvailableGroups };
