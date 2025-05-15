@@ -39,21 +39,20 @@
 
         /* Štýly pre blok jednotlivej skupiny */
         .group-display {
-            /* Flexbox item štýly */
-            flex: 0 1 300px; /* Nezväčšovať, zmenšovať, preferovaná šírka 300px */
-            min-width: 200px; /* Minimálna šírka, aby sa nezmenšovali príliš */
-            max-width: 300px; /* **Pridané: Maximálna šírka, aby sa nerozťahovali** */
-            /* Pôvodné štýly pre group-display */
-            margin-bottom: 0; /* Odstrániť spodný margin, pretože gap ho nahradí */
-            padding: 0; /* Odstrániť padding z hlavného group-display, padding bude vnútri */
-            border: 1px solid #ddd; /* Svetlejší border */
-            border-radius: 4px; /* Zaoblené rohy */
-            background-color: #fff; /* Biele pozadie */
-            box-sizing: border-box;
-            overflow: hidden; /* Zabezpečí, že zaoblené rohy budú viditeľné */
-            box-shadow: 2px 2px 5px rgba(0,0,0,0.1); /* Jemný tieň */
-            display: flex; /* Umožní usporiadať nadpis a zoznam tímov vo stĺpci */
-            flex-direction: column; /* Usporiadať obsah stĺpca */
+            /* ... other styles ... */
+            width: 300px; /* **Pridané: Fixná šírka ako preferencia** */
+            min-width: 200px; /* Minimálna šírka pri zmenšovaní */
+            max-width: 300px; /* Maximálna šírka (zvyčajne rovná fixnej šírke) */
+
+            /* Flexbox item štýly - upravíme pre lepšiu konzistenciu šírky */
+            /* flex: 0 1 300px; */ /* Pôvodné - odstránime shorthand */
+            flex-grow: 0;   /* Nepovoliť rozťahovanie */
+            flex-shrink: 1; /* **Povoliť zmenšovanie** (nutné pre responzivitu) */
+            flex-basis: auto; /* Flex-basis preberá hodnotu 'width' ak je nastavená a flex-basis je auto */
+
+
+            box-sizing: border-box; /* Dôležité pre fixnú šírku s paddingom/borderom */
+            /* ... other styles ... */
         }
 
         /* Štýly pre nadpis skupiny */
