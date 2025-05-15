@@ -10,7 +10,6 @@
 <body>
     <script type="module" src="auth.js"></script>
     <script src="script.js"></script>
-
     <main>
         <h1>Registrácia</h1>
         <form id="register-form">
@@ -18,30 +17,24 @@
                 <label for="username">Používateľské meno:</label>
                 <input type="text" id="username" name="username" required />
             </div>
-
             <div>
                 <label for="password">Heslo:</label>
                 <input type="password" id="password" name="password" required />
             </div>
-
             <div>
                 <label for="confirm-password">Potvrďte heslo:</label>
                 <input type="password" id="confirm-password" name="confirm-password" required />
             </div>
-
             <button type="submit">Registrovať</button>
             <div class="error-message" id="error-message"></div>
         </form>
     </main>
-
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script> <script src="https://cdn.jsdelivr.net/npm/bcryptjs@2.4.3/dist/bcrypt.min.js"></script>
-
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js';
-        import { getFirestore, doc, setDoc, getDoc } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js'; // Import getDoc
-
+        import { getFirestore, doc, setDoc, getDoc } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js';
         const firebaseConfig = {
             apiKey: "AIzaSyD0h0rQZiIGi0-UDb4-YU_JihRGpIlfz40",
             authDomain: "turnaj-a28c5.firebaseapp.com",
@@ -50,63 +43,48 @@
             messagingSenderId: "13732191148",
             appId: "1:13732191148:web:5ad78eaef2ad452a10f809"
         };
-
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-
         document.addEventListener('DOMContentLoaded', (event) => {
             const loggedInUsername = localStorage.getItem('username');
-
             if (!loggedInUsername || loggedInUsername !== 'admin') {
                 console.warn('Access denied: Not logged in as admin. Redirecting...');
                 window.location.href = 'login.html';
                 return;
             }
-
             const loginLinkParagraph = document.getElementById('login-link-paragraph');
              if (loggedInUsername) {
                  loginLinkParagraph.style.display = 'none';
              } else {
                  loginLinkParagraph.style.display = '';
              }
-
             document.getElementById('register-form').addEventListener('submit', async function(event) {
                 event.preventDefault();
-
                 const username = document.getElementById('username').value.trim();
                 const password = document.getElementById('password').value;
                 const confirmPassword = document.getElementById('confirm-password').value;
-
                 document.getElementById('error-message').textContent = '';
-
                 if (password !== confirmPassword) {
                     document.getElementById('error-message').textContent = 'Heslá sa nezhodujú!';
                     return;
                 }
-
                  if (password.length < 6) {
                      document.getElementById('error-message').textContent = 'Heslo musí mať aspoň 6 znakov.';
                      return;
                  }
-
                 try {
                     const userRef = doc(db, 'users', username);
-
                     const existingUserDoc = await getDoc(userRef);
                     if (existingUserDoc.exists()) {
                         document.getElementById('error-message').textContent = 'Používateľské meno už existuje!';
                         return;
                     }
-
                     await setDoc(userRef, {
-                        // password: hashedPassword,
                         password: password,
                     });
-
                     alert('Registrácia bola úspešná!');
                     document.getElementById('register-form').reset();
                     window.location.href = 'login.html';
-
                 } catch (error) {
                     console.error('Chyba pri registrácii:', error);
                     document.getElementById('error-message').textContent = 'Chyba pri registrácii: ' + error.message;
