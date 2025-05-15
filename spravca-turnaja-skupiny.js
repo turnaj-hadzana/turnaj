@@ -119,7 +119,6 @@ async function displayGroupsByCategory() {
               groupNameTh.textContent = 'Názov skupiny';
                const actionsTh = document.createElement('th');
                actionsTh.textContent = '';
-               //actionsTh.style.width = '150px'; // TOTO ODSTRÁNTE - šírku riadi CSS
                headerRow.appendChild(groupNameTh);
                headerRow.appendChild(actionsTh);
               thead.appendChild(headerRow);
