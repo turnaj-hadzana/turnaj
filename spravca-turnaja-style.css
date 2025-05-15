@@ -477,10 +477,11 @@ td:last-child {
     /* Zdedí všeobecné .section-block štýly */
 }
 
+/* Tento kontajner #teamCategoryCountContainer má stále svoje polstrovanie a orámovanie */
 #teamCategoryCountContainer {
-    border: 1px solid #ddd; /* Toto orámovanie ponechané, ak je to zámer (nie je to bunka tabuľky) */
-    padding: 15px;
-    margin-top: 15px;
+    border: 1px solid #ddd;
+    padding: 10px; /* ZMENENÉ: Menšie vnútorné polstrovanie */
+    margin-top: 10px; /* ZMENENÉ: Menšia medzera nad kontajnerom */
     border-radius: 5px;
     background-color: #f9f9f9;
 }
@@ -491,42 +492,43 @@ td:last-child {
     padding-bottom: 0;
 }
 
-/* Container for each dynamic Category/Count pair (ZMENENÉ Flex Direction a zarovnanie) */
+/* Container for each dynamic Category/Count pair (ZMENENÉ Flex Direction a zarovnanie a medzery) */
 .category-count-pair {
     display: flex;
     flex-direction: column; /* Zoraď potomkov (inner divs a tlačidlo) pod sebou */
     align-items: flex-start; /* Zarovnaj potomkov na začiatok (vľavo) */
-    margin-bottom: 15px; /* Medzera medzi jednotlivými pármi kategória/počet */
-    padding: 10px;
+    margin-bottom: 8px; /* ZMENENÉ: Menšia medzera medzi jednotlivými pármi kategória/počet */
+    padding: 8px; /* ZMENENÉ: Menšie vnútorné polstrovanie */
     border: 1px solid #eee;
     border-radius: 5px;
-    background-color: #f9f9f9;
-    gap: 10px; /* Medzera medzi stohovanými potomkami (select block, input block, button) */
-    flex-wrap: wrap; /* Ponechané */
+    background-color: #fff; /* ZMENENÉ: Biele pozadie pre vizuálne oddelenie od parent kontajnera */
+    gap: 5px; /* ZMENENÉ: Menšia medzera medzi stohovanými potomkami (select block, input block, button) */
+    flex-wrap: wrap;
 }
 
-/* Inner containers for Label+Select and Label+Input (ZMENENÉ Flex direction na column) */
+/* Inner containers for Label+Select and Label+Input (ZMENENÉ Flex direction na column a medzery) */
 .category-count-pair > div { /* Cieľ: selectContainer a inputContainer */
     display: flex;
     flex-direction: column; /* ZMENENÉ: Zoraď label a control pod sebou */
     align-items: flex-start; /* ZMENENÉ: Zarovnaj label a control na začiatok (vľavo) */
-    gap: 5px; /* Medzera medzi labelom a controlom */
-    flex-wrap: wrap; /* Menej relevantné */
-    width: 100%; /* Zabezpečiť, že tieto vnútorné kontajnery zaberú celú šírku */
-    /* margin-bottom: 0; ODSTRÁNENÉ - medzera medzi blokmi je riadená gap parenta (.category-count-pair) */
+    gap: 3px; /* ZMENENÉ: Ešte menšia medzera medzi labelom a controlom */
+    flex-wrap: wrap;
+    width: 100%;
+    /* margin-bottom riadené gap parenta */
 }
 
-/* Odstrániť spodný okraj z posledného vnútorného divu v páre */
-.category-count-pair > div:last-of-type {
+/* Odstrániť spodný okraj z posledného vnútorného divu v páre (už nie je potrebné kvôli gap na parentovi) */
+/* .category-count-pair > div:last-of-type {
     margin-bottom: 0;
-}
+} */
 
 .category-count-pair label {
     flex-shrink: 0;
-    min-width: auto; /* Neobmedzovať šírku labelu */
-    margin-bottom: 0; /* Odstrániť spodný okraj */
-    margin-right: 0; /* Zabezpečiť, že labely nemajú pravý okraj */
-    font-weight: bold; /* Vrátiť tučné písmo pre labely, ak to je zámer */
+    min-width: auto;
+    margin-bottom: 0; /* Zabezpečiť, že label nemá vlastný spodný okraj */
+    margin-right: 0;
+    font-weight: bold;
+    font-size: 0.9em; /* Možno menšie písmo labelu */
 }
 
 /* Modify styles for select and input */
@@ -535,30 +537,49 @@ td:last-child {
     display: block; /* ZMENENÉ: Aby zaberali celý riadok v rámci svojho Flex kontajnera (column) */
     width: 100%; /* ZMENENÉ: Aby zaberali celú šírku svojho Flex kontajnera (column) */
     flex-grow: 1;
-    margin-bottom: 0; /* Odstrániť spodný okraj */
-    margin-right: 0; /* Odstrániť pravý okraj */
-    padding: 5px;
-    box-sizing: border-box; /* Zabezpečiť, že padding je zahrnutý v šírke */
+    margin-bottom: 0; /* Zabezpečiť, že control nemá vlastný spodný okraj */
+    margin-right: 0;
+    padding: 4px; /* ZMENENÉ: Menšie vnútorné polstrovanie inputov/selectov */
+    box-sizing: border-box;
+    font-size: 0.9em; /* Menšie písmo inputov/selectov */
 }
 
 .category-count-pair input[type="number"] {
-     max-width: none; /* ZMENENÉ: Zrušiť obmedzenie maximálnej šírky, aby zaberalo 100% */
-     flex-grow: 0; /* Ponechané */
+     max-width: none; /* Zrušiť obmedzenie maximálnej šírky */
+     flex-grow: 0;
 }
 
 /* Modify delete button styling */
 .category-count-pair .action-button.delete-button {
-    padding: 3px 8px;
-    font-size: 0.8em;
-    margin-left: 0; /* Odstrániť ľavý okraj */
-    margin-top: 0; /* ODSTRÁNENÉ - medzera je riadená gap parenta */
-    align-self: flex-start; /* Zarovnaj tlačidlo na začiatok stĺpca (vľavo) */
+    padding: 2px 6px; /* ZMENENÉ: Menšie polstrovanie tlačidla */
+    font-size: 0.7em; /* ZMENENÉ: Menšie písmo tlačidla */
+    margin-left: 0;
+    margin-top: 0; /* Zabezpečiť, že tlačidlo nemá vlastný horný okraj */
+    align-self: flex-start;
 }
+
+/* Spacing for buttons at the bottom of the team creation form */
+#teamCreationForm #addCategoryCountPairButton,
+#teamCreationForm button[type="submit"] {
+    /* ODSTRÁNENÝ pôvodný inline style margin-top */
+    /* Pridáme margin-top cez CSS */
+    margin-top: 10px; /* Menšia medzera nad tlačidlom Pridať */
+}
+
+/* Ensure the submit button still has a bit more space above */
+#teamCreationForm button[type="submit"] {
+    margin-top: 15px; /* Menšia medzera nad tlačidlom Vytvoriť tímy */
+}
+
+/* Odstránené pravidlo, ktoré cielilo na divy priamo v #teamCategoryCountContainer */
+/* #teamCategoryCountContainer div {
+    margin-bottom: 10px;
+} */
 
 
 /* Manage Teams Modal Specific Styles */
 #teamsListInModal {
-    margin-top: 15px;
+    margin-top: 15px; /* Ponechaná medzera nad zoznamom tímov */
 }
 
 #teamsListInModal ul {
@@ -569,97 +590,46 @@ td:last-child {
 
 #teamsListInModal li {
     background-color: #e9ecef;
-    border: 1px solid #ddd; /* Toto orámovanie li, nie bunky tabuľky */
-    margin-bottom: 8px;
-    padding: 10px;
+    border: 1px solid #ddd;
+    margin-bottom: 8px; /* ZMENENÉ: Menšia medzera medzi položkami zoznamu */
+    padding: 8px; /* ZMENENÉ: Menšie vnútorné polstrovanie */
     border-radius: 4px;
     display: flex;
     justify-content: space-between;
     align-items: center;
     word-break: break-word;
+    font-size: 0.9em; /* Menšie písmo v zozname */
 }
 
 #teamsListInModal li span {
     flex-grow: 1;
-    margin-right: 10px;
+    margin-right: 8px; /* ZMENENÉ: Menšia medzera pred tlačidlami */
 }
 
 #teamsListInModal li .action-buttons {
     flex-shrink: 0;
     white-space: nowrap;
     display: flex;
-    gap: 5px;
+    gap: 4px; /* ZMENENÉ: Menšia medzera medzi tlačidlami */
     align-items: center;
 }
-/* Odstránenie margin-right pre action buttony v li */
-#teamsListInModal li .action-buttons .action-button {
-    margin-right: 0;
-}
 
-
-/* --- Modal Styles --- */
-.modal {
-    display: none;
-    position: fixed;
-    z-index: 2000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    overflow: auto;
-    background-color: rgba(0, 0, 0, 0.4);
-    padding-top: 60px;
-}
-
-.modal-content {
-    background-color: #fefefe;
-    margin: 5% auto;
-    padding: 20px;
-    border: 1px solid #888;
-    width: 90%;
-    max-width: 500px; /* Maximálna šírka modálneho okna - tabuľka sa môže roztiahnuť nad túto šírku s posuvníkom */
-    border-radius: 8px;
-    position: relative;
-    overflow-x: auto; /* Umožniť horizontálne posúvanie ak je obsah širší */
-}
-
-.modal-content h2 {
-    margin-top: 0;
-    margin-bottom: 20px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid #eee;
-}
-
-.close {
-    color: #aaa;
-    position: absolute;
-    top: 10px;
-    right: 15px;
-    font-size: 28px;
-    font-weight: bold;
-    cursor: pointer;
-}
-
-.close:hover,
-.close:focus {
-    color: #000;
-    text-decoration: none;
-    cursor: pointer;
-}
-
+/* --- Modal Styles - pokracovanie vseobecnych stylov po specialnych --- */
 /* Style for the Category Select in the Group Modal (NOVÉ/UPRAVENÉ) */
-#groupModal #groupCategory {
-    width: calc(100% - 22px); /* Zabezpečiť, aby zodpovedala šírke inputu názvu skupiny */
-    padding: 10px; /* Polstrovanie pre vizuálne zladenie */
-    box-sizing: border-box; /* Zahrnúť polstrovanie do celkových rozmerov */
-    /* --- PRIDANÉ/UPRAVENÉ pre nastavenie výšky a zladenie --- */
-    height: 40px; /* Experimentálna výška, ktorá by sa mala zhodovať s inputom/tlačidlom */
-    line-height: 20px; /* Môže pomôcť s vertikálnym centrovaním textu v selectboxe */
-    /* --- KONIEC PRIDANÉ/UPRAVENÉ --- */
-    margin-bottom: 20px; /* Spodný okraj ako u ostatných prvkov formulára */
-    border: 1px solid #ccc; /* Orámovanie ako u inputu */
-    border-radius: 4px; /* Zaoblené rohy ako u inputu */
-    font-size: 1em; /* Veľkosť písma ako u inputu */
+/* Tieto styly sa tykaju ineho modalu, ponechane alebo mierne upravene */
+#groupModal #groupCategory,
+#clubModal #clubCategory,
+#clubModal #clubGroup,
+#clubModal #orderInGroup,
+#clubModal #clubName,
+#clubModal #unassignedClubSelect {
+    width: calc(100% - 16px); /* Prispôsobiť šírku k novému paddingu */
+    padding: 8px; /* Zjednotené polstrovanie */
+    box-sizing: border-box;
+    margin-bottom: 10px; /* Zjednotená medzera */
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 0.9em; /* Zjednotené písmo */
 }
 
 
@@ -709,55 +679,34 @@ td:last-child {
     /* Modálne okno na malých obrazovkách */
     .modal-content {
         width: 95%;
-        margin: 10% auto;
-        padding: 15px;
+        margin: 5% auto; /* Menšia medzera na mobiloch */
+        padding: 10px; /* ZMENENÉ: Menšie polstrovanie na mobiloch */
+        max-width: none; /* Zrušiť max-width na mobiloch */
     }
 
     /* Vstupné polia a selecty vo formulároch */
-    form input[type="text"],
-    form input[type="number"],
-    form select {
-        width: calc(100% - 20px);
-        padding: 8px; /* Zmenené padding na 8px pre mobil */
-        margin-bottom: 10px;
+     .modal-content form input[type="text"],
+     .modal-content form input[type="number"],
+     .modal-content form select,
+     #groupModal #groupCategory,
+     #clubModal #clubCategory,
+     #clubModal #clubGroup,
+     #clubModal #orderInGroup,
+     #clubModal #clubName,
+     #clubModal #unassignedClubSelect
+     {
+        width: calc(100% - 16px); /* Prispôsobenie šírky */
+        padding: 8px; /* ZMENENÉ: Menšie polstrovanie */
+        margin-bottom: 8px; /* ZMENENÉ: Menšia medzera pod inputom/selectom */
+        font-size: 1em; /* Vrátiť štandardnú veľkosť písma na mobiloch */
     }
+
 
     /* Filter kategórií/skupín v sekcii Tímy do skupín */
      #clubsFilterContainer select {
           max-width: none;
           flex-basis: 150px;
      }
-
-     /* Mobilné zobrazenie pre dynamické páry kategória/počet (TERAZ ROVNAKÉ AKO VŠEOBECNÉ) */
-     /*
-     .category-count-pair {
-         flex-direction: column;
-         align-items: flex-start;
-     }
-
-      .category-count-pair > div {
-          flex-direction: column;
-          align-items: flex-start;
-          gap: 5px;
-      }
-
-      .category-count-pair label {
-           min-width: auto;
-      }
-
-      .category-count-pair select,
-      .category-count-pair input[type="number"] {
-           width: 100%;
-           max-width: none;
-           margin-right: 0;
-      }
-
-       .category-count-pair .action-button.delete-button {
-           margin-left: 0;
-           margin-top: 10px;
-           align-self: flex-start;
-       }
-       */
 
 }
 
@@ -800,27 +749,21 @@ td:last-child {
      }
 
      /* Vstupné polia a selecty vo formulároch - desktop */
-    .modal-content form input[type="text"],
-    .modal-content form input[type="number"],
-    .modal-content form select {
-        width: calc(100% - 22px);
-        padding: 10px; /* Vrátené padding na 10px pre desktop */
-        margin-bottom: 20px;
-    }
-
-    /* Odstránené špecifické desktopové pravidlá pre .category-count-pair a jeho potomkov,
-       aby platili všeobecné pravidlá (ktoré nastavujú flex-direction: column)
-    */
-    /*
-    @media (min-width: 769px) {
-         .category-count-pair { flex-direction: row; align-items: center; gap: 10px; }
-         .category-count-pair > div { flex-direction: row; align-items: center; gap: 10px; width: auto; }
-         .category-count-pair label { min-width: 80px; }
-         .category-count-pair select, .category-count-pair input[type="number"] { width: auto; max-width: none; flex-grow: 1; margin-right: 0; }
-         .category-count-pair input[type="number"] { max-width: 80px; flex-grow: 0; }
-         .category-count-pair .action-button.delete-button { margin-left: 10px; margin-top: 0; align-self: center; }
-    }
-    */
+     .modal-content form input[type="text"],
+     .modal-content form input[type="number"],
+     .modal-content form select,
+     #groupModal #groupCategory,
+     #clubModal #clubCategory,
+     #clubModal #clubGroup,
+     #clubModal #orderInGroup,
+     #clubModal #clubName,
+     #clubModal #unassignedClubSelect
+     {
+        width: calc(100% - 16px); /* Prispôsobenie šírky */
+        padding: 8px; /* Zjednotené polstrovanie */
+        margin-bottom: 10px; /* Zjednotená medzera */
+        font-size: 1em; /* Štandardná veľkosť písma */
+     }
 
 }
 
@@ -841,19 +784,4 @@ body.modal-open main {
     opacity: 0.5;
     pointer-events: none;
     user-select: none;
-}
-
-/* Style for the Category Select in the Group Modal (NOVÉ/UPRAVENÉ) */
-#groupModal #groupCategory {
-    width: calc(100% - 22px); /* Zabezpečiť, aby zodpovedala šírke inputu názvu skupiny */
-    padding: 10px; /* Polstrovanie pre vizuálne zladenie */
-    box-sizing: border-box; /* Zahrnúť polstrovanie do celkových rozmerov */
-    /* --- PRIDANÉ/UPRAVENÉ pre nastavenie výšky a zladenie --- */
-    height: 40px; /* Experimentálna výška, ktorá by sa mala zhodovať s inputom/tlačidlom */
-    line-height: 20px; /* Môže pomôcť s vertikálnym centrovaním textu v selectboxe */
-    /* --- KONIEC PRIDANÉ/UPRAVENÉ --- */
-    margin-bottom: 20px; /* Spodný okraj ako u ostatných prvkov formulára */
-    border: 1px solid #ccc; /* Orámovanie ako u inputu */
-    border-radius: 4px; /* Zaoblené rohy ako u inputu */
-    font-size: 1em; /* Veľkosť písma ako u inputu */
 }
