@@ -388,10 +388,13 @@ async function openClubModal(clubId = null, mode = 'assign') {
          clubModalTitle.textContent = 'Vytvoriť nový tím';
          clubNameField.style.display = 'block';
          clubAssignmentFields.style.display = 'block';
-         unassignedClubField.style.display = 'none'; // Skryť pole
-         if (unassignedClubSelect) unassignedClubSelect.disabled = true; // ZAKÁZAŤ select nepriradených tímov
+         unassignedClubField.style.display = 'none';
+         if (unassignedClubSelect) unassignedClubSelect.disabled = true;
          if (clubCategorySelect) clubCategorySelect.disabled = false; // POVODIŤ select kategórií v create mode
          if (clubGroupSelect) clubGroupSelect.disabled = true; // ZAKÁZAŤ select skupín na začiatku v create mode
+
+         // PRIDANÉ: Zakázať input poradia na začiatku
+         if (orderInGroupInput) orderInGroupInput.disabled = true;
 
 
          const submitButton = clubForm.querySelector('button[type="submit"]');
@@ -399,10 +402,8 @@ async function openClubModal(clubId = null, mode = 'assign') {
 
          if (unassignedClubSelect) unassignedClubSelect.onchange = null;
 
-         // Naplniť selectbox kategórií a povoliť ho
          if (allAvailableCategories.length > 0) {
-              populateCategorySelect(clubCategorySelect, null); // null ako selectedCategoryId
-              // clubCategorySelect.disabled = false; // Už nastavené v resete a zostane povolené v create mode
+              populateCategorySelect(clubCategorySelect, null);
          } else {
               clubCategorySelect.innerHTML = '<option value="">-- Žiadne kategórie --</option>';
               clubCategorySelect.disabled = true;
@@ -411,18 +412,50 @@ async function openClubModal(clubId = null, mode = 'assign') {
          clubGroupSelect.innerHTML = '<option value="">-- Vyberte skupinu --</option>';
 
 
-          // Listener na zmenu kategórie (pre create mode) - tu povolíme select skupiny
+          // Listener na zmenu selectboxu kategórií (pre create mode) - tu povolíme select skupiny
          clubCategorySelect.onchange = () => {
               const selectedCategoryId = clubCategorySelect.value;
               console.log("Zmenená kategória v create mode modále klubu:", selectedCategoryId);
               if (selectedCategoryId && selectedCategoryId !== '' && !selectedCategoryId.startsWith('--')) {
-                  if (clubGroupSelect) clubGroupSelect.disabled = false; // POVODIŤ select skupiny
+                  if (clubGroupSelect) clubGroupSelect.disabled = false; // Povoliť select skupiny
                   populateGroupSelectForClubModal(clubGroupSelect, null, allAvailableGroups, selectedCategoryId);
+                   // Pri zmene kategórie a naplnení nových skupín, zakážeme pole poradia a vyčistíme ho
+                  if (orderInGroupInput) {
+                       orderInGroupInput.disabled = true;
+                       orderInGroupInput.value = '';
+                  }
               } else {
-                   if (clubGroupSelect) clubGroupSelect.disabled = true; // ZAKÁZAŤ select skupiny
+                   if (clubGroupSelect) clubGroupSelect.disabled = true; // Zakázať select skupiny
                    clubGroupSelect.innerHTML = '<option value="">-- Vyberte skupinu --</option>';
+                   // Ak sa kategória "odvyberie", zakážeme aj pole poradia a vyčistíme ho
+                   if (orderInGroupInput) {
+                       orderInGroupInput.disabled = true;
+                       orderInGroupInput.value = '';
+                   }
               }
          };
+
+         // PRIDANÉ: Listener na zmenu selectboxu skupín (pre create mode)
+         if (clubGroupSelect) {
+              clubGroupSelect.onchange = () => {
+                   const selectedGroupId = clubGroupSelect.value;
+                   console.log("Zmenená skupina v create mode modále klubu:", selectedGroupId);
+                   // Ak bola vybraná platná skupina
+                   if (selectedGroupId && selectedGroupId !== '' && !selectedGroupId.startsWith('--')) {
+                        if (orderInGroupInput) {
+                            orderInGroupInput.disabled = false; // POVODIŤ input poradia
+                            orderInGroupInput.focus(); // Voliteľné: presunúť zameranie na pole poradia
+                        }
+                   } else {
+                       // Ak nebola vybraná žiadna skupina (alebo je neplatná)
+                       if (orderInGroupInput) {
+                           orderInGroupInput.disabled = true; // ZAKÁZAŤ input poradia
+                           orderInGroupInput.value = ''; // Vyčistiť hodnotu poradia
+                       }
+                   }
+              };
+         }
+
 
          if (clubGroupSelect) clubGroupSelect.removeAttribute('required');
          if (orderInGroupInput) orderInGroupInput.removeAttribute('required');
