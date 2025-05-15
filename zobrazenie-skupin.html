@@ -7,6 +7,85 @@
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="spravca-turnaja-style.css">
+    <style>
+        /* Základné štýly pre zobrazenie skupín */
+        .category-display {
+            margin-bottom: 30px;
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+
+        .category-display h2 {
+            color: #333;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+
+        .group-display {
+            margin-bottom: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #fff;
+        }
+
+        .group-display h3 {
+            color: #0056b3;
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+
+        .group-display ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .group-display li {
+            background-color: #e9e9e9;
+            padding: 8px;
+            margin-bottom: 5px;
+            border-radius: 3px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .unassigned-teams-display {
+             margin-top: 30px;
+             padding: 15px;
+             border: 1px solid #ccc;
+             border-radius: 5px;
+             background-color: #f9f9f9;
+        }
+
+        .unassigned-teams-display h2 {
+             color: #d35400; /* Or any distinct color */
+             border-bottom: 2px solid #eee;
+             padding-bottom: 10px;
+             margin-top: 0;
+             margin-bottom: 15px;
+        }
+
+        .unassigned-teams-display ul {
+             list-style: none;
+             padding: 0;
+             margin: 0;
+        }
+
+        .unassigned-teams-display li {
+            background-color: #f39c12; /* Or any distinct color */
+            color: #fff;
+            padding: 8px;
+            margin-bottom: 5px;
+            border-radius: 3px;
+        }
+
+    </style>
 </head>
 <body>
     <h1>Správca turnaja</h1>
@@ -19,10 +98,12 @@
                 <li><a href="zobrazenie-skupin.html">Zobrazenie skupín</a></li>
             </ul>
         </nav>
-        <main id="groupedDataContent">
-            <h2>Zobrazenie skupín a tímov</h2>
-            <div id="dataDisplayArea">
-                </div>
+        <main>
+            <section class="section-block">
+                 <h2>Prehľad skupín a tímov</h2>
+                 <div id="groupsDisplayContent">
+                     </div>
+            </section>
         </main>
     </div>
 
