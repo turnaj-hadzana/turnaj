@@ -2477,13 +2477,18 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase
             }
 
 
-            // Implementácia pridania hráča do súpisky
+// Implementácia pridania hráča do súpisky
             if (playerForm) {
                 playerForm.addEventListener('submit', async (e) => {
                     e.preventDefault();
-                    if (!selectedTeamForRoster) {
-                        alert('Prosím, najprv vyberte tím.');
-                         if (rosterTeamSelect) rosterTeamSelect.focus();
+                    // Získame ID vybraného tímu z hlavnej stránky, nie z modalu
+                    const selectedTeamForRoster = document.getElementById('mainRosterTeamSelect') ? document.getElementById('mainRosterTeamSelect').value : null;
+
+                    if (!selectedTeamForRoster || selectedTeamForRoster === '') {
+                        alert('Prosím, najprv vyberte tím v hlavnej sekcii Súpiska.');
+                         // Ak je modal otvorený, ale tím nie je vybraný na hlavnej stránke, zatvoriť modal? Alebo len upozorniť?
+                         // Necháme len upozornenie a modal zostane otvorený, aby si užívateľ mohol vybrať tím.
+                         if (document.getElementById('mainRosterTeamSelect')) document.getElementById('mainRosterTeamSelect').focus(); // Zamerať na výber tímu na hlavnej stránke
                         return;
                     }
 
@@ -2508,30 +2513,39 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase
                         return;
                     }
 
+                    // Vytvorenie ID dokumentu na základe čísla, mena a priezviska
+                    const playerId = `${playerNumber} - ${playerName} ${playerSurname}`;
+
                     try {
-                         // Skontrolovať, či hráč s rovnakým číslom už existuje v súpiske tohto tímu
-                         const existingPlayersQuery = query(collection(clubsCollectionRef, selectedTeamForRoster, 'roster'), where('number', '==', playerNumber));
-                         const existingPlayersSnapshot = await getDocs(existingPlayersQuery);
-                          if (!existingPlayersSnapshot.empty) {
-                               alert(`Hráč s číslom "${playerNumber}" už na súpiske tohto tímu existuje.`);
+                         // Referencia na subkolekciu 'roster' pre vybraný tím
+                        const rosterCollectionRef = collection(clubsCollectionRef, selectedTeamForRoster, 'roster');
+                         // Referencia na dokument hráča s novým ID
+                        const playerDocRef = doc(rosterCollectionRef, playerId);
+
+                         // Skontrolovať, či dokument s týmto ID už existuje
+                         const existingPlayerDoc = await getDoc(playerDocRef);
+                          if (existingPlayerDoc.exists()) {
+                               alert(`Hráč s ID "${playerId}" už na súpiske tohto tímu existuje. Prosím, skontrolujte zadané údaje (číslo, meno, priezvisko).`);
+                               // Zameranie na prvé pole, ktoré tvorí ID (číslo hráča)
                                 if (playerNumberInput) playerNumberInput.focus();
-                               return;
+                               return; // Zastaviť pridávanie, ak hráč už existuje
                           }
 
-                        // Pridať nového hráča do subkolekcie 'roster' vybraného tímu
-                        const rosterCollectionRef = collection(clubsCollectionRef, selectedTeamForRoster, 'roster');
-                        await addDoc(rosterCollectionRef, {
+                        // Pridať nového hráča do subkolekcie 'roster' vybraného tímu pomocou setDoc a vlastného ID
+                        await setDoc(playerDocRef, {
                             number: playerNumber,
                             name: playerName,
                             surname: playerSurname
                              // Prípadne ďalšie polia, ak by boli potrebné (napr. pozícia)
                         });
 
-                        alert(`Hráč "${playerName} ${playerSurname}" úspešne pridaný na súpisku.`);
+                        alert(`Hráč "${playerName} ${playerSurname}" úspešne pridaný na súpisku tímu.`);
                         playerForm.reset(); // Vyčistiť formulár
                          if (playerNumberInput) playerNumberInput.focus(); // Nastaviť fokus späť na číslo
 
-                        displayRoster(selectedTeamForRoster); // Obnoviť zobrazenie súpisky
+                        // Obnoviť zobrazenie súpisky na hlavnej stránke
+                        displayMainRoster(selectedTeamForRoster);
+
                     } catch (error) {
                         console.error('Chyba pri pridávaní hráča na súpisku: ', error);
                         alert('Chyba pri pridávaní hráča na súpisku! Prosím, skúste znova.');
