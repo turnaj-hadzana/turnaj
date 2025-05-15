@@ -846,7 +846,7 @@ async function displayCreatedTeams() {
 
 
             const editButton = document.createElement('button');
-            editButton.textContent = 'Upraviť / Priradiť';
+            editButton.textContent = 'Upraviť';
             editButton.classList.add('action-button');
             editButton.onclick = () => {
                  if (typeof openClubModal === 'function') {
