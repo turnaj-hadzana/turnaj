@@ -114,6 +114,7 @@ main {
     box-shadow: none;
     background-color: transparent;
     min-width: 0;
+    overflow-x: auto;
 }
 .section-block {
     margin-bottom: 20px;
@@ -122,6 +123,7 @@ main {
     border-radius: 5px;
     background-color: #fefefe;
     box-sizing: border-box;
+    overflow-x: auto;
 }
 #groupsContent,
 #clubsContent {
@@ -142,7 +144,6 @@ main {
     box-sizing: border-box;
 }
 table {
-    width: 100%;
     border-collapse: collapse;
     margin-top: 15px;
 }
@@ -151,6 +152,7 @@ td {
     border: none;
     padding: 10px;
     text-align: left;
+    white-space: nowrap;
 }
 #categoryTable th, #clubsTable th, .category-group-table th, .group-clubs-table th, #createdTeamsTable th,
 #manageTeamsModal .group-clubs-table th, #clubModal .group-clubs-table th {
@@ -229,43 +231,15 @@ td:last-child {
     overflow: hidden;
     text-overflow: ellipsis;
 }
-.category-group-table {
-    border-collapse: collapse;
-    border: none;
-    overflow: hidden;
-    width: 100%;
-    table-layout: fixed;
-    font-size: 0.9em;
-    margin-top: 10px;
-}
-.category-group-table th:last-child {
-    width: 200px;
-    min-width: 200px;
-    white-space: nowrap;
-}
-.category-group-table td:last-child {
-    white-space: nowrap;
-    padding: 5px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 5px;
-}
+#createdTeamsTable,
+.category-group-table,
 .group-clubs-table {
-    border-collapse: collapse;
-    border: none;
-    overflow: hidden;
-    width: 100%;
-    table-layout: fixed;
-    font-size: 0.9em;
-    margin-top: 10px;
+    width: auto;
+    table-layout: auto;
 }
-.group-clubs-table th:last-child {
-    width: 200px;
-    min-width: 200px;
-    white-space: nowrap;
-}
-.group-clubs-table td:last-child {
+.category-group-table td:last-child,
+.group-clubs-table td:last-child,
+#createdTeamsTable td:last-child {
     white-space: nowrap;
     padding: 5px;
     display: flex;
@@ -273,36 +247,16 @@ td:last-child {
     justify-content: center;
     gap: 5px;
 }
-#createdTeamsTable {
-    border-collapse: collapse;
-    width: 100%;
-    border: none;
-    overflow: hidden;
-    table-layout: fixed;
-    font-size: 0.9em;
-    margin-top: 15px;
-}
-#createdTeamsTable th,
-#createdTeamsTable td {
+.category-group-table th:last-child,
+.group-clubs-table th:last-child,
+#createdTeamsTable th:last-child {
+    width: 200px;
+    min-width: 200px;
+    white-space: nowrap;
 }
 #createdTeamsTable thead {
 }
 #createdTeamsTableHeader {
-}
-#createdTeamsTable th:last-child,
-#manageTeamsModal .group-clubs-table th:last-child, #clubModal .group-clubs-table th:last-child {
-    width: 200px;
-    min-width: 200px;
-    white-space: nowrap;
-}
-#createdTeamsTable td:last-child,
-#manageTeamsModal .group-clubs-table td:last-child, #clubModal .group-clubs-table td:last-child {
-    white-space: nowrap;
-    padding: 5px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 5px;
 }
 #teamCreationContentSection {
 }
