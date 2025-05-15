@@ -143,74 +143,69 @@ function displayGroups() {
             // Zoradiť skupiny v rámci kategórie (napr. podľa názvu)
             groupsInCategory.sort((a, b) => (a.name || a.id || '').localeCompare((b.name || b.id || ''), 'sk-SK'));
 
-            groupsInCategory.forEach(group => {
-                const groupDiv = document.createElement('div');
-                groupDiv.classList.add('group-display');
+            groupsInCategory.forEach(group => {
+                const groupDiv = document.createElement('div');
+                groupDiv.classList.add('group-display');
 
-                const groupTitle = document.createElement('h3');
-                groupTitle.textContent = group.name || group.id; // Zobraz názov skupiny ak existuje, inak ID skupiny
-                groupDiv.appendChild(groupTitle);
+                const groupTitle = document.createElement('h3');
+                groupTitle.textContent = group.name || group.id; // Zobraz názov skupiny ak existuje, inak ID skupiny
+                groupDiv.appendChild(groupTitle);
 
-                // Nájdi filtrované tímy priradené k tejto skupine
-                const teamsInGroup = filteredTeams.filter(team => team.groupId === group.id);
+                // Nájdi filtrované tímy priradené k tejto skupine
+                const teamsInGroup = filteredTeams.filter(team => team.groupId === group.id);
 
-                if (teamsInGroup.length === 0 && selectedTeamId === '') { // Zobraz "žiadne tímy" iba ak nie je aktívny filter tímu
+                // *** NOVÁ LOGIKA ZOBRAZENIA SKUPINY NA ZÁKLADE FILTRA TÍMU ***
+                // Ak je vybraný konkrétny tím A tento tím sa v skupine nenachádza, preskočiť zobrazenie tejto skupiny
+                if (selectedTeamId !== '' && teamsInGroup.length === 0) {
+                    return; // Preskočí zvyšok iterácie pre túto skupinu, teda ju nezobrazí
+                }
+                // *** KONIEC NOVEJ LOGIKY ***
+
+
+                 if (teamsInGroup.length === 0 && selectedTeamId === '') { // Zobraz "žiadne tímy" iba ak nie je aktívny filter tímu
                     const noTeamsPara = document.createElement('p');
                     noTeamsPara.textContent = 'V tejto skupine zatiaľ nie sú žiadne tímy.';
                     groupDiv.appendChild(noTeamsPara);
                 } else if (teamsInGroup.length > 0) { // Zobraz tímy iba ak nejaké sú po filtrovaní
-                    // Zoradiť tímy v skupine podľa poradia (orderInGroup), potom abecedne
-                    teamsInGroup.sort((a, b) => {
-                        const orderA = a.orderInGroup || Infinity; // Tímy bez poradia na koniec
-                        const orderB = b.orderInGroup || Infinity;
-                        if (orderA !== orderB) {
-                            return orderA - orderB;
-                        }
-                        const nameA = (a.name || a.id || '').toLowerCase();
-                        const nameB = (b.name || b.id || '').toLowerCase();
-                        return nameA.localeCompare(nameB, 'sk-SK');
-                    });
+                     // Zoradiť tímy v skupine podľa poradia (orderInGroup), potom abecedne
+                     teamsInGroup.sort((a, b) => {
+                         const orderA = a.orderInGroup || Infinity; // Tímy bez poradia na koniec
+                         const orderB = b.orderInGroup || Infinity;
+                         if (orderA !== orderB) {
+                             return orderA - orderB;
+                         }
+                         const nameA = (a.name || a.id || '').toLowerCase();
+                         const nameB = (b.name || b.id || '').toLowerCase();
+                         return nameA.localeCompare(nameB, 'sk-SK');
+                     });
 
-                    const teamList = document.createElement('ul');
-                    teamsInGroup.forEach(team => {
-                        const teamItem = document.createElement('li');
+                     const teamList = document.createElement('ul');
+                     teamsInGroup.forEach(team => {
+                         const teamItem = document.createElement('li');
 
-                        // *** ZMENENÉ PORADIE: Číslo poradia pred názvom tímu ***
-                        if (typeof team.orderInGroup === 'number' && team.orderInGroup > 0) {
-                            const orderSpan = document.createElement('span');
-                            orderSpan.textContent = `${team.orderInGroup}.`; // Pridal som bodku za číslo
-                            teamItem.appendChild(orderSpan);
+                         if (typeof team.orderInGroup === 'number' && team.orderInGroup > 0) {
+                              const orderSpan = document.createElement('span');
+                              orderSpan.textContent = `${team.orderInGroup}.`;
+                              teamItem.appendChild(orderSpan);
 
-                            // Pridať malú medzeru (napr. nezalomiteľnú medzeru)
-                            const separator = document.createTextNode('\u00A0'); // Nezalomiteľná medzera
-                            teamItem.appendChild(separator);
-                        }
+                                 const separator = document.createTextNode('\u00A0');
+                                 teamItem.appendChild(separator);
+                         }
 
-                        const teamNameSpan = document.createElement('span');
-                        teamNameSpan.textContent = team.name || 'Neznámy tím';
-                        teamItem.appendChild(teamNameSpan);
-                        // *** KONIEC ZMENENÉHO PORADIA ***
+                         const teamNameSpan = document.createElement('span');
+                          teamNameSpan.classList.add('team-name');
+                         teamNameSpan.textContent = team.name || 'Neznámy tím';
+                         teamItem.appendChild(teamNameSpan);
 
-                        teamList.appendChild(teamItem);
-                    });
-                    groupDiv.appendChild(teamList);
-                }
+                         teamList.appendChild(teamItem);
+                     });
+                     groupDiv.appendChild(teamList);
+                 }
 
-
-                // Pridať groupDiv do kontajnera skupín, nie priamo do categoryDiv
-                groupsContainerDiv.appendChild(groupDiv);
-            });
-        }
-
-
-        // Ak po filtrovaní nie sú v tejto kategórii žiadne skupiny ani tímy na zobrazenie (a filter skupiny nie je aktívny), nezobrazovať nadpis kategórie
-         if (groupsInCategory.length === 0 && selectedGroupId === '' && filteredTeams.filter(team => team.categoryId === category.id && team.groupId).length === 0) {
-             // Túto kategóriu vynechať, ak nie sú v nej žiadne relevantné skupiny ani priradené tímy po filtrovaní
-         } else {
-             groupsDisplayContent.appendChild(categoryDiv);
-         }
-    });
-
+                // Pridať groupDiv do kontajnera skupín, nie priamo do categoryDiv
+                groupsContainerDiv.appendChild(groupDiv);
+            });
+                
 
     // Zobraziť tímy bez priradenej skupiny (s implementovaným filtrovaním)
     const unassignedTeams = filteredTeams.filter(team => !team.groupId || (typeof team.groupId === 'string' && team.groupId.trim() === ''));
