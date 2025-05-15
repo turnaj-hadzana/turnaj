@@ -543,13 +543,11 @@ async function displayCreatedTeams() {
     // Hlavička sa vytvára len raz pri prvom načítaní, alebo ak bola vyčistená
     if (createdTeamsTableHeader.innerHTML === '') {
          createdTeamsTableHeader.innerHTML = `
-              <tr>
-                  <th>Názov tímu</th>
-                  <th>Kategória</th>
-                  <th>Skupina</th>
-                  <th>Poradie v skupine</th>
-                   <th>Akcie</th>
-              </tr>
+              <th>Názov tímu</th>
+              <th>Kategória</th>
+              <th>Skupina</th>
+              <th>Poradie v skupine</th>
+              <th>Akcie</th>
          `;
     }
 
