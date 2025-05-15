@@ -80,9 +80,9 @@
             justify-content: flex-start; /* Zarovnanie položiek od začiatku (vľavo) */
             align-items: center;
             border-bottom: 1px solid #ccc;
-            white-space: nowrap; /* **Zabráni zalamovaniu textu na úrovni li** */
-            overflow: hidden; /* **Skryje pretečený obsah li** */
-            text-overflow: clip; /* ** Explicitne zakážeme zobrazenie bodiek pri pretečení ** */
+            white-space: nowrap !important; /* **Zabráni zalamovaniu textu na úrovni li** */
+            /* overflow: hidden; */ /* ODSTRÁNENÉ - pretečený text bude viditeľný */
+            /* text-overflow: clip; */ /* ODSTRÁNENÉ */
         }
 
         /* Odstrániť spodný border z poslednej položky tímu */
@@ -98,14 +98,12 @@
         }
 
         /* Nový štýl pre názov tímu - bude tučný */
+        /* Ponecháme tu nowrap aj display:block pre istotu */
         .group-display ul li .team-name {
             font-weight: bold;
-            white-space: nowrap; /* Zabráni zalamovaniu textu v spane */
+            white-space: nowrap !important; /* **Zabráni zalamovaniu textu v spane** */
             display: block;
             flex-grow: 1; /* Umožní názvu tímu zabrať dostupné miesto */
-             /* Odstránili sme overflow a text-overflow, nechceme aby span skrýval, ale li */
-            /* overflow: hidden; */
-            /* text-overflow: ellipsis; */
         }
 
         /* Štýl pre zvýraznený tím */
@@ -189,9 +187,9 @@
             border-radius: 3px;
             border-bottom: 1px solid #f5c6cb;
             text-align: left;
-            white-space: nowrap; /* **Zabráni zalamovaniu textu v li** */
-            overflow: hidden; /* **Skryje pretečený obsah li** */
-            text-overflow: clip; /* ** Explicitne zakážeme zobrazenie bodiek pri pretečení ** */
+            white-space: nowrap !important; /* **Zabráni zalamovaniu textu v li** */
+            /* overflow: hidden; */ /* ODSTRÁNENÉ - pretečený text bude viditeľný */
+            /* text-overflow: clip; */ /* ODSTRÁNENÉ */
             display: block;
         }
 
