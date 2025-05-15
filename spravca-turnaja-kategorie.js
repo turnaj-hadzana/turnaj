@@ -1,11 +1,4 @@
-// spravca-turnaja-kategorie.js
-
-// Importujte spoločné funkcie a referencie z common.js
-import { db, categoriesCollectionRef, groupsCollectionRef, clubsCollectionRef,
-         openModal, closeModal, // populateCategorySelect, populateGroupSelect už nie sú potrebné importovať tu
-         query, where, getDocs, getDoc, setDoc, deleteDoc, updateDoc, writeBatch, doc } from './spravca-turnaja-common.js'; // <-- PRIDANÉ 'doc' sem
-
-// Získajte referencie na elementy špecifické pre túto stránku
+import { db, categoriesCollectionRef, groupsCollectionRef, clubsCollectionRef, openModal, closeModal, query, where, getDocs, getDoc, setDoc, deleteDoc, updateDoc, writeBatch, doc } from './spravca-turnaja-common.js';
 const addButton = document.getElementById('addButton');
 const categoriesContentSection = document.getElementById('categoriesContentSection');
 const categoryTableBody = document.getElementById('categoryTableBody');
@@ -14,20 +7,14 @@ const categoryModalCloseBtn = categoryModal ? categoryModal.querySelector('.cate
 const categoryForm = document.getElementById('categoryForm');
 const categoryNameInput = document.getElementById('categoryName');
 const categoryModalTitle = document.getElementById('categoryModalTitle');
-
-// Variabilné stavy pre modálne okno Kategórie
 let currentCategoryModalMode = 'add';
 let editingCategoryName = null;
-
-// Funkcia na pridanie riadku kategórie do tabuľky
 function addCategoryRowToTable(categoryName) {
     const tr = document.createElement('tr');
     const nameTd = document.createElement('td');
     nameTd.textContent = categoryName;
-
     const actionsTd = document.createElement('td');
     actionsTd.style.whiteSpace = 'nowrap';
-
     const renameButton = document.createElement('button');
     renameButton.textContent = 'Premenovať';
     renameButton.classList.add('action-button');
@@ -39,7 +26,6 @@ function addCategoryRowToTable(categoryName) {
         openModal(categoryModal);
         if (categoryNameInput) categoryNameInput.focus();
     };
-
     const deleteButton = document.createElement('button');
     deleteButton.textContent = 'Vymazať';
     deleteButton.classList.add('action-button', 'delete-button');
@@ -50,10 +36,8 @@ function addCategoryRowToTable(categoryName) {
          }
          try {
              const batch = writeBatch(db);
-
              const groupsQuery = query(groupsCollectionRef, where('categoryId', '==', categoryToDelete));
              const groupsSnapshot = await getDocs(groupsQuery);
-
               for (const groupDoc of groupsSnapshot.docs) {
                   const clubsInGroupQuery = query(clubsCollectionRef, where('groupId', '==', groupDoc.id));
                   const clubsSnapshot = await getDocs(clubsInGroupQuery);
@@ -62,44 +46,31 @@ function addCategoryRowToTable(categoryName) {
                   });
                   batch.delete(groupDoc.ref);
               }
-
                const unassignedClubsQuery = query(clubsCollectionRef, where('categoryId', '==', categoryToDelete), where('groupId', '==', null));
                 const unassignedClubsSnapshot = await getDocs(unassignedClubsQuery);
                 unassignedClubsSnapshot.forEach(doc => {
                    batch.update(doc.ref, { categoryId: null });
                 });
-
              batch.delete(doc(categoriesCollectionRef, categoryToDelete));
-
              await batch.commit();
-
              alert(`Kategória "${categoryToDelete}" úspešne vymazaná.`);
              loadCategoriesTable();
-
          } catch (error) {
              console.error('Chyba pri mazaní kategórie a súvisiacich dát: ', error);
              alert('Chyba pri mazaní kategórie! Prosím, skúste znova.');
          }
     };
-
     actionsTd.appendChild(renameButton);
     actionsTd.appendChild(deleteButton);
-
     tr.appendChild(nameTd);
     tr.appendChild(actionsTd);
-
     if (categoryTableBody) categoryTableBody.appendChild(tr);
 }
-
-// Funkcia na načítanie kategórií a zobrazenie v tabuľke
 async function loadCategoriesTable() {
     if (!categoryTableBody) return;
-
     categoryTableBody.innerHTML = '';
-
     try {
         const querySnapshot = await getDocs(categoriesCollectionRef);
-
         if (querySnapshot.empty) {
             const noDataRow = document.createElement('tr');
             const td = document.createElement('td');
@@ -127,25 +98,16 @@ async function loadCategoriesTable() {
          categoryTableBody.appendChild(errorRow);
     }
 }
-
-// Funkcia na resetovanie stavu modálneho okna
 function resetCategoryModal() {
     currentCategoryModalMode = 'add';
     editingCategoryName = null;
     if (categoryForm) categoryForm.reset();
     if (categoryModalTitle) categoryModalTitle.textContent = 'Pridať kategóriu';
 }
-
-
-// --- Event Listeners ---
-
-// Načítať tabuľku kategórií po načítaní stránky (DOM)
 document.addEventListener('DOMContentLoaded', () => {
     loadCategoriesTable();
-
      if (categoriesContentSection) {
           categoriesContentSection.style.display = 'block';
-          // Pri MPA by tu nemali byť iné sekcie, ale pre istotu:
           const otherSections = document.querySelectorAll('main > section, main > div');
           otherSections.forEach(section => {
                if (section.id !== 'categoriesContentSection') {
@@ -153,7 +115,6 @@ document.addEventListener('DOMContentLoaded', () => {
                }
           });
      }
-
       if (addButton) {
           addButton.style.display = 'block';
            addButton.title = "Pridať kategóriu";
@@ -166,29 +127,23 @@ document.addEventListener('DOMContentLoaded', () => {
           console.error("Add button not found on categories page!");
       }
 });
-
-// Listener pre zatvorenie modálneho okna tlačidlom "x"
 if (categoryModalCloseBtn) {
     categoryModalCloseBtn.addEventListener('click', () => {
         closeModal(categoryModal);
         resetCategoryModal();
     });
 }
-
-// Listener pre odoslanie formulára kategórie
 if (categoryForm) {
     categoryForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const categoryName = categoryNameInput ? categoryNameInput.value.trim() : '';
-
         if (categoryName === '') {
             alert('Názov kategórie nemôže byť prázdny.');
              if (categoryNameInput) categoryNameInput.focus();
             return;
         }
-
         if (currentCategoryModalMode === 'add') {
-            const categoryDocRef = doc(categoriesCollectionRef, categoryName); // <-- Tu sa používa 'doc'
+            const categoryDocRef = doc(categoriesCollectionRef, categoryName);
             try {
                 const existingDoc = await getDoc(categoryDocRef);
                 if (existingDoc.exists()) {
@@ -196,9 +151,7 @@ if (categoryForm) {
                      if (categoryNameInput) categoryNameInput.focus();
                     return;
                 }
-
                 await setDoc(categoryDocRef, { name: categoryName });
-
                 alert(`Kategória "${categoryName}" úspešne pridaná.`);
                 if (categoryModal) closeModal(categoryModal);
                 resetCategoryModal();
@@ -212,7 +165,6 @@ if (categoryForm) {
         } else if (currentCategoryModalMode === 'edit') {
             const oldCategoryName = editingCategoryName;
             const newCategoryName = categoryName;
-
             if (!oldCategoryName) {
                 console.error("Chyba: Chýba pôvodný názov kategórie pri úprave.");
                 alert("Chyba pri úprave kategórie.");
@@ -221,14 +173,12 @@ if (categoryForm) {
                 loadCategoriesTable();
                 return;
             }
-
             if (newCategoryName === oldCategoryName) {
                 if (categoryModal) closeModal(categoryModal);
                 resetCategoryModal();
                 return;
             }
-
-            const newCategoryDocRef = doc(categoriesCollectionRef, newCategoryName); // <-- Tu sa používa 'doc'
+            const newCategoryDocRef = doc(categoriesCollectionRef, newCategoryName);
             try {
                 const existingDoc = await getDoc(newCategoryDocRef);
                 if (existingDoc.exists()) {
@@ -236,42 +186,31 @@ if (categoryForm) {
                      if (categoryNameInput) categoryNameInput.focus();
                     return;
                 }
-
-                const oldCategoryDocRef = doc(categoriesCollectionRef, oldCategoryName); // <-- Tu sa používa 'doc'
+                const oldCategoryDocRef = doc(categoriesCollectionRef, oldCategoryName);
                 const batch = writeBatch(db);
-
                 batch.set(newCategoryDocRef, { name: newCategoryName });
-
                 const groupsQuery = query(groupsCollectionRef, where('categoryId', '==', oldCategoryName));
                 const groupsSnapshot = await getDocs(groupsQuery);
-
                  for (const groupDoc of groupsSnapshot.docs) {
                      const oldGroupId = groupDoc.id;
                      const groupData = groupDoc.data();
                      const newGroupId = `${newCategoryName} - ${groupData.name}`;
-                     const newGroupDocRef = doc(groupsCollectionRef, newGroupId); // <-- Tu sa používa 'doc'
-
-                      const clubsInGroupQuery = query(clubsCollectionRef, where('groupId', '==', oldGroupId));
-                      const clubsSnapshot = await getDocs(clubsInGroupQuery);
+                     const newGroupDocRef = doc(groupsCollectionRef, newGroupId);
+                     const clubsInGroupQuery = query(clubsCollectionRef, where('groupId', '==', oldGroupId));
+                     const clubsSnapshot = await getDocs(clubsInGroupQuery);
                        clubsSnapshot.forEach(clubDoc => {
                            batch.update(clubDoc.ref, { groupId: newGroupId, categoryId: newCategoryName });
                        });
-
                      batch.set(newGroupDocRef, { name: groupData.name, categoryId: newCategoryName });
                      batch.delete(groupDoc.ref);
                  }
-
                  const unassignedClubsQuery = query(clubsCollectionRef, where('categoryId', '==', oldCategoryName), where('groupId', '==', null));
                  const unassignedClubsSnapshot = await getDocs(unassignedClubsQuery);
                   unassignedClubsSnapshot.forEach(doc => { // Toto 'doc' je iné (parameter callbacku), to je v poriadku
                      batch.update(doc.ref, { categoryId: newCategoryName });
                   });
-
-
-                batch.delete(oldCategoryDocRef); // <-- Tu sa používa 'doc'
-
+                batch.delete(oldCategoryDocRef);
                 await batch.commit();
-
                 alert(`Kategória "${oldCategoryName}" úspešne premenovaná na "${newCategoryName}".`);
                 if (categoryModal) closeModal(categoryModal);
                 resetCategoryModal();
