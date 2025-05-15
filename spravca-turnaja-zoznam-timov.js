@@ -26,7 +26,7 @@ const clubModalClose = clubModal ? clubModal.querySelector('.close') : null;
 const clubModalTitle = document.getElementById('clubModalTitle');
 const clubForm = document.getElementById('clubForm');
 const clubNameField = document.getElementById('clubNameField'); // Div okolo inputu názvu
-const clubNameInput = document.getElementById('clubName'); // Input názvu tímu/klubu
+const clubNameInput = document.getElementById('clubName'); // Input názvu tímu
 const clubAssignmentFields = document.getElementById('clubAssignmentFields'); // Div okolo kategórie, skupiny, poradia
 const clubCategorySelect = document.getElementById('clubCategorySelect'); // Select kategórie
 const clubGroupSelect = document.getElementById('clubGroupSelect'); // Select skupiny
@@ -723,7 +723,7 @@ if (clubForm) {
              displayCreatedTeams();
 
          } catch (error) {
-             console.error('Chyba pri ukladaní dát tímu/klubu: ', error);
+             console.error('Chyba pri ukladaní dát tímu: ', error);
              alert(`Chyba pri ukladaní dát! Prosím, skúste znova. Detail: ${error.message}`);
               // resetClubModal(); // Volajte reset aj pri chybe, ak chcete vyčistiť formulár
          }
