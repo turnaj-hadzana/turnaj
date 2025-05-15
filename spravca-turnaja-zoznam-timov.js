@@ -1,4 +1,4 @@
-// spravca-turnaja-zoznam-timov.js (Celý kód s filtrami)
+// spravca-turnaja-zoznam-timov.js (Celý kód s filtrami a opravou SyntaxError)
 
 // Import necessary functions and references from common.js
 import { db, clubsCollectionRef, categoriesCollectionRef, groupsCollectionRef,
@@ -227,7 +227,7 @@ function filterTeams() {
               // Filter pre nepriradené tímy (groupId musí byť null alebo undefined/chýba)
               groupMatch = team.groupId === null || typeof team.groupId === 'undefined';
          } else if (groupFilterValue !== '') {
-              // Filter pre konkrétnu skupinu (team.groupId musí presne zodpovedať hodnote filtra skupiny - čo je ID skupiny
+              // Filter pre konkrétnu skupinu (team.groupId musí presne zodpovedať hodnote filtra skupiny - čo je ID skupiny)
               groupMatch = team.groupId && team.groupId === groupFilterValue;
          }
 
@@ -327,6 +327,45 @@ function populateDynamicCategorySelect(selectElement, selectedId = '', available
       } else {
           selectElement.disabled = false;
       }
+}
+
+// Funkcia na aktualizáciu všetkých dynamických selectboxov s dostupnými kategóriami (pre vytváranie tímov)
+function updateDynamicCategorySelects() {
+    const allSelectElements = teamCategoryCountContainer ? teamCategoryCountContainer.querySelectorAll('.team-category-select-dynamic') : [];
+    const currentlySelectedCategoryIds = Array.from(allSelectElements).map(select => select.value).filter(value => value !== '');
+
+    allSelectElements.forEach(selectElement => {
+        const currentSelectedId = selectElement.value;
+        const categoryIdsToDisable = currentlySelectedCategoryIds.filter(catId => catId !== currentSelectedId);
+        populateDynamicCategorySelect(selectElement, currentSelectedId, allAvailableCategories, categoryIdsToDisable);
+    });
+     checkIfAddCategoryCountPairButtonShouldBeVisible();
+     updateRemoveButtonVisibility();
+}
+
+// Funkcia na kontrolu viditeľnosti tlačidla Odstrániť (pre vytváranie tímov)
+function updateRemoveButtonVisibility() {
+    const removeButtons = teamCategoryCountContainer ? teamCategoryCountContainer.querySelectorAll('.category-count-pair .delete-button') : [];
+    if (removeButtons.length > 1) {
+        removeButtons.forEach(button => button.style.visibility = 'visible');
+    } else {
+        removeButtons.forEach(button => button.style.visibility = 'hidden');
+    }
+}
+
+// Funkcia na kontrolu viditeľnosti tlačidla Pridať ďalšiu kategóriu (pre vytváranie tímov)
+function checkIfAddCategoryCountPairButtonShouldBeVisible() {
+    const allSelectElements = teamCategoryCountContainer ? teamCategoryCountContainer.querySelectorAll('.team-category-select-dynamic') : [];
+    const numberOfPairs = allSelectElements.length;
+    const numberOfAvailableCategories = allAvailableCategories.length;
+
+    if (addCategoryCountPairButton) {
+        if (numberOfPairs < numberOfAvailableCategories) {
+            addCategoryCountPairButton.style.display = 'inline-block'; // Zobraziť
+        } else {
+            addCategoryCountPairButton.style.display = 'none'; // Skryť
+        }
+    }
 }
 
 
@@ -450,7 +489,7 @@ function closeTeamCreationModal() {
 }
 
 
-// --- Funkcie pre Modál Správa tímov (ponechané) ---
+// --- Funkcie pre Modál Správa tímov (opravené duplicitné appendChild) ---
 
 // Funkcia na otvorenie modálneho okna Správa tímov pre konkrétny základný názov
 export async function openManageTeamsModal(baseName) {
@@ -519,17 +558,106 @@ export async function openManageTeamsModal(baseName) {
                  headerRow.appendChild(teamNameTh);
                  headerRow.appendChild(groupTh);
                  headerRow.appendChild(orderTh);
-                 actionsTh.appendChild(editButton);
-                 actionsTd.appendChild(deleteButton);
+                 headerRow.appendChild(actionsTh); // Správne: Pridať hlavičku Akcie k riadku hlavičky
+                 thead.appendChild(headerRow);
+                 categoryTeamsTable.appendChild(thead);
 
+                const tbody = document.createElement('tbody');
+
+                 teamsInThisCategory.sort((a, b) => { // Toto je riadok 537 v predch. kode - tu bola reportovana chyba
+                     const isAssignedA = a.groupId !== null && typeof a.groupId !== 'undefined';
+                     const isAssignedB = b.groupId !== null && typeof b.groupId !== 'undefined';
+                     if (isAssignedA !== isAssignedB) {
+                         return isAssignedA ? 1 : -1;
+                     }
+
+                     if (isAssignedA) {
+                         const groupA = a.groupId || '';
+                         const groupB = b.groupId || '';
+                         const orderA = typeof a.orderInGroup === 'number' ? a.orderInGroup : Infinity;
+                         const orderB = typeof b.orderInGroup === 'number' ? b.orderInGroup : Infinity;
+
+                         if (groupA !== groupB) {
+                             return groupA.localeCompare(groupB, 'sk-SK');
+                         }
+                         if (orderA !== orderB) {
+                             return orderA - orderB;
+                         }
+                     }
+
+                     const nameA = a.name || '';
+                     const nameB = b.name || '';
+                     return nameA.localeCompare(nameB, 'sk-SK');
+                 });
+
+
+                teamsInThisCategory.forEach(team => {
+                    const tr = document.createElement('tr');
+                    tr.dataset.teamId = team.id;
+
+                    const nameTd = document.createElement('td');
+                    nameTd.textContent = team.name || team.id || 'Neznámy názov';
+
+                    const groupTd = document.createElement('td');
+                    const groupNameParts = (team.groupId || '').split(' - ');
+                    const displayedGroupName = team.groupId ? (groupNameParts.length > 1 ? groupNameParts.slice(1).join(' - ') : team.groupId) : 'Nepriradené';
+                    groupTd.textContent = displayedGroupName;
+
+
+                    const orderTd = document.createElement('td');
+                    orderTd.textContent = (team.groupId && typeof team.orderInGroup === 'number' && team.orderInGroup > 0) ? team.orderInGroup : '-';
+                    orderTd.style.textAlign = 'center';
+
+                    const actionsTd = document.createElement('td');
+                    actionsTd.classList.add('actions-cell');
+                    actionsTd.style.whiteSpace = 'nowrap';
+                    actionsTd.style.display = 'flex';
+                    actionsTd.style.justifyContent = 'center';
+                    actionsTd.style.alignItems = 'center';
+                    actionsTd.style.gap = '5px';
+
+
+                    const editButton = document.createElement('button');
+                    editButton.textContent = 'Upraviť / Priradiť';
+                    editButton.classList.add('action-button');
+                    editButton.onclick = () => {
+                        closeManageTeamsModal();
+                         if (typeof openClubModal === 'function') {
+                             openClubModal(team.id, 'edit');
+                         } else {
+                              console.error("Funkcia openClubModal nie je dostupná.");
+                             alert("Funkcia na úpravu tímu nie je dostupná.");
+                         }
+                    };
+
+                    const deleteButton = document.createElement('button');
+                    deleteButton.textContent = 'Vymazať';
+                    deleteButton.classList.add('action-button', 'delete-button');
+                    deleteButton.onclick = async () => {
+                        if (confirm(`Naozaj chcete vymazať tím "${team.id}"?`)) {
+                            await deleteTeam(team.id);
+                            await openManageTeamsModal(baseName); // Znovu otvoriť modal s aktualizovaným zoznamom
+                        }
+                    };
+
+                    // !!! OPRAVA: Odstránené duplicitné alebo nesprávne umiestnené appendChild volania !!!
+                    // actionsTh.appendChild(editButton); // REMOVED
+                    // actionsTd.appendChild(deleteButton); // Tento bol správny, ale celý blok bude preusporiadaný
+                    // actionsTd.appendChild(editButton); // REMOVED (duplikát)
+
+
+                    // Správne pridanie tlačidiel k akčnej bunke pre DANÝ riadok
                     actionsTd.appendChild(editButton);
                     actionsTd.appendChild(deleteButton);
 
+
+                    // Pridanie buniek k riadku
                     tr.appendChild(nameTd);
                     tr.appendChild(groupTd);
                     tr.appendChild(orderTd);
-                    tr.appendChild(actionsTd);
+                    tr.appendChild(actionsTd); // Pridanie akčnej bunky k riadku
 
+                    // Pridanie riadku k telu tabuľky
                     tbody.appendChild(tr);
                 });
                 categoryTeamsTable.appendChild(tbody);
