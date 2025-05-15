@@ -532,6 +532,7 @@ if (teamCreationForm) {
 
 // Funkcia na zobrazenie vytvorených tímov (klubov) v tabuľke na stránke
 async function displayCreatedTeams() {
+    console.log("InnerHTML createdTeamsTableHeader pred kontrolou:", createdTeamsTableHeader.innerHTML);
     console.log("Zobrazujem vytvorené tímy...");
     // Získať referencie na telo a hlavičku tabuľky
     if (!createdTeamsTableBody || !createdTeamsTableHeader) {
