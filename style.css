@@ -359,8 +359,8 @@ nav ul li a:hover {
      flex-direction: column; /* Ponechať */
 }
 #clubsHeaderTable th:last-child {
-    width: 40px;
-    min-width: 40px;
+    width: 2px;
+    min-width: 2px;
     text-align: center;
     padding-left: 0;
     padding-right: 0;
