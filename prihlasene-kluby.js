@@ -36,6 +36,7 @@ async function loadAllData() {
 
     } catch (error) {
         alert('Nepodarilo sa načítať dáta turnaja.');
+        console.error("Chyba pri načítaní dát turnaja:", error);
         if (clubsSummaryTableBody) {
              // Update colspan calculation for the error message - body only has Názov + Tímy + Kategórie
              const numColumns = 1 + 1 + allCategories.length; // colspan pre telo neobsahuje dodatočný stĺpec
@@ -45,7 +46,7 @@ async function loadAllData() {
          allCategories = [];
          allGroups = [];
          // V prípade chyby naviguj späť na hlavný zoznam a URL
-         history.pushState(null, '', window.location.pathname); // Vráť URL bez parametrov
+         history.replaceState({}, '', window.location.pathname); // Vráť URL bez parametrov a nahraď stav
          displayClubsSummaryTable(); // Zobraz zoznam klubov (prázdny alebo s chybou)
 
     }
@@ -118,6 +119,9 @@ function displayClubsSummaryTable() {
     if (clubListSection) clubListSection.style.display = 'block';
     if (clubDetailSection) clubDetailSection.style.display = 'none';
     if (clubDetailTitleSpan) clubDetailTitleSpan.textContent = ''; // Vyčisti nadpis detailov
+     // Tiež vyčisti kontajner tlačidiel tímov pri návrate na prehľad
+    if (teamsInCategoryButtonsDiv) teamsInCategoryButtonsDiv.innerHTML = '';
+
 
     if (!clubsSummaryTableBody || !clubsSummaryTableHeader) {
         return;
@@ -210,15 +214,20 @@ function highlightTeamButton(teamIdToHighlight) {
           // Reset all buttons first
           teamsInCategoryButtonsDiv.querySelectorAll('button').forEach(btn => {
               btn.style.fontWeight = 'normal';
-              btn.style.backgroundColor = '#e9f5e9'; // Návrat na normálne svetlo zelené pozadie z CSS
-              btn.style.color = '#333'; // Návrat na normálnu farbu textu z CSS
+              // Použi farby z CSS pre normálny stav
+              // btn.style.backgroundColor = '#e9f5e9'; // Návrat na normálne svetlo zelené pozadie z CSS
+              // btn.style.color = '#333'; // Návrat na normálnu farbu textu z CSS
+              // Odstránením inline štýlu sa aplikuje CSS trieda
+              btn.style.backgroundColor = '';
+              btn.style.color = '';
           });
 
           // Find and highlight the target button
           const targetButton = teamsInCategoryButtonsDiv.querySelector('button[data-team-id="' + teamIdToHighlight + '"]');
           if (targetButton) {
               targetButton.style.fontWeight = 'bold';
-              targetButton.style.backgroundColor = '#3a8d41'; // Aktívne zelené pozadie
+              // Nastav farby aktívneho stavu inline
+              targetButton.style.backgroundColor = '#c46f50'; // Aktívne oranžové pozadie
               targetButton.style.color = 'white'; // Aktívny biely text
           }
      }
@@ -310,8 +319,7 @@ async function displaySubjectDetails(baseName, initialTeamId = null) { // Pridan
                     history.pushState({ baseName: getClubBaseName(team), teamId: team.id }, '', url.toString());
 
                     displaySpecificTeamDetails(team.id); // Zobraz detaily tímu
-                    highlightTeamButton(team.id); // Zvýrazni kliknuté tlačidlo
-
+                    // Zvýraznenie sa volá na konci displaySpecificTeamDetails
                 });
 
                teamsInCategoryButtonsDiv.appendChild(teamButton); // Pridanie tlačidla do DIVu
@@ -329,11 +337,11 @@ async function displaySubjectDetails(baseName, initialTeamId = null) { // Pridan
                // pretože displaySubjectDetails už nastavila URL len s baseName.
                // Ak by sme chceli URL s baseName aj teamId aj pri prvom tíme po kliknutí na subjekt,
                // bolo by potrebné to tu dorobiť podobne ako pri kliknutí na iné tlačidlá.
-               displaySpecificTeamDetails(firstTeamId);
-               highlightTeamButton(firstTeamId); // Zvýrazni prvé tlačidlo
+               displaySpecificTeamDetails(firstTeamId); // Toto by malo volať highlightTeamButton na konci
+               // highlightTeamButton(firstTeamId); // Toto už nie je potrebné volať tu
            } else if (initialTeamId) {
                 // Ak bol initialTeamId zadaný (z URL/histórie), displaySpecificTeamDetails
-                // sa už zavolala v handleUrlState ahighlightTeamButton sa zavola na konci displaySpecificTeamDetails
+                // sa už zavolala v handleUrlState a highlightTeamButton sa zavola na konci displaySpecificTeamDetails
                 // Tu už nič nerobíme
            }
           // --- KONIEC ÚPRAVY ---
@@ -469,10 +477,16 @@ async function displaySpecificTeamDetails(teamId) {
     }
 }
 
-// ZMENA: Funkcia na návrat na prehľad využíva history.back()
+// ZMENA: Funkcia na návrat na prehľad teraz zobrazí tabuľku a aktualizuje URL
 function goBackToList() {
-    history.back(); // Naviguj o krok späť v histórii prehliadača
-    // Popstate event handler sa postará o zobrazenie správneho stavu
+    // Zobrazí súhrnnú tabuľku klubov
+    displayClubsSummaryTable();
+
+    // Aktualizuje URL na základnú cestu (pathname) bez parametrov (?club=... alebo ?team=...)
+    // Použijeme history.replaceState namiesto pushState, aby sa stavy s detailmi nezachovali v histórii za listom
+    history.replaceState({}, '', window.location.pathname);
+
+    // Vyčistí detaily sekcie (už sa do veľkej miery deje v displayClubsSummaryTable, ale pre istotu)
 }
 
 
@@ -493,7 +507,7 @@ async function handleUrlState() {
             // Zobraz detaily subjektu (tým sa vytvoria tlačidlá tímov)
             displaySubjectDetails(baseName, teamId); // Pošli teamId na zvýraznenie
             // displaySpecificTeamDetails(teamId) sa zavolá vo vnútri displaySubjectDetails
-            // po vytvorení tlačidiel alebo ak je initialTeamId != null
+            // po vytvorení tlačidiel ak je initialTeamId != null
         } else {
             // Tím s daným ID sa nenašiel, zobraz zoznam klubov
             console.warn(`Tím s ID "${teamId}" sa nenašiel.`);
@@ -525,8 +539,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (backToListButton) {
         // Zabezpečiť, že tlačidlo Späť volá novú funkciu goBackToList
-        backToListButton.removeEventListener('click', goBackToList); // Odstráň starý listener ak existuje
-        backToListButton.addEventListener('click', goBackToList);
+        // Najprv odstráň existujúce listenery, ak ich tam je viac
+        const newButton = backToListButton.cloneNode(true);
+        backToListButton.parentNode.replaceChild(newButton, backToListButton);
+        const updatedBackButton = document.getElementById('backToListButton');
+
+        updatedBackButton.addEventListener('click', goBackToList);
+
     } else {
        console.warn("Element with ID 'backToListButton' not found.");
     }
