@@ -1,4 +1,4 @@
-// zobrazenie-skupin.js (Oprava problému s návratom na skupiny po priamom načítaní URL + Detailné logy pre kontrolu elementov)
+// zobrazenie-skupin.js (Oprava návratu + Detailné logy elementov + Detailné logy hľadania kategórie)
 
 // Importy z common.js
 import { db, categoriesCollectionRef, groupsCollectionRef, clubsCollectionRef,
@@ -221,6 +221,7 @@ function displayCategoriesAsButtons() {
          console.error("ERROR: displayCategoriesAsButtons failed due to missing HTML elements.");
          return; // Ukončíme, ak chýbajú elementy
      }
+      console.log("DEBUG: Element check passed in displayCategoriesAsButtons.");
 
 
     // Vyčistiť obsah kontajnerov (ak tam niečo bolo)
@@ -233,6 +234,7 @@ function displayCategoriesAsButtons() {
      if (groupSelectionButtons) groupSelectionButtons.innerHTML = ''; // Vyčistiť tlačidlá výberu skupiny
      if (categoryTitleDisplay) categoryTitleDisplay.textContent = ''; // Vyčistiť nadpis kategórie
 
+    console.log("DEBUG: Containers cleared in displayCategoriesAsButtons.");
 
     // Skryť tlačidlá späť
     if (backToCategoriesButton) backToCategoriesButton.style.display = 'none';
@@ -265,6 +267,7 @@ function displayCategoriesAsButtons() {
             const categoryId = button.dataset.categoryId;
             console.log(`DEBUG: Category button clicked for category ID: ${categoryId}. Calling displayGroupsForCategory.`);
             displayGroupsForCategory(categoryId); // Prejsť na zobrazenie VŠETKÝCH skupín kategórie
+            // showOnly('allGroupsContent'); // Show only is called inside displayGroupsForCategory now
         });
 
         if (categoryButtonsContainer) categoryButtonsContainer.appendChild(button);
@@ -313,16 +316,22 @@ function displayGroupsForCategory(categoryId) {
     // Zápis do URL hash (len kategória) - toto sa robí vo volajúcej funkcii
     // window.location.hash = 'category-' + encodeURIComponent(categoryId);
 
+     console.log(`DEBUG: Attempting to find category with ID: "${categoryId}" in allCategories.`);
+      console.log("DEBUG: Content of allCategories:", allCategories.map(cat => cat.id)); // Log all category IDs
 
     const selectedCategory = allCategories.find(cat => cat.id === categoryId);
 
     if (!selectedCategory) {
         // Ak sa kategória nenašla, zobrazíme chybu a vrátime sa na kategórie
-         console.error(`ERROR: Category with ID ${categoryId} not found during displayGroupsForCategory.`);
-         goBackToCategories(); // Vráti nás na zoznam kategórií a zobrazí chybu ak load zlyhal
-        return;
+         console.error(`ERROR: Category with ID "${categoryId}" not found during displayGroupsForCategory. Returning to categories.`); // Pridaný detail do error logu
+         // Zobrazí chybu pre používateľa v dynamicContentArea
+         if (dynamicContentArea) dynamicContentArea.innerHTML = `<p>Chyba: Kategória "${categoryId}" sa nenašla. Prosím, skúste znova alebo kontaktujte administrátora.</p>`;
+
+         goBackToCategories(); // Vráti nás na zoznam kategórií (mala by sa zobraziť chybová správa)
+        return; // Ukončíme funkciu
     }
-     console.log(`DEBUG: Category "${categoryId}" found.`);
+     console.log(`DEBUG: Category "${categoryId}" found.`); // <--- Tento log by sa mal teraz zobraziť, ak sa kategória našla
+
 
      // Pridáme nadpis kategórie
      if (categoryTitleDisplay) categoryTitleDisplay.textContent = selectedCategory.name || selectedCategory.id;
@@ -611,12 +620,9 @@ function displaySingleGroup(groupId) {
 
      if (unassignedTeamsInCategory.length > 0) {
          if (singleGroupUnassignedDisplay) { // Kontrola, či element existuje
-             const unassignedDivContent = document.createElement('div'); // Vytvoríme obsah divu nepriradených tímov
-             unassignedDivContent.classList.add('unassigned-teams-display'); // Použijeme existujúci štýl
-
              const unassignedTitle = document.createElement('h2');
              unassignedTitle.textContent = 'Nepriradené tímy v tejto kategórii';
-             unassignedDivContent.appendChild(unassignedTitle);
+             singleGroupUnassignedDisplay.appendChild(unassignedTitle);
 
              unassignedTeamsInCategory.sort((a, b) => {
                   const nameA = (a.name || a.id || '').toLowerCase();
@@ -666,6 +672,7 @@ function goBackToCategories() {
          // Ak tu chýbajú elementy, nemôžeme ani zobraziť kategórie, už by to mala riešiť getHTMLElements
          return; // Ukončíme
      }
+      console.log("DEBUG: Element check passed in goBackToCategories.");
 
 
      // Vyčistiť obsah všetkých dynamických kontajnerov
@@ -711,6 +718,7 @@ function goBackToGroupView() {
           goBackToCategories(); // Fallback ak chýbajú elementy
          return; // Ukončíme
      }
+      console.log("DEBUG: Element check passed in goBackToGroupView.");
 
 
      // Kontrola, či máme platné ID kategórie
@@ -780,7 +788,8 @@ function findMaxTableContentWidth(containerElement) {
 
         // Ensure the element is displayed before measuring if it was hidden
          let tempDisplay = originalStyles.display;
-         if (tempDisplay === 'none') {
+         // Skip temporary display change if the element is already visible (block, flex, etc.)
+         if (window.getComputedStyle(table).display === 'none') {
               table.style.display = 'block'; // Temporarily show if hidden
               console.log("DEBUG: findMaxTableContentWidth: Temporarily setting display to 'block' for measurement.");
          }
@@ -805,8 +814,10 @@ function findMaxTableContentWidth(containerElement) {
         table.style.maxWidth = originalStyles.maxWidth;
         table.style.flexShrink = originalStyles.flexShrink;
         table.style.flexGrow = originalStyles.flexGrow;
-         if (tempDisplay === 'none') {
+         // Restore original display only if it was temporarily changed
+         if (window.getComputedStyle(table).display === 'block' && tempDisplay === 'none') {
              table.style.display = originalStyles.display; // Restore original display
+             console.log("DEBUG: findMaxTableContentWidth: Restoring original display.");
          }
 
 
@@ -936,7 +947,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else {
             console.log(`INFO: ID kategórie z URL "${decodedCategoryId}" sa nenašlo. Zobrazujem zoznam kategórií.`);
              // Ak ID z URL neexistuje v načítaných dátach, zobraziť zoznam kategórií
-            displayCategoriesAsButtons(); // <-- Zobrazí Level 1, vyčistí hash
+            displayCategoriesAsButtons(); // displayCategoriesAsButtons už vyčistí hash a volá showOnly('categoryButtonsContainer')
              console.log("DEBUG: Category not found from hash, showing category buttons.");
         }
     } else { // Hash je prázdny alebo nezacina #category-
@@ -970,7 +981,7 @@ window.addEventListener('resize', () => {
          }
 
          // Prepočítať iba ak je relevantný kontajner viditeľný a existuje
-         if (containerElement && containerElement.style.display !== 'none') {
+         if (containerElement && window.getComputedStyle(containerElement).display !== 'none') { // Use computed style
              const uniformWidth = findMaxTableContentWidth(containerElement);
               if (uniformWidth > 0) {
                  setUniformTableWidth(uniformWidth, containerElement);
@@ -997,6 +1008,7 @@ window.addEventListener('hashchange', () => {
          // Tu by sme nemali robiť fallback na kategórie, lebo getHTMLElements už loguje FATAL ERROR
          return; // Ukončíme, ak chýbajú elementy
      }
+      console.log("DEBUG: Element check passed in hashchange handler.");
 
 
     const hash = window.location.hash;
