@@ -7,47 +7,118 @@
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="style.css">
 <style>
-        /* Základné štýly pre zobrazenie skupín */
-        .category-display {
-            margin-bottom: 30px;
-            padding: 15px;
+        /* Spoločný štýl pre tlačidlá v zobrazení (kategórie, skupiny) */
+        .display-button {
+            padding: 12px 20px;
+            background-color: #3a8d41; /* Zelená */
+            color: white;
+            border: none;
             border-radius: 5px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            text-align: center;
+            flex-grow: 0;
+            flex-shrink: 1;
+            min-width: 120px;
+            box-sizing: border-box; /* Zahrnie padding do šírky */
         }
 
-        /* Štýl pre nadpis kategórie v zobrazení skupín */
-        .category-display h2 {
+        .display-button:hover {
+            background-color: #c46f50; /* Oranžový hover */
+        }
+
+        /* Kontajner pre tlačidlá Späť */
+        .back-buttons-container {
+             text-align: center; /* Centruje tlačidlá v kontajneri */
+             margin-bottom: 20px;
+        }
+
+        /* Štýly pre tlačidlá Späť */
+        #backToCategoriesButton,
+        #backToGroupButtonsButton {
+            display: none; /* Spočiatku skryté, riadené JS */
+            padding: 10px 15px;
+            background-color: #3a8d41; /* Zelená */
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            margin: 0 10px; /* Medzera medzi tlačidlami Späť, ak sú zobrazené obe */
+            vertical-align: top; /* Zarovnanie na vrchol, ak sú inline-block (čo budú kvôli text-align center) */
+        }
+
+        #backToCategoriesButton:hover,
+        #backToGroupButtonsButton:hover {
+            background-color: #c46f50; /* Oranžový hover */
+        }
+
+
+        /* Štýly pre hlavný dynamický obsah (kde sa zobrazí všetko okrem tlačidiel Späť) */
+        #dynamicContentArea {
+            /* Základný štýl, špecifický obsah ho prepíše */
+        }
+
+        /* Kontajner pre tlačidlá kategórií */
+        #categoryButtonsContainer {
+            display: flex; /* Bude nastavené JS, keď je viditeľné */
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+
+        /* Kontajner pre tlačidlá skupín (podobné ako kategórie) */
+         #groupButtonsContainer {
+             display: flex; /* Bude nastavené JS, keď je viditeľné */
+             flex-wrap: wrap;
+             gap: 15px;
+             justify-content: center;
+             padding: 20px;
+             border: 1px solid #ccc;
+             border-radius: 8px;
+             background-color: #e9ecef; /* Iná farba pozadia ako kategórie */
+             margin-top: 20px; /* Medzera od nadpisu kategórie */
+         }
+
+        /* Kontajner pre zobrazenie jednej konkrétnej skupiny a nepriradených tímov */
+         #singleGroupDisplay {
+             /* Základný kontajner */
+             margin-top: 20px; /* Medzera od nadpisu kategórie */
+         }
+
+        /* Štýl pre nadpis kategórie v zobrazení skupín (tlačidiel alebo jednej skupiny) */
+        #dynamicContentArea h2 {
             color: #333;
             padding-bottom: 0;
-            margin-top: 20px;
             margin-bottom: 15px;
-            font-weight: bold; /* Nadpis kategórie ostáva tučný */
+            font-weight: bold;
             font-size: 1.5em;
             text-align: center;
+            margin-top: 0; /* Margin top už riadi #dynamicContentArea / #groupButtonsContainer / #singleGroupDisplay */
         }
 
-        /* Kontajner pre usporiadanie skupín vedľa seba */
-        .groups-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px; /* Medzera medzi skupinami */
-            justify-content: center; /* Centruje skupiny v rámci kontajnera */
-            align-items: stretch;
-        }
 
-        /* Štýly pre blok jednotlivej skupiny */
+        /* Štýly pre blok jednotlivej skupiny (použité v #singleGroupDisplay) */
         .group-display {
-            /* Tieto vlastnosti budú nastavené JS pre dynamickú šírku: */
-            /* width: auto; max-width: none; flex-grow: 0; flex-shrink: 0; flex-basis: auto; min-width: 200px; */
+             /* Tieto vlastnosti budú nastavené JS pre dynamickú šírku: */
+             /* width: auto; max-width: none; flex-grow: 0; flex-shrink: 0; flex-basis: auto; min-width: 200px; */
 
-            margin-bottom: 0; /* Zrušíme pôvodný margin-bottom 20px, nech to drží gap vo flex kontajneri */
-            padding: 0;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            background-color: #fff;
-            overflow: hidden;
-            box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
-            display: flex;
-            flex-direction: column;
+             margin: 20px auto 0 auto; /* Centrujeme blok skupiny a nastavíme vrchný/spodný okraj */
+             padding: 0;
+             border: 1px solid #ddd;
+             border-radius: 4px;
+             background-color: #fff;
+             overflow: hidden;
+             box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+             display: flex;
+             flex-direction: column;
+             max-width: 400px; /* Obmedzíme max šírku bloku jednej skupiny, môžeš upraviť */
         }
 
         /* Štýly pre nadpis skupiny */
@@ -99,59 +170,20 @@
 
         /* Štýl pre názov tímu */
         .group-display ul li .team-name {
-            font-weight: normal; /* Zmenené z bold na normal */
+            font-weight: normal;
             white-space: nowrap !important;
             display: block;
             flex-grow: 1;
         }
 
-        /* Pravidlo pre highlighted-team odstránené, keďže sa už nepoužíva */
-        /* .highlighted-team {
-            font-weight: bold !important;
-        } */
-
-        /* Štýly pre kontajner skupín, ak ich je presne 5 */
-        .groups-container.force-3-plus-2-layout {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-            justify-content: center;
-            align-items: stretch;
-        }
-
-        /* Pre bloky v tomto kontajneri */
-        .groups-container.force-3-plus-2-layout .group-display {
-             flex-basis: auto;
-             flex-grow: 0;
-             flex-shrink: 0;
-             min-width: 200px;
-             max-width: none;
-             width: auto;
-             box-sizing: border-box;
-        }
-
-        /* Media Query pre prípad 5 skupín na malých obrazovkách */
-        @media (max-width: 768px) {
-             .groups-container.force-3-plus-2-layout .group-display {
-                 flex-basis: auto;
-                 flex-grow: 0;
-                 flex-shrink: 0;
-                 min-width: 200px;
-                 max-width: none;
-                 width: auto;
-             }
-        }
-
-        /* Štýly pre sekciu nepriradených tímov */
+        /* Štýly pre sekciu nepriradených tímov (použité v #singleGroupDisplay) */
         .unassigned-teams-display {
-            margin-top: 30px;
+            margin: 30px auto 0 auto; /* Centrujeme blok a nastavíme okraje */
             padding: 15px;
             border: 1px solid #ccc;
             border-radius: 5px;
             background-color: #f9f9f9;
-            max-width: 600px;
-            margin: 0 auto;
-            margin-top: 30px;
+            max-width: 600px; /* Môžeš upraviť */
         }
 
         .unassigned-teams-display h2 {
@@ -182,7 +214,7 @@
             overflow: hidden;
             text-overflow: clip;
             display: block;
-            font-weight: normal; /* Aj tu zmenené na normal */
+            font-weight: normal;
         }
 
         /* Odstrániť spodný border z poslednej položky nepriradeného tímu */
@@ -199,60 +231,7 @@
             border-bottom: 1px solid #ccc !important;
         }
 
-        /* Štýly pre kontajner tlačidiel kategórií */
-        #categoryButtonsContainer {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            justify-content: center;
-            margin-bottom: 20px;
-            padding: 20px;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            background-color: #f9f9f9;
-        }
-
-        /* Štýly pre tlačidlá kategórií */
-        .category-button {
-            padding: 12px 20px;
-            background-color: #3a8d41;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            font-size: 1.1em;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-            text-align: center;
-            flex-grow: 0;
-            flex-shrink: 1;
-            min-width: 120px;
-        }
-
-        .category-button:hover {
-            background-color: #c46f50;
-        }
-
-        /* Štýly pre tlačidlo "Späť na kategórie" */
-        #backToCategoriesButton {
-            display: block; /* Zmenené/pridané pre umožnenie margin: auto */
-            margin: 20px auto; /* Zmenené/pridané pre vycentrovanie a pridanie okrajov */
-            padding: 10px 15px;
-            background-color: #3a8d41;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            font-size: 1em;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-            /* Pôvodné margin-bottom: 20px; je teraz súčasťou margin: 20px auto; */
-        }
-
-        #backToCategoriesButton:hover {
-            background-color: #c46f50;
-        }
-
-
-        /* Štýly pre hlavný nadpis */
+        /* Štýly pre hlavný nadpis stránky */
         h1 {
             text-align: center;
             margin-top: 20px;
@@ -272,13 +251,12 @@
         <main>
             <section class="section-block">
 
-                <div id="categoryButtonsContainer">
-                    </div>
+                <div class="back-buttons-container">
+                    <button id="backToCategoriesButton">← Späť na kategórie</button>
+                    <button id="backToGroupButtonsButton">← Späť na skupiny</button>
+                </div>
 
-                <button id="backToCategoriesButton">← Späť na kategórie</button>
-
-
-                <div id="groupsDisplayContent">
+                <div id="dynamicContentArea">
                     </div>
 
             </section>
