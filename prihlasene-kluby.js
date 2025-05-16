@@ -285,7 +285,9 @@ async function displaySubjectDetails(baseName) {
                     if (teamsInCategoryButtonsDiv) {
                         teamsInCategoryButtonsDiv.querySelectorAll('button').forEach(btn => btn.style.fontWeight = 'normal');
                     }
-                    teamButton.style.fontWeight = 'bold';
+                    teamButton.style.fontWeight = 'bold'; 
+                    teamButton.style.backgroundColor = '#c46f50';
+                    teamButton.style.color = 'white';
                 });
 
                teamsInCategoryButtonsDiv.appendChild(teamButton); // Pridanie tlačidla do DIVu
@@ -300,7 +302,9 @@ async function displaySubjectDetails(baseName) {
                // Nájdeme prvé tlačidlo v kontajneri zodpovedajúce tomuto ID a zvýrazníme ho
                const firstTeamButton = teamsInCategoryButtonsDiv.querySelector('button[data-team-id="' + firstTeamId + '"]');
                if (firstTeamButton) {
-                    firstTeamButton.style.fontWeight = 'bold';
+                    firstTeamButton.style.fontWeight = 'bold'; 
+                    firstTeamButton.style.backgroundColor = '#c46f50';
+                    firstTeamButton.style.color = 'white';
                }
            }
           // --- KONIEC KÓDU ---
