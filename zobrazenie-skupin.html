@@ -5,8 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rozlosovanie</title>
     <link rel="icon" href="favicon.ico" type="image/x-icon">
+
+    <script>
+        // UPOZORNENIE: Tento skript vynuti reload stranky pri kazdom nacitani,
+        // co moze spomalit vasu aplikaciu a zhorsit uzivatelsky zazitok.
+        // Lepsie riesenie pre kontrolu prihlasenia je podmienene presmerovanie.
+        // Tato stranka pouziva hash pre navigaciu, tak refreshujeme len ak hash chyba
+        if (!window.location.hash) {
+             window.location.reload(true);
+        }
+    </script>
+
     <link rel="stylesheet" href="style.css">
-<style>
+    <link rel="stylesheet" href="spravca-turnaja-style.css">
+    <style>
+       /* PONECHANE: inline styles - idealne presunut do zobrazenie-skupin.css */
         .display-button {
             padding: 12px 20px;
             background-color: #3a8d41;
@@ -186,8 +199,19 @@
 </head>
 <body>
     <script src="script.js"></script>
+
     <h1>Rozlosovanie</h1>
+
     <div class="content-wrapper">
+        <nav class="left-menu" id="zobrazenieSkupinLeftMenu">
+            <ul>
+                <li><a href="spravca-turnaja-kategorie.html">Správa kategórií</a></li>
+                <li><a href="spravca-turnaja-skupiny.html">Správa skupín</a></li>
+                <li><a href="spravca-turnaja-zoznam-timov.html">Správa tímov</a></li>
+                <li><a href="zobrazenie-skupin.html">Zobrazenie skupín</a></li>
+            </ul>
+        </nav>
+
         <main>
             <section class="section-block">
                 <div class="back-buttons-container">
@@ -210,6 +234,22 @@
             </section>
         </main>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const leftMenu = document.getElementById('zobrazenieSkupinLeftMenu');
+            const loggedInUsername = localStorage.getItem('username');
+
+            if (leftMenu) {
+                if (loggedInUsername) {
+                    leftMenu.style.display = 'block'; // Zobraz menu ak je pouzivatel prihlaseny
+                } else {
+                    leftMenu.style.display = 'none'; // Skry menu ak pouzivatel NIE JE prihlaseny
+                }
+            }
+        });
+    </script>
+
     <script type="module" src="spravca-turnaja-common.js"></script>
     <script type="module" src="zobrazenie-skupin.js"></script>
 </body>
