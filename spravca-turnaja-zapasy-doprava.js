@@ -14,13 +14,4 @@ document.addEventListener('DOMContentLoaded', () => {
                }
           });
      }
-      if (addButton) {
-          addButton.style.display = 'block';
-           addButton.title = "Pridať kategóriu";
-           addButton.onclick = () => {
-                resetCategoryModal();
-                openModal(categoryModal);
-                if (categoryNameInput) categoryNameInput.focus();
-           };
-      }
 });
