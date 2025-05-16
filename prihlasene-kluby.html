@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prihlásené kluby - Skrolovateľná tabuľka</title>
-    <link rel="icon" href="favicon.ico" type="image/x-icon">
+    <title>Prihlásené kluby - Dynamická tabuľka</title> <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="style.css"> <style>
         /* Základný štýl pre body a main, ak už nie je v style.css */
         body {
              margin: 0;
              padding: 0;
              font-family: sans-serif;
+             /* Ak máš pevnú hlavičku stránky, možno bude potrebné padding-top na body alebo margin-top na main */
          }
 
         /* Štýly pre sekcie, ak už nie sú v style.css */
@@ -22,19 +22,22 @@
              border-radius: 8px;
          }
 
-        /* ---------- Štýly pre skrolovateľnú tabuľku a sticky hlavičku ---------- */
+        /* ---------- Štýly pre skrolovateľnú tabuľku a sticky hlavičku (kompatibilné s dynamickými stĺpcami) ---------- */
 
         /* Obalový kontajner pre tabuľku - zabezpečí skrolovanie */
         .table-scroll-container {
-            max-height: 400px; /* NASTAVTE POŽADOVANÚ MAXIMÁLNU VÝŠKU TABUĽKY */
+            max-height: 400px; /* NASTAVTE POŽADOVANÚ MAXIMÁLNU VÝŠKU */
             overflow-y: auto; /* Zapne vertikálne skrolovanie */
-            border: 1px solid #ccc; /* Voliteľné: pre vizuálne ohraničenie boxu */
+            /* Optional: pre vizuálne ohraničenie boxu */
+            border: 1px solid #ccc;
         }
 
         /* Samotná tabuľka vo vnútri kontajnera */
         .data-table {
             width: 100%; /* Zabezpečí, že tabuľka vyplní šírku kontajnera */
             border-collapse: collapse;
+            /* DÔLEŽITÉ: ODSTRÁNILI SME DISPLAY: BLOCK NA THEAD/TBODY A DISPLAY: FLEX NA TR */
+            /* DÔLEŽITÉ: ODSTRÁNILI SME PEVNÉ ŠÍRKY STĹPCOV VIAZANÉ NA :NTH-CHILD */
         }
 
         /* Hlavička tabuľky - TOTO JE STICKY ELEMENT */
@@ -44,14 +47,17 @@
             z-index: 1; /* Zabezpečí, že je nad obsahom tela */
             background-color: #3a8d41; /* Pridajte farbu pozadia */
             color: white;
+            /* NEPOUŽÍVAŤ DISPLAY: BLOCK TU */
         }
 
         /* Štýly pre bunky hlavičky a tela */
+        /* Tieto štýly sa aplikujú bez ohľadu na to, koľko stĺpcov je v thead/tbody */
         .data-table th,
         .data-table td {
             padding: 10px 15px;
             text-align: left;
             border-bottom: 1px solid #eee;
+            /* NEPOUŽÍVAŤ PEVNÉ ŠÍRKY TU, ak majú byť stĺpce dynamické a flexibilné */
         }
 
         .data-table th {
@@ -72,11 +78,14 @@
 
 
         /* Štýl pre bunku s colspan (Načítavam...) */
+        /* Colspan by mal ideálne zodpovedať maximálnemu počtu stĺpcov, ktoré očakávaš */
          .data-table tbody tr td[colspan] {
              text-align: center !important;
              font-style: italic;
              color: #777;
              background-color: transparent !important;
+             /* Ak už nie je display: flex na tr, tieto pravidlá nemajú plný efekt centrovania,
+                ale text-align: center stále funguje */
          }
 
          /* ---------- Štýly pre detail sekciu ---------- */
@@ -115,6 +124,10 @@
              padding-bottom: 5px;
          }
 
+         #selectedTeamRealizacnyTim p {
+             margin: 5px 0;
+         }
+
          #selectedTeamSoupiskaHracov {
              list-style: none;
              padding: 0;
@@ -147,84 +160,12 @@
                     <thead>
                         <tr id="clubsSummaryTableHeader">
                             <th>Názov klubu</th>
-                        </tr>
+                            </tr>
                     </thead>
                     <tbody id="clubsSummaryTableBody">
                         <tr>
                             <td colspan="1" style="text-align: center;">Načítavam prehľad...</td>
                         </tr>
-                        <tr><td>Handball Club Pezinok</td></tr>
-                         <tr><td>HC Tatran Stupava</td></tr>
-                         <tr><td>HK AGRO Topoľčany</td></tr>
-                         <tr><td>HK AS Trenčín</td></tr>
-                         <tr><td>HK Bojnice</td></tr>
-                         <tr><td>HK Ivančice</td></tr>
-                         <tr><td>HK Junior Močenok</td></tr>
-                         <tr><td>HK Košice</td></tr>
-                         <tr><td>HK Senec</td></tr>
-                         <tr><td>HK Slávia Medik Martin</td></tr>
-                         <tr><td>HK Slávia Partizánske</td></tr>
-                         <tr><td>HK Slávia Sereď</td></tr>
-                         <tr><td>HK Slovan Duslo Šaľa</td></tr>
-                         <tr><td>HKM Šurany</td></tr>
-                         <tr><td>HO Lehota pod Vtáčnikom</td></tr>
-                         <tr><td>HO TJ Slovan Modra</td></tr>
-                         <tr><td>HŠK Legends Šaľa</td></tr>
-                         <tr><td>MHáK Martin</td></tr>
-                         <tr><td>MHC Štart Nové Zámky</td></tr>
-                         <tr><td>MHK Piešťany</td></tr>
-                         <tr><td>MŠK - hádzaná Čadca</td></tr>
-                         <tr><td>MŠK HO Považská Bystrica</td></tr>
-                         <tr><td>MŠK UVENTA Michalovce</td></tr>
-                         <tr><td>SMF - HK Žilina</td></tr>
-                         <tr><td>Sport Club Senec</td></tr>
-                         <tr><td>ŠA Trenčín</td></tr>
-                         <tr><td>ŠKK Zemplín Trebišov</td></tr>
-                         <tr><td>ŠkH Rohožník</td></tr>
-                         <tr><td>ŠkHá Dubnica nad Váhom</td></tr>
-                         <tr><td>ŠKP Topoľčany</td></tr>
-                         <tr><td>ŠKP Prešov</td></tr>
-                         <tr><td>Štart Trebišov</td></tr>
-                         <tr><td>Tatran Prešov</td></tr>
-                         <tr><td>TJ Sokol Cífer</td></tr>
-                         <tr><td>TJ Strojár Malacky - ŠkH Rohožník</td></tr>
-                         <tr><td>ZŠ Bieloruská</td></tr>
-                         <tr><td>Handball Club Pezinok 2</td></tr>
-                         <tr><td>HC Tatran Stupava 2</td></tr>
-                         <tr><td>HK AGRO Topoľčany 2 2</td></tr>
-                         <tr><td>HK AS Trenčín 2</td></tr>
-                         <tr><td>HK Bojnice 2</td></tr>
-                         <tr><td>HK Ivančice 2</td></tr>
-                         <tr><td>HK Junior Močenok 2</td></tr>
-                         <tr><td>HK Košice 2</td></tr>
-                         <tr><td>HK Senec 2</td></tr>
-                         <tr><td>HK Slávia Medik Martin 2</td></tr>
-                         <tr><td>HK Slávia Partizánske 2</td></tr>
-                         <tr><td>HK Slávia Sereď 2</td></tr>
-                         <tr><td>HK Slovan Duslo Šaľa 2</td></tr>
-                         <tr><td>HKM Šurany 2</td></tr>
-                         <tr><td>HO Lehota pod Vtáčnikom 2</td></tr>
-                         <tr><td>HO TJ Slovan Modra 2</td></tr>
-                         <tr><td>HŠK Legends Šaľa 2</td></tr>
-                         <tr><td>MHáK Martin 2</td></tr>
-                         <tr><td>MHC Štart Nové Zámky 2</td></tr>
-                         <tr><td>MHK Piešťany 2</td></tr>
-                         <tr><td>MŠK - hádzaná Čadca 2</td></tr>
-                         <tr><td>MŠK HO Považská Bystrica 2</td></tr>
-                         <tr><td>MŠK UVENTA Michalovce 2</td></tr>
-                         <tr><td>SMF - HK Žilina 2</td></tr>
-                         <tr><td>Sport Club Senec 2</td></tr>
-                         <tr><td>ŠA Trenčín 2</td></tr>
-                         <tr><td>ŠKK Zemplín Trebišov 2</td></tr>
-                         <tr><td>ŠkH Rohožník 2</td></tr>
-                         <tr><td>ŠkHá Dubnica nad Váhom 2</td></tr>
-                         <tr><td>ŠKP Topoľčany 2</td></tr>
-                         <tr><td>ŠKP Prešov 2</td></tr>
-                         <tr><td>Štart Trebišov 2</td></tr>
-                         <tr><td>Tatran Prešov 2</td></tr>
-                         <tr><td>TJ Sokol Cífer 2</td></tr>
-                         <tr><td>TJ Strojár Malacky - ŠkH Rohožník 2</td></tr>
-                         <tr><td>ZŠ Bieloruská 2</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -254,5 +195,47 @@
 
     <script type="module" src="spravca-turnaja-common.js"></script>
     <script type="module" src="prihlasene-kluby.js"></script>
+
+    <script>
+        // PRÍKLAD AKO JAVASCRIPT PRIDÁ DYNAMICKÉ STĹPCE DO HLAVIČKY A TELA
+        // V TVOJOM REÁLNOM KÓDE BUDE TÁTO LOGIKA INÁ
+
+        document.addEventListener('DOMContentLoaded', function() {
+             const tableHeadRow = document.getElementById('clubsSummaryTableHeader');
+             const tableBody = document.getElementById('clubsSummaryTableBody');
+
+             // Simulácia dynamicky zistených kategórií
+             const dynamicCategories = ["U10", "U12", "U14", "U16"]; // Príklad dynamických kategórií
+
+             // Odstrániť pôvodné stĺpce okrem prvého (Názov klubu)
+             while (tableHeadRow.children.length > 1) {
+                 tableHeadRow.removeChild(tableHeadRow.lastChild);
+             }
+
+             // Pridať dynamické hlavičky stĺpcov
+             dynamicCategories.forEach(cat => {
+                 const thD = document.createElement('th');
+                 thD.textContent = cat + " D";
+                 tableHeadRow.appendChild(thD);
+
+                 const thCH = document.createElement('th');
+                 thCH.textContent = cat + " CH";
+                 tableHeadRow.appendChild(thCH);
+             });
+
+             // Pridať hlavičku pre "Prihlásenie" (ak je vždy na konci)
+              const thPrihlasenie = document.createElement('th');
+              thPrihlasenie.textContent = "Prihlásenie";
+              tableHeadRow.appendChild(thPrihlasenie);
+
+              const finalColCount = tableHeadRow.children.length;
+              const loadingCell = tableBody.querySelector('td[colspan]');
+              if (loadingCell) {
+                  loadingCell.colSpan = finalColCount;
+              }
+         });
+
+    </script>
+
 </body>
 </html>
