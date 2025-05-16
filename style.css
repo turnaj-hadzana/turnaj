@@ -365,3 +365,6 @@ nav ul li a:hover {
 #clubsBodyTable td:last-child {
     padding: 0 0;
 }
+#clubsBodyTable td:last-child {
+    padding: 10px 0;
+}
