@@ -34,9 +34,8 @@
              margin-bottom: 20px;
         }
 
-        /* Štýly pre tlačidlá Späť */
-        #backToCategoriesButton,
-        #backToGroupButtonsButton {
+        /* Štýly pre tlačidlo Späť na kategórie */
+        #backToCategoriesButton {
             display: none; /* Spočiatku skryté, riadené JS */
             padding: 10px 15px;
             background-color: #3a8d41; /* Zelená */
@@ -46,15 +45,13 @@
             font-size: 1em;
             cursor: pointer;
             transition: background-color 0.3s ease;
-            margin: 0 10px; /* Medzera medzi tlačidlami Späť, ak sú zobrazené obe */
-            vertical-align: top; /* Zarovnanie na vrchol, ak sú inline-block (čo budú kvôli text-align center) */
+            margin: 20px auto; /* Centruje blokový element a pridá okraje */
+            display: block; /* Potrebné pre margin: auto */
         }
 
-        #backToCategoriesButton:hover,
-        #backToGroupButtonsButton:hover {
+        #backToCategoriesButton:hover {
             background-color: #c46f50; /* Oranžový hover */
         }
-
 
         /* Štýly pre hlavný dynamický obsah (kde sa zobrazí všetko okrem tlačidiel Späť) */
         #dynamicContentArea {
@@ -73,43 +70,23 @@
             background-color: #f9f9f9;
         }
 
-        /* Kontajner pre tlačidlá skupín (podobné ako kategórie) */
-         #groupButtonsContainer {
-             display: flex; /* Bude nastavené JS, keď je viditeľné */
-             flex-wrap: wrap;
-             gap: 15px;
-             justify-content: center;
-             padding: 20px;
-             border: 1px solid #ccc;
-             border-radius: 8px;
-             background-color: #e9ecef; /* Iná farba pozadia ako kategórie */
-             margin-top: 20px; /* Medzera od nadpisu kategórie */
-         }
-
-        /* Kontajner pre zobrazenie jednej konkrétnej skupiny a nepriradených tímov */
-         #singleGroupDisplay {
-             /* Základný kontajner */
-             margin-top: 20px; /* Medzera od nadpisu kategórie */
-         }
-
-        /* Štýl pre nadpis kategórie v zobrazení skupín (tlačidiel alebo jednej skupiny) */
-        #dynamicContentArea h2 {
-            color: #333;
-            padding-bottom: 0;
-            margin-bottom: 15px;
-            font-weight: bold;
-            font-size: 1.5em;
-            text-align: center;
-            margin-top: 0; /* Margin top už riadi #dynamicContentArea / #groupButtonsContainer / #singleGroupDisplay */
+         /* Kontajner pre zobrazenie viacerých skupín vedľa seba */
+        .groups-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px; /* Medzera medzi skupinami */
+            justify-content: center; /* Centruje skupiny v rámci kontajnera */
+            align-items: stretch;
+            margin-top: 20px; /* Medzera od nadpisu kategórie */
         }
 
 
-        /* Štýly pre blok jednotlivej skupiny (použité v #singleGroupDisplay) */
+        /* Štýly pre blok jednotlivej skupiny (použité v .groups-container) */
         .group-display {
              /* Tieto vlastnosti budú nastavené JS pre dynamickú šírku: */
              /* width: auto; max-width: none; flex-grow: 0; flex-shrink: 0; flex-basis: auto; min-width: 200px; */
 
-             margin: 20px auto 0 auto; /* Centrujeme blok skupiny a nastavíme vrchný/spodný okraj */
+             margin-bottom: 0; /* Zrušíme pôvodný margin-bottom, gap v kontajneri riadi medzeru */
              padding: 0;
              border: 1px solid #ddd;
              border-radius: 4px;
@@ -118,7 +95,7 @@
              box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
              display: flex;
              flex-direction: column;
-             max-width: 400px; /* Obmedzíme max šírku bloku jednej skupiny, môžeš upraviť */
+             /* max-width: 400px; /* Obmedzenie max šírky je menej vhodné pri zobrazení viacerých vedľa seba */
         }
 
         /* Štýly pre nadpis skupiny */
@@ -176,7 +153,7 @@
             flex-grow: 1;
         }
 
-        /* Štýly pre sekciu nepriradených tímov (použité v #singleGroupDisplay) */
+        /* Štýly pre sekciu nepriradených tímov (zobrazené pod skupinami) */
         .unassigned-teams-display {
             margin: 30px auto 0 auto; /* Centrujeme blok a nastavíme okraje */
             padding: 15px;
@@ -231,12 +208,52 @@
             border-bottom: 1px solid #ccc !important;
         }
 
+        /* Štýl pre nadpis kategórie v zobrazení skupín */
+        #dynamicContentArea > h2 { /* Cieľujeme na h2 priamo v dynamicContentArea */
+            color: #333;
+            padding-bottom: 0;
+            margin-bottom: 15px;
+            font-weight: bold;
+            font-size: 1.5em;
+            text-align: center;
+            margin-top: 20px; /* Pridáme vrchný okraj pod tlačidlami Späť */
+        }
+
+
         /* Štýly pre hlavný nadpis stránky */
         h1 {
             text-align: center;
             margin-top: 20px;
             margin-bottom: 20px;
         }
+
+        /* Špeciálne rozloženie pre 5 skupín - OSTÁVA */
+        .groups-container.force-3-plus-2-layout {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+            align-items: stretch;
+        }
+         .groups-container.force-3-plus-2-layout .group-display {
+             flex-basis: auto;
+             flex-grow: 0;
+             flex-shrink: 0;
+             min-width: 200px;
+             max-width: none;
+             width: auto;
+             box-sizing: border-box;
+         }
+         @media (max-width: 768px) {
+              .groups-container.force-3-plus-2-layout .group-display {
+                 flex-basis: auto;
+                 flex-grow: 0;
+                 flex-shrink: 0;
+                 min-width: 200px;
+                 max-width: none;
+                 width: auto;
+              }
+         }
 
 
     </style>
@@ -253,8 +270,7 @@
 
                 <div class="back-buttons-container">
                     <button id="backToCategoriesButton">← Späť na kategórie</button>
-                    <button id="backToGroupButtonsButton">← Späť na skupiny</button>
-                </div>
+                    </div>
 
                 <div id="dynamicContentArea">
                     </div>
