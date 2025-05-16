@@ -1,4 +1,4 @@
-// zobrazenie-skupin.js (Vrátené k 2 úrovniam: Kategórie -> Všetky skupiny v kategórii)
+// zobrazenie-skupin.js (Opravené dekódovanie URL hash)
 
 // Importy z common.js
 import { db, categoriesCollectionRef, groupsCollectionRef, clubsCollectionRef,
@@ -7,7 +7,6 @@ import { db, categoriesCollectionRef, groupsCollectionRef, clubsCollectionRef,
 // Získanie referencií na elementy
 const dynamicContentArea = document.getElementById('dynamicContentArea'); // Hlavný dynamický kontajner
 const backToCategoriesButton = document.getElementById('backToCategoriesButton'); // Tlačidlo Späť na kategórie
-// Tlačidlo Späť na skupiny bolo odstránené
 
 // Polia pre uchovanie všetkých načítaných dát
 let allCategories = [];
@@ -134,7 +133,7 @@ function displayGroupsForCategory(categoryId) {
     // Zobraziť tlačidlo späť na kategórie
     backToCategoriesButton.style.display = 'block';
 
-    // Zápis do URL hash (len kategória)
+    // Zápis do URL hash (len kategória) - ENCODING je automatické pre hash
     window.location.hash = 'category-' + categoryId;
 
 
@@ -269,11 +268,6 @@ function displayGroupsForCategory(categoryId) {
          });
          unassignedDiv.appendChild(unassignedList);
          dynamicContentArea.appendChild(unassignedDiv); // Pridáme nepriradené tímy do dynamickej oblasti pod skupiny
-     } else if (groupsInCategory.length === 0) {
-         // Ak nie sú žiadne skupiny ani nepriradené tímy v kategórii, zobrazíme túto správu
-          // (Táto správa pre skupiny bola pridaná vyššie, ale ak nie sú ani nepriradené tímy,
-          // môžeme to potvrdiť, alebo tú vrchnú správu ponechať ako dostatočnú)
-          // Ponecháme len správu pre skupiny, ak nie sú žiadne tímy.
      }
 }
 
@@ -281,7 +275,7 @@ function displayGroupsForCategory(categoryId) {
 function goBackToCategories() {
     console.log("INFO: Návrat na zobrazenie kategórií.");
     currentCategoryId = null;
-    displayCategoriesAsButtons(); // Zobraziť znova tlačidlá kategórií
+    displayCategoriesAsButtons(); // Zobraziť znova tlačidlá kategórií (to už vyčistí hash)
 }
 
 
@@ -362,7 +356,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     } else {
         console.error("Tlačidlo Späť na kategórie sa nenašlo!");
     }
-    // Tlačidlo Späť na skupiny bolo odstránené, jeho listener už netreba
 
     // Skontrolovať hash v URL a podľa toho zobraziť obsah
     const hash = window.location.hash;
@@ -371,15 +364,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (hash && hash.startsWith(categoryPrefix)) {
         // Očakávame len hash kategórie
         const urlCategoryId = hash.substring(categoryPrefix.length);
+        // *** DEKÓDOVAŤ URL KOMPONENTU PRED POUŽITÍM ***
+        const decodedCategoryId = decodeURIComponent(urlCategoryId);
+
 
         // Skontrolujeme, či ID kategórie z URL existuje
-        const categoryExists = allCategories.some(cat => cat.id === urlCategoryId);
+        const categoryExists = allCategories.some(cat => cat.id === decodedCategoryId);
 
         if (categoryExists) {
-            console.log(`INFO: Načítavam kategóriu z URL: ${urlCategoryId}`);
-            displayGroupsForCategory(urlCategoryId); // Zobraziť skupiny pre kategóriu z URL
+            console.log(`INFO: Načítavam kategóriu z URL: ${decodedCategoryId}`);
+            displayGroupsForCategory(decodedCategoryId); // Zobraziť skupiny pre kategóriu z URL
         } else {
-            console.log(`INFO: ID kategórie z URL "${urlCategoryId}" sa nenašlo. Zobrazujem zoznam kategórií.`);
+            console.log(`INFO: ID kategórie z URL "${decodedCategoryId}" sa nenašlo. Zobrazujem zoznam kategórií.`);
              // Ak ID z URL neexistuje, zobraziť zoznam kategórií a vyčistiť chybný hash
             displayCategoriesAsButtons(); // displayCategoriesAsButtons už vyčistí hash
         }
@@ -414,15 +410,18 @@ window.addEventListener('hashchange', () => {
 
      if (hash && hash.startsWith(categoryPrefix)) {
         const urlCategoryId = hash.substring(categoryPrefix.length);
+        // *** DEKÓDOVAŤ URL KOMPONENTU PRED POUŽITÍM ***
+        const decodedCategoryId = decodeURIComponent(urlCategoryId);
+
 
         // Skontrolujeme, či ID kategórie z URL existuje (z aktuálne načítaných dát)
-        const categoryExists = allCategories.some(cat => cat.id === urlCategoryId);
+        const categoryExists = allCategories.some(cat => cat.id === decodedCategoryId);
 
         if (categoryExists) {
-            console.log(`INFO: Hashchange: Zobrazujem skupiny pre kategóriu ${urlCategoryId}`);
-            displayGroupsForCategory(urlCategoryId);
+            console.log(`INFO: Hashchange: Zobrazujem skupiny pre kategóriu ${decodedCategoryId}`);
+            displayGroupsForCategory(decodedCategoryId);
         } else {
-            console.log(`INFO: Hashchange: Kategória ${urlCategoryId} sa nenašla. Zobrazujem kategórie.`);
+            console.log(`INFO: Hashchange: Kategória ${decodedCategoryId} sa nenašla. Zobrazujem kategórie.`);
              displayCategoriesAsButtons(); // displayCategoriesAsButtons už vyčistí hash
         }
     } else {
