@@ -44,6 +44,10 @@ async function loadAllData() {
          allClubs = [];
          allCategories = [];
          allGroups = [];
+         // V prípade chyby naviguj späť na hlavný zoznam a URL
+         history.pushState(null, '', window.location.pathname); // Vráť URL bez parametrov
+         displayClubsSummaryTable(); // Zobraz zoznam klubov (prázdny alebo s chybou)
+
     }
 }
 
@@ -95,12 +99,6 @@ function updateHeaderColspan(numCategoryColumns) {
         }
 
         // KÓD NA PRIDANIE NOVÉHO POSLEDNÉHO STĹPCA DO HLAVIČKY BOL ODSTRÁNENÝ
-        // const lastColumnTh = document.createElement('th');
-        // lastColumnTh.textContent = '';
-        // const scrollbarWidth = getScrollbarWidth(); // Volanie funkcie odstránené
-        // lastColumnTh.style.width = `${scrollbarWidth}px`; // Nastavenie šírky odstránené
-        // lastColumnTh.style.minWidth = `${scrollbarWidth}px`; // Nastavenie minimálnej šírky odstránené
-        // clubsSummaryTableHeader.appendChild(lastColumnTh);
     }
 
      // Update colspan for the initial loading/error row in the body
@@ -119,6 +117,7 @@ function updateHeaderColspan(numCategoryColumns) {
 function displayClubsSummaryTable() {
     if (clubListSection) clubListSection.style.display = 'block';
     if (clubDetailSection) clubDetailSection.style.display = 'none';
+    if (clubDetailTitleSpan) clubDetailTitleSpan.textContent = ''; // Vyčisti nadpis detailov
 
     if (!clubsSummaryTableBody || !clubsSummaryTableHeader) {
         return;
@@ -127,7 +126,6 @@ function displayClubsSummaryTable() {
     clubsSummaryTableBody.innerHTML = ''; // Clear existing rows
 
     // Update header with "Tímy" column and category columns (without the extra last column)
-    // NOTE: updateHeaderColspan handles adding the extra TH, but not the extra TD in the body
     updateHeaderColspan(allCategories.length);
 
     if (allClubs.length === 0) {
@@ -159,7 +157,13 @@ function displayClubsSummaryTable() {
         row.dataset.baseName = baseName;
         row.style.cursor = 'pointer';
         row.addEventListener('click', () => {
-             displaySubjectDetails(baseName);
+             // ZMENA: Aktualizácia URL pri kliknutí na riadok klubu
+             const url = new URL(window.location.href);
+             url.searchParams.set('club', baseName);
+             url.searchParams.delete('team'); // Odstráň parameter team
+             history.pushState({ baseName: baseName }, '', url.toString());
+
+             displaySubjectDetails(baseName); // Zobraz detaily subjektu
         });
 
         // Add "Názov klubu" cell
@@ -196,13 +200,32 @@ function displayClubsSummaryTable() {
         });
 
         // KÓD NA PRIDANIE POSLEDNEJ BUNKY DO TELA JE ODSTRÁNENÝ
-        // const lastColumnTd = row.insertCell();
-        // lastColumnTd.textContent = ''; // Nová bunka tela môže byť prázdna
-        // Tu môžete prípadne pridať ikonu alebo tlačidlo akcie
     });
 }
 
-async function displaySubjectDetails(baseName) {
+
+// Funkcia na zvýraznenie tlačidla tímu a resetovanie ostatných
+function highlightTeamButton(teamIdToHighlight) {
+     if (teamsInCategoryButtonsDiv) {
+          // Reset all buttons first
+          teamsInCategoryButtonsDiv.querySelectorAll('button').forEach(btn => {
+              btn.style.fontWeight = 'normal';
+              btn.style.backgroundColor = '#e9f5e9'; // Návrat na normálne svetlo zelené pozadie z CSS
+              btn.style.color = '#333'; // Návrat na normálnu farbu textu z CSS
+          });
+
+          // Find and highlight the target button
+          const targetButton = teamsInCategoryButtonsDiv.querySelector('button[data-team-id="' + teamIdToHighlight + '"]');
+          if (targetButton) {
+              targetButton.style.fontWeight = 'bold';
+              targetButton.style.backgroundColor = '#3a8d41'; // Aktívne zelené pozadie
+              targetButton.style.color = 'white'; // Aktívny biely text
+          }
+     }
+}
+
+
+async function displaySubjectDetails(baseName, initialTeamId = null) { // Pridaný voliteľný parameter pre ID tímu
      if (clubListSection) clubListSection.style.display = 'none';
      if (clubDetailSection) clubDetailSection.style.display = 'block';
      if(clubDetailTitleSpan) clubDetailTitleSpan.textContent = baseName;
@@ -245,7 +268,7 @@ async function displaySubjectDetails(baseName) {
 
                // Získame názov kategórie a skupiny pre tím 'b'
                const categoryB = allCategories.find(cat => cat.id === b.categoryId);
-               const categoryNameB = (categoryB && categoryB.name) ? categoryB.name : (b.categoryId || 'Neznáma kategória');
+               const categoryNameB = (categoryB && categoryB.name) ? categoryNameB : (b.categoryId || 'Neznáma kategória');
                const groupB = allGroups.find(g => g.id === b.groupId);
                const groupNameB = groupB ? (groupB.name || groupB.id) : 'Nepriradené';
                const teamTextB = `${categoryNameB} - ${groupNameB}`;
@@ -258,7 +281,7 @@ async function displaySubjectDetails(baseName) {
 
           teamsForSubject.forEach(team => {
                const teamButton = document.createElement('button'); // Vytvorenie tlačidla
-               teamButton.classList.add('action-button'); // Pridanie CSS triedy (ak máte definované štýly)
+               teamButton.classList.add('action-button'); // Pridanie CSS triedy
 
                // Tieto premenné sa tu znova vypočítavajú, aby sa nastavil text tlačidla
                const group = allGroups.find(g => g.id === team.groupId);
@@ -274,43 +297,46 @@ async function displaySubjectDetails(baseName) {
                      }
                 }
 
-               // Nastavenie textu tlačidla (zostáva rovnaké ako v predchádzajúcom kroku)
+               // Nastavenie textu tlačidla
                teamButton.textContent = `${categoryName} - ${groupName}`;
                teamButton.dataset.teamId = team.id; // Uloženie ID tímu do datasetu
 
                // Pridanie event listeneru na kliknutie
                teamButton.addEventListener('click', () => {
-                    displaySpecificTeamDetails(team.id);
-                    // Odstránenie zvýraznenia zo všetkých tlačidiel a zvýraznenie aktuálneho
-                    if (teamsInCategoryButtonsDiv) {
-                        teamsInCategoryButtonsDiv.querySelectorAll('button').forEach(btn => {
-                            btn.style.fontWeight = 'normal';
-                            btn.style.backgroundColor = '#3a8d41';
-                            btn.style.color = 'white';
-                        });                    }
-                    teamButton.style.fontWeight = 'bold'; 
-                    teamButton.style.backgroundColor = '#c46f50';
-                    teamButton.style.color = 'white';
+                    // ZMENA: Aktualizácia URL pri kliknutí na tlačidlo tímu
+                    const url = new URL(window.location.href);
+                    // Predpokladáme, že club parameter je už v URL z displaySubjectDetails
+                    url.searchParams.set('team', team.id);
+                    history.pushState({ baseName: getClubBaseName(team), teamId: team.id }, '', url.toString());
+
+                    displaySpecificTeamDetails(team.id); // Zobraz detaily tímu
+                    highlightTeamButton(team.id); // Zvýrazni kliknuté tlačidlo
+
                 });
 
                teamsInCategoryButtonsDiv.appendChild(teamButton); // Pridanie tlačidla do DIVu
            });
 
-          // --- KÓD pre automatický výber a zvýraznenie prvého tímu (zostáva rovnaký) ---
-          if (teamsForSubject.length > 0) {
-               // ID prvého tímu v novo zoradenom poli
+          // --- KÓD pre automatický výber a zvýraznenie prvého tímu (ÚPRAVA) ---
+          // Táto časť sa teraz vykoná len ak sa zobrazujú detaily subjektu,
+          // ale nie je v URL špecifikovaný konkrétny tím (initialTeamId je null).
+          // Ak initialTeamId je zadané (z URL alebo histórie), spracuje sa to nižšie.
+           if (!initialTeamId && teamsForSubject.length > 0) {
+               // Zvýrazni prvé tlačidlo A zobraz detaily prvého tímu,
+               // len ak nebol špecifikovaný konkrétny tím v URL/histórii
                const firstTeamId = teamsForSubject[0].id;
+               // Pri zobrazení detailov prvého tímu NEaktualizujeme URL,
+               // pretože displaySubjectDetails už nastavila URL len s baseName.
+               // Ak by sme chceli URL s baseName aj teamId aj pri prvom tíme po kliknutí na subjekt,
+               // bolo by potrebné to tu dorobiť podobne ako pri kliknutí na iné tlačidlá.
                displaySpecificTeamDetails(firstTeamId);
-
-               // Nájdeme prvé tlačidlo v kontajneri zodpovedajúce tomuto ID a zvýrazníme ho
-               const firstTeamButton = teamsInCategoryButtonsDiv.querySelector('button[data-team-id="' + firstTeamId + '"]');
-               if (firstTeamButton) {
-                    firstTeamButton.style.fontWeight = 'bold'; 
-                    firstTeamButton.style.backgroundColor = '#c46f50';
-                    firstTeamButton.style.color = 'white';
-               }
+               highlightTeamButton(firstTeamId); // Zvýrazni prvé tlačidlo
+           } else if (initialTeamId) {
+                // Ak bol initialTeamId zadaný (z URL/histórie), displaySpecificTeamDetails
+                // sa už zavolala v handleUrlState ahighlightTeamButton sa zavola na konci displaySpecificTeamDetails
+                // Tu už nič nerobíme
            }
-          // --- KONIEC KÓDU ---
+          // --- KONIEC ÚPRAVY ---
      }
 
      // Dodatočné vyprázdnenie pôvodného UL pre prípad, že ešte existuje
@@ -443,28 +469,71 @@ async function displaySpecificTeamDetails(teamId) {
     }
 }
 
+// ZMENA: Funkcia na návrat na prehľad využíva history.back()
 function goBackToList() {
-    if (clubListSection) clubListSection.style.display = 'block';
-    if (clubDetailSection) clubDetailSection.style.display = 'none';
-    if (clubDetailTitleSpan) clubDetailTitleSpan.textContent = '';
-    // Clear contents when going back
-    if (teamsInCategoryButtonsDiv) teamsInCategoryButtonsDiv.innerHTML = ''; // Clear the buttons container
-     if(selectedTeamDetailsDiv) selectedTeamDetailsDiv.style.display = 'none';
-     if(selectedTeamNameSpan) selectedTeamNameSpan.textContent = '';
-     if(selectedTeamRealizacnyTimDiv) selectedTeamRealizacnyTimDiv.innerHTML = '';
-     if(selectedTeamSoupiskaHracovUl) selectedTeamSoupiskaHracovUl.innerHTML = '';
-
-    // Also clear the old UL just in case
-    if (teamsInCategoryListUl) teamsInCategoryListUl.innerHTML = '';
+    history.back(); // Naviguj o krok späť v histórii prehliadača
+    // Popstate event handler sa postará o zobrazenie správneho stavu
 }
 
 
-document.addEventListener('DOMContentLoaded', async () => {
+// ZMENA: Funkcia na spracovanie stavu URL pri načítaní stránky a zmene histórie
+async function handleUrlState() {
+    // Počkaj, kým sa načítajú všetky potrebné dáta
     await loadAllData();
-    displayClubsSummaryTable();
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const clubBaseName = urlParams.get('club');
+    const teamId = urlParams.get('team');
+
+    if (teamId) {
+        // Ak je v URL parameter teamId, nájdi príslušný baseName a zobraz detaily
+        const team = allClubs.find(c => c.id === teamId);
+        if (team) {
+            const baseName = getClubBaseName(team);
+            // Zobraz detaily subjektu (tým sa vytvoria tlačidlá tímov)
+            displaySubjectDetails(baseName, teamId); // Pošli teamId na zvýraznenie
+            // displaySpecificTeamDetails(teamId) sa zavolá vo vnútri displaySubjectDetails
+            // po vytvorení tlačidiel alebo ak je initialTeamId != null
+        } else {
+            // Tím s daným ID sa nenašiel, zobraz zoznam klubov
+            console.warn(`Tím s ID "${teamId}" sa nenašiel.`);
+            history.replaceState(null, '', window.location.pathname); // Odstráň neplatné parametre z URL
+            displayClubsSummaryTable();
+        }
+    } else if (clubBaseName) {
+        // Ak je v URL iba parameter club, zobraz detaily subjektu
+         const clubExists = allClubs.some(club => getClubBaseName(club) === clubBaseName);
+         if (clubExists) {
+              displaySubjectDetails(clubBaseName); // Nezobrazuj detaily konkrétneho tímu
+         } else {
+              // Subjekt sa nenašiel, zobraz zoznam klubov
+              console.warn(`Subjekt "${clubBaseName}" sa nenašiel.`);
+              history.replaceState(null, '', window.location.pathname); // Odstráň neplatné parametre z URL
+              displayClubsSummaryTable();
+         }
+    } else {
+        // V URL nie sú žiadne relevantné parametre, zobraz zoznam klubov
+        displayClubsSummaryTable();
+    }
+}
+
+
+// ZMENA: Spustenie spracovania URL stavu po načítaní DOM
+document.addEventListener('DOMContentLoaded', () => {
+    // Odstránenie starej logiky pri načítaní DOM, voláme handleUrlState
+    handleUrlState();
+
     if (backToListButton) {
+        // Zabezpečiť, že tlačidlo Späť volá novú funkciu goBackToList
+        backToListButton.removeEventListener('click', goBackToList); // Odstráň starý listener ak existuje
         backToListButton.addEventListener('click', goBackToList);
     } else {
        console.warn("Element with ID 'backToListButton' not found.");
     }
+});
+
+// ZMENA: Spracovanie udalosti 'popstate' pre navigáciu späť/vpred
+window.addEventListener('popstate', () => {
+    // Pri zmene histórie prehliadača (späť/vpred) znovu spracuj stav URL
+    handleUrlState();
 });
