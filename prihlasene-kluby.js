@@ -37,12 +37,9 @@ async function loadAllData() {
     } catch (error) {
         alert('Nepodarilo sa načítať dáta turnaja.');
         if (clubsSummaryTableBody) {
-             clubsSummaryTableBody.innerHTML = `<tr><td colspan="1" style="text-align: center; color: red;">Chyba pri načítaní klubov.</td></tr>`;
-             // Adjusted colspan for the error message to include the new "Tímy" column
-             updateHeaderColspan(0); // Call with 0 categories first
-             if (clubsSummaryTableBody.querySelector('td')) {
-                clubsSummaryTableBody.querySelector('td').colSpan = 2; // Set colspan to 2 (Názov + Tímy)
-             }
+             // Update colspan calculation for the error message
+             const numColumns = 1 + 1 + allCategories.length + 1; // Názov + Tímy + Kategórie + Nový stĺpec
+             clubsSummaryTableBody.innerHTML = `<tr><td colspan="${numColumns}" style="text-align: center; color: red;">Chyba pri načítaní klubov.</td></tr>`;
         }
          allClubs = [];
          allCategories = [];
@@ -73,7 +70,7 @@ function getClubBaseName(club) {
     return initialBaseName;
 }
 
-// Updated function to add the "Tímy" header and handle colSpan
+// Updated function to add the "Tímy" header, category headers, and the new last column
 function updateHeaderColspan(numCategoryColumns) {
     if (clubsSummaryTableHeader) {
         // Clear existing headers except the first one
@@ -83,7 +80,6 @@ function updateHeaderColspan(numCategoryColumns) {
         const teamsTh = document.createElement('th');
         teamsTh.textContent = 'Tímy';
         teamsTh.style.textAlign = 'center';
-        // Insert the new header after the first child (Názov klubu)
         clubsSummaryTableHeader.querySelector('th').insertAdjacentElement('afterend', teamsTh);
 
         // Add category headers
@@ -96,6 +92,12 @@ function updateHeaderColspan(numCategoryColumns) {
                 clubsSummaryTableHeader.appendChild(th);
             });
         }
+
+        // ZMENA: Pridanie nového stĺpca na koniec hlavičky
+        const lastColumnTh = document.createElement('th');
+        lastColumnTh.textContent = ''; // Nový stĺpec môže byť prázdny, alebo mať ikonu/tlačidlo
+        // lastColumnTh.style.width = '13px'; // Šírku nastavíme v CSS
+        clubsSummaryTableHeader.appendChild(lastColumnTh); // Pridať na koniec
     }
 
      // Update colspan for the initial loading/error row in the body
@@ -104,8 +106,8 @@ function updateHeaderColspan(numCategoryColumns) {
         if (firstRow) {
             const firstCell = firstRow.querySelector('td');
             if (firstCell) {
-                 // colspan = 1 (Názov klubu) + 1 (Tímy) + numCategoryColumns
-                firstCell.colSpan = 1 + 1 + numCategoryColumns;
+                 // colspan = 1 (Názov klubu) + 1 (Tímy) + numCategoryColumns + 1 (Nový stĺpec)
+                firstCell.colSpan = 1 + 1 + numCategoryColumns + 1; // ZMENA: Pridané +1
             }
         }
     }
@@ -121,14 +123,14 @@ function displayClubsSummaryTable() {
 
     clubsSummaryTableBody.innerHTML = ''; // Clear existing rows
 
-    // Update header with "Tímy" column and category columns
+    // Update header with "Tímy" column and category columns, including the new last column
     updateHeaderColspan(allCategories.length);
 
     if (allClubs.length === 0) {
         const noClubsRow = clubsSummaryTableBody.insertRow();
         const cell = noClubsRow.insertCell();
-         // colspan = 1 (Názov klubu) + 1 (Tímy) + allCategories.length
-        cell.colSpan = 1 + 1 + allCategories.length;
+         // colspan = 1 (Názov klubu) + 1 (Tímy) + allCategories.length + 1 (Nový stĺpec)
+        cell.colSpan = 1 + 1 + allCategories.length + 1; // ZMENA: Pridané +1
         cell.textContent = "Zatiaľ nie sú pridané žiadne kluby pre prehľad.";
         cell.style.textAlign = 'center';
         return;
@@ -188,6 +190,14 @@ function displayClubsSummaryTable() {
                  countCell.style.fontWeight = 'bold';
              }
         });
+
+        // ZMENA: Pridanie novej bunky na koniec každého riadku tela
+        const lastColumnTd = row.insertCell();
+        lastColumnTd.textContent = ''; // Nová bunka tela môže byť prázdna
+        // Tu môžete prípadne pridať ikonu alebo tlačidlo akcie
+        // const actionIcon = document.createElement('i'); // Príklad pre ikonu
+        // actionIcon.classList.add('fas', 'fa-info-circle'); // Príklad Font Awesome
+        // lastColumnTd.appendChild(actionIcon);
     });
 }
 
