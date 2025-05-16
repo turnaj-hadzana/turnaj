@@ -157,9 +157,9 @@ main p a:hover {
     color: #333;
     padding: 10px 15px;
 }
-.left-menu a:hover {
-    background-color: #e0e0e0;
+nav ul li a:hover {
     color: #3a8d41;
+    background-color: #e0e0e0;
 }
 /* Pôvodný add-button a modal štýly z tvojho style.css */
 .add-button {
@@ -245,7 +245,7 @@ main p a:hover {
 #clubsBodyTable {
     width: 100%; /* Tabuľky zaberú celú šírku kontajnera */
     border-collapse: collapse; /* Odstránenie medzier medzi bunkami */
-    table-layout: fixed; /* Kľúčové pre jednotné šírky stĺpcov */
+    table-layout: fixed; /* Kľúčové pre jednotné šírky stĺpcov - tela sa zhodujú s hlavičkou */
 }
 
 /* Remove margin-top from the body table specifically */
@@ -286,7 +286,7 @@ main p a:hover {
 
 /* Nastavenie šírky pre PRVÝ stĺpec (Názov klubu) */
 #clubsHeaderTable th:first-child {
-     width: 20%; /* ZMENA: Nastavené na 20% šírky tabuľky */
+     width: 20%; /* Nastavené na 20% šírky tabuľky */
      text-align: left; /* Text názvu klubu zarovnať vľavo */
      padding: 12px 15px; /* Konzistentné odsadenie */
 }
@@ -298,7 +298,7 @@ main p a:hover {
      padding: 12px 15px; /* Konzistentné odsadenie */
 }
 
-/* Štýly pre dynamicky pridané stĺpce kategórií (3. a ďalšie) */
+/* Štýly pre dynamicky pridané stĺpce kategórií (3. a ďalšie) v hlavičke */
 /* Tieto stĺpce si rozdelia zostávajúcu šírku (100% mínus šírka prvých dvoch stĺpcov) */
 #clubsHeaderTable th:nth-child(n + 3) {
     /* Nemusíme nastavovať explicitnú šírku, ak chceme, aby si rovnomerne rozdelili priestor */
@@ -323,13 +323,27 @@ main p a:hover {
     text-align: center; /* Predvolené centrovanie pre text */
     /* white-space: nowrap; */ /* Ponechať, ak nechcete zalamovať text */
     /* border-right bude pridaný nižšie */
+
+    /* Šírky buniek tela sa automaticky zhodujú so šírkami th v hlavičke
+       vďaka table-layout: fixed; na oboch tabuľkách. */
 }
 
 /* Prvý stĺpec v tele (názov klubu) zarovnať vľavo, aby zodpovedal hlavičke */
 #clubsBodyTable td:first-child {
     text-align: left;
-    /* Šírka sa automaticky zhoduje s prvým th v hlavičke vďaka table-layout: fixed; */
+    /* Šírka: Zhoduje sa s #clubsHeaderTable th:first-child (20%) */
 }
+
+/* Druhý stĺpec v tele (Tímy) */
+#clubsBodyTable td:nth-child(2) {
+    /* Šírka: Zhoduje sa s #clubsHeaderTable th:nth-child(2) (80px) */
+}
+
+/* Dynamicky pridané stĺpce kategórií (3. a ďalšie) v tele */
+#clubsBodyTable td:nth-child(n + 3) {
+     /* Šírka: Zhoduje sa s #clubsHeaderTable th:nth-child(n + 3) (rozdelia si zvyšný priestor) */
+}
+
 
 /* Pridanie pravého okraja ku všetkým bunkám tela OKREM poslednej */
 #clubsBodyTable td:not(:last-child) {
