@@ -242,7 +242,7 @@ async function displaySubjectDetails(baseName, initialTeamId = null) { // Pridan
      if (clubDetailSection) clubDetailSection.style.display = 'block';
      if(clubDetailTitleSpan) clubDetailTitleSpan.textContent = baseName;
 
-     // Vyprázdnenie starého UL, ak stále existuje (aj keby bol skrytý)
+     // Vyčistenie starého UL, ak stále existuje (aj keby bol skrytý)
      if(teamsInCategoryListUl) teamsInCategoryListUl.innerHTML = '';
 
      // Nastavenie počiatočného stavu pre nový DIV
@@ -329,9 +329,8 @@ async function displaySubjectDetails(baseName, initialTeamId = null) { // Pridan
 
                // Pridanie event listeneru na kliknutie
                teamButton.addEventListener('click', () => {
-                    // ZMENA: Aktualizácia URL pri kliknutí na tlačidlo tímu
+                    // Aktualizácia URL pri kliknutí na tlačidlo tímu
                     const url = new URL(window.location.href);
-                    // Predpokladáme, že club parameter je už v URL z displaySubjectDetails
                     url.searchParams.set('team', team.id);
                     history.pushState({ baseName: getClubBaseName(team), teamId: team.id }, '', url.toString());
 
@@ -342,22 +341,21 @@ async function displaySubjectDetails(baseName, initialTeamId = null) { // Pridan
                teamsInCategoryButtonsDiv.appendChild(teamButton); // Pridanie tlačidla do DIVu
            });
 
-          // --- KÓD pre automatický výber a zvýraznenie prvého tímu (ÚPRAVA) ---
+          // --- KÓD pre automatický výber a zvýraznenie tímu (ÚPRAVA) ---
           // Táto časť sa vykoná po vytvorení tlačidiel
            if (teamsForSubject.length > 0 && initialTeamId) {
-               // Ak bol initialTeamId zadaný (z URL/histórie), displaySpecificTeamDetails
-               // sa už zavolala v handleUrlState a highlightTeamButton sa zavola na konci displaySpecificTeamDetails
-               // Tu už nič nerobíme, pretože tlačidlá sú už vytvorené a zvýraznenie sa deje na konci displaySpecificTeamDetails
-               console.log(`DEBUG: InitialTeamId "${initialTeamId}" provided. Assuming highlight and details display handled by handleUrlState -> displaySpecificTeamDetails.`);
+               // Ak bol initialTeamId zadaný (z URL/histórie), zobraz detaily pre tento tím
+               console.log(`DEBUG: InitialTeamId "${initialTeamId}" provided. Displaying details for this team.`);
+               // ZMENA: Explicitne zavolaj displaySpecificTeamDetails pre počiatočný tím
+               displaySpecificTeamDetails(initialTeamId);
            } else if (teamsForSubject.length > 0 && !initialTeamId) {
-                // Ak nebol initialTeamId zadaný a sú tu tímy, zvýrazni prvé a zobraz detaily prvého
+                // Ak nebol initialTeamId zadaný a sú tu tímy, zobraz detaily prvého tímu (bez zvýraznenia v URL)
                const firstTeamId = teamsForSubject[0].id;
-               console.log(`DEBUG: No InitialTeamId provided. Highlighting and displaying details for the first team: "${firstTeamId}".`);
+               console.log(`DEBUG: No InitialTeamId provided. Displaying details for the first team: "${firstTeamId}".`);
                 displaySpecificTeamDetails(firstTeamId); // Toto by malo volať highlightTeamButton na konci
            } else if (teamsForSubject.length === 0 && initialTeamId) {
                 console.warn(`DEBUG: InitialTeamId "${initialTeamId}" provided, but no teams found for baseName.`);
-                // V tomto prípade tím z URL existuje, ale nenašiel sa pre daný baseName.
-                // handleUrlState by mala toto ošetriť (redirect na list), ale ak sa sem dostaneme, logujeme.
+                // handleUrlState by mala toto ošetriť presmerovaním na list
            }
           // --- KONIEC ÚPRAVY ---
      }
@@ -527,7 +525,7 @@ async function handleUrlState() {
              // Zobraz detaily subjektu (tým sa vytvoria tlačidlá tímov)
             displaySubjectDetails(baseName, teamId); // Pošli teamId na zvýraznenie
             // displaySpecificTeamDetails(teamId) sa zavolá vo vnútri displaySubjectDetails
-            // po vytvorení tlačidiel ak je initialTeamId != null, ALEBO priamo na konci displaySubjectDetails ak initialTeamId existuje
+            // po vytvorení tlačidiel ak je initialTeamId != null, ALEBO priamo na konci displaySpecificTeamDetails ak initialTeamId existuje
 
         } else {
             // Tím s daným ID sa nenašiel, zobraz zoznam klubov
@@ -560,7 +558,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (backToListButton) {
         // Zabezpečiť, že tlačidlo Späť volá novú funkciu goBackToList
-        // Odstráň existujúce listenery kliknutia, ak ich tam je viac
+        // Odstráň existujúce listenery kliknutia, aby sa nepridali duplicitne
         const newButton = backToListButton.cloneNode(true);
         backToListButton.parentNode.replaceChild(newButton, backToListButton);
         const updatedBackButton = document.getElementById('backToListButton');
