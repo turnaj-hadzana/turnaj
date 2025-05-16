@@ -25,7 +25,6 @@ body {
     display: flex;
     flex-direction: column; /* Uloží priame deti (vrátane main) pod sebou */
     min-height: 100%; /* Zabezpečí, že telo má minimálne výšku okna */
-    overflow: hidden; /* ZMENA: Zablokovanie skrolovania na celom tele (tento štýl je aj v HTML) */
 
     /* Ostatné pôvodné štýly tela */
     font-family: 'Arial', sans-serif;
