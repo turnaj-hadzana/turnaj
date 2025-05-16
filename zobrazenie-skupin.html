@@ -33,7 +33,7 @@
 
         /* Štýly pre tlačidlá Späť */
         #backToCategoriesButton,
-        #backToGroupButtonsButton { /* Pridané #backToGroupButtonsButton späť */
+        #backToGroupButtonsButton {
             display: none; /* Spočiatku skryté, riadené JS */
             /* Používame .display-button pre farby a základný vzhľad */
             padding: 10px 15px; /* Trochu menší padding */
@@ -43,7 +43,7 @@
 
         /* Hover štýly pre tlačidlá Späť */
         #backToCategoriesButton:hover,
-        #backToGroupButtonsButton:hover { /* Pridané #backToGroupButtonsButton späť */
+        #backToGroupButtonsButton:hover {
             background-color: #c46f50; /* Oranžový hover */
         }
 
@@ -65,6 +65,20 @@
             background-color: #f9f9f9;
         }
 
+        /* Kontajner pre tlačidlá na výber skupiny - NOVÝ */
+        #groupSelectionButtons {
+            display: flex; /* Bude nastavené JS */
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            background-color: #e9ecef; /* Podobné farbe, ktorú sme zvažovali pre group buttons container */
+            margin-top: 20px; /* Medzera od nadpisu kategórie */
+        }
+
+
          /* Kontajner pre zobrazenie viacerých skupín vedľa seba */
         .groups-container {
             display: flex;
@@ -72,7 +86,7 @@
             gap: 20px; /* Medzera medzi skupinami */
             justify-content: center; /* Centruje skupiny v rámci kontajnera */
             align-items: stretch;
-            margin-top: 20px; /* Medzera od nadpisu kategórie */
+            margin-top: 20px; /* Medzera od kontajnera tlačidiel skupín */
         }
 
 
@@ -105,14 +119,8 @@
             border-top-right-radius: 3px;
         }
 
-         /* Štýl pre tlačidlo v rámci bloku skupiny */
-        .group-display .display-button {
-             display: block; /* Zobrazí ako blokový element */
-             width: calc(100% - 20px); /* Šírka bloku mínus paddingy v kontajneri */
-             margin: 10px auto; /* Centruje a pridá vertikálny okraj */
-             padding: 8px 10px; /* Menší padding ako kategórie */
-             font-size: 1em; /* Menšie písmo */
-        }
+         /* Štýl pre tlačidlo v rámci bloku skupiny - ODSTRÁNENÉ */
+        /* .group-display .display-button { ... } */
 
 
         /* Štýly pre zoznam tímov v skupine */
