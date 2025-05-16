@@ -116,7 +116,6 @@ function showOnly(containerIdToShow) {
              setUniformTableWidth(uniformWidth, allGroupsContainer);
           }
      } else if (containerIdToShow === 'singleGroupContent' && singleGroupContent) {
-          console.log("DEBUG: showOnly is calling dynamic width for singleGroupContent.");
            const uniformWidth = findMaxTableContentWidth(singleGroupContent);
             if (uniformWidth > 0) {
                setUniformTableWidth(uniformWidth, singleGroupContent);
@@ -205,7 +204,6 @@ function displayGroupsForCategory(categoryId) {
     currentCategoryId = categoryId;
     currentGroupId = null;
      if (!getHTMLElements()) {
-         console.error("ERROR: displayGroupsForCategory failed due to missing HTML elements.");
          goBackToCategories();
          return;
      }
@@ -230,10 +228,8 @@ function displayGroupsForCategory(categoryId) {
      if (allGroupsContainer) {
          if (groupsInCategory.length === 5) {
               allGroupsContainer.classList.add('force-3-plus-2-layout');
-              console.log("DEBUG: Added force-3-plus-2-layout class.");
          } else {
               allGroupsContainer.classList.remove('force-3-plus-2-layout');
-              console.log("DEBUG: Removed force-3-plus-2-layout class.");
          }
      }
     groupsInCategory.sort((a, b) => (a.name || a.id || '').localeCompare((b.name || a.id || ''), 'sk-SK'));
@@ -241,27 +237,26 @@ function displayGroupsForCategory(categoryId) {
          if (groupSelectionButtons) groupSelectionButtons.innerHTML = '<p>V kategórii nie sú skupiny na výber.</p>';
          if (allGroupsContainer) allGroupsContainer.innerHTML = `<p>V kategórii "${selectedCategory.name || selectedCategory.id}" zatiaľ nie sú vytvorené žiadne skupiny.</p>`;
     } else {
-        groupsInCategory.forEach(group => {
-            const button = document.createElement('button');
-            button.classList.add('display-button');
-            button.textContent = group.name || group.id;
-            button.dataset.groupId = group.id;
-            button.addEventListener('click', () => {
-                 const groupIdToDisplay = button.dataset.groupId;
-                 displaySingleGroup(groupIdToDisplay);
-            });
-            if (groupSelectionButtons) groupSelectionButtons.appendChild(button);
-        });
-         if (groupSelectionButtons) console.log(`DEBUG: ${groupsInCategory.length} group selection buttons created and appended to #groupSelectionButtons. #groupSelectionButtons children count: ${groupSelectionButtons.children.length}`);
-        groupsInCategory.forEach(group => {
-            const groupDiv = document.createElement('div');
-            groupDiv.classList.add('group-display');
-            const groupTitle = document.createElement('h3');
-            groupTitle.textContent = group.name || group.id;
-            groupDiv.appendChild(groupTitle);
-            groupTitle.style.cursor = 'pointer';
-            groupTitle.addEventListener('click', () => {
-                  const groupIdToDisplay = group.id;
+        groupsInCategory.forEach(group => {
+            const button = document.createElement('button');
+            button.classList.add('display-button');
+            button.textContent = group.name || group.id;
+            button.dataset.groupId = group.id;
+            button.addEventListener('click', () => {
+                 const groupIdToDisplay = button.dataset.groupId;
+                 displaySingleGroup(groupIdToDisplay);
+            });
+            if (groupSelectionButtons) groupSelectionButtons.appendChild(button);
+        });
+        groupsInCategory.forEach(group => {
+            const groupDiv = document.createElement('div');
+            groupDiv.classList.add('group-display');
+            const groupTitle = document.createElement('h3');
+            groupTitle.textContent = group.name || group.id;
+            groupDiv.appendChild(groupTitle);
+            groupTitle.style.cursor = 'pointer';
+            groupTitle.addEventListener('click', () => {
+                  const groupIdToDisplay = group.id;
                   displaySingleGroup(groupIdToDisplay);
             });
             const teamsInGroup = allTeams.filter(team => team.groupId === group.id);
