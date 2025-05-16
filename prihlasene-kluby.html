@@ -1,14 +1,18 @@
+<!DOCTYPE html>
+<html lang="sk">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Turnaj</title>
+    <title>Prihlásené kluby</title>
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <script type="module" src="auth.js"></script>
     <script src="script.js"></script>
+
     <h1>Prihlásené kluby</h1>
+
     <main>
         <section id="clubListSection" class="section-block">
             <h2>Zoznam klubov</h2>
@@ -18,16 +22,16 @@
                         <th>Názov klubu/tímu</th>
                         <th>Kategória</th>
                         <th>Skupina</th>
-                        <th>Poradie v skupine</th>
-                    </tr>
+                        </tr>
                 </thead>
                 <tbody id="clubsTableBody">
                     <tr>
-                        <td colspan="4" style="text-align: center;">Načítavam kluby...</td>
+                        <td colspan="3" style="text-align: center;">Načítavam kluby...</td>
                     </tr>
                 </tbody>
             </table>
         </section>
+
         <section id="clubDetailSection" class="section-block" style="display: none;">
             <button id="backToListButton" class="action-button">← Späť na zoznam</button>
             <h2 id="clubDetailTitle">Detail klubu: <span></span></h2>
@@ -45,6 +49,7 @@
             </div>
         </section>
     </main>
+
     <script type="module" src="spravca-turnaja-common.js"></script>
     <script type="module" src="prihlasene-kluby.js"></script> </body>
 </html>
