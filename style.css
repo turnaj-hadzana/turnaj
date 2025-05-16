@@ -350,9 +350,3 @@ nav ul li a:hover {
 
 
 /* ... (zvyšok štýlov) ... */
-
-/* Ensure the section-block containing the tables shrinks to fit content */
-#clubsBodyTable td:last-child {
-    padding: 10px 0; /* Nastaví top/bottom padding na 10px, left/right na 0px */
-    /* Toto má odstrániť priestor medzi obsahom poslednej bunky a posuvníkom */
-}
