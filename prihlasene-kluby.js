@@ -80,7 +80,6 @@ function updateHeaderColspan(numCategoryColumns) {
         const teamsTh = document.createElement('th');
         teamsTh.textContent = 'Tímy';
         teamsTh.style.textAlign = 'center';
-        // Insert the new header after the first child (Názov klubu)
         clubsSummaryTableHeader.querySelector('th').insertAdjacentElement('afterend', teamsTh);
 
         // Add category headers
@@ -95,9 +94,15 @@ function updateHeaderColspan(numCategoryColumns) {
         }
 
         // ZMENA: Pridanie nového stĺpca na koniec HLAVIČKY
-        const lastColumnTh = document.createElement('th'); // <<< Tu sa vytvorí nový TH element
-        lastColumnTh.textContent = ''; // Nový stĺpec môže byť prázdny, alebo mať ikonu/tlačidlo
-        clubsSummaryTableHeader.appendChild(lastColumnTh); // <<< Tu sa pridá na koniec hlavičky
+        const lastColumnTh = document.createElement('th');
+        lastColumnTh.textContent = '';
+
+        // ZMENA: Dynamické nastavenie šírky posledného stĺpca na šírku posuvníka
+        const scrollbarWidth = getScrollbarWidth(); // <<< Získame šírku posuvníka
+        lastColumnTh.style.width = `${scrollbarWidth}px`; // <<< Nastavíme šírku v pixeloch
+        lastColumnTh.style.minWidth = `${scrollbarWidth}px`; // <<< Zabezpečíme minimálnu šírku
+
+        clubsSummaryTableHeader.appendChild(lastColumnTh);
     }
 
      // Update colspan for the initial loading/error row in the body
@@ -111,6 +116,28 @@ function updateHeaderColspan(numCategoryColumns) {
             }
         }
     }
+}
+
+// Pridajte funkciu getScrollbarWidth niekde do súboru prihlasene-kluby.js
+// (napríklad na začiatok alebo koniec súboru, mimo iných funkcií)
+function getScrollbarWidth() {
+    const outer = document.createElement('div');
+    outer.style.visibility = 'hidden';
+    outer.style.overflow = 'scroll';
+    outer.style.msOverflowStyle = 'scrollbar';
+    outer.style.width = '50px';
+    outer.style.height = '50px';
+    outer.style.position = 'absolute';
+    outer.style.top = '-9999px';
+    outer.style.left = '-9999px';
+
+    document.body.appendChild(outer);
+
+    const scrollbarWidth = outer.offsetWidth - outer.clientWidth;
+
+    document.body.removeChild(outer);
+
+    return scrollbarWidth;
 }
 
 function displayClubsSummaryTable() {
