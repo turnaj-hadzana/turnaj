@@ -72,7 +72,8 @@ main {
     padding: 20px;
     display: flex; /* Nastavíme aj main ako flex kontajner */
     flex-direction: column; /* Uloží deti (section) pod sebou */
-    align-items: stretch; /* Deti main (ako sekcie) sa roztiahnu na celú šírku */
+    /* align-items: stretch; */ /* Zmeníme nižšie na flex-start pre shrink-wrap */
+    align-items: flex-start; /* Zmenené: Deti main (ako sekcie) sa zmenšia na šírku obsahu */
     min-width: 0; /* Povoliť zmenšenie v flex kontexy */
     overflow-x: hidden; /* Skryť horizontálny overflow */
 }
@@ -243,9 +244,10 @@ nav ul li a:hover {
 /* Apply to both header and body tables */
 #clubsHeaderTable,
 #clubsBodyTable {
-    width: 100%; /* Tabuľky zaberú celú šírku kontajnera */
-    border-collapse: collapse; /* Odstránenie medzier medzi bunkami */
-    table-layout: fixed; /* Kľúčové pre jednotné šírky stĺpcov - tela sa zhodujú s hlavičkou */
+    /* ZMENA: Odstránenie width: 100%; - tabuľka sa prispôsobí šírke stĺpcov */
+    /* width: 100%; */
+    border-collapse: collapse;
+    table-layout: fixed; /* Ponechané pre jednotné šírky stĺpcov */
 }
 
 /* Remove margin-top from the body table specifically */
@@ -257,6 +259,10 @@ nav ul li a:hover {
 #scrollableTableBodyContainer {
     flex-grow: 1; /* Tento div zaberie všetok zvyšný vertikálny priestor */
     overflow-y: auto; /* Zapnutie vertikálneho skrolovania */
+
+    /* Zabezpečí, že sa kontajner zmenší na šírku obsahu, ak flex kontajner to dovoľuje */
+    width: auto; /* Zmenené: šírka sa prispôsobí obsahu */
+    max-width: 100%; /* Zabezpečí, že nepretečie z rodičovského flex kontajnera */
 
     /* Štýly pre vzhľad bloku */
     margin-top: 20px; /* Priestor medzi hlavičkovou tabuľkou a skrolovateľným telom */
@@ -286,7 +292,8 @@ nav ul li a:hover {
 
 /* Nastavenie šírky pre PRVÝ stĺpec (Názov klubu) */
 #clubsHeaderTable th:first-child {
-     width: 20%; /* Nastavené na 20% šírky tabuľky */
+     /* ZMENA: Pevná šírka namiesto percenta (príklad, môžete upraviť) */
+     width: 200px; /* Pevná šírka, aby tabuľka mohla shrink-wrap */
      text-align: left; /* Text názvu klubu zarovnať vľavo */
      padding: 12px 15px; /* Konzistentné odsadenie */
 }
@@ -299,13 +306,13 @@ nav ul li a:hover {
 }
 
 /* Štýly pre dynamicky pridané stĺpce kategórií (3. a ďalšie) v hlavičke */
-/* Tieto stĺpce si rozdelia zostávajúcu šírku (100% mínus šírka prvých dvoch stĺpcov) */
+/* Tieto stĺpce si rozdelia zostávajúcu šírku */
 #clubsHeaderTable th:nth-child(n + 3) {
-    /* Nemusíme nastavovať explicitnú šírku, ak chceme, aby si rovnomerne rozdelili priestor */
-    /* Ak by ste chceli minimálnu šírku, môžete pridať: */
-    /* min-width: 60px; */
+    /* ZMENA: Pevná šírka pre každý stĺpec kategórie (príklad, môžete upraviť) */
+    width: 100px; /* Pevná šírka, aby tabuľka mohla shrink-wrap */
     text-align: center;
     padding: 12px 15px;
+    /* min-width: 60px; */ /* Ak je pevná šírka, min-width nie je nutné, pokiaľ nie je nižšia */
 }
 
 /* Pridanie pravého okraja ku všetkým bunkám hlavičky OKREM poslednej */
@@ -331,7 +338,7 @@ nav ul li a:hover {
 /* Prvý stĺpec v tele (názov klubu) zarovnať vľavo, aby zodpovedal hlavičke */
 #clubsBodyTable td:first-child {
     text-align: left;
-    /* Šírka: Zhoduje sa s #clubsHeaderTable th:first-child (20%) */
+    /* Šírka: Zhoduje sa s #clubsHeaderTable th:first-child (200px) */
 }
 
 /* Druhý stĺpec v tele (Tímy) */
@@ -341,7 +348,7 @@ nav ul li a:hover {
 
 /* Dynamicky pridané stĺpce kategórií (3. a ďalšie) v tele */
 #clubsBodyTable td:nth-child(n + 3) {
-     /* Šírka: Zhoduje sa s #clubsHeaderTable th:nth-child(n + 3) (rozdelia si zvyšný priestor) */
+     /* Šírka: Zhoduje sa s #clubsHeaderTable th:nth-child(n + 3) (100px) */
 }
 
 
@@ -468,5 +475,5 @@ nav ul li a:hover {
 
 /* Ensure the section-block containing the tables doesn't interfere with alignment */
 #clubListSection.section-block {
-     align-items: stretch; /* Zabezpečiť, že tabuľky a kontajner sa roztiahnu na celú šírku */
+     align-items: flex-start; /* Zmenené: Zabezpečiť, že sa sekcia zmenší na šírku obsahu */
 }
