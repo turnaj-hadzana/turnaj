@@ -296,7 +296,7 @@ async function openClubModal(identifier = null, mode = 'assign') {
         } else if (mode === 'edit') {
             clubModalTitle.textContent = 'Upraviť tím / Priradiť klub';
              if (clubForm) {
-                 const submitButton = clubForm.querySelector('button[type="submit"]')
+                 const submitButton = clubForm.querySelector('button[type="submit"]');
                  if (submitButton) submitButton.textContent = 'Uložiť zmeny';
              }
         }
@@ -1082,11 +1082,6 @@ const handleAddButtonClick = () => {
      openClubModal(null, 'create');
 };
 document.addEventListener('DOMContentLoaded', async () => {
-    const loggedInUsername = localStorage.getItem('username');
-    if (!loggedInUsername || loggedInUsername !== 'admin') {
-        window.location.href = 'login.html';
-        return;
-    }
     await loadAllCategoriesForDynamicSelects();
     await loadAllGroups();
     await displayCreatedTeams();
@@ -1104,53 +1099,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             displayCreatedTeams();
         });
     }
-     if (clubModal) {
-         window.addEventListener('click', (event) => {
-              const modalContent = clubModal.querySelector('.modal-content');
-              if (event.target === clubModal && modalContent && !modalContent.contains(event.target)) {
-                   closeModal(clubModal);
-                   resetClubModal();
-                    displayCreatedTeams();
-              }
-         });
-     }
+    if (clubModal) {
+        window.addEventListener('click', (event) => {
+            const modalContent = clubModal.querySelector('.modal-content');
+            if (event.target === clubModal && modalContent && !modalContent.contains(event.target)) {
+                closeModal(clubModal);
+                resetClubModal();
+                 displayCreatedTeams();
+            }
+        });
+    }
 });
-async function loadAllCategoriesForDynamicSelects() {
-    allAvailableCategories = [];
-    try {
-        const querySnapshot = await getDocs(categoriesCollectionRef);
-        querySnapshot.forEach((doc) => {
-            const categoryData = doc.data();
-            if (categoryData && typeof categoryData.name === 'string' && categoryData.name.trim() !== '') {
-                allAvailableCategories.push({ id: doc.id, name: categoryData.name.trim() });
-            } else {
-                allAvailableCategories.push({ id: doc.id, name: doc.id });
-            }
-        });
-        allAvailableCategories.sort((a, b) => (a.name || '').localeCompare((b.name || ''), 'sk-SK'));
-    } catch (e) {
-        allAvailableCategories = [];
-    }
-}
-async function loadAllGroups() {
-    allAvailableGroups = [];
-    try {
-        const querySnapshot = await getDocs(groupsCollectionRef);
-        querySnapshot.forEach((doc) => {
-            const groupData = doc.data();
-            if (groupData) {
-                allAvailableGroups.push({ id: doc.id, ...groupData });
-            } else {
-                 allAvailableGroups.push({ id: doc.id, name: doc.id });
-            }
-        });
-        allAvailableGroups.sort((a, b) => {
-             const nameA = (a.name || a.id) || '';
-             const nameB = (b.name || b.id) || '';
-             return nameA.localeCompare(nameB, 'sk-SK');
-         });
-    } catch (e) {
-        allAvailableGroups = [];
-    }
-}
 export { openClubModal, displayCreatedTeams };
