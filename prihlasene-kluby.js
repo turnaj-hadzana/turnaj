@@ -42,6 +42,7 @@ async function loadAllData() {
          // Zoraď kategórie abecedne pre konzistentné poradie stĺpcov
          allCategories.sort((a, b) => (a.name || a.id).localeCompare((b.name || b.id), 'sk-SK'));
 
+        // console.log('Načítané kategórie:', allCategories); // Pridaný log pre kontrolu
 
         // Načítaj všetky skupiny (možno pre detaily tímu)
         const groupsSnapshot = await getDocs(groupsCollectionRef);
@@ -259,9 +260,15 @@ async function displaySubjectDetails(baseName) {
           // Zoraď tímy pre konzistentné zobrazenie v detaile subjektu
           teamsForSubject.sort((a, b) => {
                // Zoraď podľa kategórie, potom podľa názvu tímu
-               const categoryA = allCategories.find(cat => cat.id === a.categoryId)?.name || a.categoryId || '';
-               const categoryB = allCategories.find(cat => cat.id === b.categoryId)?.name || b.categoryId || '';
-               const categoryComparison = categoryA.localeCompare(categoryB, 'sk-SK');
+                // *** ÚPRAVA TU ***
+               const categoryA = allCategories.find(cat => cat.id === a.categoryId);
+               const categoryB = allCategories.find(cat => cat.id === b.categoryId);
+
+                // Robustnejšie získanie názvu kategórie pre triedenie
+               const categoryNameA = (categoryA && categoryA.name) ? categoryA.name : ''; // Použi prázdny reťazec, ak chýba pre triedenie
+               const categoryNameB = (categoryB && categoryB.name) ? categoryB.name : ''; // Použi prázdny reťazec, ak chýba pre triedenie
+
+               const categoryComparison = categoryNameA.localeCompare(categoryNameB, 'sk-SK');
                if (categoryComparison !== 0) {
                     return categoryComparison;
                }
@@ -273,12 +280,15 @@ async function displaySubjectDetails(baseName) {
 
           teamsForSubject.forEach(team => {
                const teamItem = document.createElement('li');
-               const category = allCategories.find(cat => cat.id === team.categoryId);
-               const categoryName = category ? category.name : 'Neznáma kategória';
                const group = allGroups.find(g => g.id === team.groupId);
                const groupName = group ? (group.name || group.id) : 'Nepriradené';
 
-               // Zobraz názov tímu s kategóriou a skupinou pre lepšiu orientáciu
+                // *** ÚPRAVA AJ TU ***
+               const category = allCategories.find(cat => cat.id === team.categoryId);
+                // Robustnejšie získanie názvu kategórie pre zobrazenie
+               const categoryName = (category && category.name) ? category.name : 'Neznáma kategória';
+
+               // Zobraz názov tímu s kategóriou a skupinou
                teamItem.textContent = `${team.name || team.id} (${categoryName} - ${groupName})`;
 
                teamItem.dataset.teamId = team.id; // Ulož ID tímu
