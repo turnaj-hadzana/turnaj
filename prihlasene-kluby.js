@@ -38,7 +38,7 @@ async function loadAllData() {
         alert('Nepodarilo sa načítať dáta turnaja.');
         if (clubsSummaryTableBody) {
              // Update colspan calculation for the error message - body only has Názov + Tímy + Kategórie
-             const numColumns = 1 + 1 + allCategories.length; // ZMENA: colspan pre telo neobsahuje nový stĺpec
+             const numColumns = 1 + 1 + allCategories.length; // colspan pre telo neobsahuje dodatočný stĺpec
              clubsSummaryTableBody.innerHTML = `<tr><td colspan="${numColumns}" style="text-align: center; color: red;">Chyba pri načítaní klubov.</td></tr>`;
         }
          allClubs = [];
@@ -70,7 +70,7 @@ function getClubBaseName(club) {
     return initialBaseName;
 }
 
-// Updated function to add the "Tímy" header, category headers, and the new last column (only in header)
+// Function to add the "Tímy" header and category headers (without any extra column)
 function updateHeaderColspan(numCategoryColumns) {
     if (clubsSummaryTableHeader) {
         // Clear existing headers except the first one
@@ -80,6 +80,7 @@ function updateHeaderColspan(numCategoryColumns) {
         const teamsTh = document.createElement('th');
         teamsTh.textContent = 'Tímy';
         teamsTh.style.textAlign = 'center';
+        // Insert the new header after the first child (Názov klubu)
         clubsSummaryTableHeader.querySelector('th').insertAdjacentElement('afterend', teamsTh);
 
         // Add category headers
@@ -93,12 +94,13 @@ function updateHeaderColspan(numCategoryColumns) {
             });
         }
 
-        // ZMENA: Pridanie nového stĺpca na koniec HLAVIČKY
-        const lastColumnTh = document.createElement('th');
-        lastColumnTh.textContent = '';
-
-        // ZMENA: Dynamické nastavenie šírky posledného stĺpca na šírku posuvníka
-        clubsSummaryTableHeader.appendChild(lastColumnTh);
+        // KÓD NA PRIDANIE NOVÉHO POSLEDNÉHO STĹPCA DO HLAVIČKY BOL ODSTRÁNENÝ
+        // const lastColumnTh = document.createElement('th');
+        // lastColumnTh.textContent = '';
+        // const scrollbarWidth = getScrollbarWidth(); // Volanie funkcie odstránené
+        // lastColumnTh.style.width = `${scrollbarWidth}px`; // Nastavenie šírky odstránené
+        // lastColumnTh.style.minWidth = `${scrollbarWidth}px`; // Nastavenie minimálnej šírky odstránené
+        // clubsSummaryTableHeader.appendChild(lastColumnTh);
     }
 
      // Update colspan for the initial loading/error row in the body
@@ -108,11 +110,12 @@ function updateHeaderColspan(numCategoryColumns) {
             const firstCell = firstRow.querySelector('td');
             if (firstCell) {
                  // colspan = 1 (Názov klubu) + 1 (Tímy) + numCategoryColumns (Správny colspan pre telo)
-                firstCell.colSpan = 1 + 1 + numCategoryColumns;
+                firstCell.colSpan = 1 + 1 + numCategoryColumns; // Colspan calculation remains correct for the body
             }
         }
     }
 }
+
 function displayClubsSummaryTable() {
     if (clubListSection) clubListSection.style.display = 'block';
     if (clubDetailSection) clubDetailSection.style.display = 'none';
@@ -123,7 +126,7 @@ function displayClubsSummaryTable() {
 
     clubsSummaryTableBody.innerHTML = ''; // Clear existing rows
 
-    // Update header with "Tímy" column and category columns, including the new last column
+    // Update header with "Tímy" column and category columns (without the extra last column)
     // NOTE: updateHeaderColspan handles adding the extra TH, but not the extra TD in the body
     updateHeaderColspan(allCategories.length);
 
@@ -192,7 +195,7 @@ function displayClubsSummaryTable() {
              }
         });
 
-        // ZMENA: KÓD NA PRIDANIE POSLEDNEJ BUNKY DO TELA BOLA ODSTRÁNENÁ
+        // KÓD NA PRIDANIE POSLEDNEJ BUNKY DO TELA JE ODSTRÁNENÝ
         // const lastColumnTd = row.insertCell();
         // lastColumnTd.textContent = ''; // Nová bunka tela môže byť prázdna
         // Tu môžete prípadne pridať ikonu alebo tlačidlo akcie
