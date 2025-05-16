@@ -41,4 +41,6 @@ fetch('header.html')
             }
         }
     })
-);
+    .catch(error => {
+        console.error('Chyba pri načítaní hlavičky:', error);
+    });
