@@ -288,7 +288,7 @@ nav ul li a:hover {
     font-weight: bold;
     font-size: 0.95em;
     white-space: nowrap; /* Kľúčové: Zabezpečí, že text sa nebude zalamovať */
-    min-width: 5vw; /* ZMENA: Minimálna šírka bunky 5% šírky viewportu */
+    min-width: 2vw; /* ZMENA: Minimálna šírka bunky 5% šírky viewportu */
 }
 
 /* Style for body cells */
@@ -297,7 +297,7 @@ nav ul li a:hover {
     border-bottom: 1px solid #eee;
     /* text-align je nastavený nižšie podľa pozície stĺpca */
     white-space: nowrap; /* Kľúčové: Zabezpečí, že text sa nebude zalamovať */
-    min-width: 5vw; /* ZMENA: Minimálna šírka bunky 5% šírky viewportu */
+    min-width: 2vw; /* ZMENA: Minimálna šírka bunky 5% šírky viewportu */
 }
 
 /* Prvý stĺpec v hlavičke aj tele - zarovnať vľavo */
