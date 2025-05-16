@@ -376,31 +376,37 @@ main {
 #clubDetailTitle span {
      font-weight: normal;
 }
-#clubDetailContent #teamsInCategoryButtons button.action-button {
-    display: inline-block;
-    padding: 8px 12px;
-    font-size: 1em;
-    cursor: pointer;
-    text-align: center;
-    text-decoration: none;
-    outline: none;
-    color: #ffffff;
-    background-color: #3a8d41;
-    border: none;
-    border-radius: 5px;
-    margin: 0;
-}
-#clubDetailContent #teamsInCategoryButtons button.action-button:hover {
-    background-color: #c46f50;
-}
-#clubDetailContent #teamsInCategoryButtons button.action-button[style*="font-weight: bold"] {
-    background-color: #c46f50;
-}
 
-#clubsSummaryTable thead {
-    position: sticky;
-    top: 64px;
-    background-color: #f9f9f9;
-    z-index: 9999;
-    display: block !important;
-}
+
+
+
+
+
+//#clubDetailContent #teamsInCategoryButtons button.action-button {
+//    display: inline-block;
+//    padding: 8px 12px;
+//    font-size: 1em;
+//    cursor: pointer;
+//    text-align: center;
+//    text-decoration: none;
+//    outline: none;
+//    color: #ffffff;
+//    background-color: #3a8d41;
+//    border: none;
+//    border-radius: 5px;
+//    margin: 0;
+//}
+//#clubDetailContent #teamsInCategoryButtons button.action-button:hover {
+//    background-color: #c46f50;
+//}
+//#clubDetailContent #teamsInCategoryButtons button.action-button[style*="font-weight: bold"] {
+//    background-color: #c46f50;
+//}
+
+//#clubsSummaryTable thead {
+//    position: sticky;
+//    top: 64px;
+//    background-color: #f9f9f9;
+//    z-index: 9999;
+//    display: block !important;
+//}
