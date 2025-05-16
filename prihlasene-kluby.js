@@ -283,8 +283,11 @@ async function displaySubjectDetails(baseName) {
                     displaySpecificTeamDetails(team.id);
                     // Odstránenie zvýraznenia zo všetkých tlačidiel a zvýraznenie aktuálneho
                     if (teamsInCategoryButtonsDiv) {
-                        teamsInCategoryButtonsDiv.querySelectorAll('button').forEach(btn => btn.style.fontWeight = 'normal');
-                    }
+                        teamsInCategoryButtonsDiv.querySelectorAll('button').forEach(btn => {
+                            btn.style.fontWeight = 'normal';
+                            btn.style.backgroundColor = '#3a8d41';
+                            btn.style.color = 'white';
+                        });                    }
                     teamButton.style.fontWeight = 'bold'; 
                     teamButton.style.backgroundColor = '#c46f50';
                     teamButton.style.color = 'white';
