@@ -395,6 +395,16 @@ function displayGroupsForCategory(categoryId) {
             groupTitle.textContent = group.name || group.id;
             groupDiv.appendChild(groupTitle);
 
+            groupTitle.style.cursor = 'pointer'; // Zmení kurzor na ruku pri hoveri
+            groupTitle.title = `Zobraziť detail skupiny ${group.name || group.id}`; // Pridá tooltip
+
+            groupTitle.addEventListener('click', () => {
+                  const groupIdToDisplay = group.id; // Získame ID skupiny z premennej 'group' v cykle
+                  console.log(`DEBUG: Group header clicked for group ID: ${groupIdToDisplay}. Calling displaySingleGroup.`);
+                  displaySingleGroup(groupIdToDisplay); // Prejsť na zobrazenie JEDNEJ skupiny
+                  // showOnly('singleGroupContent'); // showOnly sa volá TERAZ v displaySingleGroup
+            });
+
             // Nájdi tímy patriace do tejto skupiny
             const teamsInGroup = allTeams.filter(team => team.groupId === group.id);
 
