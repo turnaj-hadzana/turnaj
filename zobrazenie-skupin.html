@@ -26,6 +26,30 @@
              text-align: center;
              margin-bottom: 20px;
         }
+        /* Štýl pre nadpisy sekcií kategórií (Chlapci, Dievčatá) */
+        .category-section-title {
+            color: #333; /* Tmavošedá farba textu */
+            padding-bottom: 5px; /* Malá medzera pod nadpisom */
+            margin-top: 20px; /* Väčšia medzera nad nadpisom */
+            margin-bottom: 15px; /* Medzera pod nadpisom pred tlačidlami */
+            font-weight: bold;
+            font-size: 1.3em; /* Trochu menší ako nadpis kategórie v Úrovni 2 */
+            text-align: center; /* Centrujeme nadpis sekcie */
+            border-bottom: 2px solid #ccc; /* Voliteľné: spodná čiara pod nadpisom sekcie */
+        }
+        /* Kontajner pre tlačidlá v rámci každej sekcie */
+        .category-buttons-section {
+            display: flex; /* Uloží tlačidlá vedľa seba */
+            flex-wrap: wrap; /* Povoliť zalamovanie tlačidiel na menších obrazovkách */
+            gap: 10px; /* Medzera medzi tlačidlami */
+            justify-content: center; /* Centruje tlačidlá v sekcii */
+            margin-bottom: 20px; /* Medzera pod sekciou tlačidiel */
+        }
+        .category-buttons-section .display-button {
+            flex-grow: 1; /* Povoliť tlačidlám roztiahnuť sa */
+            flex-basis: 150px; /* Základná šírka tlačidla pred roztiahnutím */
+            max-width: 250px; /* Maximálna šírka tlačidla */
+        }    
         #backToCategoriesButton,
         #backToGroupButtonsButton {
             display: none;
@@ -38,10 +62,8 @@
             background-color: #c46f50;
         }
         #categoryButtonsContainer {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            justify-content: center;
+            display: block;
+            text-align: center; /* Centruje obsah v kontajneri, vrátane nadpisov a flex kontajnerov sekcií */
             padding: 20px;
         }
          #categoryTitleDisplay {
