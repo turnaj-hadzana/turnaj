@@ -14,7 +14,7 @@ body {
     font-family: 'Arial', sans-serif; /* Použitie čistého písma */
     line-height: 1.6;
     color: #333; /* Tmavý text */
-    background-color: #f4f4f4; /* Svetlé pozadie */
+    background-color: #ffffff; /* Svetlé pozadie */
     margin: 0; /* Zabezpeč, že telo nemá predvolené okraje */
 }
 nav ul {
