@@ -5,19 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rozlosovanie</title>
     <link rel="icon" href="favicon.ico" type="image/x-icon">
-
-    <script>
-        const loggedInUsername = localStorage.getItem('username');
-        if (!loggedInUsername) {
-            console.warn("Prístup zamietnutý. Používateľ nie je prihlásený. Presmerovávam na prihlásenie.");
-            window.location.replace('login.html');
-        } else {
-             if (!window.location.hash) {
-                 console.log("Používateľ prihlásený.");
-             }
-        }
-    </script>     
-
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="spravca-turnaja-style.css">
     <style>
