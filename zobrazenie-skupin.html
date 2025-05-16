@@ -37,10 +37,9 @@
             display: none; /* Spočiatku skryté, riadené JS */
             /* Používame .display-button pre farby a základný vzhľad */
             padding: 10px 15px; /* Trochu menší padding */
-            /* margin: 0 10px; */ /* Tento margin sme predtým mali pre medzeru medzi tlačidlami, ale margin: auto ho prepíše */
             margin: 20px auto; /* Nastaví vrchný/spodný okraj 20px a bočné okraje na auto pre centrovanie */
-            display: block; /* Zabezpečí, že sú blokové elementy - nastavené aj JS */
-            vertical-align: top; /* Tento štýl už nie je nutný, keď sú display: block */
+            display: block; /* Zabezpečí, že sú blokové elementy */
+            /* vertical-align: top; */ /* Nie je potrebné pri display: block */
         }
 
         /* Hover štýly pre tlačidlá Späť */
@@ -52,12 +51,12 @@
 
         /* Štýly pre hlavný dynamický obsah (kde sa zobrazí všetko okrem tlačidiel Späť) */
         #dynamicContentArea {
-            /* Základný štýl, špecifický obsah ho prepíše */
+            /* Základný štýl, vnútorne elementy riadia rozloženie */
         }
 
         /* Kontajner pre tlačidlá kategórií */
         #categoryButtonsContainer {
-            display: flex; /* Bude nastavené JS, keď je viditeľné */
+            display: flex; /* Predvolene display flex, riadené JS */
             flex-wrap: wrap;
             gap: 15px;
             justify-content: center;
@@ -65,35 +64,66 @@
             border: 1px solid #ccc;
             border-radius: 8px;
             background-color: #f9f9f9;
+            /* display: none; */ /* Spočiatku skryté, riadené JS */
         }
 
+         /* Štýl pre nadpis kategórie (zobrazené v Úrovni 2 a 3) */
+         #categoryTitleDisplay {
+             color: #333;
+             padding-bottom: 0;
+             margin-bottom: 15px;
+             font-weight: bold;
+             font-size: 1.5em;
+             text-align: center;
+             margin-top: 20px; /* Pridáme vrchný okraj pod tlačidlami Späť */
+             /* display: none; */ /* Spočiatku skryté, riadené JS */
+         }
+
+
+        /* Kontajner pre tlačidlá na výber skupiny (zobrazené v Úrovni 2 a 3) */
         #groupSelectionButtons {
-            display: flex;
+            display: flex; /* Predvolene display flex, riadené JS */
             flex-wrap: wrap;
             gap: 15px;
             justify-content: center;
             padding: 20px;
+            border: 1px solid #ccc;
             border-radius: 8px;
-            margin-top: 20px;
+            background-color: #e9ecef;
+            margin-top: 20px; /* Medzera od nadpisu kategórie */
+            /* display: none; */ /* Spočiatku skryté, riadené JS */
         }
 
 
-         /* Kontajner pre zobrazenie viacerých skupín vedľa seba */
-        .groups-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px; /* Medzera medzi skupinami */
-            justify-content: center; /* Centruje skupiny v rámci kontajnera */
-            align-items: stretch;
-            margin-top: 20px; /* Medzera od kontajnera tlačidiel skupín */
+         /* Kontajner pre zobrazenie viacerých skupín vedľa seba (Úroveň 2) */
+        #allGroupsContent {
+            /* display: flex; */ /* Toto riadi vnútorne .groups-container, riadené JS */
+             margin-top: 20px; /* Medzera od kontajnera tlačidiel skupín */
+             /* display: none; */ /* Spočiatku skryté, riadené JS */
         }
 
+        #allGroupsContent .groups-container {
+             display: flex; /* Flexbox pre bloky skupín */
+             flex-wrap: wrap;
+             gap: 20px;
+             justify-content: center;
+             align-items: stretch;
+        }
 
-        /* Štýly pre blok jednotlivej skupiny */
+        /* Kontajner pre zobrazenie jednej konkrétnej skupiny (Úroveň 3) */
+         #singleGroupContent {
+             /* display: block; */ /* Riadené JS */
+             margin-top: 20px; /* Medzera od kontajnera tlačidiel skupín */
+             /* display: none; */ /* Spočiatku skryté, riadené JS */
+         }
+
+
+        /* Štýly pre blok jednotlivej skupiny (použité v .groups-container a #singleGroupContent) */
         .group-display {
              /* Tieto vlastnosti budú nastavené JS pre dynamickú šírku: */
              /* width: auto; max-width: none; flex-grow: 0; flex-shrink: 0; flex-basis: auto; min-width: 200px; */
 
+             margin: 0 auto; /* Centruje v rámci rodiča (allGroupsContent alebo singleGroupContent) */
              margin-bottom: 0; /* Zrušíme pôvodný margin-bottom, gap v kontajneri riadi medzeru */
              padding: 0;
              border: 1px solid #ddd;
@@ -103,7 +133,7 @@
              box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
              display: flex;
              flex-direction: column;
-             /* max-width: 400px; /* Obmedzenie max šírky je menej vhodné pri zobrazení viacerých vedľa seba */
+             /* max-width: 400px; */ /* Obmedzenie max šírky je menej vhodné pri zobrazení viacerých vedľa seba */
         }
 
         /* Štýly pre nadpis skupiny */
@@ -165,7 +195,7 @@
             flex-grow: 1;
         }
 
-        /* Štýly pre sekciu nepriradených tímov (zobrazené pod skupinami) */
+        /* Štýly pre sekciu nepriradených tímov (zobrazené pod skupinami v Úrovni 2 a 3) */
         .unassigned-teams-display {
             margin: 30px auto 0 auto; /* Centrujeme blok a nastavíme okraje */
             padding: 15px;
@@ -219,18 +249,6 @@
             margin-top: 10px !important;
             border-bottom: 1px solid #ccc !important;
         }
-
-        /* Štýl pre nadpis kategórie v zobrazení skupín */
-        #dynamicContentArea > h2 { /* Cieľujeme na h2 priamo v dynamicContentArea */
-            color: #333;
-            padding-bottom: 0;
-            margin-bottom: 15px;
-            font-weight: bold;
-            font-size: 1.5em;
-            text-align: center;
-            margin-top: 20px; /* Pridáme vrchný okraj pod tlačidlami Späť */
-        }
-
 
         /* Štýly pre hlavný nadpis stránky */
         h1 {
@@ -286,7 +304,23 @@
                 </div>
 
                 <div id="dynamicContentArea">
+                    <div id="categoryButtonsContainer" style="display: none;"></div>
+
+                    <h2 id="categoryTitleDisplay" style="display: none;"></h2>
+
+                    <div id="groupSelectionButtons" style="display: none;"></div>
+
+                    <div id="allGroupsContent" style="display: none;">
+                         <div class="groups-container"></div>
+                         <div class="unassigned-teams-display"></div>
                     </div>
+
+                     <div id="singleGroupContent" style="display: none;">
+                        <div class="group-display"></div>
+                        <div class="unassigned-teams-display"></div>
+                     </div>
+
+                </div>
 
             </section>
         </main>
