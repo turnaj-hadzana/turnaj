@@ -1,4 +1,4 @@
-// zobrazenie-skupin.js (Upravené pre zobrazenie kategórií ako tlačidiel a prepínanie na skupiny)
+// zobrazenie-skupin.js (Upravené pre zobrazenie kategórií ako tlačidiel, prepínanie na skupiny A spracovanie URL hash)
 
 // Importy z common.js
 import { db, categoriesCollectionRef, groupsCollectionRef, clubsCollectionRef,
@@ -29,7 +29,8 @@ async function loadAllTournamentData() {
         // Načítať skupiny
         const groupsSnapshot = await getDocs(groupsCollectionRef);
         allGroups = groupsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        allGroups.sort((a, b) => (a.name || a.id || '').localeCompare((b.name || b.id || ''), 'sk-SK'));
+        allGroups.sort((a, b) => (a.name || a.id || '').localeCompare((b.name || a.id || ''), 'sk-SK'));
+
 
         // Načítať tímy
         const teamsSnapshot = await getDocs(clubsCollectionRef);
@@ -63,8 +64,16 @@ function displayCategoriesAsButtons() {
 
     backToCategoriesButton.style.display = 'none'; // Skryť tlačidlo späť
 
+    // Vymazať hash z URL pri návrate na zoznam kategórií
+    if (window.location.hash) {
+        history.replaceState({}, document.title, window.location.pathname); // Lepšie ako window.location.hash = '';
+    }
+
+
     if (allCategories.length === 0) {
         categoryButtonsContainer.innerHTML = '<p>Zatiaľ nie sú pridané žiadne kategórie.</p>';
+        categoryButtonsContainer.style.display = 'flex'; // Zobraziť kontajner, aj keď je prázdny (so správou)
+        groupsDisplayContent.style.display = 'none';
         return;
     }
 
@@ -104,14 +113,17 @@ function displayGroupsForCategory(categoryId) {
     // Zobrazíme tlačidlo späť
     backToCategoriesButton.style.display = 'block';
 
+    // Zápis do URL hash
+    window.location.hash = 'category-' + categoryId;
+
+
     const selectedCategory = allCategories.find(cat => cat.id === categoryId);
 
     if (!selectedCategory) {
         groupsDisplayContent.innerHTML = '<p>Vybraná kategória sa nenašla.</p>';
         groupsDisplayContent.style.display = 'block'; // Zobrazíme oblasť zobrazenia
-        // *** Zavolať funkciu na nastavenie šírky aj v tomto prípade, aj keď nie sú skupiny ***
-        setUniformTableWidth(findMaxTableContentWidth()); // Bude 0, ak nie sú tabuľky, čo je OK.
-        // *** Koniec volania ***
+        // Aj keď sa kategória nenašla, zavoláme nastavenie šírky (aj pre prípad, že nie sú tabuľky)
+        setUniformTableWidth(findMaxTableContentWidth());
         return;
     }
 
@@ -128,7 +140,7 @@ function displayGroupsForCategory(categoryId) {
     // Nájdi skupiny patriace do tejto kategórie
     const groupsInCategory = allGroups.filter(group => group.categoryId === categoryId);
 
-     // NOVÁ LOGIKA: Pridať triedu pre 5 skupín pre špeciálne rozloženie (len pre vizuálne odlíšenie kontajnera ak treba, šírku nastaví JS)
+     // NOVÁ LOGIKA: Pridať triedu pre 5 skupín pre špeciálne rozloženie
      if (groupsInCategory.length === 5) {
          groupsContainerDiv.classList.add('force-3-plus-2-layout');
      } else {
@@ -189,10 +201,8 @@ function displayGroupsForCategory(categoryId) {
                     }
 
                      const teamNameSpan = document.createElement('span');
-                     teamNameSpan.classList.add('team-name'); // Pridáme triedu pre štýlovanie tučného písma
+                     teamNameSpan.classList.add('team-name');
                      teamNameSpan.textContent = team.name || 'Neznámy tím';
-                     // Odstránime zvýraznenie, keďže filter na názov tímu v tomto režime nemáme
-                     teamNameSpan.classList.remove('highlighted-team');
 
                     teamItem.appendChild(teamNameSpan);
                     teamList.appendChild(teamItem);
@@ -230,8 +240,6 @@ function displayGroupsForCategory(categoryId) {
          unassignedTeamsInCategory.forEach(team => {
               const teamItem = document.createElement('li');
               teamItem.textContent = team.name || 'Neznámy tím';
-               // Odstránime zvýraznenie, keďže filter na názov tímu v tomto režime nemáme
-               teamItem.classList.remove('highlighted-team');
               unassignedList.appendChild(teamItem);
          });
          unassignedDiv.appendChild(unassignedList);
@@ -248,24 +256,27 @@ function displayGroupsForCategory(categoryId) {
     groupsDisplayContent.appendChild(categoryDiv);
     groupsDisplayContent.style.display = 'block'; // Zobrazíme oblasť zobrazenia
 
-    // *** VOLANIE FUNKCIÍ NA DYNAMICKÚ ŠÍRKU PO VYTVORENÍ TABULIEK ***
+    // VOLANIE FUNKCIÍ NA DYNAMICKÚ ŠÍRKU PO VYTVORENÍ TABULIEK
     const uniformWidth = findMaxTableContentWidth();
     if (uniformWidth > 0) { // Nastavíme šírku iba ak sú nejaké tabuľky a našla sa max šírka
        setUniformTableWidth(uniformWidth);
     }
-    // *** KONIEC VOLANIA ***
 }
 
 // Funkcia na zobrazenie kategórií (návrat z pohľadu skupín)
 function goBackToCategories() {
     console.log("INFO: Návrat na zobrazenie kategórií.");
+
+    // Odstrániť hash z URL pri návrate na zoznam kategórií
+    if (window.location.hash) {
+        history.replaceState({}, document.title, window.location.pathname); // Preferované pred window.location.hash = '';
+    }
+
     displayCategoriesAsButtons(); // Zobraziť znova tlačidlá kategórií
 }
 
 
-// *** PÔVODNÉ FUNKCIE PRE DYNAMICKÚ ŠÍRKU OSTÁVAJÚ - Uistite sa, že ich importujete alebo sú definované ***
-// (Predpokladáme, že findMaxTableContentWidth a setUniformTableWidth sú definované/importované)
-
+// --- Funkcie pre dynamickú šírku tabuliek (predpokladáme, že sú definované) ---
 // Funkcia na zistenie maximálnej šírky potrebnej pre zobrazenie obsahu všetkých tabuliek skupín
 function findMaxTableContentWidth() {
     let maxWidth = 0;
@@ -303,12 +314,14 @@ function findMaxTableContentWidth() {
         }
     });
 
-    const safetyPadding = 20;
-    return maxWidth + safetyPadding;
+    const safetyPadding = 20; // Malý prídavok pre istotu
+    return maxWidth > 0 ? maxWidth + safetyPadding : 0; // Vráti 0 ak nie sú tabuľky
 }
 
 // Funkcia na nastavenie jednotnej šírky pre všetky tabuľky skupín
 function setUniformTableWidth(width) {
+    if (width <= 0) return; // Nastavovať iba ak je platná šírka
+
     const groupTables = groupsDisplayContent.querySelectorAll('.group-display');
 
     groupTables.forEach(table => {
@@ -320,6 +333,7 @@ function setUniformTableWidth(width) {
         table.style.flexGrow = '0';
     });
 }
+// --- Koniec funkcií pre dynamickú šírku ---
 
 
 // --- Event Listeners ---
@@ -336,10 +350,27 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.error("Tlačidlo Späť sa nenašlo!");
     }
 
+    // Skontrolovať hash v URL a podľa toho zobraziť obsah
+    const hash = window.location.hash;
+    const categoryPrefix = '#category-';
 
-    // Pôvodné spracovanie URL filtrov je odstránené,
-    // teraz vždy na začiatku zobrazíme kategórie ako tlačidlá.
-    displayCategoriesAsButtons();
+    if (hash && hash.startsWith(categoryPrefix)) {
+        const urlCategoryId = hash.substring(categoryPrefix.length);
+        // Skontrolujeme, či ID kategórie z URL existuje
+        const categoryExists = allCategories.some(cat => cat.id === urlCategoryId);
+
+        if (categoryExists) {
+            console.log(`INFO: Načítavam kategóriu z URL: ${urlCategoryId}`);
+            displayGroupsForCategory(urlCategoryId); // Zobraziť skupiny pre kategóriu z URL
+        } else {
+            console.log(`INFO: ID kategórie z URL "${urlCategoryId}" sa nenašlo. Zobrazujem zoznam kategórií.`);
+             // Ak ID z URL neexistuje, zobraziť zoznam kategórií a vyčistiť chybný hash
+            displayCategoriesAsButtons();
+        }
+    } else {
+        console.log("INFO: V URL nie je hash kategórie. Zobrazujem zoznam kategórií.");
+        displayCategoriesAsButtons(); // Zobraziť zoznam kategórií, ak v URL nie je hash
+    }
 
 });
 
@@ -353,9 +384,3 @@ window.addEventListener('resize', () => {
           }
     }
  });
-
- // Odstránené pôvodné poslucháče pre filter select boxy
- // categoryFilter.addEventListener...
- // groupFilter.addEventListener...
- // teamFilter.addEventListener...
- // clearFiltersButton.addEventListener...
