@@ -9,7 +9,13 @@ header {
     box-sizing: border-box;
 }
 body {
-    padding-top: 60px;
+    padding-top: 60px; /* Ponechané tvoje pôvodné odsadenie kvôli fixnej hlavičke */
+    /* Pridané základné štýly, ktoré by mali byť konzistentné */
+    font-family: 'Arial', sans-serif; /* Použitie čistého písma */
+    line-height: 1.6;
+    color: #333; /* Tmavý text */
+    background-color: #f4f4f4; /* Svetlé pozadie */
+    margin: 0; /* Zabezpeč, že telo nemá predvolené okraje */
 }
 nav ul {
     list-style: none;
@@ -44,10 +50,14 @@ h1 {
     margin-bottom: 20px;
 }
 main {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 20px;
+    /* Tieto štýly sú z tvojho style.css. Prihlasene-kluby.html má main vo .content-wrapper
+       a spravca-turnaja-style.css upravuje main pre flexbox.
+       Ponechávam pôvodné style.css pravidlá pre main, ale pridáme špecifickejšie pre prihlasene-kluby.html nižšie,
+       ktoré by mali prepísať tie, čo sú potrebné. */
+    display: flex; /* Toto je z style.css, môže byť v konflikte s spravca-turnaja-style.css */
+    flex-direction: column; /* Z style.css */
+    align-items: center; /* Z style.css */
+    padding: 20px; /* Z style.css, bude prepísané pre main vo .content-wrapper */
 }
 form {
     background-color: #fff;
@@ -86,7 +96,7 @@ form button[type="submit"] {
     width: 100%;
 }
 form button[type="submit"]:hover {
-    background-color: #c46f50;
+    background-color: #c46f50; /* Tvoja pôvodná farba */
 }
 .error-message {
     margin-top: 10px;
@@ -103,6 +113,7 @@ main p a {
 main p a:hover {
     text-decoration: underline;
 }
+/* Štýly pre layout content-wrapper a left-menu z tvojho style.css */
 .content-wrapper {
     display: flex;
     align-items: flex-start;
@@ -133,10 +144,12 @@ main p a:hover {
     background-color: #e0e0e0;
     color: #3a8d41;
 }
+/* Pôvodné štýly pre main vo style.css (duplikuje sa s tvojím iným pravidlom pre main, ale nechávam ako bolo) */
 main {
     flex-grow: 1;
     padding: 20px;
 }
+/* Pôvodný add-button a modal štýly z tvojho style.css */
 .add-button {
     position: fixed;
     bottom: 30px;
@@ -154,7 +167,7 @@ main {
     z-index: 1000;
 }
 .add-button:hover {
-    background-color: #c46f50;
+    background-color: #c46f50; /* Tvoja pôvodná farba */
 }
 .modal {
     display: none;
@@ -194,3 +207,192 @@ main {
     padding: 10px;
     font-size: 16px;
 }
+/* --- Koniec pôvodných štýlov zo style.css --- */
+
+
+/* -- Nové štýly pre prehľad klubov a detaily (pre modernejší vzhľad na stránke prihlasene-kluby.html) -- */
+/* Tieto štýly sú špecifickejšie a mali by prepísať relevantné pravidlá zo style.css a spravca-turnaja-style.css */
+
+/* Hlavná oblasť obsahu špecificky pre .content-wrapper */
+/* Upravíme padding a pridáme nejaký základný vzhľad, ale rešpektujeme flexbox layout zo spravca-turnaja-style.css */
+.content-wrapper main {
+    flex-grow: 1; /* Ponechané z spravca-turnaja-style.css */
+    padding: 20px; /* Priestor v hlavnej oblasti */
+    background-color: #fff; /* Biele pozadie pre obsah */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Jemný tieň */
+    border-radius: 8px; /* Zaoblené rohy */
+    min-width: 0; /* Z spravca-turnaja-style.css */
+    overflow-x: auto; /* Z spravca-turnaja-style.css */
+}
+
+/* Sekcie na stránke prehľadu klubov a detailov */
+.section-block {
+    margin-bottom: 30px; /* Priestor medzi sekciami */
+    padding: 20px; /* Vnútorný priestor */
+    border: 1px solid #ddd; /* Svetlý rámček */
+    border-radius: 5px;
+    background-color: #fafafa; /* Jemne odlišné pozadie */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08); /* Jemnejší tieň pre bloky */
+    box-sizing: border-box; /* Zabezpečenie, že padding neovplyvní šírku */
+    overflow-x: auto; /* Z spravca-turnaja-style.css */
+}
+
+/* Nadpisy špecifické pre obsah sekcií */
+.section-block h2,
+.section-block h3,
+.section-block h4 {
+    color: #555;
+    margin-top: 0;
+    margin-bottom: 15px;
+}
+/* Priestor nad podnadpismi v detailoch */
+#clubDetailContent h3,
+#clubDetailContent h4 {
+    margin-top: 20px; /* Priestor hore */
+}
+
+
+/* -- Štýly tabuľky .data-table (pre prihlasene-kluby.html) -- */
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse; /* Odstránenie medzier medzi bunkami */
+    margin-top: 20px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08); /* Tieň pre tabuľku */
+    border-radius: 5px; /* Zaoblené rohy tabuľky */
+    overflow: hidden; /* Dôležité pre aplikovanie border-radius na vnútro */
+}
+
+/* Hlavička tabuľky .data-table */
+.data-table th {
+    background-color: #3a8d41; /* Požadovaná zelená farba */
+    color: white; /* Biely text */
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 2px solid #2a6b30; /* Tmavší spodný okraj */
+    font-weight: bold;
+    font-size: 0.95em;
+    /* white-space: nowrap; */ /* Z spravca-turnaja-style.css, ponechávam pôvodné */
+}
+
+/* Prvý stĺpec hlavičky (.data-table) */
+.data-table th:first-child {
+    text-align: left; /* Uisti sa, že je text zarovnaný vľavo */
+}
+
+/* Bunky tabuľky .data-table */
+.data-table td {
+    padding: 10px 15px;
+    border-bottom: 1px solid #eee; /* Svetlý spodný okraj pre riadky */
+    text-align: left;
+    /* white-space: nowrap; */ /* Z spravca-turnaja-style.css, ponechávam pôvodné */
+}
+
+/* Centrovanie čísel v stĺpcoch kategórií (.data-table) */
+.data-table td:not(:first-child) {
+    text-align: center;
+}
+
+/* Pôvodný nth-child(even) zo style.css a spravca-turnaja-style.css - aplikujeme špecifickejšie pre .data-table */
+.data-table tbody tr:nth-child(even) {
+    background-color: #f9f9f9; /* Svetlejší pruh pre striedanie riadkov */
+}
+
+/* Riadky tabuľky .data-table */
+.data-table tbody tr {
+    cursor: pointer; /* Zmena kurzora pri prejdení myšou */
+    transition: background-color 0.2s ease; /* Jemný prechod farby pozadia */
+}
+
+/* Efekt pri prejdení myšou cez riadok tabuľky .data-table */
+.data-table tbody tr:hover {
+    background-color: #e9e9e9; /* Svetlo sivé pozadie */
+}
+
+/* Štýl pre bunku s načítavaním/chybou (s colspan) v .data-table */
+.data-table tbody tr td[colspan] {
+    text-align: center !important; /* Vynútené centrovanie */
+    font-style: italic;
+    color: #777;
+    background-color: transparent !important; /* Zrušiť striedajúce sa farby */
+}
+
+/* -- Štýly tlačidiel -- */
+
+/* Tlačidlo Späť na prehľad - špecifickejší štýl, ktorý prepíše všeobecný .action-button */
+#backToListButton.action-button {
+    display: inline-block;
+    background-color: #555; /* Tmavšie tlačidlo */
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1em;
+    margin-bottom: 20px; /* Priestor pod tlačidlom */
+    transition: background-color 0.2s ease;
+}
+
+#backToListButton.action-button:hover {
+    background-color: #777; /* Svetlejšie pri prejdení myšou */
+}
+
+
+/* -- Štýly pre sekciu detailov (zoznamy a detaily tímu) -- */
+
+/* Všeobecné štýly pre zoznamy v detailoch */
+#teamsInCategoryList,
+#selectedTeamSoupiskaHracov {
+    list-style: disc; /* Predvolené odrážky */
+    padding-left: 20px; /* Odsadenie */
+    margin-bottom: 15px;
+}
+
+#teamsInCategoryList li,
+#selectedTeamSoupiskaHracov li {
+    margin-bottom: 8px; /* Priestor medzi položkami */
+    padding: 5px 0;
+    border-bottom: 1px dotted #ddd; /* Bodkovaná čiara medzi položkami */
+}
+
+/* Odstránenie spodného okraja pre poslednú položku v zozname */
+#teamsInCategoryList li:last-child,
+#selectedTeamSoupiskaHracov li:last-child {
+    border-bottom: none;
+}
+
+/* Položky zoznamu tímov (sú klikateľné) */
+#teamsInCategoryList li {
+     cursor: pointer;
+     transition: background-color 0.1s ease;
+}
+
+/* Efekt pri prejdení myšou cez položku zoznamu tímu */
+#teamsInCategoryList li:hover {
+    background-color: #f0f0f0; /* Jemný efekt */
+}
+
+/* Blok detailov vybratého tímu */
+#selectedTeamDetails {
+    margin-top: 20px;
+    border-top: 1px solid #eee;
+    padding-top: 15px;
+}
+
+/* Odseky v časti o realizačnom tíme */
+#selectedTeamRealizacnyTim p {
+    margin-bottom: 8px;
+}
+
+/* Text pre dynamicky načítané info (realizačný tím, názov tímu) */
+#selectedTeamRealizacnyTim span,
+#selectedTeamName {
+    font-weight: normal; /* Zabezpeč, že dynamický text nie je tučný, ak to nie je špecificky nastavené */
+}
+
+/* Názov subjektu v hlavičke detailu */
+#clubDetailTitle span {
+     font-weight: normal; /* Názov klubu by nemal byť tučný v nadpise */
+}
+
+/* Koniec nových štýlov pre prihlasene-kluby.html */
