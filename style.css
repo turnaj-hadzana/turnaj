@@ -2,6 +2,12 @@ header {
     background-color: #f0f0f0;
     padding: 10px 0;
     border-bottom: 1px solid #ccc;
+    /* Pridané pre fixnú pozíciu */
+    position: fixed; /* Fixuje element na pozícii vzhľadom k viewportu */
+    top: 0;          /* Umiestni element na horný okraj viewportu */
+    width: 100%;     /* Zabezpečí, že element zaberá celú šírku viewportu */
+    z-index: 1000;   /* Zabezpečí, že element bude nad ostatným obsahom */
+    box-sizing: border-box; /* Zahrnie padding do celkovej šírky */
 }
 nav ul {
     list-style: none;
