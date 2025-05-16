@@ -1,4 +1,6 @@
-import { db, categoriesCollectionRef, groupsCollectionRef, clubsCollectionRef, openModal, closeModal, populateCategorySelect, populateGroupSelect, query, where, getDocs, getDoc, setDoc, deleteDoc, updateDoc, writeBatch, doc } from './spravca-turnaja-common.js';
+import { db, categoriesCollectionRef, groupsCollectionRef, clubsCollectionRef,
+         openModal, closeModal, populateCategorySelect, populateGroupSelect, 
+         query, where, getDocs, getDoc, setDoc, deleteDoc, updateDoc, writeBatch, doc } from './spravca-turnaja-common.js';
 const addButton = document.getElementById('addButton');
 const groupsContentDiv = document.getElementById('groupsContent');
 const groupModal = document.getElementById('groupModal');
@@ -24,18 +26,19 @@ async function openGroupModal(groupId = null, groupData = null) {
         editingGroupId = groupId;
         groupModalTitle.textContent = 'Premenovať skupinu';
         groupFormSubmitButton.textContent = 'Uložiť zmeny';
-        await populateCategorySelect(groupCategorySelect, groupData.categoryId);
-        groupCategorySelect.disabled = false;
-        groupNameInput.value = groupData.name || '';
-        groupNameInput.focus();
+         await populateCategorySelect(groupCategorySelect, groupData.categoryId);
+         groupCategorySelect.disabled = false;
+         groupNameInput.value = groupData.name || '';
+         groupNameInput.focus();
     } else {
         currentGroupModalMode = 'add';
         editingGroupId = null;
         groupModalTitle.textContent = 'Pridať skupinu';
         groupFormSubmitButton.textContent = 'Uložiť';
-        await populateCategorySelect(groupCategorySelect, null);
-        groupCategorySelect.disabled = false;
-        if (groupCategorySelect.options.length > 1) {
+         await populateCategorySelect(groupCategorySelect, null);
+          groupCategorySelect.disabled = false;
+
+          if (groupCategorySelect.options.length > 1) {
                groupCategorySelect.focus();
           } else {
                groupNameInput.focus();
@@ -57,7 +60,7 @@ async function displayGroupsByCategory() {
          }
         const groupsSnapshot = await getDocs(groupsCollectionRef);
         const groupsByCategory = {};
-        groupsSnapshot.forEach(doc => {
+         groupsSnapshot.forEach(doc => {
               const groupData = doc.data();
               const groupId = doc.id;
               const categoryId = groupData.categoryId;
@@ -82,10 +85,10 @@ async function displayGroupsByCategory() {
               const headerRow = document.createElement('tr');
               const groupNameTh = document.createElement('th');
               groupNameTh.textContent = 'Názov skupiny';
-               const actionsTh = document.createElement('th');
-               actionsTh.textContent = '';
-               headerRow.appendChild(groupNameTh);
-               headerRow.appendChild(actionsTh);
+              const actionsTh = document.createElement('th');
+              actionsTh.textContent = '';
+              headerRow.appendChild(groupNameTh);
+              headerRow.appendChild(actionsTh);
               thead.appendChild(headerRow);
               categoryGroupsTable.appendChild(thead);
               const tbody = document.createElement('tbody');
@@ -98,7 +101,7 @@ async function displayGroupsByCategory() {
                   noGroupsRow.appendChild(td);
                   tbody.appendChild(noGroupsRow);
               } else {
-                   groupsForThisCategory.sort((a, b) => (a.data.name || '').localeCompare(b.data.name || '', 'sk-SK'));
+                  groupsForThisCategory.sort((a, b) => (a.data.name || '').localeCompare(b.data.name || '', 'sk-SK'));
                   groupsForThisCategory.forEach(group => {
                        const groupRow = document.createElement('tr');
                        const groupNameTd = document.createElement('td');
@@ -109,14 +112,14 @@ async function displayGroupsByCategory() {
                        const editGroupButton = document.createElement('button');
                        editGroupButton.textContent = 'Premenovať';
                        editGroupButton.classList.add('action-button');
-                       editGroupButton.onclick = () => {
+                       editGroupButton.onclick = function() {
                             openGroupModal(group.id, group.data);
                        };
                        groupActionsTd.appendChild(editGroupButton);
                        const deleteGroupButton = document.createElement('button');
                        deleteGroupButton.textContent = 'Vymazať';
-                       deleteGroupButton.classList.add('action-button', 'delete-button');
-                       deleteGroupButton.onclick = async () => {
+                       deleteButton.classList.add('action-button', 'delete-button');
+                       deleteButton.onclick = async function() {
                             if (!confirm(`Naozaj chcete vymazať skupinu "${group.data.name}" z kategórie "${group.data.categoryId}"? Tímy priradené k tejto skupine prídu o priradenie (groupId a orderInGroup sa nastavia na null)!`)) {
                                  return;
                             }
@@ -124,10 +127,10 @@ async function displayGroupsByCategory() {
                                  const batch = writeBatch(db);
                                  const clubsInGroupQuery = query(clubsCollectionRef, where('groupId', '==', group.id));
                                  const clubsSnapshot = await getDocs(clubsInGroupQuery);
-                                 clubsSnapshot.forEach(doc => {
+                                 clubsSnapshot.forEach(doc => { // Toto 'doc' je parameter callbacku, je v poriadku
                                       batch.update(doc.ref, { groupId: null, orderInGroup: null });
                                  });
-                                 batch.delete(doc(groupsCollectionRef, group.id));
+                                 batch.delete(doc(groupsCollectionRef, group.id)); // <-- Tu sa používa 'doc'
                                  await batch.commit();
                                  alert(`Skupina "${group.data.name}" úspešne vymazaná.`);
                                  displayGroupsByCategory();
@@ -165,7 +168,13 @@ function resetGroupModal() {
           groupCategorySelect.disabled = true;
      }
 }
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => { 
+    const loggedInUsername = localStorage.getItem('username');
+    if (!loggedInUsername || loggedInUsername !== 'admin') {
+        window.location.href = 'login.html'; 
+        return;
+    }
+    await loadAllCategoriesForDynamicSelects();
     displayGroupsByCategory();
      if (groupsContentDiv) {
           groupsContentDiv.style.display = 'flex';
@@ -182,8 +191,18 @@ document.addEventListener('DOMContentLoaded', () => {
            addButton.onclick = () => {
                 openGroupModal();
            };
+      } else {
       }
 });
+async function loadAllCategoriesForDynamicSelects() {
+    try {
+        const querySnapshot = await getDocs(categoriesCollectionRef);
+        allAvailableCategories = querySnapshot.docs.map(doc => ({ id: doc.id, name: doc.data().name || doc.id }));
+        allAvailableCategories.sort((a, b) => (a.name || '').localeCompare((b.name || ''), 'sk-SK'));
+    } catch (e) {
+        allAvailableCategories = [];
+    }
+}
 if (groupModalCloseBtn) {
     groupModalCloseBtn.addEventListener('click', () => {
         closeModal(groupModal);
@@ -206,7 +225,7 @@ if (groupForm) {
             return;
         }
         const compositeGroupId = `${selectedCategoryId} - ${groupName}`;
-        const groupDocRef = doc(groupsCollectionRef, compositeGroupId);
+        const groupDocRef = doc(groupsCollectionRef, compositeGroupId); // <-- Tu sa používa 'doc'
         try {
             const existingDoc = await getDoc(groupDocRef);
             if (currentGroupModalMode === 'add') {
@@ -236,7 +255,7 @@ if (groupForm) {
                      batch.set(groupDocRef, { name: groupName, categoryId: selectedCategoryId });
                      const clubsInGroupQuery = query(clubsCollectionRef, where('groupId', '==', oldGroupId));
                      const clubsSnapshot = await getDocs(clubsInGroupQuery);
-                     clubsSnapshot.forEach(doc => {
+                     clubsSnapshot.forEach(doc => { // Toto 'doc' je parameter callbacku, je v poriadku
                           batch.update(doc.ref, { groupId: compositeGroupId, categoryId: selectedCategoryId });
                      });
                      batch.delete(oldGroupDocRef);
@@ -258,4 +277,5 @@ if (groupForm) {
              resetGroupModal();
         }
     });
+} else {
 }
