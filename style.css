@@ -268,7 +268,7 @@ nav ul li a:hover {
     /* width: auto; */
 
     /* Štýly pre vzhľad bloku */
-    margin-top: 20px; /* Priestor medzi hlavičkovou tabuľkou a skrolovateľným telom */
+    margin-top: 0px; /* Priestor medzi hlavičkovou tabuľkou a skrolovateľným telom */
     border: 1px solid #ccc; /* Okraj */
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08); /* Tieň */
     border-radius: 5px; /* Zaoblené rohy */
