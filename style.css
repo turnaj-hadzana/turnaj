@@ -352,9 +352,7 @@ nav ul li a:hover {
 /* ... (zvyšok štýlov) ... */
 
 /* Ensure the section-block containing the tables shrinks to fit content */
-#clubListSection.section-block {
-     align-items: flex-start; /* Sekcia sa zmenší na šírku obsahu */
-     flex-grow: 1; /* Ponechať, aby zaberala priestor vertikálne */
-     display: flex; /* Ponechať */
-     flex-direction: column; /* Ponechať */
+#clubsBodyTable td:last-child {
+    padding: 10px 0; /* Nastaví top/bottom padding na 10px, left/right na 0px */
+    /* Toto má odstrániť priestor medzi obsahom poslednej bunky a posuvníkom */
 }
