@@ -263,7 +263,7 @@ nav ul li a:hover {
     overflow-x: auto; /* Ponechať horizontálne skrolovanie v boxe */
 
     /* Štýly pre vzhľad bloku */
-    margin-top: 20px; /* Vrátená horná medzera */
+    margin-top: 0px; /* Vrátená horná medzera */
     /* margin-bottom: 5%; */ /* Odstránená dolná medzera */
 
 
@@ -304,7 +304,7 @@ nav ul li a:hover {
 #clubsHeaderTable th:first-child,
 #clubsBodyTable td:first-child {
     text-align: left;
-    min-width: 10vw;
+    min-width: 15vw;
 }
 
 /* Ostatné stĺpce v hlavičke aj tele - centrovať */
