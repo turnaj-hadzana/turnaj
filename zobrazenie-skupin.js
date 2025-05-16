@@ -438,6 +438,7 @@ function displayGroupsForCategory(categoryId) {
                 teamsInGroup.forEach(team => {
                     const teamItem = document.createElement('li');
 
+<!--                         
                     if (typeof team.orderInGroup === 'number' && team.orderInGroup > 0) {
                         const orderSpan = document.createElement('span');
                         orderSpan.textContent = `${team.orderInGroup}.`;
@@ -446,6 +447,7 @@ function displayGroupsForCategory(categoryId) {
                         const separator = document.createTextNode('\u00A0');
                         teamItem.appendChild(separator);
                     }
+-->                         
 
                      const teamNameSpan = document.createElement('span');
                      teamNameSpan.classList.add('team-name');
@@ -612,6 +614,7 @@ function displaySingleGroup(groupId) {
               teamsInGroup.forEach(team => {
                    const teamItem = document.createElement('li');
 
+<!--                       
                    if (typeof team.orderInGroup === 'number' && team.orderInGroup > 0) {
                        const orderSpan = document.createElement('span');
                        orderSpan.textContent = `${team.orderInGroup}.`;
@@ -620,6 +623,7 @@ function displaySingleGroup(groupId) {
                        const separator = document.createTextNode('\u00A0');
                        teamItem.appendChild(separator);
                    }
+-->
 
                    const teamNameSpan = document.createElement('span');
                    teamNameSpan.classList.add('team-name');
