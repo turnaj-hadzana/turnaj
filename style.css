@@ -50,14 +50,10 @@ h1 {
     margin-bottom: 20px;
 }
 main {
-    /* Tieto štýly sú z tvojho style.css. Prihlasene-kluby.html má main vo .content-wrapper
-       a spravca-turnaja-style.css upravuje main pre flexbox.
-       Ponechávam pôvodné style.css pravidlá pre main, ale pridáme špecifickejšie pre prihlasene-kluby.html nižšie,
-       ktoré by mali prepísať tie, čo sú potrebné. */
-    display: flex; /* Toto je z style.css, môže byť v konflikte s spravca-turnaja-style.css */
-    flex-direction: column; /* Z style.css */
-    align-items: center; /* Z style.css */
-    padding: 20px; /* Z style.css, bude prepísané pre main vo .content-wrapper */
+    display: flex; 
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
 }
 form {
     background-color: #fff;
