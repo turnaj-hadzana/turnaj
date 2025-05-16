@@ -133,10 +133,13 @@ async function displaySubjectDetails(baseName) {
      if (clubListSection) clubListSection.style.display = 'none';
      if (clubDetailSection) clubDetailSection.style.display = 'block';
      if(clubDetailTitleSpan) clubDetailTitleSpan.textContent = baseName;
+
      // Vyprázdnenie starého UL, ak stále existuje (aj keby bol skrytý)
      if(teamsInCategoryListUl) teamsInCategoryListUl.innerHTML = '';
+
      // Nastavenie počiatočného stavu pre nový DIV
      if(teamsInCategoryButtonsDiv) teamsInCategoryButtonsDiv.innerHTML = 'Načítavam tímy...'; // Zmena textu načítavania
+
      if(selectedTeamDetailsDiv) selectedTeamDetailsDiv.style.display = 'none';
      if(selectedTeamNameSpan) selectedTeamNameSpan.textContent = '';
      if(selectedTeamRealizacnyTimDiv) selectedTeamRealizacnyTimDiv.innerHTML = '';
@@ -153,7 +156,7 @@ async function displaySubjectDetails(baseName) {
      teamsInCategoryButtonsDiv.innerHTML = ''; // Vyčistíme kontajner pred pridaním tlačidiel
 
      if (teamsForSubject.length === 0) {
-          const noTeamsMessage = document.createElement('p'); // Použijeme odsek pre správu o žiadnych tímoch
+          const noTeamsMessage = document.createElement('p'); // Použijeme odsek namiesto tlačidla, ak nie sú tímy
           noTeamsMessage.textContent = `Žiadne tímy pre subjekt "${baseName}".`;
           teamsInCategoryButtonsDiv.appendChild(noTeamsMessage);
      } else {
@@ -190,7 +193,7 @@ async function displaySubjectDetails(baseName) {
                       }
                   }
 
-                teamButton.textContent = `${categoryName} - ${groupName}`; // Text tlačidla
+                teamButton.textContent = `${team.name || team.id} (${categoryName} - ${groupName})`; // Text tlačidla
                 teamButton.dataset.teamId = team.id; // Uloženie ID tímu do datasetu
 
                  // Pridanie event listeneru na kliknutie
@@ -205,6 +208,19 @@ async function displaySubjectDetails(baseName) {
 
                 teamsInCategoryButtonsDiv.appendChild(teamButton); // Pridanie tlačidla do DIVu
             });
+
+          // --- NOVÝ KÓD: Automaticky zobrazí detaily prvého tímu a zvýrazní tlačidlo ---
+          if (teamsForSubject.length > 0) {
+              const firstTeamId = teamsForSubject[0].id; // Získa ID prvého tímu
+              displaySpecificTeamDetails(firstTeamId); // Zavolá funkciu na zobrazenie jeho detailov
+
+              // Nájdeme prvé tlačidlo v kontajneri a zvýrazníme ho
+              const firstTeamButton = teamsInCategoryButtonsDiv.querySelector('button[data-team-id="' + firstTeamId + '"]');
+              if (firstTeamButton) {
+                  firstTeamButton.style.fontWeight = 'bold';
+              }
+          }
+          // --- KONIEC NOVÉHO KÓDU ---
      }
 
      // Dodatočné vyprázdnenie pôvodného UL pre prípad, že ešte existuje
