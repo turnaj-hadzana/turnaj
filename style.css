@@ -9,6 +9,9 @@ header {
     z-index: 1000;   /* Zabezpečí, že element bude nad ostatným obsahom */
     box-sizing: border-box; /* Zahrnie padding do celkovej šírky */
 }
+body {
+    padding-top: 120px;
+}
 nav ul {
     list-style: none;
     padding: 0;
@@ -46,7 +49,6 @@ main {
     flex-direction: column;
     align-items: center;
     padding: 20px;
-    padding-top: 120px;
 }
 form {
     background-color: #fff;
