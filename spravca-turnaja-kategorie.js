@@ -103,6 +103,11 @@ function resetCategoryModal() {
     if (categoryModalTitle) categoryModalTitle.textContent = 'Pridať kategóriu';
 }
 document.addEventListener('DOMContentLoaded', () => {
+    const loggedInUsername = localStorage.getItem('username');
+    if (!loggedInUsername || loggedInUsername !== 'admin') {
+        window.location.href = 'login.html';
+        return;
+    }
     loadCategoriesTable();
      if (categoriesContentSection) {
           categoriesContentSection.style.display = 'block';
