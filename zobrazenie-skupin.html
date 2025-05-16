@@ -187,9 +187,7 @@
 </head>
 <body>
     <script src="script.js"></script>
-
     <h1>Rozlosovanie</h1>
-
     <div class="content-wrapper">
         <nav class="left-menu" id="zobrazenieSkupinLeftMenu">
             <ul>
@@ -199,7 +197,6 @@
                 <li><a href="zobrazenie-skupin.html">Zobrazenie skupín</a></li>
             </ul>
         </nav>
-
         <main>
             <section class="section-block">
                 <div class="back-buttons-container">
@@ -222,22 +219,19 @@
             </section>
         </main>
     </div>
-
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const leftMenu = document.getElementById('zobrazenieSkupinLeftMenu');
             const loggedInUsername = localStorage.getItem('username');
-
             if (leftMenu) {
                 if (loggedInUsername) {
-                    leftMenu.style.display = 'block'; // Zobraz menu ak je pouzivatel prihlaseny
+                    leftMenu.style.display = 'block';
                 } else {
-                    leftMenu.style.display = 'none'; // Skry menu ak pouzivatel NIE JE prihlaseny
+                    leftMenu.style.display = 'none';
                 }
             }
         });
     </script>
-
     <script type="module" src="spravca-turnaja-common.js"></script>
     <script type="module" src="zobrazenie-skupin.js"></script>
 </body>
