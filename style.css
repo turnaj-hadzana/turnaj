@@ -15,17 +15,24 @@ header {
     z-index: 1000;
     box-sizing: border-box;
 }
+
+/* Upravte existujúce pravidlo pre body */
 body {
+    /* padding-top ponechajte, aby obsah nebol skrytý pod fixnou hlavičkou */
     padding-top: 60px; /* Ponechané tvoje pôvodné odsadenie kvôli fixnej hlavičke */
+
+    /* Pridajte Flexbox na telo */
     display: flex;
     flex-direction: column; /* Uloží priame deti (vrátane main) pod sebou */
     min-height: 100%; /* Zabezpečí, že telo má minimálne výšku okna */
+    /* overflow: hidden;  -- TOTO JE TERAZ V HTML SÚBORE PRIAMO NA ELEMENTE BODY */
+
     /* Ostatné pôvodné štýly tela */
     font-family: 'Arial', sans-serif;
     line-height: 1.6;
     color: #333;
     background-color: #ffffff;
-    margin: 0; /* Ponechať */
+    margin: 0; /* Ponečať */
     padding-left: 0; /* Zabezpečiť, že ľavý padding je 0 ak bol zmenený */
     padding-right: 0; /* Zabezpečiť, že pravý padding je 0 ak bol zmenený */
     /* Ak máte aj iné paddingy na tele, zvážte ich úpravu alebo použitie pading-block/inline */
@@ -158,6 +165,11 @@ nav ul li a:hover {
     color: #3a8d41;
     background-color: #e0e0e0;
 }
+/* Pôvodné štýly pre main vo style.css (duplikuje sa s tvojím iným pravidlom pre main, ale nechávam ako bolo) */
+main {
+    flex-grow: 1;
+    padding: 20px;
+}
 /* Pôvodný add-button a modal štýly z tvojho style.css */
 .add-button {
     position: fixed;
@@ -216,9 +228,25 @@ nav ul li a:hover {
     padding: 10px;
     font-size: 16px;
 }
+/* --- Koniec pôvodných štýlov zo style.css --- */
+
 
 /* -- Nové štýly pre prehľad klubov a detaily (pre modernejší vzhľad na stránke prihlasene-kluby.html) -- */
 /* Tieto štýly sú špecifickejšie a mali by prepísať relevantné pravidlá zo style.css a spravca-turnaja-style.css */
+
+/* Hlavná oblasť obsahu špecificky pre .content-wrapper */
+/* Upravíme padding a pridáme nejaký základný vzhľad, ale rešpektujeme flexbox layout zo spravca-turnaja-style.css */
+//.content-wrapper main {
+//    flex-grow: 1; /* Ponechané z spravca-turnaja-style.css */
+//    padding: 20px; /* Priestor v hlavnej oblasti */
+//    background-color: #fff; /* Biele pozadie pre obsah */
+//    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Jemný tieň */
+//    border-radius: 8px; /* Zaoblené rohy */
+//    min-width: 0; /* Z spravca-turnaja-style.css */
+//    overflow-x: auto; /* Z spravca-turnaja-style.css */
+//}
+
+
 
 /* Nadpisy špecifické pre obsah sekcií */
 .section-block h2,
@@ -231,150 +259,203 @@ nav ul li a:hover {
 /* Priestor nad podnadpismi v detailoch */
 #clubDetailContent h3,
 #clubDetailContent h4 {
-    margin-top: 20px;
+    margin-top: 20px; /* Priestor hore */
 }
 
 
 /* -- Štýly tabuľky .data-table (pre prihlasene-kluby.html) -- */
 
-/* Apply to both header and body tables */
-#clubsHeaderTable,
-#clubsBodyTable {
-    border-collapse: collapse;
-    table-layout: auto; /* Ponechané auto, aby sa šírky prispôsobili obsahu a min-width */
+.data-table {
+    width: 100%;
+    border-collapse: collapse; /* Odstránenie medzier medzi bunkami */
+    margin-top: 20px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08); /* Tieň pre tabuľku */
+    border-radius: 5px; /* Zaoblené rohy tabuľky */
+    overflow: hidden; /* Dôležité pre aplikovanie border-radius na vnútro */
+    table-layout: fixed; /* ZMENA: Nastavenie table-layout na fixed pre rovnaké šírky stĺpcov */
 }
 
-/* Remove margin-top from the body table specifically */
-#clubsBodyTable {
-    margin-top: 0; /* Už nastavené na kontajneri */
-}
-
-/* Skrolovateľný kontajner div */
-#scrollableTableBodyContainer {
-    flex-grow: 1; /* Tento div zaberie väčšinu zostávajúceho vertikálneho priestoru */
-    overflow-y: auto; /* Ponechať vertikálne skrolovanie v boxe */
-    overflow-x: auto; /* Ponechať horizontálne skrolovanie v boxe */
-    margin-top: 0px;
-    border: 1px solid #ccc;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-    border-radius: 5px;
-    background-color: #fff;
-    box-sizing: border-box;
-}
-
-/* -- Štýly buniek (TH a TD) -- */
-
-/* Style for header cells */
-#clubsHeaderTable th {
-    background-color: #3a8d41;
-    color: white;
-    padding: 12px 15px;
-    text-align: center; /* Predvolené centrovanie */
-    border-bottom: 2px solid #2a6b30;
+/* Hlavička tabuľky .data-table */
+.data-table th {
+    background-color: #3a8d41; /* Požadovaná zelená farba */
+    color: white; /* Biely text */
+    padding: 12px 5px; /* ZMENA: Zmenšené horizontálne odsadenie */
+    text-align: center; /* ZMENA: Centrovať text v hlavičke (pre počty) */
+    border-bottom: 2px solid #2a6b30; /* Tmavší spodný okraj */
     font-weight: bold;
-    font-size: 0.95em;
-    white-space: nowrap; /* Kľúčové: Zabezpečí, že text sa nebude zalamovať */
-    min-width: 3vw; /* Minimálna šírka bunky 5% šírky viewportu */
+    font-size: 0.8em; /* ZMENA: Zmenšená veľkosť písma */
+    white-space: nowrap; /* Zabezpečí, že text sa nezalomí */
+    /* overflow: hidden; */ /* Voliteľné: skryje pretečenie */
+    /* text-overflow: ellipsis; */ /* Voliteľné: pridá tri bodky pri pretečení */
 }
 
-/* Style for body cells */
-#clubsBodyTable td {
-    padding: 10px 15px; /* Predvolené odsadenie pre bunky tela */
-    border-bottom: 1px solid #eee;
-    /* text-align je nastavený nižšie podľa pozície stĺpca */
-    white-space: nowrap; /* Kľúčové: Zabezpečí, že text sa nebude zalamovať */
-    min-width: 3vw; /* Minimálna šírka bunky 5% šírky viewportu */
+/* Zabezpečiť, že text v prvej hlavičkovej bunke ("Názov klubu") zostane zarovnaný vľavo */
+.data-table th:first-child {
+    text-align: left; /* Ponechať ľavé zarovnanie */
+    padding-left: 15px; /* Vrátiť väčšie ľavé odsadenie pre prvý stĺpec */
+    padding-right: 5px;
 }
 
-/* Prvý stĺpec v hlavičke aj tele - zarovnať vľavo a nastaviť minimálnu šírku */
-#clubsHeaderTable th:first-child,
-#clubsBodyTable td:first-child {
+
+/* Bunky tabuľky .data-table */
+.data-table td {
+    padding: 10px 15px;
+    border-bottom: 1px solid #eee; /* Svetlý spodný okraj pre riadky */
     text-align: left;
-    min-width: 15vw; /* Minimálna šírka PRVÉHO stĺpca na 10vw */
+    white-space: nowrap; /* Ponechané, ale môže spôsobiť pretečenie s fixed layout */
+    overflow: hidden; /* Skryje pretečenie textu v bunkách tela */
+    text-overflow: ellipsis; /* Pridá tri bodky k pretekajúcemu textu v bunkách tela */
 }
 
-/* Ostatné stĺpce v hlavičke aj tele - centrovať */
-#clubsHeaderTable th:nth-child(n + 2),
-#clubsBodyTable td:nth-child(n + 2) {
-     text-align: center;
-}
-
-/* ZMENA: ODSTRÁNENIE Štýlu pre POSLEDNÝ stĺpec v hlavičke (šírka 17px) */
-/*
-#clubsHeaderTable th:last-child {
-    width: 17px;
-    min-width: 17px;
+/* Centrovanie čísel v stĺpcoch kategórií (.data-table) */
+.data-table td:not(:first-child) {
     text-align: center;
-    padding: 12px 0;
-}
-*/
-
-/* ZMENA: Štýl pre POSLEDNÚ bunku v tele tabuľky - odstrániť pravý padding (TOTO PONECHAŤ) */
-#clubsBodyTable td:last-child {
-    padding: 10px 0; /* Nastaví top/bottom padding na 10px, left/right na 0px */
-    /* Toto odstráni priestor medzi obsahom poslednej bunky a posuvníkom */
 }
 
-
-/* Pridanie pravého okraja ku všetkým bunkám OKREM poslednej */
-#clubsHeaderTable th:not(:last-child) {
-    border-right: 1px solid #2a6b30;
-}
-#clubsBodyTable td:not(:last-child) {
-     border-right: 1px solid #eee;
+/* Pôvodný nth-child(even) zo style.css a spravca-turnaja-style.css - aplikujeme špecifickejšie pre .data-table */
+.data-table tbody tr:nth-child(even) {
+    background-color: #f9f9f9; /* Svetlejší pruh pre striedanie riadkov */
 }
 
+/* Riadky tabuľky .data-table */
+.data-table tbody tr {
+    cursor: pointer; /* Zmena kurzora pri prejdení myšou */
+    transition: background-color 0.2s ease; /* Jemný prechod farby pozadia */
+}
 
-/* Štýl pre bunku s načítavaním/chybou (s colspan) */
+/* Efekt pri prejdení myšou cez riadok tabuľky .data-table */
+.data-table tbody tr:hover {
+    background-color: #e9e9e9; /* Svetlo sivé pozadie */
+}
+
+/* Štýl pre bunku s načítavaním/chybou (s colspan) v .data-table */
 .data-table tbody tr td[colspan] {
-    text-align: center !important;
+    text-align: center !important; /* Vynútené centrovanie */
     font-style: italic;
     color: #777;
-    background-color: transparent !important;
-    border-right: none !important;
+    background-color: transparent !important; /* Zrušiť striedajúce sa farby */
 }
 
+/* -- Štýly tlačidiel -- */
 
-/* Pôvodný nth-child(even) - aplikujeme špecifickejšie pre body table */
-#clubsBodyTable tbody tr:nth-child(even) {
-    background-color: #f9f9f9;
+/* Všeobecný štýl pre tlačidlá s triedou .action-button (bude sa týkať tlačidiel tímov) */
+/* Tieto štýly sú prepísané inline štýlmi v JS pre aktívne tlačidlo */
+.action-button {
+    display: inline-block; /* Aby sa správne aplikovali padding a margin */
+    padding: 8px 12px; /* Padding vo vnútri tlačidla */
+    margin: 5px; /* Malá medzera okolo tlačidla */
+    border: none; /* Bez okraja */
+    border-radius: 4px; /* Jemne zaoblené rohy */
+    background-color: #e9f5e9; /* Veľmi svetlo zelené pozadie (normálny stav) */
+    color: #333; /* Farba textu (normálny stav) */
+    font-size: 1em;
+    cursor: pointer; /* Zmena kurzora na ruku */
+    transition: background-color 0.2s ease, border-color 0.2s ease; /* Jemný prechod pri hover */
+    text-align: center; /* Centrovanie textu */
+    text-decoration: none; /* Odstránenie podčiarknutia, ak by bol element <a> */
 }
 
-/* Riadky tabuľky tela */
-#clubsBodyTable tbody tr {
+/* Štýl pri prechode myšou (.action-button) */
+.action-button:hover {
+    background-color: #3a8d41; /* ZMENA: Zelené pozadie pri hover */
+    color: white; /* ZMENA: Biely text pri hover */
+}
+
+/* Tlačidlo Späť na prehľad - špecifickejší štýl, ktorý prepíše všeobecný .action-button */
+/* Tieto štýly zabezpečia, že tlačidlo Späť bude stále vyzerať rovnako ako predtým */
+#backToListButton.action-button {
+    display: inline-block;
+    background-color: #3A8D41; /* Pôvodná zelená (prepíše všeobecnú) */
+    color: white; /* Biely text (prepíše všeobecnú) */
+    padding: 10px 15px; /* Väčší padding (prepíše všeobecný) */
+    border: none; /* Bez okraja (prepíše všeobecný) */
+    border-radius: 5px; /* Väčšie zaoblenie (prepíše všeobecné) */
     cursor: pointer;
+    font-size: 1em;
+    margin-bottom: 20px; /* Priestor pod tlačidlom */
     transition: background-color 0.2s ease;
 }
 
-/* Efekt pri prejdení myšou cez riadok tabuľky tela */
-#clubsBodyTable tbody tr:hover {
-    background-color: #e9e9e9;
+#backToListButton.action-button:hover {
+    background-color: #c46f50; /* Pôvodná farba hover */
 }
 
 
-/* ... (zvyšok štýlov) ... */
+/* -- Štýly pre sekciu detailov (zoznamy a detaily tímu) -- */
 
-/* Ensure the section-block containing the tables shrinks to fit content */
-#clubListSection.section-block {
-     align-items: flex-start; /* Sekcia sa zmenší na šírku obsahu */
-     flex-grow: 1; /* Ponechať, aby zaberala priestor vertikálne */
-     display: flex; /* Ponechať */
-     flex-direction: column;
-     padding-bottom: 5vh;
+/* Všeobecné štýly pre zoznamy v detailoch */
+#teamsInCategoryList,
+#selectedTeamSoupiskaHracov {
+    list-style: disc; /* Predvolené odrážky */
+    padding-left: 20px; /* Odsadenie */
+    margin-bottom: 15px;
 }
-.action-button, #backToListButton.action-button {
-    display: inline-block;
-    padding: 8px 12px;
-    margin: 5px;
-    border-radius: 4px;
-    background-color: #3a8d41;
-    color: #ffffff;
-    font-size: 1em;
-    cursor: pointer;
-    text-align: center;
-    text-decoration: none;
-    border: none;
+
+#teamsInCategoryList li,
+#selectedTeamSoupiskaHracov li {
+    margin-bottom: 8px; /* Priestor medzi položkami */
+    padding: 5px 0;
+    border-bottom: 1px dotted #ddd; /* Bodkovaná čiara medzi položkami */
 }
-.action-button:hover, #backToListButton.action-button:hover {
-    background-color: #c46f50;
+
+/* Odstránenie spodného okraja pre poslednú položku v zozname */
+#teamsInCategoryList li:last-child,
+#selectedTeamSoupiskaHracov li:last-child {
+    border-bottom: none;
 }
+
+/* Položky zoznamu tímov (sú klikateľné) */
+#teamsInCategoryList li {
+     cursor: pointer;
+     transition: background-color 0.1s ease;
+}
+
+/* Efekt pri prejdení myšou cez položku zoznamu tímu */
+#teamsInCategoryList li:hover {
+    background-color: #f0f0f0; /* Jemný efekt */
+}
+
+/* Blok detailov vybratého tímu */
+#selectedTeamDetails {
+    margin-top: 20px;
+    border-top: 1px solid #eee;
+    padding-top: 15px;
+}
+
+/* Odseky v časti o realizačnom tíme */
+#selectedTeamRealizacnyTim p {
+    margin-bottom: 8px;
+}
+#selectedTeamRealizacnyTim span,
+#selectedTeamName {
+    font-weight: normal;
+}
+#clubDetailTitle span {
+     font-weight: normal;
+}
+
+/* Štýly pre scrollable tbody - ak je vaša tabuľka nastavená tak, že tbody scrolluje */
+/* Ak ste použili štruktúru s jedným TABLE, a tbody má scrollovať */
+#clubsSummaryTableBody {
+    /* Tieto štýly sú potrebné pre správne fungovanie fixed-header a scrollable body */
+    display: block; /* Umožní nastaviť výšku a overflow */
+    max-height: 60vh; /* ZMEŇ PODĽA POTREBY: Maximálna výška tela tabuľky pred scrollom */
+    overflow-y: auto; /* Zapne vertikálne scrollovanie, keď obsah presiahne max-height */
+    overflow-x: hidden; /* Skryje horizontálny overflow */
+}
+
+/* Zabezpečí, že riadky v thead a tbody sa správne zarovnajú, keď tbody scrolluje */
+#clubsSummaryTable thead tr {
+    display: table; /* Nastaví riadok hlavičky tak, aby sa choval ako tabuľka */
+    width: 100%; /* Zabezpečí, že zaberie plnú šírku */
+    table-layout: fixed; /* Zladí layout s telom */
+}
+
+#clubsSummaryTable tbody tr {
+    display: table; /* Nastaví riadky tela tak, aby sa chovali ako tabuľka */
+    width: 100%; /* Zabezpečí, že zaberú plnú šírku */
+    table-layout: fixed; /* Zladí layout s hlavičkou */
+}
+
+/* Ak máte nejaký vonkajší kontajner, ktorý spôsoboval scrollovanie, odstráňte jeho overflow */
+/* #scrollableTableContainer { overflow: visible; } */
