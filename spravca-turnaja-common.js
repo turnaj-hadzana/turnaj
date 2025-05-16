@@ -16,7 +16,6 @@ export const clubsCollectionRef = collection(db, 'tournamentData', 'mainTourname
 let openModalCount = 0;
 export function openModal(modalElement) {
     if (!modalElement) {
-        console.error("Attempted to open a null modal element.");
         return;
     }
     modalElement.style.display = 'block';
@@ -27,7 +26,6 @@ export function openModal(modalElement) {
 }
 export function closeModal(modalElement) {
     if (!modalElement) {
-         console.error("Attempted to close a null modal element.");
          return;
     }
     modalElement.style.display = 'none';
@@ -78,7 +76,6 @@ export async function populateCategorySelect(selectElement, selectedCategoryId =
               }
            }
         } catch (error) {
-            console.error('Chyba pri načítaní kategórií pre select:', error);
              const option = document.createElement('option');
              option.value = '';
              option.textContent = '-- Chyba pri načítaní --';
@@ -129,7 +126,6 @@ export async function populateCategorySelect(selectElement, selectedCategoryId =
                   }
                }
             } catch (error) {
-                console.error(`Chyba pri načítaní skupín pre kategóriu ${selectedCategoryId}: `, error);
                  const option = document.createElement('option');
                  option.value = '';
                  option.textContent = '-- Chyba pri načítaní --';
