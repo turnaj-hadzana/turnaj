@@ -7,19 +7,21 @@
     <link rel="icon" href="favicon.ico" type="image/x-icon">
 
     <script>
-        // UPOZORNENIE: Tento skript vynuti reload stranky pri kazdom nacitani,
-        // co moze spomalit vasu aplikaciu a zhorsit uzivatelsky zazitok.
-        // Lepsie riesenie pre kontrolu prihlasenia je podmienene presmerovanie.
-        // Tato stranka pouziva hash pre navigaciu, tak refreshujeme len ak hash chyba
-        if (!window.location.hash) {
-             window.location.reload(true);
+        const loggedInUsername = localStorage.getItem('username');
+        if (!loggedInUsername) {
+            console.warn("Prístup zamietnutý. Používateľ nie je prihlásený. Presmerovávam na prihlásenie.");
+            window.location.replace('login.html');
+        } else {
+             if (!window.location.hash) {
+                 console.log("Používateľ prihlásený, vynucujem reload.");
+                 window.location.reload(true);
+             }
         }
-    </script>
+    </script>     
 
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="spravca-turnaja-style.css">
     <style>
-       /* PONECHANE: inline styles - idealne presunut do zobrazenie-skupin.css */
         .display-button {
             padding: 12px 20px;
             background-color: #3a8d41;
