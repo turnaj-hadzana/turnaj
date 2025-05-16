@@ -127,7 +127,7 @@ function displayCategoriesAsButtons() {
     currentCategoryId = null;
     currentGroupId = null;
      if (!getHTMLElements()) {
-         return; 
+         return;
      }
     if (categoryButtonsContainer) categoryButtonsContainer.innerHTML = '';
     if (allGroupsContainer) allGroupsContainer.innerHTML = '';
@@ -135,9 +135,9 @@ function displayCategoriesAsButtons() {
     if (singleGroupDisplayBlock) singleGroupDisplayBlock.innerHTML = '';
     if (singleGroupUnassignedDisplay) singleGroupUnassignedDisplay.innerHTML = '';
     if (groupSelectionButtons) groupSelectionButtons.innerHTML = '';
-    if (categoryTitleDisplay) categoryTitleDisplay.textContent = '';
     if (backToCategoriesButton) backToCategoriesButton.style.display = 'none';
     if (backToGroupButtonsButton) backToGroupButtonsButton.style.display = 'none';
+    if (categoryTitleDisplay) categoryTitleDisplay.textContent = '';
     showOnly('categoryButtonsContainer');
     if (window.location.hash) {
         history.replaceState({}, document.title, window.location.pathname);
@@ -146,17 +146,60 @@ function displayCategoriesAsButtons() {
         if (categoryButtonsContainer) categoryButtonsContainer.innerHTML = '<p>Zatiaľ nie sú pridané žiadne kategórie.</p>';
         return;
     }
-    allCategories.forEach(category => {
-        const button = document.createElement('button');
-        button.classList.add('display-button');
-        button.textContent = category.name || category.id;
-        button.dataset.categoryId = category.id;
-        button.addEventListener('click', () => {
-            const categoryId = button.dataset.categoryId;
-            displayGroupsForCategory(categoryId); 
-        });
-        if (categoryButtonsContainer) categoryButtonsContainer.appendChild(button);
+    const chlapciCategories = [];
+    const dievcataCategories = [];
+    const ostatneCategories = [];
+    const sortedCategories = [...allCategories].sort((a, b) => (a.name || a.id || '').localeCompare((b.name || b.id || ''), 'sk-SK'));
+    sortedCategories.forEach(category => {
+        const categoryName = category.name || category.id;
+        if (categoryName.endsWith(' CH')) {
+            chlapciCategories.push(category);
+        } else if (categoryName.endsWith(' D')) {
+            dievcataCategories.push(category);
+        } else {
+            ostatneCategories.push(category);
+        }
     });
+    const createCategoryGroupDisplay = (title, categories) => {
+        if (categories.length === 0) return null;
+        const groupDiv = document.createElement('div');
+        groupDiv.classList.add('category-group');
+        const heading = document.createElement('h3');
+        heading.textContent = title;
+        groupDiv.appendChild(heading);
+        const buttonsDiv = document.createElement('div');
+        buttonsDiv.classList.add('category-buttons'); 
+        groupDiv.appendChild(buttonsDiv);
+        categories.forEach(category => {
+            const button = document.createElement('button');
+            button.classList.add('display-button');
+            button.textContent = category.name || category.id;
+            button.dataset.categoryId = category.id;
+            button.addEventListener('click', () => {
+                const categoryId = button.dataset.categoryId;
+                displayGroupsForCategory(categoryId);
+            });
+            buttonsDiv.appendChild(button);
+        });
+        return groupDiv;
+    };
+    if (categoryButtonsContainer) {
+         const chlapciGroup = createCategoryGroupDisplay('Chlapci', chlapciCategories);
+         if (chlapciGroup) {
+              categoryButtonsContainer.appendChild(chlapciGroup);
+         }
+         const dievcataGroup = createCategoryGroupDisplay('Dievčatá', dievcataCategories);
+         if (dievcataGroup) {
+              categoryButtonsContainer.appendChild(dievcataGroup);
+         }
+         const ostatneGroup = createCategoryGroupDisplay('Ostatné kategórie', ostatneCategories);
+          if (ostatneGroup) {
+              categoryButtonsContainer.appendChild(ostatneGroup);
+         }
+         if (categoryButtonsContainer.children.length === 0) {
+              categoryButtonsContainer.innerHTML = '<p>Zatiaľ nie sú pridané žiadne kategórie.</p>';
+         }
+    }
 }
 function displayGroupsForCategory(categoryId) {
     currentCategoryId = categoryId;
