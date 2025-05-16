@@ -3,35 +3,186 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prihlásené kluby</title>
-    <link rel="icon" href="favicon.ico" type="image/x-icon">
+    <title>Prihlásené kluby - Skrolovateľná tabuľka</title> <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="style.css">
+
+    <style>
+        /* Základný štýl pre body a main z predošlého príkladu,
+           aby layout stránky fungoval (ak už nie je v style.css) */
+        body {
+             margin: 0;
+             padding: 0;
+             font-family: sans-serif;
+             /* Ak máš pevnú hlavičku stránky, možno bude potrebné padding-top na body alebo margin-top na main */
+         }
+
+        /* Štýly pre sekcie, ak už nie sú v style.css */
+        .section-block {
+             margin-bottom: 20px;
+             padding: 20px;
+             background-color: #fff;
+             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+             border-radius: 8px;
+         }
+
+        /* ---------- Štýly pre skrolovateľnú tabuľku a sticky hlavičku ---------- */
+
+        /* Obalový kontajner pre tabuľku - zabezpečí skrolovanie */
+        .table-scroll-container {
+            max-height: 400px; /* NASTAVTE POŽADOVANÚ MAXIMÁLNU VÝŠKU TABUĽKY pred skrolovaním */
+            overflow-y: auto; /* Zapne vertikálne skrolovanie v tomto kontajneri */
+            /* Optional: Pridajte border, background alebo padding, aby ste videli hranice skrolovacieho boxu */
+            border: 1px solid #ccc;
+        }
+
+        /* Samotná tabuľka */
+        .data-table {
+            width: 100%; /* Zabezpečí, že tabuľka vyplní šírku svojho kontajnera */
+            border-collapse: collapse; /* Pre lepšie zobrazenie okrajov */
+            /* Odstráňte prípadné border-radius alebo box-shadow z tabuľky a dajte ich na .section-block alebo .table-scroll-container */
+        }
+
+        /* Hlavička tabuľky - bude sticky v rámci .table-scroll-container */
+        .data-table thead {
+            position: sticky; /* Urobí hlavičku lepiacou */
+            top: 0; /* Lepí sa na vrch svojho skrolovateľného rodiča (.table-scroll-container) */
+            z-index: 1; /* Zabezpečí, aby bola hlavička nad obsahom tela tabuľky pri skrolovaní */
+            background-color: #3a8d41; /* Pridajte farbu pozadia, inak bude obsah tela presvitať */
+            color: white;
+        }
+
+        /* Štýly pre bunky hlavičky a tela */
+        .data-table th,
+        .data-table td {
+            padding: 10px 15px; /* Vnútorné odsadenie buniek */
+            text-align: left; /* Zarovnanie textu (môžete zmeniť) */
+            border-bottom: 1px solid #eee; /* Oddeľovacia čiara medzi riadkami */
+            /* NEPOUŽÍVAJTE tu pevné šírky width alebo min-width, ak chcete zachovať flexibilitu a vyhnúť sa problémom s zarovnaním,
+               ak počet stĺpcov v thead a tbody nie je identický */
+        }
+
+        .data-table th {
+             font-weight: bold;
+             /* Farba pozadia a textu je na thead */
+             border-bottom: 2px solid #2a6b30; /* Hrubšia čiara pod hlavičkou */
+         }
+
+        /* Štýly pre telo tabuľky (nepotrebujete display: block pre tento prístup) */
+        /* .data-table tbody { } */
+
+
+        /* Štýly pre riadky (nepotrebujete display: flex pre tento prístup) */
+        /* .data-table tr { } */
+
+        /* Štýly pre párne riadky (zebra striedanie) */
+        .data-table tbody tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        /* Štýly pre riadok pri hoveri (ak chcete klikateľné riadky) */
+        .data-table tbody tr:hover {
+             background-color: #e9e9e9;
+             cursor: pointer; /* Zmení kurzor na ruku */
+         }
+
+
+        /* Štýl pre bunku s colspan (napr. "Načítavam prehľad...") */
+        /* Toto pravidlo sa aplikuje bez ohľadu na počet stĺpcov v thead,
+           ale pre správne zobrazenie by colspan mal zodpovedať počtu stĺpcov v dátových riadkoch */
+         .data-table tbody tr td[colspan] {
+             text-align: center !important;
+             font-style: italic;
+             color: #777;
+             background-color: transparent !important;
+         }
+
+         /* ---------- Štýly pre detail sekciu (ponechané z pôvodného kódu/predošlej úpravy) ---------- */
+
+         #clubDetailSection {
+             display: none; /* Sekcia detailov je pôvodne skrytá */
+             /* Ďalšie štýly pre túto sekciu, ak nie sú v style.css */
+         }
+
+         /* Prípadné ďalšie štýly pre elementy v detail sekcii (#backToListButton, #teamsInCategoryButtons atď.) */
+         .action-button {
+             padding: 10px 15px;
+             background-color: #007bff;
+             color: white;
+             border: none;
+             border-radius: 5px;
+             cursor: pointer;
+             margin-bottom: 20px;
+             font-size: 1em;
+             transition: background-color 0.2s ease;
+         }
+
+         .action-button:hover {
+             background-color: #0056b3;
+         }
+
+         #teamsInCategoryButtons {
+             display: flex;
+             flex-wrap: wrap;
+             gap: 10px;
+             margin-bottom: 15px;
+         }
+
+         #selectedTeamDetails h4 {
+             margin-top: 0;
+             margin-bottom: 10px;
+             border-bottom: 1px solid #eee;
+             padding-bottom: 5px;
+         }
+
+         #selectedTeamSoupiskaHracov {
+             list-style: none;
+             padding: 0;
+             margin: 0;
+         }
+
+         #selectedTeamSoupiskaHracov li {
+             margin-bottom: 5px;
+             padding-bottom: 5px;
+             border-bottom: 1px dotted #ccc;
+         }
+
+         #selectedTeamSoupiskaHracov li:last-child {
+             border-bottom: none;
+         }
+
+
+    </style>
+</head>
 <body>
     <script type="module" src="auth.js"></script>
     <script src="script.js"></script>
-    <h1>Prihlásené kluby</h1>
-    <main>
+
+    <h1>Prihlásené kluby</h1> <main>
         <section id="clubListSection" class="section-block">
-            <table id="clubsSummaryTable" class="data-table"> <thead>
-                    <tr id="clubsSummaryTableHeader">
-                        <th>Názov klubu</th>
+            <div class="table-scroll-container">
+                <table id="clubsSummaryTable" class="data-table">
+                    <thead>
+                        <tr id="clubsSummaryTableHeader">
+                            <th>Názov klubu</th>
                         </tr>
-                </thead>
-                <tbody id="clubsSummaryTableBody">
-                    <tr>
-                        <td colspan="1" style="text-align: center;">Načítavam prehľad...</td>
-                    </tr>
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody id="clubsSummaryTableBody">
+                        <tr>
+                            <td colspan="1" style="text-align: center;">Načítavam prehľad...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </section>
+
         <section id="clubDetailSection" class="section-block" style="display: none;">
             <button id="backToListButton" class="action-button">← Späť na prehľad</button>
-            <h2 id="clubDetailTitle"><span></span></h2> <div id="clubDetailContent">
-
-                <div id="teamsInCategoryButtons" style="display: flex; flex-wrap: wrap; gap: 10px;">
-                    Načítavam tímy...
-                </div>
-                <div id="selectedTeamDetails" style="display: none; margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px;">
+            <h2 id="clubDetailTitle"><span></span></h2>
+            <div id="clubDetailContent">
+                 <div id="teamsInCategoryButtons">
+                     Načítavam tímy...
+                 </div>
+                 <div id="selectedTeamDetails">
                      <h4>Realizačný tím</h4>
                      <div id="selectedTeamRealizacnyTim">
                           <p>Tréner: <span id="selectedTeamTrenerInfo">Nezadané</span></p>
@@ -41,10 +192,11 @@
                      <ul id="selectedTeamSoupiskaHracov">
                           <li>Zatiaľ bez súpisky.</li>
                      </ul>
-                </div>
-            </div>
+                 </div>
+             </div>
         </section>
     </main>
+
     <script type="module" src="spravca-turnaja-common.js"></script>
     <script type="module" src="prihlasene-kluby.js"></script>
 </body>
