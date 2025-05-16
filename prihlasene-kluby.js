@@ -190,7 +190,7 @@ async function displaySubjectDetails(baseName) {
                       }
                   }
 
-                teamButton.textContent = `${team.name || team.id} (${categoryName} - ${groupName})`; // Text tlačidla
+                teamButton.textContent = `${categoryName} - ${groupName}`; // Text tlačidla
                 teamButton.dataset.teamId = team.id; // Uloženie ID tímu do datasetu
 
                  // Pridanie event listeneru na kliknutie
