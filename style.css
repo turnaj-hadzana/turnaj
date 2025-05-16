@@ -403,6 +403,6 @@ main {
 
 .data-table thead {
     position: sticky;
-    top: 63px;
+    top: 120px;
     z-index: 9999;
 }
