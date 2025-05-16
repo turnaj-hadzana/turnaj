@@ -1,259 +1,200 @@
 <!DOCTYPE html>
 <html lang="sk">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sticky Header CSS Alternative Test</title>
-    <style>
-        /* Základné resety */
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: sans-serif;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sticky Header CSS Alternative Test</title>
+  <style>
+    /* -- RESET a základy -- */
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: sans-serif;
+      padding-top: 60px; /* výška fixnej hlavičky */
+    }
 
-        /* Simulácia pevnej hlavičky menu */
-        .site-header {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 60px; /* Príklad výšky */
-            background-color: #f0f0f0;
-            border-bottom: 1px solid #ccc;
-            z-index: 1000;
-            display: flex;
-            align-items: center;
-            padding: 0 20px;
-            box-sizing: border-box;
-        }
-        .site-header h1 {
-            margin: 0;
-            font-size: 1.5em;
-        }
+    .site-header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 60px;
+      background-color: #f0f0f0;
+      border-bottom: 1px solid #ccc;
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      box-sizing: border-box;
+    }
 
-        /* Odsadenie tela stránky kvôli pevnej hlavičke */
-        body {
-            padding-top: 60px; /* Musí zodpovedať výške pevnej hlavičky */
-        }
+    .site-header h1 {
+      margin: 0;
+      font-size: 1.5em;
+    }
 
+    .content-wrapper {
+      display: flex;
+      width: 100%;
+      margin: 20px 0;
+      padding: 0 20px;
+      box-sizing: border-box;
+      gap: 20px;
+    }
 
-        /* Flexbox kontajner - simulácia .content-wrapper BEZ transformácie */
-        /* Tento kontajner obsahuje ľavé menu (ak by bolo) a hlavný obsah (main) */
-        .content-wrapper {
-            display: flex;
-            width: 100%;
-            margin: 20px 0;
-            padding: 0 20px; /* Pridáme padding na okraje, aby obsah nebol nalepený na kraji okna */
-            box-sizing: border-box;
-            gap: 20px; /* Medzera medzi stĺpcami (ľavé menu a main) */
+    main {
+      flex-grow: 1;
+      padding: 20px;
+      background-color: #fff;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      border-radius: 8px;
+      min-width: 0;
+      overflow: hidden;
+    }
 
-            /* V tomto testovacom prípade NEPOUŽÍVAME transformáciu, ktorá ruší sticky */
-            /* transform: translate3d(0, 0, 0); */
-        }
+    /* --- Tabuľka --- */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
 
-        /* Flex item - simulácia main */
-        /* Tento element obsahuje tabuľku a ostatný obsah */
-        main {
-            flex-grow: 1; /* Main zaberá dostupný priestor vedľa ľavého menu (ak je) */
-            padding: 20px; /* Vnútorný priestor pre obsah main */
-            background-color: #fff; /* Biele pozadie obsahu main */
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Jemný tieň */
-            border-radius: 8px; /* Zaoblené rohy */
-            min-width: 0; /* Dôležité pre flex item s vnútorným obsahom, zabráni pretečeniu */
-            overflow: hidden; /* Skryje potenciálne pretečenie, ak by bolo */
-            /* Ak chcete, aby skroloval len main obsah (nie celá stránka), odkomentujte toto: */
-            /* max-height: calc(100vh - 100px); */ /* Príklad výšky, odpočítajte výšku hlavičky a prípadné okraje */
-            /* overflow-y: auto; */
-        }
+    .data-table thead {
+      display: block;
+      background-color: #3a8d41;
+      color: white;
+      z-index: 1;
+    }
 
-        /* Dodatočný simulovaný ľavý panel, ak by existoval a ovplyvňoval layout */
-        /* Odkomentujte, ak chcete otestovať aj s ľavým panelom vedľa main */
-        /*
-        .left-menu-sim {
-             width: 200px; // Šírka ľavého menu
-             background-color: #f8f8f8;
-             padding: 15px;
-             border-radius: 8px;
-             box-shadow: 2px 0 5px rgba(0,0,0,0.1);
-             flex-shrink: 0; // Zabraňuje zmenšovaniu vo flex kontajneri
-        }
-        */
+    .table-body-scroll {
+      max-height: 400px;
+      overflow-y: auto;
+      display: block;
+      width: 100%;
+    }
 
+    .data-table tbody {
+      display: block;
+      width: 100%;
+    }
 
-        /* --- Štýly tabuľky --- */
+    .data-table tr {
+      display: flex;
+      width: 100%;
+      border-bottom: 1px solid #eee;
+      transition: background-color 0.2s ease;
+      cursor: pointer;
+    }
 
-        .data-table {
-            width: 100%; /* Tabuľka zaberá celú šírku rodiča (main) */
-            border-collapse: collapse; /* Odstráni medzery medzi bunkami */
-            margin-top: 20px; /* Priestor nad tabuľkou */
-            /*box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08); */ /* Tieň (voliteľné) */
-            /*border-radius: 5px;*/ /* Zaoblené rohy (voliteľné) */
-            /* Overflow by mal byť na obalovom dive okolo tbody */
-        }
+    .data-table tr:hover {
+      background-color: #e9e9e9;
+    }
 
-        .data-table thead {
-             /* Hlavička tabuľky - nebude sticky */
-             /* Zostane v normálnom toku, nad skrolovateľným telom */
-            display: block; /* Nastavte na block pre správne rozloženie s block tbody */
-            /* Nastavte šírku, aby sa zhodovala so šírkou tela tabuľky (ak to main umožňuje) */
-            /* width: 100%; */ /* Ak chcete, aby zaberala celú šírku tabuľky */
+    .data-table tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
 
-            background-color: #3a8d41; /* Zelená farba hlavičky */
-            color: white;
-            z-index: 1; /* Z-index pre vrstvenie */
-        }
+    .data-table th,
+    .data-table td {
+      padding: 10px 15px;
+      text-align: left;
+      white-space: nowrap;
+      box-sizing: border-box;
+      flex-shrink: 0;
+    }
 
-        /* Obalový kontajner pre skrolovateľné telo tabuľky */
-        .table-body-scroll {
-            max-height: 400px; /* <--- NASTAVTE VÝŠKU, PRI KTOREJ SA ZAČNE SKROLOVAŤ TÁTO ČASŤ */
-            overflow-y: auto; /* <--- ZAPNÚŤ VERTIKÁLNE SKROLOVANIE TEJTO ČASTI */
-            display: block; /* Správa sa ako block element */
-            width: 100%; /* Zabezpečí šírku */
-        }
+    .data-table th {
+      background-color: #3a8d41;
+      color: white;
+      font-weight: bold;
+      border-bottom: 2px solid #2a6b30;
+    }
 
+    .data-table td {
+      color: #333;
+    }
 
-         .data-table tbody {
-             /* Telo tabuľky - umiestnené v skrolovateľnom dive */
-             display: block; /* Tiež nastaviť na block pre správne rozloženie s block thead */
-             width: 100%; /* Zabezpečí šírku */
-         }
+    .data-table th:nth-child(1),
+    .data-table td:nth-child(1) {
+      width: 250px;
+      min-width: 250px;
+    }
 
-         .data-table tr {
-             /* Riadky tabuľky vo vnútri block tbody */
-             display: flex; /* Flexbox je dobrý na zarovnanie buniek v riadku */
-             width: 100%; /* Zabezpečí, že riadok vo flex konteineri zaberá plnú šírku */
-             border-bottom: 1px solid #eee; /* Svetlý spodný okraj pre riadky */
-             transition: background-color 0.2s ease;
-             cursor: pointer;
-         }
-         .data-table tr:hover {
-              background-color: #e9e9e9;
-         }
-          .data-table tr:nth-child(even) {
-             background-color: #f9f9f9; /* Svetlejší pruh pre striedanie riadkov */
-          }
+    .data-table th:nth-child(2),
+    .data-table td:nth-child(2) {
+      width: 80px;
+      min-width: 80px;
+      text-align: center;
+      font-weight: bold;
+    }
 
+    .data-table th:nth-child(n+3),
+    .data-table td:nth-child(n+3) {
+      width: 80px;
+      min-width: 80px;
+      text-align: center;
+    }
 
-        .data-table th,
-        .data-table td {
-            padding: 10px 15px;
-            text-align: left;
-            white-space: nowrap; /* Zabraňuje zalamovaniu textu v bunkách */
-            box-sizing: border-box; /* Padding zahrnutý do šírky */
-            flex-shrink: 0; /* Zabraňuje zmenšovaniu buniek vo flex riadku */
+    .data-table th:last-child,
+    .data-table td:last-child {
+      width: 100px;
+      min-width: 100px;
+      text-align: center;
+    }
 
-            /* <--- TU MUSÍTE NASTAVIŤ ŠÍRKY STĹPCOV TAK, ABY SA ZHODOVALI V HLAVIČKE AJ V TELE ---> */
-            /* Tieto šírky musia presne zodpovedať šírkam v bunkách hlavičky aj tela */
-            /* Použite pevné šírky (px) alebo percentá (ak je to vhodné) */
-        }
+    .data-table tbody tr td[colspan] {
+      text-align: center !important;
+      font-style: italic;
+      color: #777;
+      background-color: transparent !important;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 100% !important;
+      flex-basis: 100%;
+    }
 
-         .data-table th {
-             /* Štýly pre hlavičkové bunky */
-             background-color: #3a8d41; /* Farba hlavičiek stĺpcov */
-             color: white;
-             font-weight: bold;
-             border-bottom: 2px solid #2a6b30;
-         }
-         .data-table td {
-             /* Štýly pre dátové bunky */
-             color: #333; /* Farba textu v bunkách */
-         }
-
-
-        /* Prvý stĺpec (Názov klubu) - šírka musí byť rovnaká pre th aj td */
-        .data-table th:nth-child(1),
-        .data-table td:nth-child(1) {
-            width: 250px; /* Príklad šírky */
-            min-width: 250px; /* Zabezpečí minimálnu šírku */
-        }
-
-        /* Stĺpec Tímy - šírka musí byť rovnaká pre th aj td */
-        .data-table th:nth-child(2),
-        .data-table td:nth-child(2) {
-             width: 80px; /* Príklad šírky */
-             min-width: 80px;
-             text-align: center;
-             font-weight: bold;
-        }
-
-        /* Stĺpce kategórií (U10 D, U10 CH, U12 D, U12 CH, atď.) - šírky musia byť rovnaké */
-         /* Selector pre stĺpce od 3. ďalej */
-         .data-table th:nth-child(n+3),
-         .data-table td:nth-child(n+3) {
-             width: 80px; /* Príklad šírky pre stĺpce kategórií */
-             min-width: 80px;
-             text-align: center;
-         }
-
-        /* Posledný stĺpec Prihlásenie - šírka musí byť rovnaká */
-        /* Upravte číslo v nth-child, ak máte iný počet stĺpcov */
-         .data-table th:last-child,
-         .data-table td:last-child {
-             width: 100px; /* Príklad šírky pre posledný stĺpec */
-             min-width: 100px;
-             text-align: center;
-         }
-
-
-        /* Štýl pre bunku s colspan (ak sa používa, ako napr. "Načítavam prehľad...") */
-        .data-table tbody tr td[colspan] {
-            text-align: center !important;
-            font-style: italic;
-            color: #777;
-            background-color: transparent !important;
-            /* Pri display: block na tbody a display: flex na tr, td s colspan potrebuje špeciálne zaobchádzanie */
-            display: flex; /* Nastavte display na flex, aby sa centroval obsah v rámci colspan */
-            justify-content: center; /* Centrovanie obsahu */
-            align-items: center;
-            width: 100% !important; /* Zabezpečí plnú šírku bunky s colspan */
-            flex-basis: 100%; /* Zabezpečí, že zaberie plnú šírku vo flex riadku */
-        }
-
-
-         /* --- Štýly pre obsah pod tabuľkou (na zabezpečenie skrolovania CELEJ STRÁNKY, ak nie je skrolovateľný main) --- */
-         .scroll-spacer {
-             height: 800px; /* Pridá priestor pod tabuľku na zabezpečenie skrolovania */
-             background-color: #f0f0f0;
-             margin-top: 20px;
-             padding: 20px;
-             text-align: center;
-             color: #555;
-         }
-
-
-    </style>
+    .scroll-spacer {
+      height: 800px;
+      background-color: #f0f0f0;
+      margin-top: 20px;
+      padding: 20px;
+      text-align: center;
+      color: #555;
+    }
+  </style>
 </head>
 <body>
 
-    <div class="site-header">
-        <h1>Simulovaná Hlavička</h1>
-    </div>
+  <div class="site-header">
+    <h1>Simulovaná Hlavička</h1>
+  </div>
 
-    <div class="content-wrapper">
-        <main>
-            <h2>Simulovaná Tabuľka Klubov</h2>
+  <div class="content-wrapper">
+    <main>
+      <h2>Simulovaná Tabuľka Klubov</h2>
 
-            <table id="clubsSummaryTable" class="data-table">
-                <thead>
-                    <tr id="clubsSummaryTableHeader">
-                        <th>Názov klubu</th>
-                        <th>Tímy</th>
-                        <th>U10 D</th>
-                        <th>U10 CH</th>
-                        <th>U12 D</th>
-                        <th>U12 CH</th>
-                        <th>U14 D</th>
-                        <th>U14 CH</th>
-                         <th>U16 D</th>
-                        <th>U16 CH</th>
-                         <th>U18 D</th>
-                        <th>U18 CH</th>
-                         <th>Muži</th>
-                         <th>Ženy</th>
-                         <th>Prihlásenie</th>
-                    </tr>
-                </thead>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Názov klubu</th>
+            <th>Tímy</th>
+            <th>U10 D</th>
+            <th>U10 CH</th>
+            <th>U12 D</th>
+            <th>U12 CH</th>
+            <th>U14 D</th>
+            <th>U14 CH</th>
+            <th>U16 D</th>
+            <th>U16 CH</th>
+            <th>U18 D</th>
+            <th>U18 CH</th>
+            <th>Muži</th>
+            <th>Ženy</th>
+            <th>Prihlásenie</th>
+          </tr>
+        </thead>
+      </table>
                  <div class="table-body-scroll">
                     <tbody id="clubsSummaryTableBody">
                         <tr>
