@@ -48,7 +48,6 @@
         document.addEventListener('DOMContentLoaded', (event) => {
             const loggedInUsername = localStorage.getItem('username');
             if (!loggedInUsername || loggedInUsername !== 'admin') {
-                console.warn('Access denied: Not logged in as admin. Redirecting...');
                 window.location.href = 'login.html';
                 return;
             }
@@ -86,7 +85,6 @@
                     document.getElementById('register-form').reset();
                     window.location.href = 'login.html';
                 } catch (error) {
-                    console.error('Chyba pri registrácii:', error);
                     document.getElementById('error-message').textContent = 'Chyba pri registrácii: ' + error.message;
                 }
             });
