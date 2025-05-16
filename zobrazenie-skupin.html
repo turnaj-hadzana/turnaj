@@ -6,60 +6,8 @@
     <title>Rozlosovanie</title>
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="style.css">
-    <style>
-        /* Štýly pre kontajner tlačidiel kategórií */
-        #categoryButtonsContainer {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px; /* Medzera medzi tlačidlami */
-            justify-content: center; /* Centruje tlačidlá */
-            margin-bottom: 20px;
-            padding: 20px;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            background-color: #f9f9f9;
-        }
-
-        /* Štýly pre tlačidlá kategórií */
-        .category-button {
-            padding: 12px 20px;
-            background-color: #007bff; /* Modrá farba, môžeš zmeniť */
-            color: white;
-            border: none;
-            border-radius: 5px;
-            font-size: 1.1em;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-            text-align: center;
-            flex-grow: 0; /* Nezväčšuje sa */
-            flex-shrink: 1; /* Môže sa zmenšiť */
-            min-width: 120px; /* Minimálna šírka tlačidla */
-        }
-
-        .category-button:hover {
-            background-color: #0056b3; /* Tmavšia modrá pri prejdení myšou */
-        }
-
-        /* Štýly pre tlačidlo "Späť na kategórie" */
-        #backToCategoriesButton {
-            display: none; /* Skryté na začiatku */
-            margin-bottom: 20px;
-            padding: 10px 15px;
-            background-color: #6c757d; /* Sivá farba */
-            color: white;
-            border: none;
-            border-radius: 5px;
-            font-size: 1em;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-        }
-
-        #backToCategoriesButton:hover {
-            background-color: #5a6268; /* Tmavšia sivá */
-        }
-
-
-        /* Základné štýly pre zobrazenie skupín - OSTÁVAJÚ, ale niektoré môžu byť upravené */
+<style>
+        /* Základné štýly pre zobrazenie skupín */
         .category-display {
             margin-bottom: 30px;
             padding: 15px;
@@ -72,23 +20,22 @@
             padding-bottom: 0;
             margin-top: 20px;
             margin-bottom: 15px;
-            font-weight: bold;
+            font-weight: bold; /* Nadpis kategórie ostáva tučný */
             font-size: 1.5em;
-            text-align: center; /* Centrujeme nadpis kategórie */
+            text-align: center;
         }
 
-        /* Kontajner pre usporiadanie skupín vedľa seba - OSTÁVA */
+        /* Kontajner pre usporiadanie skupín vedľa seba */
         .groups-container {
             display: flex;
             flex-wrap: wrap;
-            gap: 20px;
-            justify-content: center; /* Centrujeme skupiny v rámci kontajnera */
+            gap: 20px; /* Medzera medzi skupinami */
+            justify-content: center; /* Centruje skupiny v rámci kontajnera */
             align-items: stretch;
         }
 
-        /* Štýly pre blok jednotlivej skupiny - OSTÁVA (len komentáre upravené) */
+        /* Štýly pre blok jednotlivej skupiny */
         .group-display {
-            /* ... ostatné štýly ... */
             /* Tieto vlastnosti budú nastavené JS pre dynamickú šírku: */
             /* width: auto; max-width: none; flex-grow: 0; flex-shrink: 0; flex-basis: auto; min-width: 200px; */
 
@@ -103,7 +50,7 @@
             flex-direction: column;
         }
 
-        /* Štýly pre nadpis skupiny - OSTÁVA */
+        /* Štýly pre nadpis skupiny */
         .group-display h3 {
             background-color: #28a745;
             color: #fff;
@@ -115,7 +62,7 @@
             border-top-right-radius: 3px;
         }
 
-        /* Štýly pre zoznam tímov v skupine - OSTÁVA */
+        /* Štýly pre zoznam tímov v skupine */
         .group-display ul {
             list-style: none;
             padding: 10px;
@@ -123,7 +70,7 @@
             flex-grow: 1;
         }
 
-        /* Štýly pre položky tímu v zozname - OSTÁVA */
+        /* Štýly pre položky tímu v zozname */
         .group-display ul li {
             color: #333;
             padding: 8px;
@@ -133,38 +80,37 @@
             justify-content: flex-start;
             align-items: center;
             border-bottom: 1px solid #ccc;
-            white-space: nowrap !important; /* Zabráni zalamovaniu textu na úrovni li */
-            overflow: hidden; /* Skryje pretečený obsah li - pre istotu */
-            text-overflow: clip; /* Explicitne zakážeme zobrazenie bodiek pri pretečení */
+            white-space: nowrap !important;
+            overflow: hidden;
+            text-overflow: clip;
         }
 
-         /* Odstrániť spodný border z poslednej položky tímu - OSTÁVA */
+        /* Odstrániť spodný border z poslednej položky tímu */
         .group-display ul li:last-child {
              border-bottom: none;
              margin-bottom: 0;
         }
 
-        /* Štýl pre zobrazenie poradia v tíme (číslo) - OSTÁVA */
+        /* Štýl pre zobrazenie poradia v tíme (číslo) */
         .group-display ul li span:first-child {
              margin-right: 10px;
              color: #000;
         }
 
-        /* Nový štýl pre názov tímu - bude tučný - OSTÁVA */
+        /* Štýl pre názov tímu */
         .group-display ul li .team-name {
-            font-weight: bold;
-            white-space: nowrap !important; /* Zabráni zalamovaniu textu v spane */
+            font-weight: normal; /* Zmenené z bold na normal */
+            white-space: nowrap !important;
             display: block;
             flex-grow: 1;
         }
 
-        /* Zvýraznenie tímu - OSTÁVA */
-        .highlighted-team {
+        /* Pravidlo pre highlighted-team odstránené, keďže sa už nepoužíva */
+        /* .highlighted-team {
             font-weight: bold !important;
-        }
+        } */
 
-        /* Štýly pre kontajner skupín, ak ich je presne 5, na vynútenie rozloženia 3+2 */
-        /* Tieto pravidlá už nebudú určovať šírku, len ostatné aspekty rozloženia - OSTÁVA */
+        /* Štýly pre kontajner skupín, ak ich je presne 5 */
         .groups-container.force-3-plus-2-layout {
             display: flex;
             flex-wrap: wrap;
@@ -173,21 +119,21 @@
             align-items: stretch;
         }
 
-        /* Pre bloky v tomto kontajneri odstránime špecifické Flexbox vlastnosti, aby preberali šírku od JS - OSTÁVA */
+        /* Pre bloky v tomto kontajneri */
         .groups-container.force-3-plus-2-layout .group-display {
              flex-basis: auto;
              flex-grow: 0;
              flex-shrink: 0;
-             min-width: 200px; /* Ponecháme základný min-width */
+             min-width: 200px;
              max-width: none;
              width: auto;
              box-sizing: border-box;
         }
 
-        /* Voliteľné: Ak by bolo potrebné iné rozloženie na veľmi malých obrazovkách pre prípad 5 skupín - OSTÁVA */
+        /* Media Query pre prípad 5 skupín na malých obrazovkách */
         @media (max-width: 768px) {
              .groups-container.force-3-plus-2-layout .group-display {
-                 flex-basis: auto; /* Aj tu necháme JS kontrolovať šírku */
+                 flex-basis: auto;
                  flex-grow: 0;
                  flex-shrink: 0;
                  min-width: 200px;
@@ -196,7 +142,7 @@
              }
         }
 
-        /* Štýly pre sekciu nepriradených tímov - OSTÁVA */
+        /* Štýly pre sekciu nepriradených tímov */
         .unassigned-teams-display {
             margin-top: 30px;
             padding: 15px;
@@ -223,7 +169,7 @@
             margin: 0;
         }
 
-        /* Štýly pre položky tímu v zozname nepriradených tímov - OSTÁVA */
+        /* Štýly pre položky tímu v zozname nepriradených tímov */
         .unassigned-teams-display li {
             background-color: #f8d7da;
             color: #721c24;
@@ -236,15 +182,16 @@
             overflow: hidden;
             text-overflow: clip;
             display: block;
+            font-weight: normal; /* Aj tu zmenené na normal */
         }
 
-        /* Odstrániť spodný border z poslednej položky nepriradeného tímu - OSTÁVA */
+        /* Odstrániť spodný border z poslednej položky nepriradeného tímu */
         .unassigned-teams-display li:last-child {
             border-bottom: none;
             margin-bottom: 0;
         }
 
-        /* Špecifický štýl pre nadpis kategórie v zozname nepriradených tímov - OSTÁVA */
+        /* Špecifický štýl pre nadpis kategórie v zozname nepriradených tímov - ostáva tučný */
         .unassigned-teams-display ul li[style*="font-weight: bold"] {
             background-color: #e9ecef !important;
             color: #495057 !important;
@@ -252,13 +199,68 @@
             border-bottom: 1px solid #ccc !important;
         }
 
-         /* Pôvodné štýly filtra, ktoré sa už nepoužijú, môžu byť odstránené */
-         .filter-section, .filter-group {
-             /* Tieto triedy už nie sú v HTML, ale pre prehľadnosť ich tu spomenieme */
-         }
+         /* Štýly pre kontajner tlačidiel kategórií */
+        #categoryButtonsContainer {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 20px;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+
+        /* Štýly pre tlačidlá kategórií */
+        .category-button {
+            padding: 12px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            text-align: center;
+            flex-grow: 0;
+            flex-shrink: 1;
+            min-width: 120px;
+        }
+
+        .category-button:hover {
+            background-color: #0056b3;
+        }
+
+        /* Štýly pre tlačidlo "Späť na kategórie" */
+        #backToCategoriesButton {
+            display: none; /* Skryté na začiatku */
+            margin-bottom: 20px;
+            padding: 10px 15px;
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        #backToCategoriesButton:hover {
+            background-color: #5a6268;
+        }
+
+
+        /* Štýly pre hlavný nadpis */
+        h1 {
+            text-align: center;
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
 
 
     </style>
+
 </head>
 <body>
     <script src="script.js"></script>
