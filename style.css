@@ -110,10 +110,10 @@ main p a:hover {
     text-decoration: underline;
 }
 /* Štýly pre layout content-wrapper a left-menu z tvojho style.css */
-.content-wrapper {
-    display: flex;
-    align-items: flex-start;
-}
+//.content-wrapper {
+//    display: flex;
+//    align-items: flex-start;
+//}
 .left-menu {
     width: 200px;
     background-color: #f8f8f8;
@@ -211,15 +211,15 @@ main {
 
 /* Hlavná oblasť obsahu špecificky pre .content-wrapper */
 /* Upravíme padding a pridáme nejaký základný vzhľad, ale rešpektujeme flexbox layout zo spravca-turnaja-style.css */
-.content-wrapper main {
-    flex-grow: 1; /* Ponechané z spravca-turnaja-style.css */
-    padding: 20px; /* Priestor v hlavnej oblasti */
-    background-color: #fff; /* Biele pozadie pre obsah */
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Jemný tieň */
-    border-radius: 8px; /* Zaoblené rohy */
-    min-width: 0; /* Z spravca-turnaja-style.css */
-    overflow-x: auto; /* Z spravca-turnaja-style.css */
-}
+//.content-wrapper main {
+//    flex-grow: 1; /* Ponechané z spravca-turnaja-style.css */
+//    padding: 20px; /* Priestor v hlavnej oblasti */
+//    background-color: #fff; /* Biele pozadie pre obsah */
+//    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Jemný tieň */
+//    border-radius: 8px; /* Zaoblené rohy */
+//    min-width: 0; /* Z spravca-turnaja-style.css */
+//    overflow-x: auto; /* Z spravca-turnaja-style.css */
+//}
 
 
 
