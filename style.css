@@ -359,12 +359,9 @@ nav ul li a:hover {
      align-items: flex-start; /* Sekcia sa zmenší na šírku obsahu */
      flex-grow: 1; /* Ponechať, aby zaberala priestor vertikálne */
      display: flex; /* Ponechať */
-     flex-direction: column; /* Ponechať */
+     flex-direction: column;
      padding-bottom: 5vh;
 }
-
-
-
 .action-button, #backToListButton.action-button {
     display: inline-block;
     padding: 8px 12px;
@@ -376,8 +373,8 @@ nav ul li a:hover {
     cursor: pointer;
     text-align: center;
     text-decoration: none;
+    border: none;
 }
-
 .action-button:hover, #backToListButton.action-button:hover {
     background-color: #c46f50;
 }
