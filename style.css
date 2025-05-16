@@ -322,7 +322,7 @@ main {
 /* Tlačidlo Späť na prehľad - špecifickejší štýl, ktorý prepíše všeobecný .action-button */
 #backToListButton.action-button {
     display: inline-block;
-    background-color: #555; /* Tmavšie tlačidlo */
+    background-color: #3A8D41; /* Zmenené na požadovanú zelenú */
     color: white;
     padding: 10px 15px;
     border: none;
@@ -334,7 +334,7 @@ main {
 }
 
 #backToListButton.action-button:hover {
-    background-color: #777; /* Svetlejšie pri prejdení myšou */
+    background-color: #c46f50; /* Zmenené na požadovanú farbu hover */
 }
 
 
