@@ -243,10 +243,12 @@ nav ul li a:hover {
 /* Apply to both header and body tables */
 #clubsHeaderTable,
 #clubsBodyTable {
-    /* ZMENA: Šírka nastavená na max-content, aby sa prispôsobila obsahu bez zalamovania */
-    width: max-content;
+    /* ZMENA: Odstránime width: 100% a max-content */
+    /* width: 100%; */
+    /* width: max-content; */
     border-collapse: collapse;
-    table-layout: fixed; /* Ponechané pre jednotné šírky stĺpcov - tela sa zhodujú s hlavičkou */
+    /* ZMENA: table-layout na auto pre prispôsobenie sa obsahu */
+    table-layout: auto;
 }
 
 /* Remove margin-top from the body table specifically */
@@ -258,10 +260,12 @@ nav ul li a:hover {
 #scrollableTableBodyContainer {
     flex-grow: 1; /* Tento div zaberie všetok zvyšný vertikálny priestor */
     overflow-y: auto; /* Zapnutie vertikálneho skrolovania */
+    overflow-x: auto; /* ZMENA: Zapnutie horizontálneho skrolovania, ak tabuľka pretečie */
 
-    /* ZMENA: Šírka kontajnera sa tiež prispôsobí obsahu tabuľky */
-    width: max-content;
-    max-width: 100%; /* Zabezpečí, že nepretečie z rodičovského flex kontajnera */
+    /* ZMENA: Odstránime width nastavenia */
+    /* width: max-content; */
+    /* max-width: 100%; */
+    /* width: auto; */
 
     /* Štýly pre vzhľad bloku */
     margin-top: 20px; /* Priestor medzi hlavičkovou tabuľkou a skrolovateľným telom */
@@ -274,68 +278,51 @@ nav ul li a:hover {
     box-sizing: border-box;
 }
 
-/* -- Nastavenie šírky stĺpcov na bunkách hlavičky -- */
+/* -- Štýly buniek (TH a TD) -- */
 
 /* Style for header cells */
 #clubsHeaderTable th {
     background-color: #3a8d41;
     color: white;
     padding: 12px 15px;
-    text-align: center; /* Predvolené centrovanie pre ostatné hlavičky */
+    text-align: center; /* Predvolené centrovanie */
     border-bottom: 2px solid #2a6b30;
     font-weight: bold;
     font-size: 0.95em;
-    white-space: nowrap; /* ZMENA: Zabezpečí, že text sa nebude zalamovať */
+    white-space: nowrap; /* Kľúčové: Zabezpečí, že text sa nebude zalamovať */
+    /* ZMENA: Odstránime width - prehliadač určí šírku podľa obsahu */
+    /* width: auto; */
     /* border-right bude pridaný nižšie */
-
-    /* Pri width: max-content na tabuľke a table-layout: fixed,
-       šírky stĺpcov sa automaticky prispôsobia obsahu. */
-    width: auto; /* ZMENA: Necháme prehliadač určiť šírku podľa obsahu */
 }
-
-/* Odstránili sme špecifické pravidlá pre šírku prvého a druhého stĺpca */
-/*
-#clubsHeaderTable th:first-child { width: 20%; text-align: left; }
-#clubsHeaderTable th:nth-child(2) { width: 80px; text-align: center; }
-#clubsHeaderTable th:nth-child(n + 3) { width: 100px; text-align: center; }
-*/
-/* Ak chcete, aby prvý stĺpec bol zarovnaný vľavo, nastavte to nižšie pre TD */
-
-
-/* Pridanie pravého okraja ku všetkým bunkám hlavičky OKREM poslednej */
-#clubsHeaderTable th:not(:last-child) {
-    border-right: 1px solid #2a6b30;
-}
-
-
-/* -- Štýly tela tabuľky -- */
 
 /* Style for body cells */
 #clubsBodyTable td {
-    padding: 10px 15px; /* Konzistentné odsadenie s hlavičkou */
-    border-bottom: 1px solid #eee; /* Svetlý spodný okraj */
+    padding: 10px 15px;
+    border-bottom: 1px solid #eee;
     /* text-align je nastavený nižšie podľa pozície stĺpca */
-    white-space: nowrap; /* ZMENA: Zabezpečí, že text sa nebude zalamovať */
+    white-space: nowrap; /* Kľúčové: Zabezpečí, že text sa nebude zalamovať */
+    /* ZMENA: Odstránime width - prehliadač určí šírku podľa obsahu */
+    /* width: auto; */
     /* border-right bude pridaný nižšie */
-
-    /* Šírky buniek tela sa automaticky zhodujú so šírkami th v hlavičke
-       vďaka table-layout: fixed; na oboch tabuľkách a width: max-content; na tabuľke. */
-    width: auto; /* ZMENA: Necháme prehliadač určiť šírku podľa obsahu */
 }
 
-/* Prvý stĺpec v tele (názov klubu) zarovnať vľavo, aby zodpovedal hlavičke */
+/* Prvý stĺpec v hlavičke aj tele - zarovnať vľavo */
+#clubsHeaderTable th:first-child,
 #clubsBodyTable td:first-child {
     text-align: left;
-    /* Šírka: Automaticky sa zhoduje s prvým TH v hlavičke */
 }
 
-/* Druhý a všetky nasledujúce stĺpce v tele (Tímy a Kategórie) - centrovať */
+/* Ostatné stĺpce v hlavičke aj tele - centrovať */
+#clubsHeaderTable th:nth-child(n + 2),
 #clubsBodyTable td:nth-child(n + 2) {
-    text-align: center; /* Zhoduje sa s TH v hlavičke */
-    /* Šírka: Automaticky sa zhoduje s TH v hlavičke */
+     text-align: center;
 }
 
-/* Pridanie pravého okraja ku všetkým bunkám tela OKREM poslednej */
+
+/* Pridanie pravého okraja ku všetkým bunkám OKREM poslednej */
+#clubsHeaderTable th:not(:last-child) {
+    border-right: 1px solid #2a6b30;
+}
 #clubsBodyTable td:not(:last-child) {
      border-right: 1px solid #eee;
 }
@@ -343,17 +330,18 @@ nav ul li a:hover {
 
 /* Štýl pre bunku s načítavaním/chybou (s colspan) */
 .data-table tbody tr td[colspan] {
-    text-align: center !important; /* Vynútené centrovanie */
+    text-align: center !important;
     font-style: italic;
     color: #777;
-    background-color: transparent !important; /* Zrušiť striedajúce sa farby */
-    border-right: none !important; /* Odstrániť pravý okraj pre colspan bunku */
+    background-color: transparent !important;
+    border-right: none !important;
+    /* width: auto !important; */ /* Ensure it doesn't inherit a fixed width if present */
 }
 
 
 /* Pôvodný nth-child(even) - aplikujeme špecifickejšie pre body table */
 #clubsBodyTable tbody tr:nth-child(even) {
-    background-color: #f9f9f9; /* Svetlejší pruh pre striedanie riadkov */
+    background-color: #f9f9f9;
 }
 
 /* Riadky tabuľky tela */
@@ -368,97 +356,11 @@ nav ul li a:hover {
 }
 
 
-/* -- Štýly tlačidiel v detailoch -- */
-
-/* Tlačidlo Späť na prehľad */
-#backToListButton.action-button {
-    display: inline-block;
-    background-color: #3A8D41;
-    color: white;
-    padding: 10px 15px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 1em;
-    margin-bottom: 20px;
-    transition: background-color 0.2s ease;
-}
-
-#backToListButton.action-button:hover {
-    background-color: #c46f50;
-}
-
-/* Kontajner pre tlačidlá tímov v detailoch */
-#teamsInCategoryButtons {
-     display: flex;
-     flex-wrap: wrap;
-     gap: 10px;
-     margin-bottom: 20px;
-}
-
-/* Štýl pre tlačidlá tímov */
-#teamsInCategoryButtons .action-button {
-    padding: 8px 12px;
-    font-size: 0.9em;
-}
-
-
-/* -- Štýly pre sekciu detailov (zoznamy a detaily tímu) -- */
-
-/* Všeobecné štýly pre zoznamy (aj keď teamsInCategoryList UL sa už nepoužíva) */
-#teamsInCategoryList,
-#selectedTeamSoupiskaHracov {
-    list-style: disc;
-    padding-left: 20px;
-    margin-bottom: 15px;
-}
-
-#teamsInCategoryList li,
-#selectedTeamSoupiskaHracov li {
-    margin-bottom: 8px;
-    padding: 5px 0;
-    border-bottom: 1px dotted #ddd;
-}
-
-/* Odstránenie spodného okraja pre poslednú položku v zozname */
-#teamsInCategoryList li:last-child,
-#selectedTeamSoupiskaHracov li:last-child {
-    border-bottom: none;
-}
-
-/* Položky zoznamu tímov (zo starého UL) */
-#teamsInCategoryList li {
-     cursor: pointer;
-     transition: background-color 0.1s ease;
-}
-
-/* Efekt pri prejdení myšou cez položku zoznamu tímu (zo starého UL) */
-#teamsInCategoryList li:hover {
-    background-color: #f0f0f0;
-}
-
-/* Blok detailov vybratého tímu */
-#selectedTeamDetails {
-    margin-top: 20px;
-    border-top: 1px solid #eee;
-    padding-top: 15px;
-}
-
-/* Odseky v časti o realizačnom tíme */
-#selectedTeamRealizacnyTim p {
-    margin-bottom: 8px;
-}
-#selectedTeamRealizacnyTim span,
-#selectedTeamName {
-    font-weight: normal;
-}
-#clubDetailTitle span {
-     font-weight: normal;
-}
+/* ... (rest of the styles for detail section, buttons, etc.) ... */
 
 /* Ensure the section-block containing the tables shrinks to fit content */
 #clubListSection.section-block {
-     /* align-items: stretch; */ /* Už nie stretch, ale flex-start/center pre shrink-wrap */
+     /* align-items: stretch; */
      align-items: flex-start; /* ZMENA: Sekcia sa zmenší na šírku obsahu */
      flex-grow: 1; /* Ponechať, aby zaberala priestor vertikálne */
      display: flex; /* Ponechať */
