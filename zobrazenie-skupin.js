@@ -1,4 +1,4 @@
-// zobrazenie-skupin.js (3 úrovne: Kategórie -> Skupiny v kategórii -> Jedna skupina)
+// zobrazenie-skupin.js (3 úrovne s tlačidlami výberu skupiny nad blokmi skupín)
 
 // Importy z common.js
 import { db, categoriesCollectionRef, groupsCollectionRef, clubsCollectionRef,
@@ -7,7 +7,7 @@ import { db, categoriesCollectionRef, groupsCollectionRef, clubsCollectionRef,
 // Získanie referencií na elementy
 const dynamicContentArea = document.getElementById('dynamicContentArea'); // Hlavný dynamický kontajner
 const backToCategoriesButton = document.getElementById('backToCategoriesButton'); // Tlačidlo Späť na kategórie
-const backToGroupButtonsButton = document.getElementById('backToGroupButtonsButton'); // Tlačidlo Späť na skupiny (vrátené)
+const backToGroupButtonsButton = document.getElementById('backToGroupButtonsButton'); // Tlačidlo Späť na skupiny
 
 
 // Polia pre uchovanie všetkých načítaných dát
@@ -141,8 +141,8 @@ function displayGroupsForCategory(categoryId) {
     backToCategoriesButton.style.display = 'block';
     backToGroupButtonsButton.style.display = 'none'; // Skryť tlačidlo späť na skupiny
 
-    // Zápis do URL hash (len kategória) - ENCODING je automatické pre hash
-    window.location.hash = 'category-' + encodeURIComponent(categoryId); // Zápis s encodingom
+    // Zápis do URL hash (len kategória)
+    window.location.hash = 'category-' + encodeURIComponent(categoryId);
 
 
     const selectedCategory = allCategories.find(cat => cat.id === categoryId);
@@ -164,7 +164,38 @@ function displayGroupsForCategory(categoryId) {
     // Nájdi skupiny patriace do tejto kategórie
     const groupsInCategory = allGroups.filter(group => group.categoryId === categoryId);
 
-     // Vytvoríme kontajner pre usporiadanie skupín vedľa seba
+    // --- PRIDAŤ KONTAJNER TLAČIDIEL PRE SKUPINY ---
+    const groupSelectionButtonsContainer = document.createElement('div');
+    groupSelectionButtonsContainer.id = 'groupSelectionButtons';
+    groupSelectionButtonsContainer.style.display = 'flex'; // Zabezpečiť flex zobrazenie
+
+    groupsInCategory.sort((a, b) => (a.name || a.id || '').localeCompare((b.name || a.id || ''), 'sk-SK'));
+
+    if (groupsInCategory.length === 0) {
+        // Ak nie sú skupiny, nezobrazujeme kontajner tlačidiel, ale pridáme správu nižšie
+        // groupSelectionButtonsContainer.innerHTML = '<p>V kategórii nie sú skupiny na výber.</p>';
+    } else {
+        groupsInCategory.forEach(group => {
+            const button = document.createElement('button');
+            button.classList.add('display-button'); // Používame spoločný štýl
+            button.textContent = group.name || group.id; // Názov skupiny ako text tlačidla
+            button.dataset.groupId = group.id; // Uložíme ID skupiny
+            button.dataset.categoryId = categoryId; // Uložíme aj ID kategórie pre návrat
+
+            // Poslucháč udalosti pre tlačidlo skupiny
+            button.addEventListener('click', () => {
+                 const groupIdToDisplay = button.dataset.groupId;
+                 displaySingleGroup(groupIdToDisplay); // Prejsť na zobrazenie JEDNEJ skupiny
+            });
+            groupSelectionButtonsContainer.appendChild(button); // Pridať tlačidlo do kontajnera tlačidiel
+        });
+         // Ak sú skupiny, pridáme kontajner tlačidiel do dynamicContentArea
+         dynamicContentArea.appendChild(groupSelectionButtonsContainer);
+    }
+    // --- KONIEC PRIDANIA KONTAJNERA TLAČIDIEL PRE SKUPINY ---
+
+
+     // Vytvoríme kontajner pre usporiadanie skupín vedľa seba (pre bloky skupín)
      const groupsContainerDiv = document.createElement('div');
      groupsContainerDiv.classList.add('groups-container'); // Používame štýl pre flex kontajner
 
@@ -176,17 +207,14 @@ function displayGroupsForCategory(categoryId) {
          groupsContainerDiv.classList.remove('force-3-plus-2-layout');
      }
 
-     dynamicContentArea.appendChild(groupsContainerDiv); // Pridáme kontajner do dynamickej oblasti
-
-
-    groupsInCategory.sort((a, b) => (a.name || a.id || '').localeCompare((b.name || a.id || ''), 'sk-SK'));
+     dynamicContentArea.appendChild(groupsContainerDiv); // Pridáme kontajner blokov do dynamickej oblasti
 
 
     if (groupsInCategory.length === 0) {
          groupsContainerDiv.innerHTML = `<p>V kategórii "${selectedCategory.name || selectedCategory.id}" zatiaľ nie sú vytvorené žiadne skupiny.</p>`;
           // Ak nie sú skupiny, dynamickú šírku neriešime
     } else {
-
+        // Iterujeme cez skupiny OPÄŤ, tentoraz na vytvorenie ich blokov na zobrazenie
         groupsInCategory.forEach(group => {
             const groupDiv = document.createElement('div');
             groupDiv.classList.add('group-display'); // Používame existujúci štýl pre blok skupiny
@@ -195,20 +223,8 @@ function displayGroupsForCategory(categoryId) {
             groupTitle.textContent = group.name || group.id;
             groupDiv.appendChild(groupTitle);
 
-            // --- PRIDAŤ TLAČIDLO PRE SKUPINU ---
-            const groupButton = document.createElement('button');
-            groupButton.classList.add('display-button'); // Používame spoločný štýl
-            groupButton.textContent = 'Zobraziť skupinu'; // Text tlačidla
-            groupButton.dataset.groupId = group.id; // Uložíme ID skupiny
-            groupButton.dataset.categoryId = categoryId; // Uložíme aj ID kategórie pre návrat
-
-            // Poslucháč udalosti pre tlačidlo skupiny
-            groupButton.addEventListener('click', () => {
-                 const groupIdToDisplay = groupButton.dataset.groupId;
-                 displaySingleGroup(groupIdToDisplay); // Prejsť na zobrazenie JEDNEJ skupiny
-            });
-            groupDiv.appendChild(groupButton); // Pridať tlačidlo pod nadpis skupiny
-            // --- KONIEC PRIDANIA TLAČIDLA ---
+            // V zobrazení všetkých skupín už NEPRIDÁVAME tlačidlo skupiny do bloku
+            // Tlačidlo je teraz v groupSelectionButtonsContainer hore.
 
 
             // Nájdi tímy patriace do tejto skupiny
@@ -222,7 +238,7 @@ function displayGroupsForCategory(categoryId) {
             } else {
                 teamsInGroup.sort((a, b) => {
                     const orderA = a.orderInGroup || Infinity;
-                    const orderB = b.orderInGroup || Infinity;
+                    const orderB = b.orderB || Infinity; // Opravená chyba: malo byť b.orderInGroup
                     if (orderA !== orderB) {
                         return orderA - orderB;
                     }
@@ -253,7 +269,7 @@ function displayGroupsForCategory(categoryId) {
                 groupDiv.appendChild(teamList);
             }
 
-            groupsContainerDiv.appendChild(groupDiv); // Pridáme blok skupiny do kontajnera skupín
+            groupsContainerDiv.appendChild(groupDiv); // Pridáme blok skupiny do kontajnera blokov
         });
 
         // VOLANIE FUNKCIÍ NA DYNAMICKÚ ŠÍRKU PO VYTVORENÍ BLOKOV SKUPÍN
@@ -326,7 +342,6 @@ function displaySingleGroup(groupId) {
      backToGroupButtonsButton.style.display = 'block';
 
      // Zápis do URL hash (kategória + skupina)
-     // Zápis s encodingom pre obe časti
      window.location.hash = `category-${encodeURIComponent(currentCategoryId)}/group-${encodeURIComponent(groupId)}`;
 
      // Pridáme nadpis kategórie
@@ -341,7 +356,6 @@ function displaySingleGroup(groupId) {
      // Teraz pridáme samotný blok skupiny (použijeme existujúce .group-display štýly)
      // Vytvoríme dočasný kontajner len pre tento jeden blok, aby width funkcie fungovali
      const singleGroupContainerDiv = document.createElement('div');
-     // singleGroupContainerDiv.id = 'singleGroupDisplayContainer'; // Môžeme pridať ID pre referenciu, ale nie je nutné ak ho nepoužívame inde
      dynamicContentArea.appendChild(singleGroupContainerDiv); // Pridáme ho do dynamickej oblasti
 
 
@@ -351,9 +365,6 @@ function displaySingleGroup(groupId) {
      const groupTitle = document.createElement('h3');
      groupTitle.textContent = group.name || group.id;
      groupDiv.appendChild(groupTitle);
-
-     // V zobrazení jednej skupiny už NEPRIDÁVAME tlačidlo skupiny do bloku
-     // Tlačidlo je len v prehľade všetkých skupín kategórie.
 
 
      // Nájdi tímy patriace do tejto skupiny
@@ -367,7 +378,7 @@ function displaySingleGroup(groupId) {
      } else {
           teamsInGroup.sort((a, b) => {
                const orderA = a.orderInGroup || Infinity;
-               const orderB = b.orderInGroup || Infinity;
+               const orderB = b.orderInGroup || Infinity; // Opravená chyba
                if (orderA !== orderB) {
                    return orderA - orderB;
                }
@@ -539,7 +550,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     } else {
         console.error("Tlačidlo Späť na kategórie sa nenašlo!");
     }
-     if (backToGroupButtonsButton) { // Listener pre nové tlačidlo Späť na skupiny
+     if (backToGroupButtonsButton) {
          backToGroupButtonsButton.addEventListener('click', goBackToGroupView); // Voláme goBackToGroupView
      } else {
          console.error("Tlačidlo Späť na skupiny sa nenašlo!");
@@ -602,10 +613,11 @@ window.addEventListener('resize', () => {
              containerElement = dynamicContentArea.querySelector('.groups-container');
          } else { // Sme v pohľade JEDNEJ skupiny
              // Hľadáme kontajner okolo jedného .group-display
-              containerElement = dynamicContentArea.querySelector('.group-display').parentElement;
-              // Alebo, ak v displaySingleGroup vytvoríme kontajner s ID, môžeme ho nájsť priamo
-              // const singleGroupContainer = document.getElementById('singleGroupDisplayContainer');
-              // containerElement = singleGroupContainer;
+              // V displaySingleGroup sme vytvorili dočasný kontajner, hľadáme jeho rodiča
+              const singleGroupDisplayDiv = dynamicContentArea.querySelector('.group-display');
+              if (singleGroupDisplayDiv) {
+                  containerElement = singleGroupDisplayDiv.parentElement;
+              }
          }
 
          if (containerElement) {
