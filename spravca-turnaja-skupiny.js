@@ -12,7 +12,6 @@ let currentGroupModalMode = 'add';
 let editingGroupId = null;
 async function openGroupModal(groupId = null, groupData = null) {
      if (!groupModal || !groupForm || !groupCategorySelect || !groupNameInput || !groupModalTitle || !groupFormSubmitButton) {
-         console.error("FATAL ERROR: Missing group modal elements!");
          if (groupModal) closeModal(groupModal);
          return;
      }
@@ -133,7 +132,6 @@ async function displayGroupsByCategory() {
                                  alert(`Skupina "${group.data.name}" úspešne vymazaná.`);
                                  displayGroupsByCategory();
                             } catch (error) {
-                                console.error('Chyba pri mazaní skupiny a súvisiacich dát: ', error);
                                 alert('Chyba pri mazaní skupiny! Prosím, skúste znova.');
                             }
                        };
@@ -152,7 +150,6 @@ async function displayGroupsByCategory() {
               groupsContentDiv.appendChild(message);
          }
      } catch (error) {
-         console.error('Chyba pri načítaní alebo zobrazovaní skupín: ', error);
          const errorMessage = document.createElement('p');
          errorMessage.textContent = 'Chyba pri načítaní dát skupín.';
          groupsContentDiv.appendChild(errorMessage);
@@ -185,8 +182,6 @@ document.addEventListener('DOMContentLoaded', () => {
            addButton.onclick = () => {
                 openGroupModal();
            };
-      } else {
-          console.error("Add button not found on groups page!");
       }
 });
 if (groupModalCloseBtn) {
@@ -225,7 +220,6 @@ if (groupForm) {
             } else if (currentGroupModalMode === 'edit') {
                 const oldGroupId = editingGroupId;
                 if (!oldGroupId) {
-                    console.error("Chyba: Režim úpravy skupiny bez platného editingGroupId.");
                     alert("Chyba pri úprave skupiny. Prosím, obnovte stránku.");
                      if (groupModal) closeModal(groupModal);
                      resetGroupModal();
@@ -259,12 +253,9 @@ if (groupForm) {
             resetGroupModal();
             displayGroupsByCategory();
         } catch (error) {
-            console.error('Chyba pri ukladaní skupiny: ', error);
             alert(`Chyba pri ukladaní skupiny! Detail: ${error.message}`);
              if (groupModal) closeModal(groupModal);
              resetGroupModal();
         }
     });
-} else {
-     console.error("Group form not found!");
 }
