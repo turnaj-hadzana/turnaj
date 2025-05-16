@@ -7,6 +7,33 @@
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="spravca-turnaja-style.css">
+
+    <script>
+        // Tento skript bezi SYNCHRONNE a co najskor
+        const requiredRole = 'admin'; // Alebo null/undefined ak staci len prihlasenie
+        const loggedInUsername = localStorage.getItem('username');
+
+        let hasAccess = false;
+        if (loggedInUsername) {
+            if (requiredRole) {
+                // Ak je vyzadovana konkretna rola, skontroluj ju (zjednodusene len na meno 'admin')
+                if (loggedInUsername === requiredRole) {
+                    hasAccess = true;
+                }
+            } else {
+                // Ak staci byt len prihlaseny
+                hasAccess = true;
+            }
+        }
+
+        if (!hasAccess) {
+            // Pouzivatel nie je prihlaseny alebo nema spravnu rolu
+            console.warn("Prístup zamietnutý. Používateľ nie je prihlásený alebo nemá dostatočné oprávnenia.");
+            // Presmeruj na prihlasovaciu stranku
+            // window.location.replace() je lepsie ako .href, lebo nahradi aktualnu stranku v historii
+            window.location.replace('login.html');
+        }
+    </script>
 </head>
 <body>
     <h1>Správca turnaja</h1>
