@@ -42,7 +42,7 @@ async function loadAllData() {
          // Zoraď kategórie abecedne pre konzistentné poradie stĺpcov
          allCategories.sort((a, b) => (a.name || a.id).localeCompare((b.name || b.id), 'sk-SK'));
 
-        // console.log('Načítané kategórie:', allCategories); // Pridaný log pre kontrolu
+        console.log('Načítané kategórie:', allCategories); // Pridaný log pre kontrolu
 
         // Načítaj všetky skupiny (možno pre detaily tímu)
         const groupsSnapshot = await getDocs(groupsCollectionRef);
@@ -260,13 +260,13 @@ async function displaySubjectDetails(baseName) {
           // Zoraď tímy pre konzistentné zobrazenie v detaile subjektu
           teamsForSubject.sort((a, b) => {
                // Zoraď podľa kategórie, potom podľa názvu tímu
-                // *** ÚPRAVA TU ***
                const categoryA = allCategories.find(cat => cat.id === a.categoryId);
                const categoryB = allCategories.find(cat => cat.id === b.categoryId);
 
-                // Robustnejšie získanie názvu kategórie pre triedenie
-               const categoryNameA = (categoryA && categoryA.name) ? categoryA.name : ''; // Použi prázdny reťazec, ak chýba pre triedenie
-               const categoryNameB = (categoryB && categoryB.name) ? categoryB.name : ''; // Použi prázdny reťazec, ak chýba pre triedenie
+                // Robustnejšie získanie názvu kategórie pre triedenie
+                // Ak kategória existuje a má názov, použijeme ho, inak prázdny reťazec pre účely triedenia.
+               const categoryNameA = (categoryA && categoryA.name) ? categoryA.name : '';
+               const categoryNameB = (categoryB && categoryB.name) ? categoryB.name : '';
 
                const categoryComparison = categoryNameA.localeCompare(categoryNameB, 'sk-SK');
                if (categoryComparison !== 0) {
@@ -283,10 +283,35 @@ async function displaySubjectDetails(baseName) {
                const group = allGroups.find(g => g.id === team.groupId);
                const groupName = group ? (group.name || group.id) : 'Nepriradené';
 
-                // *** ÚPRAVA AJ TU ***
+                let categoryName = 'Neznáma kategória'; // Predvolený záložný text
+
+               // Krok 1: Pokus nájsť kategóriu v načítaných dátach (preferovaný spôsob)
                const category = allCategories.find(cat => cat.id === team.categoryId);
-                // Robustnejšie získanie názvu kategórie pre zobrazenie
-               const categoryName = (category && category.name) ? category.name : 'Neznáma kategória';
+
+               if (category && category.name) {
+                   categoryName = category.name; // Použi názov z dát, ak kategória existuje a má názov
+                    console.log(`Kategória nájdená v allCategories pre tím ${team.id} (${team.categoryId}): ${categoryName}`);
+               } else if (team.categoryId && clubsSummaryTableHeader) {
+                    // Krok 2: Ak zlyhal Krok 1, ale team.categoryId existuje, skús nájsť názov v hlavičke tabuľky
+                    console.warn(`Kategória s ID ${team.categoryId} pre tím ${team.id} sa nenašla v allCategories alebo jej chýba názov. Skúšam hľadať v hlavičke tabuľky.`);
+                    // Nájdi TH element s matching data-categoryId
+                    const headerTh = clubsSummaryTableHeader.querySelector(`th[data-category-id="${team.categoryId}"]`);
+                    if (headerTh) {
+                        categoryName = headerTh.textContent || 'Neznáma kategória (z hlavičky)';
+                         console.log(`Nájsť kategóriu v hlavičke tabuľky pre ID ${team.categoryId}. Nájdený názov: ${categoryName}`);
+                    } else {
+                         console.warn(`Nenašiel sa ani TH element s data-category-id="${team.categoryId}" v hlavičke tabuľky.`);
+                    }
+                } else if (team.categoryId) {
+                    // Ak kategória ID existuje, ale nie je hlavička tabuľky (napr. ešte sa nenačítala alebo chyba DOM)
+                     console.warn(`Kategória s ID ${team.categoryId} pre tím ${team.id} sa nenašla v allCategories, chýba hlavička tabuľky.`);
+                     // categoryName ostane 'Neznáma kategória'
+                } else {
+                    // Ak team.categoryId vôbec neexistuje
+                    console.warn(`Tím ${team.id} nemá nastavené categoryId. Zobrazujem 'Neznáma kategória'.`);
+                     // categoryName ostane 'Neznáma kategória'
+                }
+
 
                // Zobraz názov tímu s kategóriou a skupinou
                teamItem.textContent = `${team.name || team.id} (${categoryName} - ${groupName})`;
