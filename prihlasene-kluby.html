@@ -3,177 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prihlásené kluby - Načítavanie a Sticky</title> <link rel="icon" href="favicon.ico" type="image/x-icon">
-    <link rel="stylesheet" href="style.css"> <style>
-        /* Základný štýl pre body a main, ak už nie je v style.css */
-        body {
-             margin: 0;
-             padding: 0;
-             font-family: sans-serif;
-         }
-
-        /* Štýly pre sekcie, ak už nie sú v style.css */
-        .section-block {
-             margin-bottom: 20px;
-             padding: 20px;
-             background-color: #fff;
-             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-             border-radius: 8px;
-         }
-
-        /* ---------- Štýly pre skrolovateľnú tabuľku a sticky hlavičku ---------- */
-
-        /* Obalový kontajner pre tabuľku - zabezpečí skrolovanie a počiatočné skrytie */
-        .table-scroll-container {
-            max-height: 400px; /* NASTAVTE POŽADOVANÚ MAXIMÁLNU VÝŠKU */
-            overflow-y: auto; /* Zapne vertikálne skrolovanie */
-            border: 1px solid #ccc; /* Voliteľné: pre vizuálne ohraničenie boxu */
-            /* Počiatočné skrytie */
-            display: none; /* Tabuľka bude na začiatku skrytá a JavaScript ju po načítaní zobrazí */
-        }
-
-        /* Samotná tabuľka vo vnútri kontajnera */
-        .data-table {
-            width: 100%; /* Zabezpečí, že tabuľka vyplní šírku kontajnera */
-            border-collapse: collapse;
-            /* Odstránili sme Display: block/flex a :nth-child šírky pre kompatibilitu s dynamickými stĺpcami */
-        }
-
-        /* Hlavička tabuľky - TOTO JE STICKY ELEMENT */
-        .data-table thead {
-            position: sticky; /* Urobí hlavičku lepiacou v rámci kontajnera */
-            top: 0; /* Lepí sa na horný okraj skrolovateľného rodiča */
-            z-index: 1; /* Zabezpečí, že je nad obsahom tela */
-            background-color: #3a8d41; /* Pridajte farbu pozadia */
-            color: white;
-        }
-
-        /* Štýly pre bunky hlavičky a tela */
-        .data-table th,
-        .data-table td {
-            padding: 10px 15px;
-            text-align: left;
-            border-bottom: 1px solid #eee;
-            /* Nepoužívať pevné šírky tu pre dynamické stĺpce */
-        }
-
-        .data-table th {
-             font-weight: bold;
-             border-bottom: 2px solid #2a6b30;
-         }
-
-        /* Štýly pre párne riadky */
-        .data-table tbody tr:nth-child(even) {
-            background-color: #f9f9f9;
-        }
-
-        /* Štýly pre hover riadkov */
-        .data-table tbody tr:hover {
-             background-color: #e9e9e9;
-             cursor: pointer;
-         }
-
-        /* Štýl pre bunku s colspan (Načítavam...) */
-         .data-table tbody tr td[colspan] {
-             text-align: center !important;
-             font-style: italic;
-             color: #777;
-             background-color: transparent !important;
-         }
-
-         /* Štýly pre detail sekciu */
-         #clubDetailSection {
-             display: none; /* Sekcia detailov je pôvodne skrytá */
-         }
-
-         .action-button {
-             padding: 10px 15px;
-             background-color: #007bff;
-             color: white;
-             border: none;
-             border-radius: 5px;
-             cursor: pointer;
-             margin-bottom: 20px;
-             font-size: 1em;
-             transition: background-color 0.2s ease;
-         }
-
-         .action-button:hover {
-             background-color: #0056b3;
-         }
-
-         #teamsInCategoryButtons {
-             display: flex;
-             flex-wrap: wrap;
-             gap: 10px;
-             margin-bottom: 15px;
-         }
-
-         #selectedTeamDetails h4 {
-             margin-top: 0;
-             margin-bottom: 10px;
-             border-bottom: 1px solid #eee;
-             padding-bottom: 5px;
-         }
-
-         #selectedTeamRealizacnyTim p {
-             margin: 5px 0;
-         }
-
-         #selectedTeamSoupiskaHracov {
-             list-style: none;
-             padding: 0;
-             margin: 0;
-         }
-
-         #selectedTeamSoupiskaHracov li {
-             margin-bottom: 5px;
-             padding-bottom: 5px;
-             border-bottom: 1px dotted #ccc;
-         }
-
-         #selectedTeamSoupiskaHracov li:last-child {
-             border-bottom: none;
-         }
-
-
-    </style>
-</head>
+    <title>Prihlásené kluby</title>
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="style.css">
 <body>
     <script type="module" src="auth.js"></script>
-    <script src="script.js"></script>
-
+    <script src="script.js"></script> 
     <h1>Prihlásené kluby</h1>
-
     <main>
         <section id="clubListSection" class="section-block">
-            <div class="table-scroll-container">
-                <table id="clubsSummaryTable" class="data-table">
-                    <thead>
-                        <tr id="clubsSummaryTableHeader">
-                            <th>Názov klubu</th>
-                            </tr>
-                    </thead>
-                    <tbody id="clubsSummaryTableBody">
-                        <tr>
-                            <td colspan="1" style="text-align: center;">Načítavam prehľad...</td>
+            <table id="clubsSummaryTable" class="data-table"> <thead>
+                    <tr id="clubsSummaryTableHeader">
+                        <th>Názov klubu</th>
                         </tr>
-                        </tbody>
-                </table>
-            </div>
-            <div id="loadingIndicator" style="text-align: center; padding: 20px;">
-                 Načítavam dáta klubov...
-            </div>
+                </thead>
+                <tbody id="clubsSummaryTableBody">
+                    <tr>
+                        <td colspan="1" style="text-align: center;">Načítavam prehľad...</td>
+                    </tr>
+                </tbody>
+            </table>
         </section>
-
         <section id="clubDetailSection" class="section-block" style="display: none;">
             <button id="backToListButton" class="action-button">← Späť na prehľad</button>
-            <h2 id="clubDetailTitle"><span></span></h2>
-            <div id="clubDetailContent">
-                 <div id="teamsInCategoryButtons">
-                     Načítavam tímy...
-                 </div>
-                 <div id="selectedTeamDetails">
+            <h2 id="clubDetailTitle"><span></span></h2> <div id="clubDetailContent">
+
+                <div id="teamsInCategoryButtons" style="display: flex; flex-wrap: wrap; gap: 10px;">
+                    Načítavam tímy...
+                </div>
+                <div id="selectedTeamDetails" style="display: none; margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px;">
                      <h4>Realizačný tím</h4>
                      <div id="selectedTeamRealizacnyTim">
                           <p>Tréner: <span id="selectedTeamTrenerInfo">Nezadané</span></p>
@@ -183,103 +41,11 @@
                      <ul id="selectedTeamSoupiskaHracov">
                           <li>Zatiaľ bez súpisky.</li>
                      </ul>
-                 </div>
-             </div>
+                </div>
+            </div>
         </section>
     </main>
-
     <script type="module" src="spravca-turnaja-common.js"></script>
     <script type="module" src="prihlasene-kluby.js"></script>
-
-    <script>
-        // TENTO KÓD SLÚŽI AKO SIMULÁCIA TVOJHO PROCESU NAČÍTANIA DÁT A ZOBRAZENIA TABUĽKY
-        // V TVOJOM REÁLNOM KÓDE BUDE LOGIKA NAČÍTANIA DÁT A DYNAMICKÉHO VYTVORENIA OBSAHU THEAD/TBODY INÁ
-
-        document.addEventListener('DOMContentLoaded', function() {
-             const tableScrollContainer = document.querySelector('.table-scroll-container');
-             const tableHeadRow = document.getElementById('clubsSummaryTableHeader');
-             const tableBody = document.getElementById('clubsSummaryTableBody');
-             const loadingIndicator = document.getElementById('loadingIndicator'); // Ak používaš indikátor
-
-             // Začiatok načítania - indikátor viditeľný (ak existuje), tabuľka skrytá (vďaka CSS display: none)
-             if (loadingIndicator) {
-                 loadingIndicator.style.display = 'block'; // Alebo 'flex', atď.
-             }
-
-             // --- Simulácia Načítania Dát a Vytvorenia Obsahu Tabuľky ---
-             // Sem príde tvoja skutočná logika na načítanie dát (napr. fetch)
-             setTimeout(function() { // Simulujeme 2-sekundové načítavanie
-
-                 // --- 1. Dynamicky vytvoriť hlavičku tabuľky (<thead>) ---
-                 // Na základe načítaných dát zisti, aké stĺpce potrebuješ
-                 const dynamicHeaders = ["Tímy", "U10 D", "U10 CH", "U12 D", "U12 CH", "U14 D", "U14 CH", "U16 D", "U16 CH", "U18 D", "U18 CH", "Muži", "Ženy", "Prihlásenie"]; // Príklad
-                 const initialHeaderCount = tableHeadRow.children.length; // Mala by byť 1 ("Názov klubu")
-
-                 // Odstrániť pôvodné stĺpce okrem prvého (ak tam nejaké boli alebo ich chceš nahradiť)
-                 // Ak máš v HTML len "Názov klubu", môžeš tento krok preskočiť alebo ho použiť na vyčistenie
-                  while (tableHeadRow.children.length > 1) { // Ak chceš ponechať prvý stĺpec
-                     tableHeadRow.removeChild(tableHeadRow.lastChild);
-                 }
-                 // Alebo ak chceš nahradiť celú hlavičku: tableHeadRow.innerHTML = '<th>Názov klubu</th>'; // a potom pridávať
-
-                 dynamicHeaders.forEach(headerText => {
-                     const th = document.createElement('th');
-                     th.textContent = headerText;
-                     tableHeadRow.appendChild(th);
-                 });
-
-                 const finalColCount = tableHeadRow.children.length; // Získaj finálny počet stĺpcov
-
-                 // --- 2. Aktualizovať colspan pre riadok "Načítavam..." ---
-                 const loadingCell = tableBody.querySelector('td[colspan]');
-                 if (loadingCell) {
-                     loadingCell.colSpan = finalColCount; // Nastav colspan na finálny počet stĺpcov
-                 }
-
-                 // --- 3. Načítať dáta a dynamicky vytvoriť telo tabuľky (<tbody>) ---
-                 // Tu príde tvoja logika na spracovanie načítaných dát
-                 // Najprv vyčisti telo tabuľky od "Načítavam..." alebo starých dát
-                 tableBody.innerHTML = '';
-
-                 // Simulácia pridávania riadkov s dátami
-                 // DÔLEŽITÉ: KAŽDÝ riadok musí mať rovnaký počet buniek (<td>) ako má thead (finalColCount)
-                 for (let i = 1; i <= 40; i++) { // Pridáme 40 riadkov pre simuláciu skrolovania
-                     const tr = document.createElement('tr');
-
-                     // Prvý stĺpec (Názov klubu)
-                     const tdName = document.createElement('td');
-                     tdName.textContent = `Klub číslo ${i} s dlhším menom`; // Príklad obsahu
-                     tr.appendChild(tdName);
-
-                     // Ostatné stĺpce - musia zodpovedať dynamicky vytvoreným TH
-                     for (let j = 1; j < finalColCount; j++) { // Pridáme finalColCount - 1 buniek
-                          const td = document.createElement('td');
-                          // Tu vložíš reálne dáta pre daný stĺpec (z tvojich načítaných dát)
-                          // Simulácia dát:
-                          if (j === 0) td.textContent = `Klub ${i}`; // Názov klubu by bol prvý, ale ten už máme
-                          else if (j === 1) td.textContent = Math.floor(Math.random() * 10) + 1; // Stĺpec Tímy
-                          else if (j >= 2 && j <= 13) td.textContent = Math.random() > 0.3 ? (Math.random() > 0.5 ? '1' : '2') : ''; // Kategórie (1, 2, alebo prázdne)
-                          else if (j === 14) td.textContent = '☑'; // Prihlásenie (symbol)
-
-                          td.style.textAlign = (j > 0 && j < 14) ? 'center' : 'left'; // Zarovnanie pre číslo/symbol
-                          tr.appendChild(td);
-                     }
-                     tableBody.appendChild(tr);
-                 }
-
-                 // --- 4. Zobraziť skrolovateľný kontajner tabuľky ---
-                 tableScrollContainer.style.display = 'block'; // Alebo 'flex', ak sa používa flexbox layout
-
-                 // Skryť indikátor načítania (ak existuje)
-                 if (loadingIndicator) {
-                      loadingIndicator.style.display = 'none';
-                 }
-
-             }, 2000); // Časovač na simuláciu načítania (2000 ms = 2 sekundy)
-
-         });
-
-    </script>
-
 </body>
 </html>
