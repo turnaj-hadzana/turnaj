@@ -65,27 +65,27 @@ async function loadAllData() {
 
 // Pomocná funkcia na získanie "hlavného názvu" klubu/subjektu
 // Toto je kľúčové pre zoskupenie tímov pod jeden názov subjektu
-// Predpokladáme, že hlavný názov subjektu je buď v poli 'createdFromBase'
-// alebo v prvej časti ID dokumentu pred ' - ' ak 'createdFromBase' chýba
-// Upravené o pokus odstrániť koncové písmeno/číslicu, ak iné metódy zlyhajú
+// Funkcia najprv získa názov podľa priority (createdFromBase, časť ID),
+// a APLIKUJE logiku odstránenia koncovej prípony VŽDY.
 function getClubBaseName(club) {
-    // Priorita 1: Pole 'createdFromBase'
+    let initialBaseName;
+
+    // Krok 1: Získaj počiatočný názov subjektu podľa priority
     if (club.createdFromBase && typeof club.createdFromBase === 'string' && club.createdFromBase.trim() !== '') {
-        return club.createdFromBase.trim();
-    }
-    // Priorita 2: ID dokumentu obsahuje " - "
-    if (club.id && typeof club.id === 'string' && club.id.includes(' - ')) {
-        return club.id.split(' - ')[0].trim();
+        initialBaseName = club.createdFromBase.trim();
+    } else if (club.id && typeof club.id === 'string' && club.id.includes(' - ')) {
+        initialBaseName = club.id.split(' - ')[0].trim();
+    } else {
+        // Fallback: Použi názov tímu alebo ID, ak iné metódy zlyhajú
+        initialBaseName = club.name || club.id || 'Neznámy subjekt';
     }
 
-    // Fallback: Použi názov tímu alebo ID
-    let baseName = club.name || club.id || 'Neznámy subjekt';
-
-    // **NOVÁ LOGIKA:** Pokus odstrániť koncové písmeno alebo číslicu (ako A, B, C, 1, 2 atď.),
-    // ak je oddelené medzerou. Regulárny výraz hľadá medzeru a jedno alebo viac
+    // Krok 2: **APLIKUJ LOGIKU ODSTRAŇOVANIA KONCOVEJ PRÍPONY VŽDY**
+    // Táto logika sa aplikuje na výsledok z Kroku 1.
+    // Regulárny výraz hľadá medzeru a jedno alebo viac
     // veľkých písmen alebo číslic na konci reťazca.
     const trailingSuffixRegex = /\s+([A-Z0-9]+)$/;
-    const match = baseName.match(trailingSuffixRegex);
+    const match = initialBaseName.match(trailingSuffixRegex);
 
     if (match) {
         // Ak sa nájde prípona (napr. " A", " B", " 1") na konci, odstráň ju.
@@ -93,12 +93,12 @@ function getClubBaseName(club) {
         // aby sme predišli odstráneniu zmysluplných častí názvu.
         // Napr. obmedziť dĺžku prípony na max 3 znaky (pre prípady ako "B1", "C2").
         if (match[1].length <= 3) {
-            baseName = baseName.substring(0, match.index).trim();
+            initialBaseName = initialBaseName.substring(0, match.index).trim();
         }
-        // Ak je prípona dlhšia, predpokladáme, že je súčasťou mena a neodstraňujeme ju.
+        // Ak je prípona dlhšia, je považovaná za súčasť mena a neodstraňuje sa.
     }
 
-    return baseName; // Vráti potenciálne upravený hlavný názov
+    return initialBaseName; // Vráti finálny spracovaný hlavný názov
 }
 
 // Funkcia na aktualizáciu colspan hlavičky a tela tabuľky
@@ -166,9 +166,9 @@ function displayClubsSummaryTable() {
         return; // Ukonči funkciu, ak nie sú kluby
     }
 
-    // Zoskup kluby podľa ich hlavného názvu subjektu (použitie upravenej funkcie)
+    // Zoskup kluby podľa ich hlavného názvu subjektu (použitie upravenej funkcie getClubBaseName)
     const clubsByBaseName = allClubs.reduce((acc, club) => {
-        const baseName = getClubBaseName(club);
+        const baseName = getClubBaseName(club); // Použitie upravenej funkcie
         if (!acc[baseName]) {
             acc[baseName] = [];
         }
@@ -189,7 +189,7 @@ function displayClubsSummaryTable() {
         // Pridaj poslucháč udalosti kliknutia na riadok (pre zobrazenie detailov subjektu)
         row.addEventListener('click', () => {
              // Pri kliknutí na riadok zobrazíme detaily VŠETKÝCH tímov tohto subjektu (podľa baseName)
-             displaySubjectDetails(baseName); // Voláme novú funkciu pre detaily subjektu
+             displaySubjectDetails(baseName); // Voláme funkciu pre detaily subjektu
         });
 
 
@@ -239,7 +239,10 @@ async function displaySubjectDetails(baseName) {
 
 
      // Nájsť všetky tímy patriace tomuto hlavnému subjektu (podľa baseName)
+     // Použijeme pôvodný zoznam allClubs a znovu aplikujeme getClubBaseName na filtrovanie,
+     // aby sme získali všetky tímy, ktoré SPADAJÚ pod tento baseName po spracovaní.
      const teamsForSubject = allClubs.filter(club => getClubBaseName(club) === baseName);
+
 
      if (!teamsInCategoryListUl) {
           console.error("Element #teamsInCategoryListUl not found!");
