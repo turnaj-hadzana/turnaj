@@ -25,13 +25,17 @@ body {
     display: flex;
     flex-direction: column; /* Uloží priame deti (vrátane main) pod sebou */
     min-height: 100%; /* Zabezpečí, že telo má minimálne výšku okna */
+    overflow: hidden; /* ZMENA: Zablokovanie skrolovania na celom tele (tento štýl je aj v HTML) */
 
     /* Ostatné pôvodné štýly tela */
     font-family: 'Arial', sans-serif;
     line-height: 1.6;
     color: #333;
     background-color: #ffffff;
-    /* margin: 0; - už hore */
+    margin: 0; /* Ponechať */
+    padding-left: 0; /* Zabezpečiť, že ľavý padding je 0 ak bol zmenený */
+    padding-right: 0; /* Zabezpečiť, že pravý padding je 0 ak bol zmenený */
+    /* Ak máte aj iné paddingy na tele, zvážte ich úpravu alebo použitie pading-block/inline */
 }
 nav ul {
     list-style: none;
@@ -151,7 +155,7 @@ main p a:hover {
     display: block;
     margin-bottom: 5px;
 }
-.left-menu a {
+nav ul li a {
     display: block;
     text-decoration: none;
     color: #333;
@@ -243,12 +247,8 @@ nav ul li a:hover {
 /* Apply to both header and body tables */
 #clubsHeaderTable,
 #clubsBodyTable {
-    /* ZMENA: Odstránime width: 100% a max-content */
-    /* width: 100%; */
-    /* width: max-content; */
     border-collapse: collapse;
-    /* ZMENA: table-layout na auto pre prispôsobenie sa obsahu */
-    table-layout: auto;
+    table-layout: auto; /* Ponechané auto, aby sa šírky prispôsobili obsahu a min-width */
 }
 
 /* Remove margin-top from the body table specifically */
@@ -258,21 +258,19 @@ nav ul li a:hover {
 
 /* Skrolovateľný kontajner div */
 #scrollableTableBodyContainer {
-    flex-grow: 1; /* Tento div zaberie všetok zvyšný vertikálny priestor */
-    overflow-y: auto; /* Zapnutie vertikálneho skrolovania */
-    overflow-x: auto; /* ZMENA: Zapnutie horizontálneho skrolovania, ak tabuľka pretečie */
-
-    /* ZMENA: Odstránime width nastavenia */
-    /* width: max-content; */
-    /* max-width: 100%; */
-    /* width: auto; */
+    flex-grow: 1; /* Tento div zaberie väčšinu zostávajúceho vertikálneho priestoru */
+    overflow-y: auto; /* Ponechať vertikálne skrolovanie v boxe */
+    overflow-x: auto; /* Ponechať horizontálne skrolovanie v boxe */
 
     /* Štýly pre vzhľad bloku */
-    margin-top: 0px; /* Priestor medzi hlavičkovou tabuľkou a skrolovateľným telom */
-    border: 1px solid #ccc; /* Okraj */
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08); /* Tieň */
-    border-radius: 5px; /* Zaoblené rohy */
-    background-color: #fff; /* Pozadie skrolovateľnej oblasti */
+    margin-top: 20px; /* Vrátená horná medzera */
+    /* margin-bottom: 5%; */ /* Odstránená dolná medzera */
+
+
+    border: 1px solid #ccc;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    border-radius: 5px;
+    background-color: #fff;
 
     /* Zabezpečí, že padding a border sú zahrnuté do vypočítanej výšky/šírky */
     box-sizing: border-box;
@@ -290,9 +288,7 @@ nav ul li a:hover {
     font-weight: bold;
     font-size: 0.95em;
     white-space: nowrap; /* Kľúčové: Zabezpečí, že text sa nebude zalamovať */
-    /* ZMENA: Odstránime width - prehliadač určí šírku podľa obsahu */
-    /* width: auto; */
-    /* border-right bude pridaný nižšie */
+    min-width: 5vw; /* ZMENA: Minimálna šírka bunky 5% šírky viewportu */
 }
 
 /* Style for body cells */
@@ -301,9 +297,7 @@ nav ul li a:hover {
     border-bottom: 1px solid #eee;
     /* text-align je nastavený nižšie podľa pozície stĺpca */
     white-space: nowrap; /* Kľúčové: Zabezpečí, že text sa nebude zalamovať */
-    /* ZMENA: Odstránime width - prehliadač určí šírku podľa obsahu */
-    /* width: auto; */
-    /* border-right bude pridaný nižšie */
+    min-width: 5vw; /* ZMENA: Minimálna šírka bunky 5% šírky viewportu */
 }
 
 /* Prvý stĺpec v hlavičke aj tele - zarovnať vľavo */
@@ -335,7 +329,6 @@ nav ul li a:hover {
     color: #777;
     background-color: transparent !important;
     border-right: none !important;
-    /* width: auto !important; */ /* Ensure it doesn't inherit a fixed width if present */
 }
 
 
@@ -356,12 +349,11 @@ nav ul li a:hover {
 }
 
 
-/* ... (rest of the styles for detail section, buttons, etc.) ... */
+/* ... (zvyšok štýlov) ... */
 
 /* Ensure the section-block containing the tables shrinks to fit content */
 #clubListSection.section-block {
-     /* align-items: stretch; */
-     align-items: flex-start; /* ZMENA: Sekcia sa zmenší na šírku obsahu */
+     align-items: flex-start; /* Sekcia sa zmenší na šírku obsahu */
      flex-grow: 1; /* Ponechať, aby zaberala priestor vertikálne */
      display: flex; /* Ponechať */
      flex-direction: column; /* Ponechať */
