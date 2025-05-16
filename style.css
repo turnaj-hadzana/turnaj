@@ -400,3 +400,10 @@ main {
 #clubDetailContent #teamsInCategoryButtons button.action-button[style*="font-weight: bold"] {
     background-color: #c46f50;
 }
+
+.data-table thead {
+    position: sticky;
+    top: 0; /* Toto zabezpečí, že hlavička zostane prilepená na vrchole */
+    background-color: #f9f9f9; /* Pridajte farbu pozadia, aby bol obsah pod hlavičkou skrytý pri skrolovaní */
+    z-index: 10; /* Zabezpečí, že hlavička bude nad obsahom tabuľky */
+}
