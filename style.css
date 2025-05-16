@@ -73,7 +73,7 @@ main {
     display: flex; /* Nastavíme aj main ako flex kontajner */
     flex-direction: column; /* Uloží deti (section) pod sebou */
     /* align-items: stretch; */ /* Zmeníme nižšie na flex-start pre shrink-wrap */
-    align-items: flex-start; /* Zmenené: Deti main (ako sekcie) sa zmenšia na šírku obsahu */
+    align-items: center; /* Zmenené: Deti main (ako sekcie) sa zmenšia na šírku obsahu */
     min-width: 0; /* Povoliť zmenšenie v flex kontexy */
     overflow-x: hidden; /* Skryť horizontálny overflow */
 }
