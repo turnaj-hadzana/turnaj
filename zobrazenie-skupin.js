@@ -437,17 +437,15 @@ function displayGroupsForCategory(categoryId) {
                 const teamList = document.createElement('ul');
                 teamsInGroup.forEach(team => {
                     const teamItem = document.createElement('li');
-
-<!--                         
-                    if (typeof team.orderInGroup === 'number' && team.orderInGroup > 0) {
-                        const orderSpan = document.createElement('span');
-                        orderSpan.textContent = `${team.orderInGroup}.`;
-                        teamItem.appendChild(orderSpan);
-
-                        const separator = document.createTextNode('\u00A0');
-                        teamItem.appendChild(separator);
-                    }
--->                         
+                         
+//                    if (typeof team.orderInGroup === 'number' && team.orderInGroup > 0) {
+//                        const orderSpan = document.createElement('span');
+//                        orderSpan.textContent = `${team.orderInGroup}.`;
+//                        teamItem.appendChild(orderSpan);
+//
+//                        const separator = document.createTextNode('\u00A0');
+//                        teamItem.appendChild(separator);
+//                    }                         
 
                      const teamNameSpan = document.createElement('span');
                      teamNameSpan.classList.add('team-name');
@@ -613,17 +611,15 @@ function displaySingleGroup(groupId) {
               const teamList = document.createElement('ul');
               teamsInGroup.forEach(team => {
                    const teamItem = document.createElement('li');
+                       
+//                   if (typeof team.orderInGroup === 'number' && team.orderInGroup > 0) {
+//                       const orderSpan = document.createElement('span');
+//                       orderSpan.textContent = `${team.orderInGroup}.`;
+//                       teamItem.appendChild(orderSpan);
 
-<!--                       
-                   if (typeof team.orderInGroup === 'number' && team.orderInGroup > 0) {
-                       const orderSpan = document.createElement('span');
-                       orderSpan.textContent = `${team.orderInGroup}.`;
-                       teamItem.appendChild(orderSpan);
-
-                       const separator = document.createTextNode('\u00A0');
-                       teamItem.appendChild(separator);
-                   }
--->
+//                       const separator = document.createTextNode('\u00A0');
+//                       teamItem.appendChild(separator);
+//                   }
 
                    const teamNameSpan = document.createElement('span');
                    teamNameSpan.classList.add('team-name');
