@@ -396,7 +396,6 @@ function displayGroupsForCategory(categoryId) {
             groupDiv.appendChild(groupTitle);
 
             groupTitle.style.cursor = 'pointer'; // Zmení kurzor na ruku pri hoveri
-            groupTitle.title = `Zobraziť detail skupiny ${group.name || group.id}`; // Pridá tooltip
 
             groupTitle.addEventListener('click', () => {
                   const groupIdToDisplay = group.id; // Získame ID skupiny z premennej 'group' v cykle
