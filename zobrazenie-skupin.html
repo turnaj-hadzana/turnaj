@@ -7,14 +7,66 @@
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="style.css">
     <style>
-        /* Základné štýly pre zobrazenie skupín */
+        /* Štýly pre kontajner tlačidiel kategórií */
+        #categoryButtonsContainer {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px; /* Medzera medzi tlačidlami */
+            justify-content: center; /* Centruje tlačidlá */
+            margin-bottom: 20px;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+
+        /* Štýly pre tlačidlá kategórií */
+        .category-button {
+            padding: 12px 20px;
+            background-color: #007bff; /* Modrá farba, môžeš zmeniť */
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            text-align: center;
+            flex-grow: 0; /* Nezväčšuje sa */
+            flex-shrink: 1; /* Môže sa zmenšiť */
+            min-width: 120px; /* Minimálna šírka tlačidla */
+        }
+
+        .category-button:hover {
+            background-color: #0056b3; /* Tmavšia modrá pri prejdení myšou */
+        }
+
+        /* Štýly pre tlačidlo "Späť na kategórie" */
+        #backToCategoriesButton {
+            display: none; /* Skryté na začiatku */
+            margin-bottom: 20px;
+            padding: 10px 15px;
+            background-color: #6c757d; /* Sivá farba */
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        #backToCategoriesButton:hover {
+            background-color: #5a6268; /* Tmavšia sivá */
+        }
+
+
+        /* Základné štýly pre zobrazenie skupín - OSTÁVAJÚ, ale niektoré môžu byť upravené */
         .category-display {
             margin-bottom: 30px;
             padding: 15px;
             border-radius: 5px;
         }
 
-        /* Štýl pre nadpis kategórie */
+        /* Štýl pre nadpis kategórie v zobrazení skupín */
         .category-display h2 {
             color: #333;
             padding-bottom: 0;
@@ -25,7 +77,7 @@
             text-align: center; /* Centrujeme nadpis kategórie */
         }
 
-        /* Kontajner pre usporiadanie skupín vedľa seba */
+        /* Kontajner pre usporiadanie skupín vedľa seba - OSTÁVA */
         .groups-container {
             display: flex;
             flex-wrap: wrap;
@@ -34,29 +86,24 @@
             align-items: stretch;
         }
 
-        /* Štýly pre blok jednotlivej skupiny */
+        /* Štýly pre blok jednotlivej skupiny - OSTÁVA (len komentáre upravené) */
         .group-display {
             /* ... ostatné štýly ... */
-            min-width: 200px; /* **Základná minimálna šírka, môže byť prepísaná JS** */
-            /* Odstránime šírku a flexbox vlastnosti, ktoré by bránili JS nastaveniu */
-            width: auto;
-            max-width: none; /* Zrušíme max-width */
-            flex-grow: 0;
-            flex-shrink: 0; /* JS bude kontrolovať zmenšovanie/zväčšovanie nastavením pevnej šírky */
-            flex-basis: auto;
+            /* Tieto vlastnosti budú nastavené JS pre dynamickú šírku: */
+            /* width: auto; max-width: none; flex-grow: 0; flex-shrink: 0; flex-basis: auto; min-width: 200px; */
 
-            margin-bottom: 0;
+            margin-bottom: 0; /* Zrušíme pôvodný margin-bottom 20px, nech to drží gap vo flex kontajneri */
             padding: 0;
             border: 1px solid #ddd;
             border-radius: 4px;
             background-color: #fff;
-            overflow: hidden; /* Zabezpečí, že zaoblené rohy budú viditeľné */
+            overflow: hidden;
             box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
             display: flex;
             flex-direction: column;
         }
 
-        /* Štýly pre nadpis skupiny */
+        /* Štýly pre nadpis skupiny - OSTÁVA */
         .group-display h3 {
             background-color: #28a745;
             color: #fff;
@@ -68,7 +115,7 @@
             border-top-right-radius: 3px;
         }
 
-        /* Štýly pre zoznam tímov v skupine */
+        /* Štýly pre zoznam tímov v skupine - OSTÁVA */
         .group-display ul {
             list-style: none;
             padding: 10px;
@@ -76,7 +123,7 @@
             flex-grow: 1;
         }
 
-        /* Štýly pre položky tímu v zozname */
+        /* Štýly pre položky tímu v zozname - OSTÁVA */
         .group-display ul li {
             color: #333;
             padding: 8px;
@@ -91,19 +138,19 @@
             text-overflow: clip; /* Explicitne zakážeme zobrazenie bodiek pri pretečení */
         }
 
-         /* Odstrániť spodný border z poslednej položky tímu */
+         /* Odstrániť spodný border z poslednej položky tímu - OSTÁVA */
         .group-display ul li:last-child {
              border-bottom: none;
              margin-bottom: 0;
         }
 
-        /* Štýl pre zobrazenie poradia v tíme (číslo) */
+        /* Štýl pre zobrazenie poradia v tíme (číslo) - OSTÁVA */
         .group-display ul li span:first-child {
              margin-right: 10px;
              color: #000;
         }
 
-        /* Nový štýl pre názov tímu - bude tučný */
+        /* Nový štýl pre názov tímu - bude tučný - OSTÁVA */
         .group-display ul li .team-name {
             font-weight: bold;
             white-space: nowrap !important; /* Zabráni zalamovaniu textu v spane */
@@ -111,12 +158,13 @@
             flex-grow: 1;
         }
 
+        /* Zvýraznenie tímu - OSTÁVA */
         .highlighted-team {
             font-weight: bold !important;
         }
 
         /* Štýly pre kontajner skupín, ak ich je presne 5, na vynútenie rozloženia 3+2 */
-        /* Tieto pravidlá už nebudú určovať šírku, len ostatné aspekty rozloženia */
+        /* Tieto pravidlá už nebudú určovať šírku, len ostatné aspekty rozloženia - OSTÁVA */
         .groups-container.force-3-plus-2-layout {
             display: flex;
             flex-wrap: wrap;
@@ -125,7 +173,7 @@
             align-items: stretch;
         }
 
-        /* Pre bloky v tomto kontajneri odstránime špecifické Flexbox vlastnosti, aby preberali šírku od JS */
+        /* Pre bloky v tomto kontajneri odstránime špecifické Flexbox vlastnosti, aby preberali šírku od JS - OSTÁVA */
         .groups-container.force-3-plus-2-layout .group-display {
              flex-basis: auto;
              flex-grow: 0;
@@ -136,7 +184,7 @@
              box-sizing: border-box;
         }
 
-        /* Voliteľné: Ak by bolo potrebné iné rozloženie na veľmi malých obrazovkách pre prípad 5 skupín */
+        /* Voliteľné: Ak by bolo potrebné iné rozloženie na veľmi malých obrazovkách pre prípad 5 skupín - OSTÁVA */
         @media (max-width: 768px) {
              .groups-container.force-3-plus-2-layout .group-display {
                  flex-basis: auto; /* Aj tu necháme JS kontrolovať šírku */
@@ -148,16 +196,16 @@
              }
         }
 
-        /* Štýly pre sekciu nepriradených tímov */
+        /* Štýly pre sekciu nepriradených tímov - OSTÁVA */
         .unassigned-teams-display {
             margin-top: 30px;
             padding: 15px;
             border: 1px solid #ccc;
             border-radius: 5px;
             background-color: #f9f9f9;
-            max-width: 600px; /* Nastavte maximálnu šírku */
-            margin: 0 auto; /* Vycentrovať blok */
-            margin-top: 30px; /* Ponechať horný margin */
+            max-width: 600px;
+            margin: 0 auto;
+            margin-top: 30px;
         }
 
         .unassigned-teams-display h2 {
@@ -175,7 +223,7 @@
             margin: 0;
         }
 
-        /* Štýly pre položky tímu v zozname nepriradených tímov */
+        /* Štýly pre položky tímu v zozname nepriradených tímov - OSTÁVA */
         .unassigned-teams-display li {
             background-color: #f8d7da;
             color: #721c24;
@@ -185,18 +233,18 @@
             border-bottom: 1px solid #f5c6cb;
             text-align: left;
             white-space: nowrap !important;
-            overflow: hidden; /* Skryje pretečený obsah li - pre istotu */
-            text-overflow: clip; /* Explicitne zakážeme zobrazenie bodiek pri pretečení */
+            overflow: hidden;
+            text-overflow: clip;
             display: block;
         }
 
-        /* Odstrániť spodný border z poslednej položky nepriradeného tímu */
+        /* Odstrániť spodný border z poslednej položky nepriradeného tímu - OSTÁVA */
         .unassigned-teams-display li:last-child {
             border-bottom: none;
             margin-bottom: 0;
         }
 
-        /* Špecifický štýl pre nadpis kategórie v zozname nepriradených tímov */
+        /* Špecifický štýl pre nadpis kategórie v zozname nepriradených tímov - OSTÁVA */
         .unassigned-teams-display ul li[style*="font-weight: bold"] {
             background-color: #e9ecef !important;
             color: #495057 !important;
@@ -204,148 +252,32 @@
             border-bottom: 1px solid #ccc !important;
         }
 
-        /* Štýly pre filtrovaciu sekciu */
-        .filter-section {
-            margin-bottom: 20px;
-            padding: 15px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            background-color: #e9ecef;
-            display: flex;
-            gap: 15px; /* Medzera medzi flex položkami (filter-group divmi a tlačidlom) */
-            align-items: center;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
+         /* Pôvodné štýly filtra, ktoré sa už nepoužijú, môžu byť odstránené */
+         .filter-section, .filter-group {
+             /* Tieto triedy už nie sú v HTML, ale pre prehľadnosť ich tu spomenieme */
+         }
 
-        /* Štýly pre kontajnery label + select (pre horizontálne usporiadanie) */
-        .filter-group {
-            display: flex; /* Label a select sú vedľa seba v riadku */
-            align-items: center;
-            gap: 5px; /* Medzera medzi labelom a selectom */
-             /* V horizontálnom usporiadaní sa šírka nastaví automaticky podľa obsahu a dostupného miesta */
-             flex-basis: auto;
-             flex-grow: 0;
-             flex-shrink: 1; /* Povoliť zmenšenie, ak je málo miesta */
-        }
-
-        .filter-section label {
-            font-weight: bold;
-        }
-
-        .filter-section select {
-            padding: 8px;
-            border-radius: 4px;
-            border: 1px solid #ccc;
-            font-size: 1em;
-             /* V horizontálnom usporiadaní sa select box roztiahne, aby vyplnil dostupný priestor */
-            flex-grow: 1;
-        }
-
-        .filter-section button {
-            padding: 8px 15px;
-            background-color: #3a8d41;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 1em;
-            transition: background-color 0.3s ease;
-             /* V horizontálnom usporiadaní sa tlačidlo nezmenšuje ani nerozťahuje */
-            flex-grow: 0;
-            flex-shrink: 0;
-             flex-basis: auto;
-        }
-
-        .filter-section button:hover {
-            background-color: #c46f50;
-        }
-
-        /* Štýly pre hlavný nadpis */
-        h1 {
-            text-align: center;
-            margin-top: 20px;
-            margin-bottom: 20px;
-        }
-
-        /* MEDIA QUERY: Filtre sa zoradia pod seba na menších obrazovkách */
-        @media (max-width: 768px) {
-            .filter-section {
-                flex-direction: column; /* Hlavné prvky (filter-group divy a tlačidlo) pod sebou */
-                align-items: stretch; /* Roztiahne filter-group divy a tlačidlo na celú šírku */
-                gap: 10px; /* Medzera medzi filter-group divmi a tlačidlom */
-            }
-
-            /* V zvislom usporiadaní filter-group divy a tlačidlo zaberú celú šírku */
-            .filter-group,
-            .filter-section button {
-                width: 100%;
-                box-sizing: border-box;
-                margin: 0; /* Odstránime prípadné defaultné marginy */
-            }
-
-            /* V zvislom usporiadaní sa prvky VO VNÚTRI filter-group usporiadajú pod sebou */
-            .filter-group {
-                flex-direction: column; /* Label a select pod sebou */
-                align-items: flex-start; /* Zarovná label a select doľava */
-                gap: 5px; /* Medzera medzi labelom a selectom v rámci bloku */
-            }
-
-            /* V zvislom usporiadaní label a select v rámci filter-group zaberú celú šírku */
-            .filter-group label,
-            .filter-group select {
-                 width: 100%;
-                 box-sizing: border-box;
-                 margin: 0; /* Odstránime prípadné defaultné marginy */
-            }
-
-            .filter-group label {
-                 font-weight: bold; /* Tučnosť zostáva */
-            }
-
-            .filter-group select {
-                 /* Flex-grow: 1 už nepotrebujeme v stĺpcovom usporiadaní vnútri filter-group */
-                 flex-grow: 0;
-            }
-
-             /* Malé úpravy medzier medzi prvkami v stĺpcovom usporiadaní */
-             .filter-group:not(:last-of-type) {
-                 margin-bottom: 5px; /* Medzera po každom filter-group okrem posledného */
-             }
-        }
 
     </style>
 </head>
 <body>
     <script src="script.js"></script>
+
     <h1>Rozlosovanie</h1>
+
     <div class="content-wrapper">
         <main>
             <section class="section-block">
 
-                 <div class="filter-section">
-                     <div class="filter-group"> <label for="categoryFilter">Vyber kategóriu:</label>
-                         <select id="categoryFilter">
-                             <option value="">Všetky kategórie</option>
-                         </select>
-                     </div>
+                <div id="categoryButtonsContainer">
+                    </div>
 
-                     <div class="filter-group"> <label for="groupFilter">Vyber skupinu:</label>
-                         <select id="groupFilter">
-                             <option value="">Všetky skupiny</option>
-                         </select>
-                     </div>
+                <button id="backToCategoriesButton">← Späť na kategórie</button>
 
-                     <div class="filter-group"> <label for="teamFilter">Vyber tím:</label>
-                         <select id="teamFilter">
-                             <option value="">Všetky tímy</option>
-                         </select>
-                     </div>
 
-                     <button id="clearFiltersButton">Vymazať filtre</button>
-                 </div>
-                 <div id="groupsDisplayContent">
-                 </div>
+                <div id="groupsDisplayContent">
+                    </div>
+
             </section>
         </main>
     </div>
