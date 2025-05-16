@@ -383,62 +383,29 @@ main {
 #selectedTeamRealizacnyTim p {
     margin-bottom: 8px;
 }
-
-/* Text pre dynamicky načítané info (realizačný tím, názov tímu) */
 #selectedTeamRealizacnyTim span,
 #selectedTeamName {
-    font-weight: normal; /* Zabezpeč, že dynamický text nie je tučný, ak to nie je špecificky nastavené */
+    font-weight: normal;
 }
-
-/* Názov subjektu v hlavičke detailu */
 #clubDetailTitle span {
-     font-weight: normal; /* Názov klubu by nemal byť tučný v nadpise */
+     font-weight: normal;
 }
-
-
-
-
-
-
-/* Štýly pre tlačidlá tímov v sekcii detailov klubu */
 #clubDetailContent #teamsInCategoryButtons button.action-button {
-    /* Skopírujte sem presné štýly z vášho pôvodného .action-button pravidla,
-       ktoré sa týkajú vzhľadu (farba pozadia, textu, okraje, padding, atď.).
-       Použite !important len ak je to nevyhnutné a štýly sa stále neaplikujú,
-       ale snažte sa vyhnúť jeho použitiu, ak je to možné, úpravou špecifickosti. */
-
-    /* Príklad štýlov (upravte podľa vášho action-button štýlu): */
-    display: inline-block; /* Zabezpečí správne zobrazenie vedľa seba vo flex kontajneri */
-    padding: 8px 12px; /* Príklad vnútorného odsadenia */
-    font-size: 1em; /* Príklad veľkosti písma */
+    display: inline-block;
+    padding: 8px 12px;
+    font-size: 1em;
     cursor: pointer;
     text-align: center;
     text-decoration: none;
     outline: none;
-    color: #ffffff; /* Príklad farby textu (biela) */
-    background-color: #4CAF50; /* Príklad farby pozadia (zelená) */
+    color: #ffffff;
+    background-color: #c46f50;
     border: none;
-    border-radius: 5px; /* Príklad zaoblených rohov */
-    /* box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); */ /* Príklad tieňa (ak ho má pôvodné tlačidlo) */
-    transition: background-color 0.3s ease; /* Príklad plynulého prechodu */
-    margin: 0; /* Zrušenie predvoleného marginu tlačidiel, ak je použitý gap na flex kontajneri */
+    border-radius: 5px;
+    margin: 0;
 }
-
-/* Štýly pre stav po nabehnutí myšou pre tieto tlačidlá */
 #clubDetailContent #teamsInCategoryButtons button.action-button:hover {
-    background-color: #45a049; /* Príklad tmavšej zelenej */
-    /* Pridajte ďalšie hover štýly, ak ich má pôvodné tlačidlo */
+    background-color: #c46f50;
 }
-
-/* Štýly pre stav po kliknutí pre tieto tlačidlá */
-#clubDetailContent #teamsInCategoryButtons button.action-button:active {
-    background-color: #367c39; /* Príklad ešte tmavšej zelenej */
-    /* Pridajte ďalšie active štýly, ak ich má pôvodné tlačidlo */
-}
-
-/* Štýl pre zvýraznenie aktívne vybraného tlačidla tímu */
 #clubDetailContent #teamsInCategoryButtons button.action-button[style*="font-weight: bold"] {
-    /* Tu môžete definovať špeciálny štýl pre kliknuté tlačidlo,
-       napríklad zmeniť farbu pozadia alebo pridať iný vizuálny indikátor */
-    outline: 2px solid navy; /* Príklad: modrý obrys */
 }
