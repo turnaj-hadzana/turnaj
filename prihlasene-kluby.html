@@ -6,46 +6,62 @@
     <title>Prihlásené kluby</title>
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="style.css">
+    <style>
+        #clubsScrollableList {
+            max-height: 300px; /* Set a maximum height */
+            overflow-y: auto; /* Enable vertical scrolling */
+            border: 1px solid #ccc; /* Optional: Add a border to visualize the scroll area */
+            padding: 10px; /* Optional: Add padding */
+            /* Add any other styling like background-color, etc. */
+        }
+
+        /* Optional: Style for the items inside the scrollable div */
+        #clubsScrollableList > div,
+        #clubsScrollableList > p {
+            padding: 8px;
+            border-bottom: 1px dashed #eee;
+            cursor: pointer; /* Indicates items are clickable */
+            /* Add hover effects or other styles as needed */
+        }
+         #clubsScrollableList > div:last-child,
+         #clubsScrollableList > p:last-child {
+             border-bottom: none; /* Remove border from the last item */
+         }
+    </style>
+</head>
 <body>
     <script type="module" src="auth.js"></script>
-    <script src="script.js"></script> 
+    <script src="script.js"></script>
     <h1>Prihlásené kluby</h1>
     <main>
         <section id="clubListSection" class="section-block">
-            <table id="clubsSummaryTable" class="data-table"> <thead>
-                    <tr id="clubsSummaryTableHeader">
-                        <th>Názov klubu</th>
-                        </tr>
-                </thead>
-                <tbody id="clubsSummaryTableBody">
-                    <tr>
-                        <td colspan="1" style="text-align: center;">Načítavam prehľad...</td>
-                    </tr>
-                </tbody>
-            </table>
+            <h3>Názov klubu</h3>
+            <div id="clubsScrollableList">
+                <p style="text-align: center;">Načítavam prehľad...</p>
+                </div>
         </section>
+
         <section id="clubDetailSection" class="section-block" style="display: none;">
             <button id="backToListButton" class="action-button">← Späť na prehľad</button>
-            <h2 id="clubDetailTitle"><span></span></h2> <div id="clubDetailContent">
-
+            <h2 id="clubDetailTitle"><span></span></h2>
+            <div id="clubDetailContent">
                 <div id="teamsInCategoryButtons" style="display: flex; flex-wrap: wrap; gap: 10px;">
                     Načítavam tímy...
                 </div>
                 <div id="selectedTeamDetails" style="display: none; margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px;">
-                     <h4>Realizačný tím</h4>
-                     <div id="selectedTeamRealizacnyTim">
-                          <p>Tréner: <span id="selectedTeamTrenerInfo">Nezadané</span></p>
-                          <p>Vedúci družstva: <span id="selectedTeamVeduciDruzstvaInfo">Nezadané</span></p>
-                     </div>
-                     <h4>Súpiska hráčov</h4>
-                     <ul id="selectedTeamSoupiskaHracov">
-                          <li>Zatiaľ bez súpisky.</li>
-                     </ul>
+                    <h4>Realizačný tím</h4>
+                    <div id="selectedTeamRealizacnyTim">
+                        <p>Tréner: <span id="selectedTeamTrenerInfo">Nezadané</span></p>
+                        <p>Vedúci družstva: <span id="selectedTeamVeduciDruzstvaInfo">Nezadané</span></p>
+                    </div>
+                    <h4>Súpiska hráčov</h4>
+                    <ul id="selectedTeamSoupiskaHracov">
+                        <li>Zatiaľ bez súpisky.</li>
+                    </ul>
                 </div>
             </div>
         </section>
     </main>
     <script type="module" src="spravca-turnaja-common.js"></script>
-    <script type="module" src="prihlasene-kluby.js"></script>
-</body>
+    <script type="module" src="prihlasene-kluby.js"></script> </body>
 </html>
