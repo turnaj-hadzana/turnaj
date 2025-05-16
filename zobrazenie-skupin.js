@@ -271,15 +271,21 @@ function displayCategoriesAsButtons() {
 
     const boysCategories = allCategories.filter(category => category.id.endsWith('CH'));
     const girlsCategories = allCategories.filter(category => category.id.endsWith('D'));
+    const otherCategories = allCategories.filter(category => !category.id.endsWith('CH') && !category.id.endsWith('D'));
+
 
     // Môžete ich znova zoradiť, ak chcete zachovať abecedné poradie v rámci sekcií
     boysCategories.sort((a, b) => (a.name || a.id || '').localeCompare((b.name || b.id || ''), 'sk-SK'));
     girlsCategories.sort((a, b) => (a.name || a.id || '').localeCompare((b.name || b.id || ''), 'sk-SK'));
+    otherCategories.sort((a, b) => (a.name || a.id || '').localeCompare((b.name || b.id || ''), 'sk-SK'));
 
-    console.log(`DEBUG: Found ${boysCategories.length} boys categories and ${girlsCategories.length} girls categories.`);
+
+    console.log(`DEBUG: Found ${boysCategories.length} boys categories, ${girlsCategories.length} girls categories, and ${otherCategories.length} other categories.`);
+
 
     // Kontajner na pridávanie obsahu
     const contentFragment = document.createDocumentFragment(); // Použijeme fragment pre efektívnejšie pridávanie
+
 
     // Sekcia Chlapci
     if (boysCategories.length > 0) {
@@ -340,6 +346,36 @@ function displayCategoriesAsButtons() {
          console.log(`DEBUG: ${girlsCategories.length} girls category buttons created.`);
     } else {
          console.log("DEBUG: No girls categories found.");
+    }
+
+    // Sekcia Ostatné (ak existujú)
+    if (otherCategories.length > 0) {
+        const otherSectionTitle = document.createElement('h2');
+        otherSectionTitle.textContent = "Ostatné kategórie";
+        otherSectionTitle.classList.add('category-section-title'); // CSS trieda pre štýlovanie nadpisu sekcie
+        contentFragment.appendChild(otherSectionTitle);
+
+        const otherButtonsContainer = document.createElement('div');
+        otherButtonsContainer.classList.add('category-buttons-section'); // CSS trieda pre kontajner tlačidiel sekcie
+
+        otherCategories.forEach(category => {
+            const button = document.createElement('button');
+            button.classList.add('display-button');
+            button.textContent = category.name || category.id;
+            button.dataset.categoryId = category.id;
+
+            button.addEventListener('click', () => {
+                const categoryId = button.dataset.categoryId;
+                console.log(`DEBUG: Category button clicked for category ID: ${categoryId}. Calling displayGroupsForCategory.`);
+                displayGroupsForCategory(categoryId);
+            });
+
+            otherButtonsContainer.appendChild(button);
+        });
+        contentFragment.appendChild(otherButtonsContainer);
+         console.log(`DEBUG: ${otherCategories.length} other category buttons created.`);
+    } else {
+         console.log("DEBUG: No other categories found.");
     }
 
 
@@ -459,7 +495,7 @@ function displayGroupsForCategory(categoryId) {
             });
             if (groupSelectionButtons) groupSelectionButtons.appendChild(button); // Pridať tlačidlo do kontajnera tlačidiel
         });
-         if (groupSelectionButtons) console.log(`DEBUG: ${groupsInCategory.length} group selection buttons created and appended to #groupSelectionButtons. #groupSelectionButtons children count: ${groupSelectionButtons.children.length}`);
+         if (groupSelectionButtons) console.log(`DEBUG: ${groupsInCategory.length} group selection buttons created and appended to #groupSelectionButtons. #groupSelectionButtons display: ${groupSelectionButtons ? groupSelectionButtons.style.display : 'N/A'}`);
          console.log(`DEBUG: After button creation in displayGroupsForCategory. #groupSelectionButtons display: ${groupSelectionButtons ? groupSelectionButtons.style.display : 'N/A'}`);
 
 
@@ -512,11 +548,12 @@ function displayGroupsForCategory(categoryId) {
                     // Kód na pridanie čísla poradí (odstránený podľa predchádzajúcej požiadavky)
                     // if (typeof team.orderInGroup === 'number' && team.orderInGroup > 0) { ... }
 
-                     const teamNameSpan = document.createElement('span');
-                     teamNameSpan.classList.add('team-name'); // Ak máte štýl pre názov tímu
-                     teamNameSpan.textContent = team.name || 'Neznámy tím';
-                    teamItem.appendChild(teamNameSpan);
-                    teamList.appendChild(teamItem);
+
+                   const teamNameSpan = document.createElement('span');
+                   teamNameSpan.classList.add('team-name'); // Ak máte štýl pre názov tímu
+                   teamNameSpan.textContent = team.name || 'Neznámy tím';
+                   teamItem.appendChild(teamNameSpan);
+                   teamList.appendChild(teamItem);
                 });
                 groupDiv.appendChild(teamList);
             }
@@ -714,24 +751,19 @@ function displaySingleGroup(groupId) {
              unassignedTitle.classList.add('unassigned-teams-title-level3'); // Nová trieda pre nadpis nepriradených v Level 3
              singleGroupUnassignedDisplay.appendChild(unassignedTitle);
 
+             const unassignedList = document.createElement('ul');
              unassignedTeamsInCategory.sort((a, b) => {
                   const nameA = (a.name || a.id || '').toLowerCase();
                   const nameB = (b.name || b.id || '').toLowerCase();
                   return nameA.localeCompare(nameB, 'sk-SK');
              });
 
-             const unassignedList = document.createElement('ul');
              unassignedTeamsInCategory.forEach(team => {
                   const teamItem = document.createElement('li');
                   teamItem.textContent = team.name || 'Neznámy tím';
                   unassignedList.appendChild(teamItem);
              });
-             unassignedDivContent.appendChild(unassignedList);
-
-             if (singleGroupUnassignedDisplay) { // Append unassigned teams to singleGroupUnassignedDisplay (which is inside singleGroupContent)
-                  singleGroupUnassignedDisplay.appendChild(unassignedDivContent);
-                  console.log("DEBUG: Unassigned teams display added to singleGroupUnassignedDisplay.");
-             }
+             singleGroupUnassignedDisplay.appendChild(unassignedList); // Append the ul to the display div
 
           } else {
               console.error("ERROR: singleGroupUnassignedDisplay element not found in displaySingleGroup!");
@@ -957,7 +989,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
      // Získanie referencií na HTML elementy hneď na začiatku
      if (!getHTMLElements()) {
-         console.error("FATAL ERROR: DOMContentLoaded failed due to missing HTML elements.");
+         console.error("FATAL ERROR: DOMContentLoaded failed due to missing HTML elementy.");
          return; // Zastaviť ďalšie vykonávanie skriptu, ak chýbajú elementy
      }
      console.log("DEBUG: Element check passed on DOMContentLoaded.");
