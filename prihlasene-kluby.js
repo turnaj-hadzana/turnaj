@@ -92,11 +92,6 @@ function updateHeaderColspan(numCategoryColumns) {
                 clubsSummaryTableHeader.appendChild(th);
             });
         }
-
-        // ZMENA: Pridanie nového stĺpca na koniec HLAVIČKY
-        const lastColumnTh = document.createElement('th');
-        lastColumnTh.textContent = ''; // Nový stĺpec môže byť prázdny, alebo mať ikonu/tlačidlo
-        clubsSummaryTableHeader.appendChild(lastColumnTh); // Pridať na koniec hlavičky
     }
 
      // Update colspan for the initial loading/error row in the body
