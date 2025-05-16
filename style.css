@@ -395,4 +395,23 @@ main {
      font-weight: normal; /* Názov klubu by nemal byť tučný v nadpise */
 }
 
-/* Koniec nových štýlov pre prihlasene-kluby.html */
+#teamsInCategoryButtons button.action-button {
+    /* Skopírujte sem všetky relevantné štýly z vášho existujúceho .action-button pravidla,
+       alebo aspoň tie, ktoré sa neaplikujú správne (napr. background-color, color, border) */
+    background-color: #4CAF50 !important; /* Príklad: zelená farba pozadia */
+    color: #ffffff !important; /* Príklad: biela farba textu */
+    /* Pridajte ďalšie potrebné štýly, ak sa neaplikujú */
+
+    /* !!! Poznámka: Použitie !important by malo byť zriedkavé,
+       ale môže pomôcť rýchlo overiť, či je problém v špecifickosti.
+       Ideálnejšie je mať dobre štruktúrované CSS bez !important. */
+}
+
+/* Ak chcete zabezpečiť aj stav po nabehnutí myšou a kliknutí: */
+#teamsInCategoryButtons button.action-button:hover {
+     background-color: #45a049 !important;
+}
+
+#teamsInCategoryButtons button.action-button:active {
+     background-color: #367c39 !important;
+}
