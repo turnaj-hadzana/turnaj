@@ -358,13 +358,3 @@ nav ul li a:hover {
      display: flex; /* Ponechať */
      flex-direction: column; /* Ponechať */
 }
-#clubsHeaderTable th:last-child {
-    width: 2px;
-    min-width: 2px;
-}
-#clubsBodyTable td:last-child {
-    padding: 0 0;
-}
-#clubsBodyTable td:last-child {
-    padding: 10px 0;
-}
