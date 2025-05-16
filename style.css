@@ -254,10 +254,7 @@ nav ul li a:hover {
     flex-grow: 1; /* Tento div zaberie väčšinu zostávajúceho vertikálneho priestoru */
     overflow-y: auto; /* Ponechať vertikálne skrolovanie v boxe */
     overflow-x: auto; /* Ponechať horizontálne skrolovanie v boxe */
-
-    /* Štýly pre vzhľad bloku */
-    margin-top: 20px; /* Vrátená horná medzera */
-
+    margin-top: 0px;
     border: 1px solid #ccc;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
     border-radius: 5px;
