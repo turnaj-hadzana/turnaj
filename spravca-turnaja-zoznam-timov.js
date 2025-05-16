@@ -1114,42 +1114,4 @@ document.addEventListener('DOMContentLoaded', async () => {
          });
      }
 });
-async function loadAllCategoriesForDynamicSelects() {
-    allAvailableCategories = [];
-    try {
-        const querySnapshot = await getDocs(categoriesCollectionRef);
-        querySnapshot.forEach((doc) => {
-            const categoryData = doc.data();
-            if (categoryData && typeof categoryData.name === 'string' && categoryData.name.trim() !== '') {
-                allAvailableCategories.push({ id: doc.id, name: categoryData.name.trim() });
-            } else {
-                allAvailableCategories.push({ id: doc.id, name: doc.id });
-            }
-        });
-        allAvailableCategories.sort((a, b) => (a.name || '').localeCompare((b.name || ''), 'sk-SK'));
-    } catch (e) {
-        allAvailableCategories = [];
-    }
-}
-async function loadAllGroups() {
-    allAvailableGroups = [];
-    try {
-        const querySnapshot = await getDocs(groupsCollectionRef);
-        querySnapshot.forEach((doc) => {
-            const groupData = doc.data();
-            if (groupData) {
-                allAvailableGroups.push({ id: doc.id, ...groupData });
-            } else {
-                 allAvailableGroups.push({ id: doc.id, name: doc.id });
-            }
-        });
-        allAvailableGroups.sort((a, b) => {
-             const nameA = (a.name || a.id) || '';
-             const nameB = (b.name || b.id) || '';
-             return nameA.localeCompare(nameB, 'sk-SK');
-         });
-    } catch (e) {
-        allAvailableGroups = [];
-    }
-}
 export { openClubModal, displayCreatedTeams };
