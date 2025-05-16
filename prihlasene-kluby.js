@@ -166,7 +166,7 @@ function displayClubsSummaryTable() {
         row.dataset.baseName = baseName;
         row.style.cursor = 'pointer';
         row.addEventListener('click', () => {
-             // ZMENA: Aktualizácia URL pri kliknutí na riadok klubu
+             // Aktualizácia URL pri kliknutí na riadok klubu
              const url = new URL(window.location.href);
              url.searchParams.set('club', baseName);
              url.searchParams.delete('team'); // Odstráň parameter team
@@ -308,9 +308,9 @@ async function displaySubjectDetails(baseName, initialTeamId = null) { // Pridan
                } else {
                    // Ak sa kategória nenašla v allCategories, skús ju získať z ID tímu ako zálohu
                    const teamIdString = team.id || ''; // Získaj ID tímu ako string
-                   // Regex na hľadanie vzorov ako "U10 D", "U12 C", "U15" v ID tímu
-                   // Tento regex predpokladá, že ID kategórie je vo formáte U## alebo U## Písmeno
-                   const categoryIdRegex = /(U\d{2}\s?[A-Z]?)/;
+                   // ZMENA: Upravený Regex na hľadanie vzorov ako "U10 D", "U12 CH", "U15"
+                   // Tento regex predpokladá, že ID kategórie je vo formáte U## alebo U## medzera Písmeno/Písmená
+                   const categoryIdRegex = /(U\d{2}(?:\s?[A-Z]+)?)/; // <--- TU JE UPRAVENÝ REGEX
                    const match = teamIdString.match(categoryIdRegex);
 
                    if (match && match[1]) {
@@ -523,9 +523,10 @@ async function handleUrlState() {
         if (team) {
             const baseName = getClubBaseName(team);
              // Zobraz detaily subjektu (tým sa vytvoria tlačidlá tímov)
-            displaySubjectDetails(baseName, teamId); // Pošli teamId na zvýraznenie
-            // displaySpecificTeamDetails(teamId) sa zavolá vo vnútri displaySubjectDetails
-            // po vytvorení tlačidiel ak je initialTeamId != null, ALEBO priamo na konci displaySpecificTeamDetails ak initialTeamId existuje
+             // Posielame teamId do displaySubjectDetails
+            displaySubjectDetails(baseName, teamId);
+            // displaySpecificTeamDetails(teamId) sa teraz volá vo vnútri displaySubjectDetails
+            // ak initialTeamId existuje
 
         } else {
             // Tím s daným ID sa nenašiel, zobraz zoznam klubov
@@ -566,7 +567,7 @@ document.addEventListener('DOMContentLoaded', () => {
         updatedBackButton.addEventListener('click', goBackToList);
 
     } else {
-       console.warn("Element with ID 'backToListButton' not found.");
+       console.warn("Element s ID 'backToListButton' nebol nájdený.");
     }
 });
 
