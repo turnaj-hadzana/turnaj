@@ -1,10 +1,10 @@
-// zobrazenie-skupin.js (Oprava návratu + Detailné logy elementov + Detailné logy hľadania kategórie)
+// zobrazenie-skupin.js (Oprava zobrazenia po kliknutí na kategóriu + refaktorizácia hash/showOnly)
 
 // Importy z common.js
 import { db, categoriesCollectionRef, groupsCollectionRef, clubsCollectionRef,
          getDocs, query, where } from './spravca-turnaja-common.js';
 
-// Získanie referencií na elementy (použijeme let, aby sme ich mohli prípadne skontrolovať)
+// Získanie referencií na elementy (použijeme let, aby sme ich mohli prípadne skontrolovať v getHTMLElements)
 let dynamicContentArea = null; // Hlavný dynamický kontajner
 let backToCategoriesButton = null; // Tlačidlo Späť na kategórie
 let backToGroupButtonsButton = null; // Tlačidlo Späť na skupiny
@@ -267,7 +267,7 @@ function displayCategoriesAsButtons() {
             const categoryId = button.dataset.categoryId;
             console.log(`DEBUG: Category button clicked for category ID: ${categoryId}. Calling displayGroupsForCategory.`);
             displayGroupsForCategory(categoryId); // Prejsť na zobrazenie VŠETKÝCH skupín kategórie
-            // showOnly('allGroupsContent'); // Show only is called inside displayGroupsForCategory now
+            // showOnly('allGroupsContent'); // showOnly sa volá TERAZ v displayGroupsForCategory
         });
 
         if (categoryButtonsContainer) categoryButtonsContainer.appendChild(button);
@@ -279,9 +279,11 @@ function displayCategoriesAsButtons() {
 // Táto funkcia plní kontajnery pre Úroveň 2: categoryTitleDisplay, groupSelectionButtons, allGroupsContent
 function displayGroupsForCategory(categoryId) {
     console.log(`INFO: Zobrazujem všetky skupiny pre kategóriu: ${categoryId}`);
-    // Nastavenie stavu sa robí pred volaním tejto funkcie v DOMContentLoaded a goBackToGroupView
-    // currentCategoryId = categoryId;
-    // currentGroupId = null; // Už nezobrazujeme jednu konkrétnu skupinu
+    // Nastavenie stavu
+    currentCategoryId = categoryId; // Set state here
+    currentGroupId = null; // Reset group ID
+    console.log(`DEBUG: State updated in displayGroupsForCategory: currentCategoryId=${currentCategoryId}, currentGroupId=${currentGroupId}`);
+
 
      // Kontrola existencie elementov
      if (!getHTMLElements()) {
@@ -304,17 +306,16 @@ function displayGroupsForCategory(categoryId) {
      console.log("DEBUG: Containers cleared in displayGroupsForCategory.");
 
 
-    // Zobraziť/skryť tlačidlá späť - toto sa už nastaví v showOnly alebo volajúcej funkcii
-    // backToCategoriesButton.style.display = 'block';
-    // backToGroupButtonsButton.style.display = 'none';
-    // console.log("DEBUG: Back buttons updated for all groups view.");
+    // Zobraziť/skryť tlačidlá späť
+    if (backToCategoriesButton) backToCategoriesButton.style.display = 'block'; // Späť na kategórie
+    if (backToGroupButtonsButton) backToGroupButtonsButton.style.display = 'none'; // Späť na skupiny
+    console.log("DEBUG: Back buttons visibility updated in displayGroupsForCategory.");
 
 
-    // Zobraziť iba kontajnery pre Úroveň 2 - toto sa robí vo volajúcej funkcii (DOMContentLoaded, goBackToGroupView)
-    // showOnly('allGroupsContent'); // showOnly sa volá z DOMContentLoaded a goBackToGroupView, NIE priamo tu
+    // Zápis do URL hash (len kategória)
+    window.location.hash = 'category-' + encodeURIComponent(categoryId);
+    console.log(`DEBUG: URL hash set to: ${window.location.hash}`);
 
-    // Zápis do URL hash (len kategória) - toto sa robí vo volajúcej funkcii
-    // window.location.hash = 'category-' + encodeURIComponent(categoryId);
 
      console.log(`DEBUG: Attempting to find category with ID: "${categoryId}" in allCategories.`);
       console.log("DEBUG: Content of allCategories:", allCategories.map(cat => cat.id)); // Log all category IDs
@@ -330,7 +331,7 @@ function displayGroupsForCategory(categoryId) {
          goBackToCategories(); // Vráti nás na zoznam kategórií (mala by sa zobraziť chybová správa)
         return; // Ukončíme funkciu
     }
-     console.log(`DEBUG: Category "${categoryId}" found.`); // <--- Tento log by sa mal teraz zobraziť, ak sa kategória našla
+     console.log(`DEBUG: Category "${categoryId}" found.`);
 
 
      // Pridáme nadpis kategórie
@@ -362,7 +363,6 @@ function displayGroupsForCategory(categoryId) {
          if (groupSelectionButtons) groupSelectionButtons.innerHTML = '<p>V kategórii nie sú skupiny na výber.</p>';
          if (allGroupsContainer) allGroupsContainer.innerHTML = `<p>V kategórii "${selectedCategory.name || selectedCategory.id}" zatiaľ nie sú vytvorené žiadne skupiny.</p>`;
           console.log("DEBUG: No groups in category, showing messages in displayGroupsForCategory.");
-          // Ak nie sú skupiny, dynamickú šírku neriešime pre Level 2 (vyrieši showOnly)
     } else {
         // --- VYTVORIŤ TLAČIDLÁ PRE VÝBER SKUPINY ---
         console.log("DEBUG: Creating group selection buttons in displayGroupsForCategory...");
@@ -377,13 +377,12 @@ function displayGroupsForCategory(categoryId) {
                  const groupIdToDisplay = button.dataset.groupId;
                  console.log(`DEBUG: Group button clicked for group ID: ${groupIdToDisplay}. Calling displaySingleGroup.`);
                  displaySingleGroup(groupIdToDisplay); // Prejsť na zobrazenie JEDNEJ skupiny
-                 // showOnly('singleGroupContent'); // showOnly sa volá v displaySingleGroup
+                 // showOnly('singleGroupContent'); // showOnly sa volá TERAZ v displaySingleGroup
             });
             if (groupSelectionButtons) groupSelectionButtons.appendChild(button); // Pridať tlačidlo do kontajnera tlačidiel
         });
          if (groupSelectionButtons) console.log(`DEBUG: ${groupsInCategory.length} group selection buttons created and appended to #groupSelectionButtons. #groupSelectionButtons children count: ${groupSelectionButtons.children.length}`);
          console.log(`DEBUG: After button creation in displayGroupsForCategory. #groupSelectionButtons display: ${groupSelectionButtons ? groupSelectionButtons.style.display : 'N/A'}`);
-        // --- KONIEC VYTVÁRANIA TLAČIDIEL PRE VÝBER SKUPINY ---
 
 
         // --- VYTVORIŤ BLOKY VŠETKÝCH SKUPÍN ---
@@ -492,6 +491,12 @@ function displayGroupsForCategory(categoryId) {
           if (allGroupsUnassignedDisplay) allGroupsUnassignedDisplay.innerHTML = '';
            console.log("DEBUG: No unassigned teams for this category in displayGroupsForCategory.");
      }
+
+     // *** VOLANIE showOnly PO NAPLNENÍ OBSAHU ***
+     console.log("DEBUG: displayGroupsForCategory calling showOnly('allGroupsContent').");
+     showOnly('allGroupsContent'); // <-- Add this call here
+     console.log("DEBUG: showOnly('allGroupsContent') called from displayGroupsForCategory.");
+
 }
 
 // Funkcia na zobrazenie obsahu jednej konkrétnej skupiny (Úroveň 3)
@@ -534,7 +539,7 @@ function displaySingleGroup(groupId) {
 
 
      // Zobraziť iba kontajnery pre Úroveň 3 (categoryTitleDisplay a groupSelectionButtons ostanú viditeľné) - toto sa robí vo volajúcej funkcii
-     // showOnly('singleGroupContent'); // showOnly sa volá z DOMContentLoaded a displayGroupsForCategory
+     // showOnly('singleGroupContent'); // showOnly sa volá TERAZ v displaySingleGroup
 
      // Vyčistiť obsah singleGroupContent pred naplnením
     if (singleGroupDisplayBlock) singleGroupDisplayBlock.innerHTML = ''; // Vyčistiť blok jednej skupiny
@@ -543,8 +548,9 @@ function displaySingleGroup(groupId) {
     console.log("DEBUG: Cleared singleGroupContent elements innerHTML in displaySingleGroup.");
 
 
-     // Zápis do URL hash (kategória + skupina) - toto sa robí vo volajúcej funkcii
-     // window.location.hash = `category-${encodeURIComponent(currentCategoryId)}/group-${encodeURIComponent(groupId)}`;
+     // Zápis do URL hash (kategória + skupina)
+     window.location.hash = `category-${encodeURIComponent(currentCategoryId)}/group-${encodeURIComponent(groupId)}`;
+     console.log(`DEBUG: URL hash set to: ${window.location.hash}`);
 
 
      // Pridáme nadpis kategórie (už bol zobrazený v Úrovni 2, teraz len aktualizujeme text pre istotu)
@@ -620,9 +626,12 @@ function displaySingleGroup(groupId) {
 
      if (unassignedTeamsInCategory.length > 0) {
          if (singleGroupUnassignedDisplay) { // Kontrola, či element existuje
+             const unassignedDivContent = document.createElement('div'); // Vytvoríme obsah divu nepriradených tímov
+             unassignedDivContent.classList.add('unassigned-teams-display'); // Použijeme existujúci štýl
+
              const unassignedTitle = document.createElement('h2');
              unassignedTitle.textContent = 'Nepriradené tímy v tejto kategórii';
-             singleGroupUnassignedDisplay.appendChild(unassignedTitle);
+             unassignedDivContent.appendChild(unassignedTitle);
 
              unassignedTeamsInCategory.sort((a, b) => {
                   const nameA = (a.name || a.id || '').toLowerCase();
@@ -653,11 +662,10 @@ function displaySingleGroup(groupId) {
      }
 
 
-     // VOLANIE FUNKCIÍ NA DYNAMICKÚ ŠÍRKU PRE BLOK JEDNEJ SKUPINY
-      // Toto sa teraz volá až po showOnly, keďže showOnly nastavuje display pre kontajner
-      // Funkcie findMaxTableContentWidth a setUniformTableWidth sa volajú v showOnly pre 'singleGroupContent'
-      console.log("DEBUG: Dynamic width calculation for single group will be set after showOnly.");
-
+     // *** VOLANIE showOnly PO NAPLNENÍ OBSAHU ***
+      console.log("DEBUG: displaySingleGroup calling showOnly('singleGroupContent').");
+      showOnly('singleGroupContent'); // <-- Add this call here
+      console.log("DEBUG: showOnly('singleGroupContent') called from displaySingleGroup.");
 }
 
 // Funkcia na zobrazenie kategórií (návrat z pohľadu skupín v kategórii alebo jednej skupiny) (Návrat na Úroveň 1)
@@ -688,12 +696,7 @@ function goBackToCategories() {
 
 
     // Skryť všetky dynamické kontajnery (okrem categoryButtonsContainer, ten sa zobrazí)
-     showOnly('categoryButtonsContainer');
-
-    // Skryť tlačidlá späť
-    if (backToCategoriesButton) backToCategoriesButton.style.display = 'none';
-    if (backToGroupButtonsButton) backToGroupButtonsButton.style.display = 'none';
-    console.log("DEBUG: Back buttons hidden in goBackToCategories.");
+     showOnly('categoryButtonsContainer'); // This will also hide back buttons and category title/group buttons
 
 
     // Vymazať hash
@@ -704,6 +707,7 @@ function goBackToCategories() {
 
     // Znova vygenerovať tlačidlá kategórií
      displayCategoriesAsButtons(); // Táto funkcia už naplní categoryButtonsContainer a nastaví jeho display
+     console.log("DEBUG: displayCategoriesAsButtons called from goBackToCategories.");
 
 }
 
@@ -711,6 +715,8 @@ function goBackToCategories() {
 function goBackToGroupView() {
      console.log(`INFO: Návrat na zobrazenie všetkých skupín pre kategóriu: ${currentCategoryId}`);
      currentGroupId = null; // Už nezobrazujeme jednu skupinu
+     console.log(`DEBUG: State updated in goBackToGroupView: currentCategoryId=${currentCategoryId}, currentGroupId=${currentGroupId}`);
+
 
      // Kontrola existencie elementov
      if (!getHTMLElements()) {
@@ -735,25 +741,20 @@ function goBackToGroupView() {
     console.log("DEBUG: Cleared singleGroupContent elements innerHTML on back to group view.");
 
 
-     // *** OPRAVA: Vždy znova naplníme obsah Level 2 pri návrate ***
-     console.log(`DEBUG: Calling displayGroupsForCategory(${currentCategoryId}) again in goBackToGroupView to repopulate.`);
-     displayGroupsForCategory(currentCategoryId); // Znovu naplní groupSelectionButtons a allGroupsContent
+     // *** OPRAVA: Vždy znova naplníme obsah Level 2 pri návrate a správne zobrazíme kontajnery ***
+     console.log(`DEBUG: Calling displayGroupsForCategory(${currentCategoryId}) again in goBackToGroupView to repopulate and show Level 2.`);
+     displayGroupsForCategory(currentCategoryId); // Znovu naplní groupSelectionButtons a allGroupsContent, sets hash, calls showOnly('allGroupsContent'), sets back button visibility
 
 
-     // Zobraziť kontajnery pre Úroveň 2 (categoryTitleDisplay a groupSelectionButtons ostanú viditeľné)
-     showOnly('allGroupsContent'); // Toto zobrazí allGroupsContent a ponechá categoryTitleDisplay, groupSelectionButtons
-     console.log(`DEBUG: After showOnly('allGroupsContent') on back. allGroupsContent display: ${allGroupsContent ? allGroupsContent.style.display : 'N/A'}, singleGroupContent display: ${singleGroupContent ? singleGroupContent.style.display : 'N/A'}`);
-
-
-     // Zobraziť/skryť tlačidlá späť
-     if (backToCategoriesButton) backToCategoriesButton.style.display = 'block'; // Späť na kategórie
-     if (backToGroupButtonsButton) backToGroupButtonsButton.style.display = 'none'; // Späť na skupiny
-    console.log("DEBUG: Back buttons visibility updated on back.");
+     // Zobraziť/skryť tlačidlá späť - displayGroupsForCategory now handles showing backToCategoriesButton
+     // backToCategoriesButton.style.display = 'block'; // Späť na kategórie (handled by displayGroupsForCategory)
+     // backToGroupButtonsButton.style.display = 'none'; // Späť na skupiny (handled by displayGroupsForCategory)
+    // console.log("DEBUG: Back buttons visibility updated on back."); // This log is now less relevant as visibility is set in displayGroupsForCategory
 
 
      // Hash už je nastavený na #category-... z displayGroupsForCategory, netreba meniť.
 
-     // Dynamická šírka sa nastaví automaticky po showOnly('allGroupsContent') v rámci showOnly funkcie
+     // Dynamická šírka sa nastaví automaticky po showOnly('allGroupsContent') v rámci displayGroupsForCategory
 }
 
 
@@ -913,47 +914,45 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (categoryExists) {
             console.log(`DEBUG: Category ID from hash "${decodedCategoryId}" exists.`);
 
-            // Ak kategória existuje, vždy najprv naplníme Level 2 obsah (tlačidlá skupín, bloky všetkých skupín)
-            // Toto zabezpečí, že obsah pre návrat na Úroveň 2 bude pripravený.
-            currentCategoryId = decodedCategoryId; // Nastavíme aktuálnu kategóriu pred volaním displayGroupsForCategory
-            displayGroupsForCategory(decodedCategoryId); // <-- Naplní groupSelectionButtons a allGroupsContent
-            console.log(`DEBUG: Called displayGroupsForCategory(${decodedCategoryId}) from DOMContentLoaded.`);
+            currentCategoryId = decodedCategoryId; // Set state based on hash
+            currentGroupId = decodedGroupId;     // Set state based on hash
+            console.log(`DEBUG: State updated in DOMContentLoaded based on hash: currentCategoryId=${currentCategoryId}, currentGroupId=${currentGroupId}`);
 
 
             if (decodedGroupId) {
-                // Ak je v hashi aj ID skupiny
+                // If group ID in hash
                  const groupExists = allGroups.some(group => group.id === decodedGroupId && group.categoryId === decodedCategoryId);
                  if (groupExists) {
                       console.log(`INFO: Načítavam skupinu z URL: ${decodedGroupId} v kategórii ${decodedCategoryId}. Zobrazujem detail skupiny.`);
-                      // Skupina existuje, prepneme na zobrazenie detailu Level 3
-                      displaySingleGroup(decodedGroupId); // <-- Naplní singleGroupContent a nastaví state currentGroupId
-                      showOnly('singleGroupContent'); // <-- Prepne zobrazenie na singleGroupContent
-                      console.log(`DEBUG: Called displaySingleGroup(${decodedGroupId}) and showOnly('singleGroupContent') from DOMContentLoaded.`);
+                      // Populate Level 2 content first (for back button)
+                      displayGroupsForCategory(decodedCategoryId); // This will also set hash and call showOnly('allGroupsContent')
+                       console.log(`DEBUG: Called displayGroupsForCategory(${decodedCategoryId}) to ensure Level 2 content is populated before showing Level 3.`);
+                      // Then display Level 3
+                      displaySingleGroup(decodedGroupId); // This will set hash and call showOnly('singleGroupContent')
+                       console.log(`DEBUG: Called displaySingleGroup(${decodedGroupId}) to show Level 3.`);
 
                  } else {
                       console.log(`INFO: ID skupiny z URL "${decodedGroupId}" sa nenašlo v kategórii "${decodedCategoryId}". Zobrazujem všetky skupiny pre kategóriu.`);
-                      // Skupina sa nenašla, ostaneme na zobrazení všetkých skupín v kategórii (Level 2)
-                      // displayGroupsForCategory už bola volaná, len zabezpečíme zobrazenie
-                      showOnly('allGroupsContent'); // <-- Prepne zobrazenie na allGroupsContent
-                      console.log("DEBUG: Group not found from hash, showing all groups for category (showOnly).");
+                      // Group not found, show all groups for category (Level 2)
+                      displayGroupsForCategory(decodedCategoryId); // This will set hash and call showOnly('allGroupsContent')
+                       console.log("DEBUG: Group not found from hash, calling displayGroupsForCategory.");
                  }
             } else {
-                // Ak je v hashi len ID kategórie
+                // If only category in hash
                 console.log(`INFO: Načítavam všetky skupiny pre kategóriu z URL: ${decodedCategoryId}. Zobrazujem všetky skupiny.`);
-                // displayGroupsForCategory už bola volaná, len zabezpečíme zobrazenie Level 2
-                showOnly('allGroupsContent'); // <-- Prepne zobrazenie na allGroupsContent
-                 console.log("DEBUG: Only category in hash, showing all groups for category (showOnly).");
+                displayGroupsForCategory(decodedCategoryId); // This will set hash and call showOnly('allGroupsContent')
+                 console.log("DEBUG: Only category in hash, calling displayGroupsForCategory.");
             }
         } else {
             console.log(`INFO: ID kategórie z URL "${decodedCategoryId}" sa nenašlo. Zobrazujem zoznam kategórií.`);
-             // Ak ID z URL neexistuje v načítaných dátach, zobraziť zoznam kategórií
-            displayCategoriesAsButtons(); // displayCategoriesAsButtons už vyčistí hash a volá showOnly('categoryButtonsContainer')
-             console.log("DEBUG: Category not found from hash, showing category buttons.");
+             // If ID from URL doesn't exist, show categories list
+            displayCategoriesAsButtons(); // This will clear hash and call showOnly('categoryButtonsContainer')
+             console.log("DEBUG: Category not found from hash, calling displayCategoriesAsButtons.");
         }
-    } else { // Hash je prázdny alebo nezacina #category-
+    } else { // No hash
         console.log("INFO: V URL nie je hash kategórie/skupiny. Zobrazujem zoznam kategórií.");
-        displayCategoriesAsButtons(); // <-- Zobrazí Level 1
-        console.log("DEBUG: No valid hash, showing category buttons.");
+        displayCategoriesAsButtons(); // This will clear hash and call showOnly('categoryButtonsContainer')
+        console.log("DEBUG: No valid hash, calling displayCategoriesAsButtons.");
     }
 
 });
@@ -1005,7 +1004,6 @@ window.addEventListener('hashchange', () => {
     // Kontrola existencie elementov pred prácou s nimi
     if (!getHTMLElements()) {
          console.error("ERROR: hashchange handler failed due to missing HTML elements.");
-         // Tu by sme nemali robiť fallback na kategórie, lebo getHTMLElements už loguje FATAL ERROR
          return; // Ukončíme, ak chýbajú elementy
      }
       console.log("DEBUG: Element check passed in hashchange handler.");
@@ -1032,68 +1030,58 @@ window.addEventListener('hashchange', () => {
         if (categoryExists) {
              console.log(`DEBUG: Hashchange: Category ID "${decodedCategoryId}" exists.`);
 
-             // Kontrola, či už nie sme v požadovanom stave zobrazenia
+             // Check if already in the target state - prevent unnecessary re-rendering
              const alreadyInTargetState = (currentCategoryId === decodedCategoryId) &&
                                           (currentGroupId === decodedGroupId);
 
              if (alreadyInTargetState) {
                  console.log("DEBUG: Hashchange: Already in the correct state. Doing nothing.");
-                 // Ak sme už v správnom stave, netreba nič robiť, len sa uistíme, že je správne zobrazený kontajner a tlačidlá Späť
-                 if (currentGroupId === null) { // Ak sme v Level 2
-                      showOnly('allGroupsContent');
-                      if (backToCategoriesButton) backToCategoriesButton.style.display = 'block';
-                      if (backToGroupButtonsButton) backToGroupButtonsButton.style.display = 'none';
-                 } else { // Ak sme v Level 3
-                      showOnly('singleGroupContent');
-                       if (backToCategoriesButton) backToCategoriesButton.style.display = 'none';
-                       if (backToGroupButtonsButton) backToGroupButtonsButton.style.display = 'block';
-                 }
-                 return; // Ukončíme spracovanie hashchange, ak sme už v cieli
+                 // If already in the correct state, just ensure visibility is correct (handled by display functions)
+                 // No need to re-render content
+                 return;
              }
 
-            // Ak nie sme v požadovanom stave, prejdeme na nové zobrazenie
-            currentCategoryId = decodedCategoryId; // Nastavíme nový stav kategórie
+
+            // If not in the target state, transition to the new state
+            // The display functions will handle state update, hash setting and showOnly
+            currentCategoryId = decodedCategoryId; // Update state here based on hashchange
+            currentGroupId = decodedGroupId;     // Update state here based on hashchange
+             console.log(`DEBUG: State updated in hashchange: currentCategoryId=${currentCategoryId}, currentGroupId=${currentGroupId}`);
+
 
             if (decodedGroupId) {
-                // Ak je v hashi aj ID skupiny (cieľ: Úroveň 3)
+                // If group ID in hash
                  const groupExists = allGroups.some(group => group.id === decodedGroupId && group.categoryId === decodedCategoryId);
                  if (groupExists) {
                       console.log(`INFO: Hashchange: Zobrazujem skupinu ${decodedGroupId} v kategórii ${decodedCategoryId}.`);
-                      // Cieľ: Úroveň 3. Najprv naplníme Level 2 pre prípad návratu.
-                      displayGroupsForCategory(decodedCategoryId); // <-- Naplní groupSelectionButtons a allGroupsContent
-                       console.log(`DEBUG: Hashchange: Called displayGroupsForCategory(${decodedCategoryId}) to ensure Level 2 content is populated.`);
-                      // Potom naplníme a zobrazíme Level 3.
-                      displaySingleGroup(decodedGroupId); // <-- Naplní singleGroupContent a nastaví state currentGroupId
-                       showOnly('singleGroupContent'); // <-- Prepne zobrazenie
-                       console.log(`DEBUG: Hashchange: Called displaySingleGroup(${decodedGroupId}) and showOnly('singleGroupContent').`);
+                      // Populate Level 2 content first (for back button)
+                      displayGroupsForCategory(decodedCategoryId); // This will populate L2, set hash, call showOnly('allGroupsContent')
+                       console.log(`DEBUG: Hashchange: Called displayGroupsForCategory(${decodedCategoryId}) to ensure Level 2 content is populated before showing Level 3.`);
+                      // Then display Level 3
+                      displaySingleGroup(decodedGroupId); // This will set hash, call showOnly('singleGroupContent')
+                       console.log(`DEBUG: Hashchange: Called displaySingleGroup(${decodedGroupId}) to show Level 3.`);
 
                  } else {
                       console.log(`INFO: Hashchange: Skupina ${decodedGroupId} v kategórii ${decodedCategoryId} sa nenašla. Zobrazujem všetky skupiny pre kategóriu.`);
-                      // Skupina sa nenašla, ostaneme na Úrovni 2 (všetky skupiny v kategórii)
-                      displayGroupsForCategory(decodedCategoryId); // <-- Naplní groupSelectionButtons a allGroupsContent
-                       showOnly('allGroupsContent'); // <-- Prepne zobrazenie
-                       currentGroupId = null; // Uistíme sa, že state je Level 2
-                       console.log("DEBUG: Hashchange: Group not found, showing all groups for category (showOnly).");
+                      // Group not found, show all groups for category (Level 2)
+                      displayGroupsForCategory(decodedCategoryId); // This will set hash and call showOnly('allGroupsContent')
+                       console.log("DEBUG: Hashchange: Group not found, calling displayGroupsForCategory.");
                  }
             } else {
-                // Ak je v hashi len ID kategórie (cieľ: Úroveň 2)
+                // If only category in hash
                 console.log(`INFO: Hashchange: Zobrazujem všetky skupiny pre kategóriu ${decodedCategoryId}.`);
-                // Cieľ: Úroveň 2. Naplníme a zobrazíme Level 2.
-                displayGroupsForCategory(decodedCategoryId); // <-- Naplní groupSelectionButtons a allGroupsContent
-                 showOnly('allGroupsContent'); // <-- Prepne zobrazenie
-                 currentGroupId = null; // Uistíme sa, že state je Level 2
-                 console.log("DEBUG: Hashchange: Only category in hash, showing all groups for category (showOnly).");
+                displayGroupsForCategory(decodedCategoryId); // This will set hash and call showOnly('allGroupsContent')
+                 console.log("DEBUG: Hashchange: Only category in hash, calling displayGroupsForCategory.");
             }
         } else {
             console.log(`INFO: Hashchange: Kategória ${decodedCategoryId} sa nenašla. Zobrazujem kategórie.`);
-             // Kategória z hashu neexistuje, vrátime sa na Úroveň 1
-             displayCategoriesAsButtons(); // <-- Zobrazí Level 1, vyčistí hash
-             console.log("DEBUG: Hashchange: Category not found, showing category buttons.");
+             // Category from hash doesn't exist, return to Level 1
+             displayCategoriesAsButtons(); // This will clear hash and call showOnly('categoryButtonsContainer')
+             console.log("DEBUG: Hashchange: Category not found, calling displayCategoriesAsButtons.");
         }
-    } else { // Hash je prázdny alebo nezacina #category- (cieľ: Úroveň 1)
-         // Ak je hash prázdny, vrátime sa na Úroveň 1
+    } else { // Hash is empty or doesn't start with #category- (target: Level 1)
          console.log("INFO: Hashchange: V URL nie je platný hash kategórie/skupiny. Zobrazujem zoznam kategórií.");
-         displayCategoriesAsButtons(); // <-- Zobrazí Level 1, vyčistí hash
-          console.log("DEBUG: Hashchange: No valid hash, showing category buttons.");
+         displayCategoriesAsButtons(); // This will clear hash and call showOnly('categoryButtonsContainer')
+          console.log("DEBUG: Hashchange: No valid hash, calling displayCategoriesAsButtons.");
     }
 });
