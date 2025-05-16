@@ -4,26 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Správca turnaja - Kategórie</title>
-    <link rel="icon" href="favicon.ico" type="image/x-icon">
-
-    <script>
-        const loggedInUsername = localStorage.getItem('username');
-
-        // Ak pouzivatel NIE JE prihlaseny, presmeruj OKAMZITE
-        if (!loggedInUsername) {
-            console.warn("Prístup zamietnutý. Používateľ nie je prihlásený. Presmerovávam na prihlásenie.");
-            window.location.replace('login.html');
-        } else {
-            // Ak je pouzivatel prihlaseny, mozeme zvazit refresh (podla tvojej poziadavky)
-             // Tato stranka pouziva hash pre navigaciu, tak refreshujeme len ak hash chyba
-             if (!window.location.hash) {
-                 console.log("Používateľ prihlásený, vynucujem reload.");
-                 window.location.reload(true);
-             }
-        }
-        // Ak je pouzivatel prihlaseny a nedoslo k refreshu (napr. kvoli hash), skript skonci a stranka sa normalne nacita
-    </script>
-    
+    <link rel="icon" href="favicon.ico" type="image/x-icon">    
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="spravca-turnaja-style.css">
 </head>
