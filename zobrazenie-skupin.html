@@ -109,15 +109,34 @@
              /* display: block; */ /* Riadené JS */
              margin-top: 20px; /* Medzera od kontajnera tlačidiel skupín */
              /* display: none; */ /* Spočiatku skryté, riadené JS */
+             text-align: center; /* Centruje vnútorné inline/inline-block prvky (ak by boli) */
          }
 
+        /* Štýly pre blok jednotlivej skupiny, keď je zobrazený samostatne (Úroveň 3) */
+        #singleGroupContent .group-display {
+            max-width: 400px; /* Nastaví maximálnu šírku, môžete ju zmeniť */
+            width: auto; /* Šírka bude auto, ale neprekročí max-width */
+            margin: 0 auto; /* Zabezpečí centrovanie bloku */
+            /* Ostatné štýly ako border, padding, background z .group-display ostanú */
 
-        /* Štýly pre blok jednotlivej skupiny (použité v .groups-container a #singleGroupContent) */
+            /* Zrušíme prípadné flexbox vlastnosti z .group-display, ktoré by mohli kolidovať pri samostatnom zobrazení */
+            flex-grow: 0;
+            flex-shrink: 0;
+            flex-basis: auto;
+        }
+
+
+        /* Štýly pre sekciu nepriradených tímov, keď je zobrazená pod jednou skupinou (Úroveň 3) */
+        #singleGroupContent .unassigned-teams-display {
+             margin: 30px auto; /* Center a pridá vrchný/spodný okraj */
+        }
+
+
+        /* Štýly pre blok jednotlivej skupiny (použité aj v .groups-container) */
         .group-display {
-             /* Tieto vlastnosti budú nastavené JS pre dynamickú šírku: */
+             /* Tieto vlastnosti budú nastavené JS pre dynamickú šírku LEN v .groups-container: */
              /* width: auto; max-width: none; flex-grow: 0; flex-shrink: 0; flex-basis: auto; min-width: 200px; */
 
-             margin: 0 auto; /* Centruje v rámci rodiča (allGroupsContent alebo singleGroupContent) */
              margin-bottom: 0; /* Zrušíme pôvodný margin-bottom, gap v kontajneri riadi medzeru */
              padding: 0;
              border: 1px solid #ddd;
@@ -127,7 +146,7 @@
              box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
              display: flex;
              flex-direction: column;
-             /* max-width: 400px; */ /* Obmedzenie max šírky je menej vhodné pri zobrazení viacerých vedľa seba */
+             /* max-width: 400px; */ /* Obmedzenie max šírky je menej vhodné pri zobrazení viacerých vedľa seba, riadené JS dynamicky alebo CSS pre single view */
         }
 
         /* Štýly pre nadpis skupiny */
