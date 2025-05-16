@@ -8,25 +8,34 @@
     <link rel="stylesheet" href="style.css">
 <body>
     <script type="module" src="auth.js"></script>
-    <script src="script.js"></script> 
+    <script src="script.js"></script>
     <h1>Prihlásené kluby</h1>
     <main>
         <section id="clubListSection" class="section-block">
-            <table id="clubsSummaryTable" class="data-table"> <thead>
-                    <tr id="clubsSummaryTableHeader">
-                        <th>Názov klubu</th>
-                        </tr>
+
+            <table id="clubsHeaderTable" class="data-table">
+                 <thead>
+                     <tr id="clubsSummaryTableHeader">
+                        <th>Názov klubu</th> </tr>
                 </thead>
-                <tbody id="clubsSummaryTableBody">
-                    <tr>
-                        <td colspan="1" style="text-align: center;">Načítavam prehľad...</td>
-                    </tr>
-                </tbody>
             </table>
+
+            <div id="scrollableTableBodyContainer" style="max-height: 300px; overflow-y: auto; border: 1px solid #ccc;">
+                <table id="clubsBodyTable" class="data-table">
+                    <tbody id="clubsSummaryTableBody">
+                        <tr>
+                            <td style="text-align: center;">Načítavam prehľad...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
         </section>
+
         <section id="clubDetailSection" class="section-block" style="display: none;">
             <button id="backToListButton" class="action-button">← Späť na prehľad</button>
-            <h2 id="clubDetailTitle"><span></span></h2> <div id="clubDetailContent">
+            <h2 id="clubDetailTitle"><span></span></h2>
+            <div id="clubDetailContent">
 
                 <div id="teamsInCategoryButtons" style="display: flex; flex-wrap: wrap; gap: 10px;">
                     Načítavam tímy...
