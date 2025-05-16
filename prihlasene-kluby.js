@@ -86,7 +86,6 @@ function displayClubsSummaryTable() {
     if (clubListSection) clubListSection.style.display = 'block';
     if (clubDetailSection) clubDetailSection.style.display = 'none';
     if (!clubsSummaryTableBody || !clubsSummaryTableHeader) {
-        console.error("Potrebné elementy tabuľky nenájdené!");
         return;
     }
     clubsSummaryTableBody.innerHTML = '';
@@ -140,7 +139,6 @@ async function displaySubjectDetails(baseName) {
      if(selectedTeamSoupiskaHracovUl) selectedTeamSoupiskaHracovUl.innerHTML = '';
      const teamsForSubject = allClubs.filter(club => getClubBaseName(club) === baseName);
      if (!teamsInCategoryListUl) {
-          console.error("Element #teamsInCategoryListUl not found!");
           return;
      }
      teamsInCategoryListUl.innerHTML = '';
@@ -170,9 +168,7 @@ async function displaySubjectDetails(baseName) {
                const category = allCategories.find(cat => cat.id === team.categoryId);
                if (category && category.name) {
                    categoryName = category.name;
-                    console.log(`Kategória nájdená v allCategories pre tím ${team.id} (${team.categoryId}): ${categoryName}`);
                } else if (team.categoryId && clubsSummaryTableHeader) {
-                    console.warn(`Kategória s ID ${team.categoryId} pre tím ${team.id} sa nenašla v allCategories alebo jej chýba názov. Skúšam hľadať v hlavičke tabuľky.`);
                     const headerTh = clubsSummaryTableHeader.querySelector(`th[data-category-id="${team.categoryId}"]`);
                     if (headerTh) {
                         categoryName = headerTh.textContent || 'Neznáma kategória (z hlavičky)';
@@ -208,7 +204,6 @@ async function displaySpecificTeamDetails(teamId) {
             if(selectedTeamNameSpan) selectedTeamNameSpan.textContent = 'Chyba: Tím nenájdený';
             if(selectedTeamRealizacnyTimDiv) selectedTeamRealizacnyTimDiv.innerHTML = '<p style="color: red;">Detail tímu sa nepodarilo načítať.</p>';
             if(selectedTeamSoupiskaHracovUl) selectedTeamSoupiskaHracovUl.innerHTML = '<li>Chyba pri načítaní súpisky.</li>';
-            console.error(`Tím s ID ${teamId} sa nenašiel.`);
             return;
         }
         const teamData = teamDoc.data();
@@ -244,7 +239,6 @@ async function displaySpecificTeamDetails(teamId) {
                   if(trenerSpan) trenerSpan.textContent = trenerName;
                   if(veduciSpan) veduciSpan.textContent = veduciName;
              } catch (realizacnyTimError) {
-                  console.error('Chyba pri načítaní realizačného tímu pre tím:', realizacnyTimError);
                   if(trenerSpan) trenerSpan.textContent = 'Chyba pri načítaní';
                   if(veduciSpan) veduciSpan.textContent = 'Chyba pri načítaní';
              }
@@ -281,14 +275,12 @@ async function displaySpecificTeamDetails(teamId) {
                        });
                   }
              } catch (hraciError) {
-                  console.error('Chyba pri načítaní súpisky hráčov pre tím:', hraciError);
                   if (selectedTeamSoupiskaHracovUl) {
                        selectedTeamSoupiskaHracovUl.innerHTML = '<li>Chyba pri načítaní súpisky.</li>';
                   }
              }
         }
     } catch (error) {
-        console.error('Chyba pri načítaní detailov konkrétneho tímu:', error);
          if(selectedTeamNameSpan) selectedTeamNameSpan.textContent = 'Chyba pri načítaní detailov tímu';
          if(selectedTeamRealizacnyTimDiv) selectedTeamRealizacnyTimDiv.innerHTML = '<p style="color: red;">Nepodarilo sa načítať detaily realizačného tímu.</p>';
          if(selectedTeamSoupiskaHracovUl) selectedTeamSoupiskaHracovUl.innerHTML = '<li>Nepodarilo sa načítať súpisku.</li>';
@@ -310,6 +302,5 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (backToListButton) {
         backToListButton.addEventListener('click', goBackToList);
     } else {
-         console.error("Element #backToListButton not found!");
     }
 });
