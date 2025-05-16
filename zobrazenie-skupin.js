@@ -142,35 +142,45 @@ async function loadAllTournamentData() {
 // Funkcia na zobrazenie/skrytie dynamických kontajnerov
 function showOnly(containerIdToShow) {
     console.log(`DEBUG: Calling showOnly, target: ${containerIdToShow}`);
-    // Skryť všetky potenciálne kontajnery obsahu okrem tých, ktoré majú byť viditeľné v oboch úrovniach 2 a 3
+    // Skryť všetky potenciálne kontajnery obsahu
     if (categoryButtonsContainer) categoryButtonsContainer.style.display = 'none';
-    // categoryTitleDisplay a groupSelectionButtons ostávajú viditeľné v úrovniach 2 a 3
-    // if (categoryTitleDisplay) categoryTitleDisplay.style.display = 'none'; // REMOVED HIDING
-    // if (groupSelectionButtons) groupSelectionButtons.style.display = 'none'; // REMOVED HIDING
-    if (allGroupsContent) allGroupsContent.style.display = 'none'; // <-- This should hide allGroupsContent unless it's the target
-    if (singleGroupContent) singleGroupContent.style.display = 'none'; // <-- This should hide singleGroupContent unless it's the target
+    if (allGroupsContent) allGroupsContent.style.display = 'none';
+    if (singleGroupContent) singleGroupContent.style.display = 'none';
 
      console.log(`DEBUG: showOnly - After hiding: categoryButtonsContainer=${categoryButtonsContainer ? categoryButtonsContainer.style.display : 'N/A'}, allGroupsContent=${allGroupsContent ? allGroupsContent.style.display : 'N/A'}, singleGroupContent=${singleGroupContent ? singleGroupContent.style.display : 'N/A'}`);
+
+
+    // *** Pridanie/odstránenie triedy single-group-active ***
+    if (dynamicContentArea) {
+        if (containerIdToShow === 'singleGroupContent') {
+            dynamicContentArea.classList.add('single-group-active');
+            console.log("DEBUG: Added 'single-group-active' class to dynamicContentArea.");
+        } else {
+            dynamicContentArea.classList.remove('single-group-active');
+             console.log("DEBUG: Removed 'single-group-active' class from dynamicContentArea.");
+        }
+    }
+    // *** Koniec Pridanie/odstránenie triedy ***
 
 
     // Zobraziť požadovaný kontajner a prípadné spoločné prvky
     switch (containerIdToShow) {
         case 'categoryButtonsContainer': // Úroveň 1
-            if (categoryButtonsContainer) categoryButtonsContainer.style.display = 'flex'; // Tlačidlá sú flex
-            if (categoryTitleDisplay) categoryTitleDisplay.style.display = 'none'; // Explicitly hide in Level 1
-            if (groupSelectionButtons) groupSelectionButtons.style.display = 'none'; // Explicitly hide in Level 1
+            if (categoryButtonsContainer) categoryButtonsContainer.style.display = 'flex';
+            if (categoryTitleDisplay) categoryTitleDisplay.style.display = 'none';
+            if (groupSelectionButtons) groupSelectionButtons.style.display = 'none';
              console.log("DEBUG: showOnly -> Showing categoryButtonsContainer, hiding title/group buttons.");
             break;
         case 'allGroupsContent': // Úroveň 2
-            if (categoryTitleDisplay) categoryTitleDisplay.style.display = 'block'; // Zobraziť nadpis
-            if (groupSelectionButtons) groupSelectionButtons.style.display = 'flex'; // Zobraziť tlačidlá skupín
-            if (allGroupsContent) allGroupsContent.style.display = 'block'; // Zobraziť kontajner všetkých skupín
+            if (categoryTitleDisplay) categoryTitleDisplay.style.display = 'block';
+            if (groupSelectionButtons) groupSelectionButtons.style.display = 'flex';
+            if (allGroupsContent) allGroupsContent.style.display = 'block';
              console.log("DEBUG: showOnly -> Showing allGroupsContent (and title/group buttons).");
             break;
         case 'singleGroupContent': // Úroveň 3
-            if (categoryTitleDisplay) categoryTitleDisplay.style.display = 'block'; // Nadpis ostáva viditeľný
-            if (groupSelectionButtons) groupSelectionButtons.style.display = 'flex'; // Tlačidlá skupín ostávajú viditeľné
-            if (singleGroupContent) singleGroupContent.style.display = 'block'; // Zobraziť kontajner jednej skupiny je blok
+            if (categoryTitleDisplay) categoryTitleDisplay.style.display = 'block';
+            if (groupSelectionButtons) groupSelectionButtons.style.display = 'flex';
+            if (singleGroupContent) singleGroupContent.style.display = 'block';
              console.log("DEBUG: showOnly -> Showing singleGroupContent (and title/group buttons).");
             break;
         default:
