@@ -7,7 +7,7 @@
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="style.css">
 <style>
-        /* Spoločný štýl pre tlačidlá v zobrazení (kategórie, skupiny) */
+        /* Spoločný štýl pre tlačidlá v zobrazení (kategórie, skupiny, späť) */
         .display-button {
             padding: 12px 20px;
             background-color: #3a8d41; /* Zelená */
@@ -18,9 +18,6 @@
             cursor: pointer;
             transition: background-color 0.3s ease;
             text-align: center;
-            flex-grow: 0;
-            flex-shrink: 1;
-            min-width: 120px;
             box-sizing: border-box; /* Zahrnie padding do šírky */
         }
 
@@ -34,24 +31,22 @@
              margin-bottom: 20px;
         }
 
-        /* Štýly pre tlačidlo Späť na kategórie */
-        #backToCategoriesButton {
+        /* Štýly pre tlačidlá Späť */
+        #backToCategoriesButton,
+        #backToGroupButtonsButton { /* Pridané #backToGroupButtonsButton späť */
             display: none; /* Spočiatku skryté, riadené JS */
-            padding: 10px 15px;
-            background-color: #3a8d41; /* Zelená */
-            color: white;
-            border: none;
-            border-radius: 5px;
-            font-size: 1em;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-            margin: 20px auto; /* Centruje blokový element a pridá okraje */
-            display: block; /* Potrebné pre margin: auto */
+            /* Používame .display-button pre farby a základný vzhľad */
+            padding: 10px 15px; /* Trochu menší padding */
+            margin: 0 10px; /* Medzera medzi tlačidlami Späť */
+            vertical-align: top; /* Zarovnanie na vrchol */
         }
 
-        #backToCategoriesButton:hover {
+        /* Hover štýly pre tlačidlá Späť */
+        #backToCategoriesButton:hover,
+        #backToGroupButtonsButton:hover { /* Pridané #backToGroupButtonsButton späť */
             background-color: #c46f50; /* Oranžový hover */
         }
+
 
         /* Štýly pre hlavný dynamický obsah (kde sa zobrazí všetko okrem tlačidiel Späť) */
         #dynamicContentArea {
@@ -81,7 +76,7 @@
         }
 
 
-        /* Štýly pre blok jednotlivej skupiny (použité v .groups-container) */
+        /* Štýly pre blok jednotlivej skupiny */
         .group-display {
              /* Tieto vlastnosti budú nastavené JS pre dynamickú šírku: */
              /* width: auto; max-width: none; flex-grow: 0; flex-shrink: 0; flex-basis: auto; min-width: 200px; */
@@ -109,6 +104,16 @@
             border-top-left-radius: 3px;
             border-top-right-radius: 3px;
         }
+
+         /* Štýl pre tlačidlo v rámci bloku skupiny */
+        .group-display .display-button {
+             display: block; /* Zobrazí ako blokový element */
+             width: calc(100% - 20px); /* Šírka bloku mínus paddingy v kontajneri */
+             margin: 10px auto; /* Centruje a pridá vertikálny okraj */
+             padding: 8px 10px; /* Menší padding ako kategórie */
+             font-size: 1em; /* Menšie písmo */
+        }
+
 
         /* Štýly pre zoznam tímov v skupine */
         .group-display ul {
@@ -269,8 +274,9 @@
             <section class="section-block">
 
                 <div class="back-buttons-container">
-                    <button id="backToCategoriesButton">← Späť na kategórie</button>
-                    </div>
+                    <button id="backToCategoriesButton" class="display-button">← Späť na kategórie</button>
+                    <button id="backToGroupButtonsButton" class="display-button">← Späť na skupiny</button>
+                </div>
 
                 <div id="dynamicContentArea">
                     </div>
