@@ -215,7 +215,7 @@
         /* Štýly pre tlačidlá kategórií */
         .category-button {
             padding: 12px 20px;
-            background-color: #3a8d41; /* Upravené na #3a8d41 */
+            background-color: #3a8d41;
             color: white;
             border: none;
             border-radius: 5px;
@@ -229,25 +229,26 @@
         }
 
         .category-button:hover {
-            background-color: #c46f50; /* Upravené na #c46f50 */
+            background-color: #c46f50;
         }
 
         /* Štýly pre tlačidlo "Späť na kategórie" */
         #backToCategoriesButton {
-            display: none; /* Skryté na začiatku */
-            margin-bottom: 20px;
+            display: block; /* Zmenené/pridané pre umožnenie margin: auto */
+            margin: 20px auto; /* Zmenené/pridané pre vycentrovanie a pridanie okrajov */
             padding: 10px 15px;
-            background-color: #3a8d41; /* Upravené na #3a8d41 */
+            background-color: #3a8d41;
             color: white;
             border: none;
             border-radius: 5px;
             font-size: 1em;
             cursor: pointer;
             transition: background-color 0.3s ease;
+            /* Pôvodné margin-bottom: 20px; je teraz súčasťou margin: 20px auto; */
         }
 
         #backToCategoriesButton:hover {
-            background-color: #c46f50; /* Upravené na #c46f50 */
+            background-color: #c46f50;
         }
 
 
