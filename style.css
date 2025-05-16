@@ -406,5 +406,5 @@ main {
     top: 64px;
     background-color: #f9f9f9;
     z-index: 9999;
-    display: block;
+    display: block !important;
 }
