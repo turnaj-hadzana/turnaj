@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sticky Header Test</title>
+    <title>Sticky Header CSS Alternative Test</title>
     <style>
         /* Základné resety */
         body {
@@ -39,83 +39,90 @@
 
 
         /* Flexbox kontajner - simulácia .content-wrapper BEZ transformácie */
+        /* Tento kontajner obsahuje ľavé menu (ak by bolo) a hlavný obsah (main) */
         .content-wrapper {
             display: flex;
             width: 100%;
             margin: 20px 0;
-            padding: 0 20px; /* Pridáme padding na okraje */
+            padding: 0 20px; /* Pridáme padding na okraje, aby obsah nebol nalepený na kraji okna */
             box-sizing: border-box;
-            gap: 20px; /* Medzera medzi stĺpcami (left-menu a main) */
+            gap: 20px; /* Medzera medzi stĺpcami (ľavé menu a main) */
 
-            /* Vylúčená rušiaca vlastnosť, ktorá bola na živej stránke: */
+            /* V tomto testovacom prípade NEPOUŽÍVAME transformáciu, ktorá ruší sticky */
             /* transform: translate3d(0, 0, 0); */
         }
 
         /* Flex item - simulácia main */
+        /* Tento element obsahuje tabuľku a ostatný obsah */
         main {
-            flex-grow: 1; /* Main zaberá dostupný priestor */
-            padding: 0; /* Padding je na .content-wrapper */
-            background-color: #fff; /* Pozadie obsahu */
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Tieň */
+            flex-grow: 1; /* Main zaberá dostupný priestor vedľa ľavého menu (ak je) */
+            padding: 20px; /* Vnútorný priestor pre obsah main */
+            background-color: #fff; /* Biele pozadie obsahu main */
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Jemný tieň */
             border-radius: 8px; /* Zaoblené rohy */
-            min-width: 0; /* Dôležité pre flex item s vnútorným obsahom */
-            overflow-x: auto; /* Ak je tabuľka príliš široká */
-            /* overflow-y: auto; */ /* Ak chcete, aby skroloval len main obsah a nie celá stránka */
+            min-width: 0; /* Dôležité pre flex item s vnútorným obsahom, zabráni pretečeniu */
+            overflow: hidden; /* Skryje potenciálne pretečenie, ak by bolo */
+            /* Ak chcete, aby skroloval len main obsah (nie celá stránka), odkomentujte toto: */
+            /* max-height: calc(100vh - 100px); */ /* Príklad výšky, odpočítajte výšku hlavičky a prípadné okraje */
+            /* overflow-y: auto; */
         }
 
-
         /* Dodatočný simulovaný ľavý panel, ak by existoval a ovplyvňoval layout */
+        /* Odkomentujte, ak chcete otestovať aj s ľavým panelom vedľa main */
+        /*
         .left-menu-sim {
-             width: 200px; /* Šírka ľavého menu */
+             width: 200px; // Šírka ľavého menu
              background-color: #f8f8f8;
              padding: 15px;
              border-radius: 8px;
              box-shadow: 2px 0 5px rgba(0,0,0,0.1);
-             /* Môže byť aj sticky, ak je to relevantné pre test */
-             /*
-             position: sticky;
-             top: 80px;
-             align-self: flex-start;
-             max-height: calc(100vh - 100px);
-             overflow-y: auto;
-             z-index: 1002;
-             */
+             flex-shrink: 0; // Zabraňuje zmenšovaniu vo flex kontajneri
         }
+        */
 
 
         /* --- Štýly tabuľky --- */
 
         .data-table {
-            width: 100%; /* Tabuľka zaberá celú šírku kontajnera */
-            border-collapse: collapse;
-            margin-top: 20px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-            border-radius: 5px;
-            overflow: hidden; /* Pre zaoblené rohy */
+            width: 100%; /* Tabuľka zaberá celú šírku rodiča (main) */
+            border-collapse: collapse; /* Odstráni medzery medzi bunkami */
+            margin-top: 20px; /* Priestor nad tabuľkou */
+            /*box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08); */ /* Tieň (voliteľné) */
+            /*border-radius: 5px;*/ /* Zaoblené rohy (voliteľné) */
+            /* Overflow by mal byť na obalovom dive okolo tbody */
         }
 
         .data-table thead {
-            position: sticky;
-            top: 120px; /* Priklepiť 120px od vrchu viewportu/skrolovateľného kontajnera */
+             /* Hlavička tabuľky - nebude sticky */
+             /* Zostane v normálnom toku, nad skrolovateľným telom */
+            display: block; /* Nastavte na block pre správne rozloženie s block tbody */
+            /* Nastavte šírku, aby sa zhodovala so šírkou tela tabuľky (ak to main umožňuje) */
+            /* width: 100%; */ /* Ak chcete, aby zaberala celú šírku tabuľky */
+
             background-color: #3a8d41; /* Zelená farba hlavičky */
             color: white;
-            z-index: 9999;
-            /* Toto je kľúčové: zmeniť display na block, aby sticky fungovalo spoľahlivejšie */
-            display: block !important; /* !important je tu často potrebný kvôli prepísaniu predvoleného štýlu prehliadača */
+            z-index: 1; /* Z-index pre vrstvenie */
         }
 
+        /* Obalový kontajner pre skrolovateľné telo tabuľky */
+        .table-body-scroll {
+            max-height: 400px; /* <--- NASTAVTE VÝŠKU, PRI KTOREJ SA ZAČNE SKROLOVAŤ TÁTO ČASŤ */
+            overflow-y: auto; /* <--- ZAPNÚŤ VERTIKÁLNE SKROLOVANIE TEJTO ČASTI */
+            display: block; /* Správa sa ako block element */
+            width: 100%; /* Zabezpečí šírku */
+        }
+
+
          .data-table tbody {
-             /* Zmeniť display na block pre správne rozloženie s display: block na thead */
-             display: block;
-             /* Ak chcete, aby skrolovalo len telo tabuľky (nie celá stránka), odkomentujte toto: */
-             /* max-height: 400px; */ /* Nastavte vhodnú výšku pre skrolovacie telo */
-             /* overflow-y: auto; */
+             /* Telo tabuľky - umiestnené v skrolovateľnom dive */
+             display: block; /* Tiež nastaviť na block pre správne rozloženie s block thead */
+             width: 100%; /* Zabezpečí šírku */
          }
 
          .data-table tr {
-             /* Zmeniť display na flex alebo block pre správne rozloženie s display: block na thead/tbody */
-             display: flex; /* Flexbox je dobrý na zarovnanie buniek */
-             width: 100%; /* Vo flex kontajneri tr */
+             /* Riadky tabuľky vo vnútri block tbody */
+             display: flex; /* Flexbox je dobrý na zarovnanie buniek v riadku */
+             width: 100%; /* Zabezpečí, že riadok vo flex konteineri zaberá plnú šírku */
              border-bottom: 1px solid #eee; /* Svetlý spodný okraj pre riadky */
              transition: background-color 0.2s ease;
              cursor: pointer;
@@ -136,26 +143,32 @@
             box-sizing: border-box; /* Padding zahrnutý do šírky */
             flex-shrink: 0; /* Zabraňuje zmenšovaniu buniek vo flex riadku */
 
-            /* Tu musíte nastaviť šírky stĺpcov */
-            /* Pre presné zarovnanie s hlavičkou budete musieť experimentovať s týmito šírkami */
+            /* <--- TU MUSÍTE NASTAVIŤ ŠÍRKY STĹPCOV TAK, ABY SA ZHODOVALI V HLAVIČKE AJ V TELE ---> */
+            /* Tieto šírky musia presne zodpovedať šírkam v bunkách hlavičky aj tela */
+            /* Použite pevné šírky (px) alebo percentá (ak je to vhodné) */
         }
 
          .data-table th {
+             /* Štýly pre hlavičkové bunky */
              background-color: #3a8d41; /* Farba hlavičiek stĺpcov */
              color: white;
              font-weight: bold;
              border-bottom: 2px solid #2a6b30;
          }
+         .data-table td {
+             /* Štýly pre dátové bunky */
+             color: #333; /* Farba textu v bunkách */
+         }
 
 
-        /* Prvý stĺpec (Názov klubu) */
+        /* Prvý stĺpec (Názov klubu) - šírka musí byť rovnaká pre th aj td */
         .data-table th:nth-child(1),
         .data-table td:nth-child(1) {
             width: 250px; /* Príklad šírky */
             min-width: 250px; /* Zabezpečí minimálnu šírku */
         }
 
-        /* Stĺpec Tímy */
+        /* Stĺpec Tímy - šírka musí byť rovnaká pre th aj td */
         .data-table th:nth-child(2),
         .data-table td:nth-child(2) {
              width: 80px; /* Príklad šírky */
@@ -164,7 +177,7 @@
              font-weight: bold;
         }
 
-        /* Stĺpce kategórií (U10 D, U10 CH, U12 D, U12 CH, atď.) */
+        /* Stĺpce kategórií (U10 D, U10 CH, U12 D, U12 CH, atď.) - šírky musia byť rovnaké */
          /* Selector pre stĺpce od 3. ďalej */
          .data-table th:nth-child(n+3),
          .data-table td:nth-child(n+3) {
@@ -173,26 +186,40 @@
              text-align: center;
          }
 
-        /* Úprava posledného stĺpca Akcie / Prihlásenie (Ak by existoval) */
-        /*
-        .data-table th:last-child,
-        .data-table td:last-child {
-            width: 150px; // Príklad šírky pre posledný stĺpec
-            min-width: 150px;
-            text-align: center;
-        }
-        */
+        /* Posledný stĺpec Prihlásenie - šírka musí byť rovnaká */
+        /* Upravte číslo v nth-child, ak máte iný počet stĺpcov */
+         .data-table th:last-child,
+         .data-table td:last-child {
+             width: 100px; /* Príklad šírky pre posledný stĺpec */
+             min-width: 100px;
+             text-align: center;
+         }
 
 
-        /* Štýl pre bunku s načítavaním/chybou */
+        /* Štýl pre bunku s colspan (ak sa používa, ako napr. "Načítavam prehľad...") */
         .data-table tbody tr td[colspan] {
             text-align: center !important;
             font-style: italic;
             color: #777;
             background-color: transparent !important;
-            display: table-cell; /* Pre bunku s colspan v tbody s display: block */
-            width: 100% !important; /* Zabezpečí šírku */
+            /* Pri display: block na tbody a display: flex na tr, td s colspan potrebuje špeciálne zaobchádzanie */
+            display: flex; /* Nastavte display na flex, aby sa centroval obsah v rámci colspan */
+            justify-content: center; /* Centrovanie obsahu */
+            align-items: center;
+            width: 100% !important; /* Zabezpečí plnú šírku bunky s colspan */
+            flex-basis: 100%; /* Zabezpečí, že zaberie plnú šírku vo flex riadku */
         }
+
+
+         /* --- Štýly pre obsah pod tabuľkou (na zabezpečenie skrolovania CELEJ STRÁNKY, ak nie je skrolovateľný main) --- */
+         .scroll-spacer {
+             height: 800px; /* Pridá priestor pod tabuľku na zabezpečenie skrolovania */
+             background-color: #f0f0f0;
+             margin-top: 20px;
+             padding: 20px;
+             text-align: center;
+             color: #555;
+         }
 
 
     </style>
@@ -211,7 +238,8 @@
                 <thead>
                     <tr id="clubsSummaryTableHeader">
                         <th>Názov klubu</th>
-                        <th>Tímy</th> <th>U10 D</th>
+                        <th>Tímy</th>
+                        <th>U10 D</th>
                         <th>U10 CH</th>
                         <th>U12 D</th>
                         <th>U12 CH</th>
@@ -223,82 +251,96 @@
                         <th>U18 CH</th>
                          <th>Muži</th>
                          <th>Ženy</th>
-                         <th>Prihlásenie</th> </tr>
+                         <th>Prihlásenie</th>
+                    </tr>
                 </thead>
-                <tbody id="clubsSummaryTableBody">
-                    <tr>
-                        <td>Handball Club Pezinok</td>
-                        <td>2</td> <td>1</td>
-                        <td>1</td>
-                        <td></td>
-                        <td></td>
-                         <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                         <td></td>
-                        <td></td>
-                         <td></td>
-                         <td></td>
-                         <td>1</td>
-                    </tr>
-                     <tr>
-                        <td>HC Tatran Stupava</td>
-                        <td>6</td> <td>2</td>
-                        <td>2</td>
-                        <td>1</td>
-                        <td>1</td>
-                         <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                         <td></td>
-                        <td></td>
-                         <td></td>
-                         <td></td>
-                         <td>1</td>
-                    </tr>
-                    <tr>
-                        <td>HK AGRO Topoľčany</td>
-                         <td>1</td> <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                         <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                         <td></td>
-                        <td></td>
-                         <td>1</td>
-                         <td></td>
-                         <td>1</td>
-                    </tr>
-                     <tr><td>HK AS Trenčín</td><td>1</td><td></td><td></td><td></td><td>1</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>1</td></tr>
-                     <tr><td>HK Bojnice</td><td>1</td><td></td><td></td><td></td><td></td><td>1</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>1</td></tr>
-                     <tr><td>HK Ivančice</td><td>1</td><td></td><td></td><td></td><td></td><td></td><td>1</td><td></td><td></td><td></td><td></td><td></td><td></td><td>1</td></tr>
-                      <tr><td>HK Junior Močenok</td><td>2</td><td></td><td></td><td></td><td></td><td></td><td></td><td>1</td><td>1</td><td></td><td></td><td></td><td></td><td>1</td></tr>
-                       <tr><td>HK Košice</td><td>2</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>1</td><td>1</td><td></td><td></td><td>1</td></tr>
-                        <tr><td>HK Senec</td><td>4</td><td>2</td><td>2</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>1</td></tr> <tr><td>HK Slávia Medik Martin</td><td>4</td><td>2</td><td>1</td><td>1</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>1</td></tr> <tr><td>HK Slávia Partizánske</td><td>2</td><td>1</td><td>1</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>1</td></tr>
-                          <tr><td>HK Slávia Sereď</td><td>4</td><td>2</td><td>1</td><td>1</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>1</td></tr> <tr><td>HK Slovan Duslo Šaľa</td><td>4</td><td></td><td></td><td></td><td>2</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>2</td><td>1</td></tr> <tr><td>HKM Šurany</td><td>2</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>1</td><td>1</td><td></td><td></td><td>1</td></tr>
-                           <tr><td>HO Lehota pod Vtáčnikom</td><td>1</td><td></td><td></td><td></td><td></td><td></td><td></td><td>1</td><td></td><td></td><td></td><td></td><td></td><td>1</td></tr>
-                           <tr><td>HO TJ Slovan Modra</td><td>9</td><td>5</td><td>1</td><td>2</td><td>1</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>1</td></tr> <tr><td>HŠK Legends Šaľa</td><td>2</td><td></td><td></td><td></td><td></td><td></td><td></td><td>1</td><td>1</td><td></td><td></td><td></td><td></td><td>1</td></tr>
-                             <tr><td>MHáK Martin</td><td>3</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>2</td><td>1</td><td></td><td></td><td>1</td></tr> <tr><td>MHC Štart Nové Zámky</td><td>3</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>2</td><td>1</td><td>1</td></tr> <tr><td>MHK Piešťany</td><td>3</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>1</td><td>1</td><td>1</td></tr> <tr><td>MŠK - hádzaná Čadca</td><td>1</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>1</td><td></td><td>1</td></tr>
-                                <tr><td>MŠK HO Považská Bystrica</td><td>2</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>2</td><td>1</td></tr>
-                                <tr><td>MŠK UVENTA Michalovce</td><td>9</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>5</td><td>4</td><td>1</td></tr> <tr><td>SMF - HK Žilina</td><td>7</td><td>5</td><td>1</td><td>2</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>1</td></tr> <tr><td>Sport Club Senec</td><td>1</td><td></td><td></td><td></td><td></td><td></td><td></td><td>1</td><td></td><td></td><td></td><td></td><td></td><td>1</td></tr>
-                                <tr><td>ŠA Trenčín</td><td>4</td><td>2</td><td>2</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>1</td></tr> <tr><td>ŠKK Zemplín Trebišov</td><td>3</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>2</td><td>1</td><td></td><td></td><td>1</td></tr>
-                                 <tr><td>ŠkH Rohožník</td><td>2</td><td></td><td></td><td></td><td>1</td><td>1</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>1</td></tr>
-                                <tr><td>ŠkHá Dubnica nad Váhom</td><td>2</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>1</td><td>1</td><td></td><td></td><td>1</td></tr>
-                                 <tr><td>ŠKP Topoľčany</td><td>6</td><td></td><td></td><td></td><td>3</td><td>2</td><td>1</td><td></td><td></td><td></td><td></td><td></td><td></td><td>1</td></tr> <tr><td>ŠKP Prešov</td><td>2</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>1</td><td>1</td><td></td><td></td><td>1</td></tr>
-                                   <tr><td>Štart Trebišov</td><td>2</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>2</td><td>1</td></tr>
-                                  <tr><td>Tatran Prešov</td><td>2</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>2</td><td>1</td></tr>
-                                   <tr><td>TJ Sokol Cífer</td><td>2</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>2</td><td>1</td></tr>
-                                   <tr><td>TJ Strojár Malacky - ŠkH Rohožník</td><td>2</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>2</td><td>1</td></tr>
-                                   <tr><td>ZŠ Bieloruská</td><td>2</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>2</td><td>1</td></tr>
-                                   </tbody>
-            </table>
+                 <div class="table-body-scroll">
+                    <tbody id="clubsSummaryTableBody">
+                        <tr>
+                            <td>Handball Club Pezinok</td>
+                            <td>2</td> <td>1</td>
+                            <td>1</td>
+                            <td></td>
+                            <td></td>
+                             <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                             <td></td>
+                            <td></td>
+                             <td></td>
+                             <td></td>
+                             <td>1</td>
+                        </tr>
+                         <tr>
+                            <td>HC Tatran Stupava</td>
+                            <td>6</td> <td>2</td>
+                            <td>2</td>
+                            <td>1</td>
+                            <td>1</td>
+                             <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                             <td></td>
+                            <td></td>
+                             <td></td>
+                             <td></td>
+                             <td>1</td>
+                        </tr>
+                        <tr>
+                            <td>HK AGRO Topoľčany</td>
+                             <td>1</td> <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                             <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                             <td></td>
+                            <td></td>
+                             <td>1</td>
+                             <td></td>
+                             <td>1</td>
+                        </tr>
+                         <tr><td>HK AS Trenčín</td><td>1</td><td></td><td></td><td></td><td>1</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>1</td></tr>
+                         <tr><td>HK Bojnice</td><td>1</td><td></td><td></td><td></td><td></td><td>1</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>1</td></tr>
+                         <tr><td>HK Ivančice</td><td>1</td><td></td><td></td><td></td><td></td><td></td><td>1</td><td></td><td></td><td></td><td></td><td></td><td></td><td>1</td></tr>
+                          <tr><td>HK Junior Močenok</td><td>2</td><td></td><td></td><td></td><td></td><td></td><td></td><td>1</td><td>1</td><td></td><td></td><td></td><td></td><td>1</td></tr>
+                           <tr><td>HK Košice</td><td>2</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>1</td><td>1</td><td></td><td></td><td>1</td></tr>
+                            <tr><td>HK Senec</td><td>4</td><td>2</td><td>2</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>1</td></tr>
+                            <tr><td>HK Slávia Medik Martin</td><td>4</td><td>2</td><td>1</td><td>1</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>1</td></tr>
+                             <tr><td>HK Slávia Partizánske</td><td>2</td><td>1</td><td>1</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>1</td></tr>
+                              <tr><td>HK Slávia Sereď</td><td>4</td><td>2</td><td>1</td><td>1</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>1</td></tr>
+                              <tr><td>HK Slovan Duslo Šaľa</td><td>4</td><td></td><td></td><td></td><td>2</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>2</td><td>1</td></tr>
+                              <tr><td>HKM Šurany</td><td>2</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>1</td><td>1</td><td></td><td></td><td>1</td></tr>
+                               <tr><td>HO Lehota pod Vtáčnikom</td><td>1</td><td></td><td></td><td></td><td></td><td></td><td></td><td>1</td><td></td><td></td><td></td><td></td><td></td><td>1</td></tr>
+                               <tr><td>HO TJ Slovan Modra</td><td>9</td><td>5</td><td>1</td><td>2</td><td>1</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>1</td></tr>
+                                <tr><td>HŠK Legends Šaľa</td><td>2</td><td></td><td></td><td></td><td></td><td></td><td></td><td>1</td><td>1</td><td></td><td></td><td></td><td></td><td>1</td></tr>
+                                 <tr><td>MHáK Martin</td><td>3</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>2</td><td>1</td><td></td><td></td><td>1</td></tr>
+                                  <tr><td>MHC Štart Nové Zámky</td><td>3</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>2</td><td>1</td><td>1</td></tr>
+                                   <tr><td>MHK Piešťany</td><td>3</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>1</td><td>1</td><td>1</td></tr>
+                                    <tr><td>MŠK - hádzaná Čadca</td><td>1</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>1</td><td></td><td>1</td></tr>
+                                    <tr><td>MŠK HO Považská Bystrica</td><td>2</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>2</td><td>1</td></tr>
+                                    <tr><td>MŠK UVENTA Michalovce</td><td>9</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>5</td><td>4</td><td>1</td></tr>
+                                     <tr><td>SMF - HK Žilina</td><td>8</td><td>5</td><td>1</td><td>2</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>1</td></tr>
+                                     <tr><td>Sport Club Senec</td><td>1</td><td></td><td></td><td></td><td></td><td></td><td></td><td>1</td><td></td><td></td><td></td><td></td><td></td><td>1</td></tr>
+                                    <tr><td>ŠA Trenčín</td><td>4</td><td>2</td><td>2</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>1</td></tr>
+                                     <tr><td>ŠKK Zemplín Trebišov</td><td>3</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>2</td><td>1</td><td></td><td></td><td>1</td></tr>
+                                     <tr><td>ŠkH Rohožník</td><td>2</td><td></td><td></td><td></td><td>1</td><td>1</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>1</td></tr>
+                                    <tr><td>ŠkHá Dubnica nad Váhom</td><td>2</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>1</td><td>1</td><td></td><td></td><td>1</td></tr>
+                                     <tr><td>ŠKP Topoľčany</td><td>6</td><td></td><td></td><td></td><td>3</td><td>2</td><td>1</td><td></td><td></td><td></td><td></td><td></td><td></td><td>1</td></tr>
+                                      <tr><td>ŠKP Prešov</td><td>2</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>1</td><td>1</td><td></td><td></td><td>1</td></tr>
+                                       <tr><td>Štart Trebišov</td><td>2</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>2</td><td>1</td></tr>
+                                      <tr><td>Tatran Prešov</td><td>2</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>2</td><td>1</td></tr>
+                                       <tr><td>TJ Sokol Cífer</td><td>2</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>2</td><td>1</td></tr>
+                                       <tr><td>TJ Strojár Malacky - ŠkH Rohožník</td><td>2</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>2</td><td>1</td></tr>
+                                       <tr><td>ZŠ Bieloruská</td><td>2</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>2</td><td>1</td></tr>
+                                    </tbody>
+                </div> </table>
 
-            <div style="height: 800px;">
+            <div class="scroll-spacer">
                  <p>Obsah pod tabuľkou na zabezpečenie skrolovania.</p>
                  <p>...</p>
                  <p>...</p>
