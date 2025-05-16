@@ -6,54 +6,53 @@
     <title>Prihlásené kluby</title>
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="style.css">
-</head>
+    <link rel="stylesheet" href="spravca-turnaja-style.css"> </head>
 <body>
     <script type="module" src="auth.js"></script>
-    <script src="script.js"></script>
-    <h1>Prihlásené kluby</h1>
-<main>
-    <section id="clubListSection" class="section-block">
-        <h2>Prehľad prihlásených klubov podľa kategórií</h2>
-        <table id="clubsSummaryTable">
-            <thead>
-                <tr id="clubsSummaryTableHeader">
-                    <th>Názov klubu/subjektu</th>
+    <script src="script.js"></script> <h1>Prehľad prihlásených klubov</h1>
+
+    <main>
+        <section id="clubListSection" class="section-block">
+            <h2>Prehľad prihlásených klubov podľa kategórií</h2>
+            <table id="clubsSummaryTable" class="data-table"> <thead>
+                    <tr id="clubsSummaryTableHeader">
+                        <th>Názov klubu/subjektu</th>
+                        </tr>
+                </thead>
+                <tbody id="clubsSummaryTableBody">
+                    <tr>
+                        <td colspan="1" style="text-align: center;">Načítavam prehľad...</td>
                     </tr>
-            </thead>
-            <tbody id="clubsSummaryTableBody">
-                <tr>
-                    <td colspan="1" style="text-align: center;">Načítavam prehľad...</td>
-                </tr>
-            </tbody>
-        </table>
-    </section>
+                </tbody>
+            </table>
+        </section>
 
-    <section id="clubDetailSection" class="section-block" style="display: none;">
-         <button id="backToListButton" class="action-button">← Späť na prehľad</button> <h2 id="clubDetailTitle">Detail tímu: <span></span></h2> <div id="clubDetailContent">
-             <h3>Tímy v kategórii <span id="detailCategoryName"></span></h3>
-             <ul id="teamsInCategoryList">
-                 <li>Načítavam tímy...</li>
-             </ul>
+        <section id="clubDetailSection" class="section-block" style="display: none;">
+            <button id="backToListButton" class="action-button">← Späť na prehľad</button>
+            <h2 id="clubDetailTitle">Detail subjektu: <span></span></h2> <div id="clubDetailContent">
 
-             <div id="selectedTeamDetails" style="display: none; margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px;">
-                  <h3>Detail tímu: <span id="selectedTeamName"></span></h3>
-                  <h4>Realizačný tím</h4>
-                  <div id="selectedTeamRealizacnyTim">
-                       <p>Tréner: <span id="selectedTeamTrenerInfo">Nezadané</span></p>
-                       <p>Vedúci družstva: <span id="selectedTeamVeduciDruzstvaInfo">Nezadané</span></p>
-                  </div>
-                  <h4>Súpiska hráčov</h4>
-                  <ul id="selectedTeamSoupiskaHracov">
-                       <li>Zatiaľ bez súpisky.</li>
-                  </ul>
-             </div>
+                <h3>Zoznam tímov</h3>
+                <ul id="teamsInCategoryList">
+                    <li>Načítavam tímy...</li>
+                </ul>
 
-
-         </div>
-     </section>
-
-</main>
+                <div id="selectedTeamDetails" style="display: none; margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px;">
+                     <h3>Detail tímu: <span id="selectedTeamName"></span></h3>
+                     <h4>Realizačný tím</h4>
+                     <div id="selectedTeamRealizacnyTim">
+                          <p>Tréner: <span id="selectedTeamTrenerInfo">Nezadané</span></p>
+                          <p>Vedúci družstva: <span id="selectedTeamVeduciDruzstvaInfo">Nezadané</span></p>
+                     </div>
+                     <h4>Súpiska hráčov</h4>
+                     <ul id="selectedTeamSoupiskaHracov">
+                          <li>Zatiaľ bez súpisky.</li>
+                     </ul>
+                </div>
+            </div>
+        </section>
+    </main>
 
     <script type="module" src="spravca-turnaja-common.js"></script>
-    <script type="module" src="prihlasene-kluby.js"></script> </body>
+    <script type="module" src="prihlasene-kluby.js"></script>
+</body>
 </html>
