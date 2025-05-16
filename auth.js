@@ -71,7 +71,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     errorMessage.style.display = 'block';
                 }
             } catch (error) {
-                console.error('Chyba pri prihlasovaní:', error);
                 errorMessage.textContent = 'Chyba pri prihlasovaní: ' + error.message;
                 errorMessage.style.display = 'block';
             }
