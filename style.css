@@ -225,17 +225,7 @@ main {
     overflow-x: auto; /* Z spravca-turnaja-style.css */
 }
 
-/* Sekcie na stránke prehľadu klubov a detailov */
-.section-block {
-    margin-bottom: 30px; /* Priestor medzi sekciami */
-    padding: 20px; /* Vnútorný priestor */
-    border: 1px solid #ddd; /* Svetlý rámček */
-    border-radius: 5px;
-    background-color: #fafafa; /* Jemne odlišné pozadie */
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08); /* Jemnejší tieň pre bloky */
-    box-sizing: border-box; /* Zabezpečenie, že padding neovplyvní šírku */
-    overflow-x: auto; /* Z spravca-turnaja-style.css */
-}
+
 
 /* Nadpisy špecifické pre obsah sekcií */
 .section-block h2,
