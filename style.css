@@ -276,7 +276,7 @@ nav ul li a:hover {
     font-weight: bold;
     font-size: 0.95em;
     white-space: nowrap; /* Kľúčové: Zabezpečí, že text sa nebude zalamovať */
-    min-width: 5vw; /* Minimálna šírka bunky 5% šírky viewportu */
+    min-width: 3vw; /* Minimálna šírka bunky 5% šírky viewportu */
 }
 
 /* Style for body cells */
@@ -285,7 +285,7 @@ nav ul li a:hover {
     border-bottom: 1px solid #eee;
     /* text-align je nastavený nižšie podľa pozície stĺpca */
     white-space: nowrap; /* Kľúčové: Zabezpečí, že text sa nebude zalamovať */
-    min-width: 5vw; /* Minimálna šírka bunky 5% šírky viewportu */
+    min-width: 3vw; /* Minimálna šírka bunky 5% šírky viewportu */
 }
 
 /* Prvý stĺpec v hlavičke aj tele - zarovnať vľavo a nastaviť minimálnu šírku */
@@ -299,7 +299,6 @@ nav ul li a:hover {
 #clubsHeaderTable th:nth-child(n + 2),
 #clubsBodyTable td:nth-child(n + 2) {
      text-align: center;
-     /* min-width: 5vw; is inherited from the general th, td rules */
 }
 
 /* ZMENA: ODSTRÁNENIE Štýlu pre POSLEDNÝ stĺpec v hlavičke (šírka 17px) */
