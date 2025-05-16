@@ -1,4 +1,4 @@
-// zobrazenie-skupin.js (3 úrovne s perzistentnými tlačidlami výberu skupiny v Úrovni 2 a 3)
+// zobrazenie-skupin.js (Šírka jednej skupiny riadená CSS, nie dynamicky JS)
 
 // Importy z common.js
 import { db, categoriesCollectionRef, groupsCollectionRef, clubsCollectionRef,
@@ -19,8 +19,6 @@ const allGroupsContainer = allGroupsContent ? allGroupsContent.querySelector('.g
 const allGroupsUnassignedDisplay = allGroupsContent ? allGroupsContent.querySelector('.unassigned-teams-display') : null;
 // singleGroupDisplayBlock a singleGroupUnassignedDisplay sa už nebudú plniť priamo v displaySingleGroup,
 // ale ich obsah sa bude vytvárať a vkladať do singleGroupContent.
-// const singleGroupDisplayBlock = singleGroupContent ? singleGroupContent.querySelector('.group-display') : null; // Len jeden blok
-// const singleGroupUnassignedDisplay = singleGroupContent ? singleGroupContent.querySelector('.unassigned-teams-display') : null;
 
 
 // Polia pre uchovanie všetkých načítaných dát
@@ -134,7 +132,7 @@ function displayCategoriesAsButtons() {
     currentCategoryId = null;
     currentGroupId = null;
 
-    if (!categoryButtonsContainer || !backToCategoriesButton || !backToGroupButtonsButton || !categoryTitleDisplay || !groupSelectionButtons || !allGroupsContent || !singleGroupContent || !allGroupsContainer || !allGroupsUnassignedDisplay || !singleGroupContent) { // Added check for singleGroupContent
+    if (!categoryButtonsContainer || !backToCategoriesButton || !backToGroupButtonsButton || !categoryTitleDisplay || !groupSelectionButtons || !allGroupsContent || !singleGroupContent || !allGroupsContainer || !allGroupsUnassignedDisplay) { // Check for all needed containers
         console.error("Chyba: Chýbajú HTML elementy kontajnerov pri displayCategoriesAsButtons.");
         // Zobrazíme chybu aj v dynamicContentArea, keďže ostatné kontajnery nemusia byť nájdené
          if (dynamicContentArea) dynamicContentArea.innerHTML = '<p>Chyba pri inicializácii zobrazenia. Chýbajú potrebné HTML elementy.</p>';
@@ -146,8 +144,8 @@ function displayCategoriesAsButtons() {
     if (allGroupsContainer) allGroupsContainer.innerHTML = ''; // Vyčistiť kontajner blokov skupín
     if (allGroupsUnassignedDisplay) allGroupsUnassignedDisplay.innerHTML = ''; // Vyčistiť nepriradené tímy
     if (singleGroupContent) singleGroupContent.innerHTML = ''; // Vyčistiť obsah singleGroupContent
-    if (groupSelectionButtons) groupSelectionButtons.innerHTML = ''; // Vyčistiť tlačidlá výberu skupiny
-    if (categoryTitleDisplay) categoryTitleDisplay.textContent = ''; // Vyčistiť nadpis kategórie
+     if (groupSelectionButtons) groupSelectionButtons.innerHTML = ''; // Vyčistiť tlačidlá výberu skupiny
+     if (categoryTitleDisplay) categoryTitleDisplay.textContent = ''; // Vyčistiť nadpis kategórie
 
 
     // Skryť tlačidlá späť
@@ -192,7 +190,7 @@ function displayGroupsForCategory(categoryId) {
     currentCategoryId = categoryId;
     currentGroupId = null; // Už nezobrazujeme jednu konkrétnu skupinu
 
-     if (!categoryButtonsContainer || !backToCategoriesButton || !backToGroupButtonsButton || !categoryTitleDisplay || !groupSelectionButtons || !allGroupsContent || !singleGroupContent || !allGroupsContainer || !allGroupsUnassignedDisplay) {
+     if (!categoryButtonsContainer || !backToCategoriesButton || !backToGroupButtonsButton || !categoryTitleDisplay || !groupSelectionButtons || !allGroupsContent || !singleGroupContent || !allGroupsContainer || !allGroupsUnassignedDisplay) { // Check for all needed containers
          console.error("Chyba: Chýbajú HTML elementy kontajnerov pre zobrazenie skupín.");
           if (dynamicContentArea) dynamicContentArea.innerHTML = '<p>Chyba pri inicializácii zobrazenia skupín. Chýbajú potrebné HTML elementy.</p>';
          return;
@@ -335,6 +333,9 @@ function displayGroupsForCategory(categoryId) {
             const uniformWidth = findMaxTableContentWidth(allGroupsContainer);
             if (uniformWidth > 0) {
                setUniformTableWidth(uniformWidth, allGroupsContainer);
+               console.log(`DEBUG: Dynamic width set for all groups content: ${uniformWidth}px`);
+            } else {
+                console.log("DEBUG: Dynamic width not set for all groups, uniformWidth is 0 or less.");
             }
         }
          // --- KONIEC VYTVÁRANIA BLOKOV VŠETKÝCH SKUPÍN ---
@@ -348,8 +349,8 @@ function displayGroupsForCategory(categoryId) {
     );
 
      if (unassignedTeamsInCategory.length > 0) {
-         // Vyčistíme aj singleGroupUnassignedDisplay pre istotu
-         if (singleGroupUnassignedDisplay) singleGroupUnassignedDisplay.innerHTML = '';
+         // Vyčistíme aj singleGroupUnassignedDisplay pre istotu (hoci by mal byť skrytý)
+         if (singleGroupContent) singleGroupContent.querySelector('.unassigned-teams-display').innerHTML = ''; // Vyčistíme unassigned tímov v single view
 
          const unassignedDivContent = document.createElement('div'); // Vytvoríme obsah divu nepriradených tímov
          unassignedDivContent.classList.add('unassigned-teams-display'); // Použijeme existujúci štýl
@@ -373,12 +374,14 @@ function displayGroupsForCategory(categoryId) {
          unassignedDivContent.appendChild(unassignedList);
 
          if (allGroupsUnassignedDisplay) {
-              allGroupsUnassignedDisplay.appendChild(unassignedDivContent); // Pridáme celý obsah do pripraveného kontajnera
+              allGroupsUnassignedDisplay.appendChild(unassignedDivContent); // Pridáme celý obsah do pripraveného kontajnera pre all groups view
+               console.log("DEBUG: Unassigned teams display added to allGroupsUnassignedDisplay.");
          }
 
      } else {
          // Ak nie sú nepriradené tímy, vyčistíme kontajner, keby tam niečo ostalo z predošlého zobrazenia
           if (allGroupsUnassignedDisplay) allGroupsUnassignedDisplay.innerHTML = '';
+           console.log("DEBUG: No unassigned teams for this category in all groups view.");
      }
 }
 
@@ -403,7 +406,7 @@ function displaySingleGroup(groupId) {
      currentCategoryId = group.categoryId; // Uložíme ID kategórie skupiny
      currentGroupId = groupId; // Nastavíme stav na zobrazenie jednej skupiny
 
-     if (!categoryButtonsContainer || !backToCategoriesButton || !backToGroupButtonsButton || !categoryTitleDisplay || !groupSelectionButtons || !allGroupsContent || !singleGroupContent) { // Removed checks for singleGroupDisplayBlock and singleGroupUnassignedDisplay here
+     if (!categoryButtonsContainer || !backToCategoriesButton || !backToGroupButtonsButton || !categoryTitleDisplay || !groupSelectionButtons || !allGroupsContent || !singleGroupContent) { // Check for all needed containers
          console.error("Chyba: Chýbajú HTML elementy kontajnerov pre zobrazenie jednej skupiny v displaySingleGroup.");
          // Zobrazíme chybu
           if (dynamicContentArea) dynamicContentArea.innerHTML = '<p>Chyba pri inicializácii zobrazenia detailu skupiny. Chýbajú potrebné HTML elementy.</p>';
@@ -413,7 +416,7 @@ function displaySingleGroup(groupId) {
      // Zobraziť/skryť tlačidlá späť
      backToCategoriesButton.style.display = 'none';
      backToGroupButtonsButton.style.display = 'block';
-     console.log("DEBUG: Back buttons visibility updated.");
+     console.log("DEBUG: Back buttons visibility updated for single group view.");
 
 
      // Zobraziť iba kontajnery pre Úroveň 3 (categoryTitleDisplay a groupSelectionButtons ostanú viditeľné)
@@ -422,7 +425,7 @@ function displaySingleGroup(groupId) {
 
 
      // Vyčistiť obsah singleGroupContent
-    if (singleGroupContent) singleGroupContent.innerHTML = '';
+    if (singleGroupContent) singleGroupContent.innerHTML = ''; // Clears singleGroupContent
     console.log("DEBUG: Cleared singleGroupContent innerHTML.");
 
      // Zápis do URL hash (kategória + skupina)
@@ -516,7 +519,7 @@ function displaySingleGroup(groupId) {
          unassignedTeamsInCategory.forEach(team => {
               const teamItem = document.createElement('li');
               teamItem.textContent = team.name || 'Neznámy tím';
-              unassignedList.appendChild(teamItem); // Appending teamItem, not teamList
+              unassignedList.appendChild(teamItem);
          });
          unassignedDivContent.appendChild(unassignedList);
 
@@ -532,18 +535,8 @@ function displaySingleGroup(groupId) {
      }
 
 
-     // VOLANIE FUNKCIÍ NA DYNAMICKÚ ŠÍRKU PRE BLOK JEDNEJ SKUPINY
-      // findMaxTableContentWidth a setUniformTableWidth potrebujú kontajner,
-      // v ktorom hľadať .group-display. Teraz je to singleGroupContent
-      if (singleGroupContent) {
-         const uniformWidth = findMaxTableContentWidth(singleGroupContent);
-         if (uniformWidth > 0) {
-            setUniformTableWidth(uniformWidth, singleGroupContent);
-            console.log(`DEBUG: Dynamic width set for single group content: ${uniformWidth}px`);
-         } else {
-             console.log("DEBUG: Dynamic width not set, uniformWidth is 0 or less.");
-         }
-      }
+     // *** ODSTRÁNENÉ VOLANIE DYNAMICKÝCH FUNKCIÍ ŠÍRKY PRE SAMOSTATNÚ SKUPINU ***
+     // Šírka samostatnej skupiny je teraz riadená CSS (#singleGroupContent .group-display)
 }
 
 // Funkcia na zobrazenie kategórií (návrat z pohľadu skupín v kategórii alebo jednej skupiny) (Návrat na Úroveň 1)
@@ -588,7 +581,7 @@ function goBackToGroupView() {
      console.log(`INFO: Návrat na zobrazenie všetkých skupín pre kategóriu: ${currentCategoryId}`);
      currentGroupId = null; // Už nezobrazujeme jednu skupinu
 
-     if (!categoryButtonsContainer || !backToCategoriesButton || !backToGroupButtonsButton || !categoryTitleDisplay || !groupSelectionButtons || !allGroupsContent || !singleGroupContent || !allGroupsContainer || !allGroupsUnassignedDisplay) {
+     if (!categoryButtonsContainer || !backToCategoriesButton || !backToGroupButtonsButton || !categoryTitleDisplay || !groupSelectionButtons || !allGroupsContent || !singleGroupContent || !allGroupsContainer || !allGroupsUnassignedDisplay) { // Check for all needed containers
          console.error("Chyba: Chýbajú HTML elementy kontajnerov pri návrate na zobrazenie skupín.");
          if (dynamicContentArea) dynamicContentArea.innerHTML = '<p>Chyba pri návrate na zobrazenie skupín. Chýbajú potrebné HTML elementy.</p>';
          return;
@@ -640,7 +633,13 @@ function goBackToGroupView() {
 function findMaxTableContentWidth(containerElement) {
     let maxWidth = 0;
     // Hľadáme .group-display v rámci daného kontajnera
-    const groupTables = containerElement.querySelectorAll('.group-display');
+    const groupTables = containerElement ? containerElement.querySelectorAll('.group-display') : [];
+
+     if (groupTables.length === 0) {
+         console.log("DEBUG: findMaxTableContentWidth: No .group-display elements found in containerElement.");
+         return 0;
+     }
+
 
     groupTables.forEach(table => {
         const originalStyles = {
@@ -724,7 +723,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log("INFO: DOM plne načítaný pre zobrazenie skupín/kategórií.");
 
      // Kontrola, či sú nájdené všetky potrebné HTML elementy
-     if (!dynamicContentArea || !backToCategoriesButton || !backToGroupButtonsButton || !categoryButtonsContainer || !categoryTitleDisplay || !groupSelectionButtons || !allGroupsContent || !singleGroupContent || !allGroupsContainer || !allGroupsUnassignedDisplay) { // Removed !singleGroupDisplayBlock || !singleGroupUnassignedDisplay here
+     if (!dynamicContentArea || !backToCategoriesButton || !backToGroupButtonsButton || !categoryButtonsContainer || !categoryTitleDisplay || !groupSelectionButtons || !allGroupsContent || !singleGroupContent || !allGroupsContainer || !allGroupsUnassignedDisplay) { // Final check for all needed containers
          console.error("FATAL ERROR: Chýbajú niektoré základné HTML elementy kontajnerov. Skontrolujte prosím zobrazenie-skupin.html.");
           if (dynamicContentArea) dynamicContentArea.innerHTML = '<p>FATAL ERROR: Chyba pri inicializácii aplikácie. Chýbajú potrebné HTML elementy. Skontrolujte konzolu pre detaily.</p>';
          // Skryť tlačidlá späť pre prípad chyby
@@ -772,10 +771,20 @@ document.addEventListener('DOMContentLoaded', async () => {
                  const groupExists = allGroups.some(group => group.id === decodedGroupId && group.categoryId === decodedCategoryId);
                  if (groupExists) {
                       console.log(`INFO: Načítavam skupinu z URL: ${decodedGroupId} v kategórii ${decodedCategoryId}`);
-                      // Naplníme dáta pre Úroveň 2 a potom hneď prejdeme na Úroveň 3
-                      // Aby sa pri návrate na Úroveň 2 (cez Späť na skupiny) už nemuseli dáta znova generovať
-                      displayGroupsForCategory(decodedCategoryId); // Naplní aj groupSelectionButtons a allGroupsContent
-                      displaySingleGroup(decodedGroupId); // Prepne zobrazenie na singleGroupContent
+                      // Pre hashchange ideme priamo na zobrazenie danej skupiny,
+                      // ale aby fungoval návrat na skupiny, musíme najprv naplniť Úroveň 2 kontajner
+                      // Kontajnery už by mali byť naplnené z predchádzajúceho displayGroupsForCategory,
+                      // stačí prepnúť viditeľnosť.
+                      // displayGroupsForCategory(decodedCategoryId); // Toto by mohlo zbytočne znovu napĺňať obsah
+                      // Namiesto toho len nastavíme stavy a zavoláme showOnly
+                      currentCategoryId = decodedCategoryId; // Nastavíme stav
+                      currentGroupId = decodedGroupId; // Nastavíme stav
+                       // Naplníme aj obsah singleGroupContent, ak ešte nebol
+                       // (toto sa zvyčajne stane pri priamom načítaní URL s hashom skupiny)
+                       // Zavoláme displaySingleGroup, aby sa naplnil singleGroupContent a nastavila viditeľnosť
+                      displaySingleGroup(decodedGroupId);
+
+
                  } else {
                       console.log(`INFO: ID skupiny z URL "${decodedGroupId}" sa nenašlo v kategórii "${decodedCategoryId}". Zobrazujem všetky skupiny pre kategóriu.`);
                       displayGroupsForCategory(decodedCategoryId); // Zobraziť všetky skupiny pre kategóriu
@@ -800,29 +809,26 @@ document.addEventListener('DOMContentLoaded', async () => {
 // Poslucháč na zmenu veľkosti okna - pre dynamickú šírku tabuliek skupín
 window.addEventListener('resize', () => {
     console.log("DEBUG: Window resized.");
-    // Dynamickú šírku nastavujeme iba pri zobrazení skupín v kategórii ALEBO jednej skupiny
-    if (currentCategoryId !== null) { // Sme v pohľade kategórie alebo skupiny
-         let containerElement = null;
-         if (currentGroupId === null) { // Sme v pohľade VŠETKÝCH skupín v kategórii
-             containerElement = allGroupsContainer; // Cieľujeme na kontajner .groups-container v allGroupsContent
-             console.log("DEBUG: Resizing in all groups view. Targeting allGroupsContainer.");
-         } else { // Sme v pohľade JEDNEJ skupiny
-              containerElement = singleGroupContent; // Cieľujeme na kontajner singleGroupContent (obsahuje len 1 .group-display)
-              console.log("DEBUG: Resizing in single group view. Targeting singleGroupContent.");
-         }
+    // Dynamickú šírku nastavujeme iba pri zobrazení VŠETKÝCH skupín v kategórii (Úroveň 2)
+    // Pri zobrazení JEDNEJ skupiny (Úroveň 3) riadi šírku CSS
+    if (currentCategoryId !== null && currentGroupId === null) { // Sme v pohľade VŠETKÝCH skupín
+         let containerElement = allGroupsContainer; // Cieľujeme na kontajner .groups-container v allGroupsContent
+         console.log("DEBUG: Resizing in all groups view. Targeting allGroupsContainer.");
+
 
          if (containerElement) {
              const uniformWidth = findMaxTableContentWidth(containerElement);
               if (uniformWidth > 0) {
                  setUniformTableWidth(uniformWidth, containerElement);
+                 console.log(`DEBUG: Dynamic width set for all groups content: ${uniformWidth}px`);
               } else {
                   console.log("DEBUG: Resizing, but uniformWidth is 0 or less, or no containerElement.");
               }
           } else {
-              console.log("DEBUG: Resizing, but containerElement is null.");
+              console.log("DEBUG: Resizing, but allGroupsContainer is null.");
           }
     } else {
-        console.log("DEBUG: Resizing, but not in category or group view.");
+        console.log("DEBUG: Resizing, but not in all groups view (Level 2).");
     }
  });
 
@@ -858,26 +864,38 @@ window.addEventListener('hashchange', () => {
                       console.log(`INFO: Hashchange: Zobrazujem skupinu ${decodedGroupId}`);
                       // Pre hashchange ideme priamo na zobrazenie danej skupiny,
                       // ale aby fungoval návrat na skupiny, musíme najprv naplniť Úroveň 2 kontajner
-                      // Kontajnery už by mali byť naplnené z predchádzajúceho displayGroupsForCategory,
-                      // stačí prepnúť viditeľnosť.
-                      // displayGroupsForCategory(decodedCategoryId); // Toto by mohlo zbytočne znovu napĺňať obsah
-                      // Namiesto toho len nastavíme stavy a zavoláme showOnly
+                      // displayGroupsForCategory(decodedCategoryId); // Toto už netreba volať, ak chceme len prepnúť viditeľnosť
+                      // Nastavíme stavy a zavoláme showOnly
                       currentCategoryId = decodedCategoryId;
                       currentGroupId = decodedGroupId;
-                      showOnly('singleGroupContent');
-                       // Znova nastaviť nadpis a tlačidlá späť pre istotu
+                      showOnly('singleGroupContent'); // Prepneme viditeľnosť
+
+                       // Znova nastaviť nadpis a tlačidlá späť pre istotu (obsah groupSelectionButtons ostane)
                       const category = allCategories.find(cat => cat.id === currentCategoryId);
                        if (category && categoryTitleDisplay) {
                             categoryTitleDisplay.textContent = category.name || category.id;
                        }
                        backToCategoriesButton.style.display = 'none';
                        backToGroupButtonsButton.style.display = 'block';
-                       // Nastaviť šírku pre jeden blok skupiny
-                       if (singleGroupContent) {
-                           const uniformWidth = findMaxTableContentWidth(singleGroupContent);
-                            if (uniformWidth > 0) {
-                               setUniformTableWidth(uniformWidth, singleGroupContent);
-                            }
+
+                       // Naplniť obsah singleGroupContent (ak už nebol, napr. pri priamom načítaní URL)
+                       // Alebo skontrolovať, či je obsah singleGroupContent pre túto skupinu už vytvorený
+                       // Pre jednoduchosť zavoláme displaySingleGroup znova, to naplní obsah ak treba a nastaví viditeľnosť
+                       // Toto by však mohlo spôsobiť opätovné pridávanie event listenerov, ak by sa pridávali v displaySingleGroup.
+                       // Event listenery pre tlačidlá výberu skupiny sú v displayGroupsForCategory, čo je ok.
+                       // displaySingleGroup nemala obsahovať pridávanie event listenerov.
+                       // displaySingleGroup(decodedGroupId); // Voláme displaySingleGroup pre naplnenie obsahu a nastavenie visibility/state
+
+                       // ALTERNATÍVNE A ČISTEJŠIE:
+                       // Pri hashchange najprv skontrolovať, či už NIE SME v požadovanom stave.
+                       // Ak sme v stave Level 3 pre tú istú skupinu, nerobíme nič.
+                       if (!(currentCategoryId === decodedCategoryId && currentGroupId === decodedGroupId)) {
+                           // Ak nie sme v požadovanom stave, zavoláme displayGroupsForCategory (aby sa naplnila úroveň 2 pre návrat)
+                           displayGroupsForCategory(decodedCategoryId);
+                           // A potom prejdeme na zobrazenie jednej skupiny
+                           displaySingleGroup(decodedGroupId);
+                       } else {
+                            console.log("DEBUG: Hashchange: Already in the correct single group view. Doing nothing.");
                        }
 
 
@@ -888,14 +906,24 @@ window.addEventListener('hashchange', () => {
             } else {
                 // Ak je v hashi len ID kategórie
                 console.log(`INFO: Hashchange: Zobrazujem všetky skupiny pre kategóriu ${decodedCategoryId}`);
-                displayGroupsForCategory(decodedCategoryId);
+                // Ak sme už v stave Level 2 pre tú istú kategóriu, nerobíme nič.
+                 if (!(currentCategoryId === decodedCategoryId && currentGroupId === null)) {
+                     displayGroupsForCategory(decodedCategoryId);
+                 } else {
+                      console.log("DEBUG: Hashchange: Already in the correct all groups view. Doing nothing.");
+                 }
             }
         } else {
             console.log(`INFO: Hashchange: Kategória ${decodedCategoryId} sa nenašla. Zobrazujem kategórie.`);
              displayCategoriesAsButtons(); // displayCategoriesAsButtons už vyčistí hash
         }
-    } else {
-        console.log("INFO: Hashchange: V URL nie je platný hash kategórie/skupiny. Zobrazujem zoznam kategórií.");
-        displayCategoriesAsButtons(); // displayCategoriesAsButtons už vyčistí hash
+    } else { // Hash je prázdny alebo nezacina #category-
+         // Ak sme už v stave Level 1, nerobíme nič.
+          if (!(currentCategoryId === null && currentGroupId === null)) {
+             console.log("INFO: Hashchange: V URL nie je platný hash kategórie/skupiny. Zobrazujem zoznam kategórií.");
+             displayCategoriesAsButtons(); // displayCategoriesAsButtons už vyčistí hash
+          } else {
+               console.log("DEBUG: Hashchange: Already in the correct categories view. Doing nothing.");
+          }
     }
 });
