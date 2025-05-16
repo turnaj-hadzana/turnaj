@@ -15,17 +15,11 @@ header {
     z-index: 1000;
     box-sizing: border-box;
 }
-
-/* Upravte existujúce pravidlo pre body */
 body {
-    /* padding-top ponechajte, aby obsah nebol skrytý pod fixnou hlavičkou */
     padding-top: 60px; /* Ponechané tvoje pôvodné odsadenie kvôli fixnej hlavičke */
-
-    /* Pridajte Flexbox na telo */
     display: flex;
     flex-direction: column; /* Uloží priame deti (vrátane main) pod sebou */
     min-height: 100%; /* Zabezpečí, že telo má minimálne výšku okna */
-
     /* Ostatné pôvodné štýly tela */
     font-family: 'Arial', sans-serif;
     line-height: 1.6;
@@ -224,7 +218,7 @@ nav ul li a:hover {
 }
 
 /* -- Nové štýly pre prehľad klubov a detaily (pre modernejší vzhľad na stránke prihlasene-kluby.html) -- */
-/* Tieto štýly sú špecifickejšie a mali by prepísať relevantné pravidlá */
+/* Tieto štýly sú špecifickejšie a mali by prepísať relevantné pravidlá zo style.css a spravca-turnaja-style.css */
 
 /* Nadpisy špecifické pre obsah sekcií */
 .section-block h2,
@@ -262,9 +256,7 @@ nav ul li a:hover {
     overflow-x: auto; /* Ponechať horizontálne skrolovanie v boxe */
 
     /* Štýly pre vzhľad bloku */
-    margin-top: 0px; /* Vrátená horná medzera */
-    /* margin-bottom: 5%; */ /* Odstránená dolná medzera */
-
+    margin-top: 20px; /* Vrátená horná medzera */
 
     border: 1px solid #ccc;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
@@ -287,30 +279,57 @@ nav ul li a:hover {
     font-weight: bold;
     font-size: 0.95em;
     white-space: nowrap; /* Kľúčové: Zabezpečí, že text sa nebude zalamovať */
-    min-width: 2vw; /* ZMENA: Minimálna šírka bunky 5% šírky viewportu */
+    min-width: 5vw; /* Minimálna šírka bunky 5% šírky viewportu */
 }
 
 /* Style for body cells */
 #clubsBodyTable td {
-    padding: 10px 15px;
+    padding: 10px 15px; /* Predvolené odsadenie pre bunky tela */
     border-bottom: 1px solid #eee;
     /* text-align je nastavený nižšie podľa pozície stĺpca */
     white-space: nowrap; /* Kľúčové: Zabezpečí, že text sa nebude zalamovať */
-    min-width: 2vw; /* ZMENA: Minimálna šírka bunky 5% šírky viewportu */
+    min-width: 5vw; /* Minimálna šírka bunky 5% šírky viewportu */
 }
 
-/* Prvý stĺpec v hlavičke aj tele - zarovnať vľavo */
+/* Prvý stĺpec v hlavičke aj tele - zarovnať vľavo a nastaviť minimálnu šírku */
 #clubsHeaderTable th:first-child,
 #clubsBodyTable td:first-child {
     text-align: left;
-    min-width: 15vw;
+    min-width: 10vw; /* Minimálna šírka PRVÉHO stĺpca na 10vw */
 }
 
 /* Ostatné stĺpce v hlavičke aj tele - centrovať */
 #clubsHeaderTable th:nth-child(n + 2),
 #clubsBodyTable td:nth-child(n + 2) {
      text-align: center;
+     /* min-width: 5vw; is inherited from the general th, td rules */
 }
+
+/* ZMENA: ODSTRÁNENIE Štýlu pre POSLEDNÝ stĺpec v hlavičke (šírka 17px) */
+/*
+#clubsHeaderTable th:last-child {
+    width: 17px;
+    min-width: 17px;
+    text-align: center;
+    padding: 12px 0;
+}
+*/
+
+/* ZMENA: Štýl pre POSLEDNÚ bunku v tele tabuľky - odstrániť pravý padding (TOTO PONECHAŤ) */
+#clubsBodyTable td:last-child {
+    padding: 10px 0; /* Nastaví top/bottom padding na 10px, left/right na 0px */
+    /* Toto odstráni priestor medzi obsahom poslednej bunky a posuvníkom */
+}
+
+
+/* Pridanie pravého okraja ku všetkým bunkám OKREM poslednej */
+#clubsHeaderTable th:not(:last-child) {
+    border-right: 1px solid #2a6b30;
+}
+#clubsBodyTable td:not(:last-child) {
+     border-right: 1px solid #eee;
+}
+
 
 /* Štýl pre bunku s načítavaním/chybou (s colspan) */
 .data-table tbody tr td[colspan] {
@@ -340,3 +359,11 @@ nav ul li a:hover {
 
 
 /* ... (zvyšok štýlov) ... */
+
+/* Ensure the section-block containing the tables shrinks to fit content */
+#clubListSection.section-block {
+     align-items: flex-start; /* Sekcia sa zmenší na šírku obsahu */
+     flex-grow: 1; /* Ponechať, aby zaberala priestor vertikálne */
+     display: flex; /* Ponechať */
+     flex-direction: column; /* Ponechať */
+}
