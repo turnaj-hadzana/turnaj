@@ -406,13 +406,5 @@ main {
     top: 120px;
     background-color: #f9f9f9;
     z-index: 9999;
-    display: block; /* Skúste pridať toto */
-}
-.data-table tbody { /* Možno budete musieť upraviť aj tbody */
-     display: block; /* Možno budete musieť pridať aj toto */
-     /* A možno budete musieť nastaviť výšku a overflow na tbody pre skrolovanie obsahu */
-     /* napr. height: 500px; overflow-y: auto; */
-}
-.data-table tr { /* A možno aj riadky */
-     display: block; /* Možno budete musieť pridať aj toto */
+    display: block; 
 }
