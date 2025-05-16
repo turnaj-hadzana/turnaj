@@ -8,16 +8,16 @@
     <link rel="stylesheet" href="style.css">
 <style>
         .display-button {
-            padding: 12px 20px;
-            background-color: #3a8d41;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            font-size: 1.1em;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-            text-align: center;
-            box-sizing: border-box;
+             padding: 12px 20px;
+             background-color: #3a8d41;
+             color: white;
+             border: none;
+             border-radius: 5px;
+             font-size: 1.1em;
+             cursor: pointer;
+             transition: background-color 0.3s ease;
+             text-align: center;
+             box-sizing: border-box;
         }
         .display-button:hover {
             background-color: #c46f50;
@@ -73,6 +73,23 @@
             text-align: center; /* Centruje blokové elementy vo vnútri (nadpisy, sekcie tlačidiel) */
             padding: 20px;
             /* border: 1px solid red; */ /* Voliteľné: Pre ladenie */
+        }
+        #dynamicContentArea #categoryButtonsContainer .category-buttons-section {
+            display: flex !important; /* Pridané !important na vynútenie aplikácie flexboxu */
+            flex-direction: row;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 10px;
+            /* border: 2px dashed purple; */ /* Pridajte pre vizuálnu kontrolu */
+        }
+        #dynamicContentArea #categoryButtonsContainer .category-buttons-section .display-button {
+            flex-grow: 1;
+            flex-basis: 150px;
+            max-width: 250px;
+            /* display: inline-block !important; */ /* Ak by predchádzajúce nepomohlo, skúste vynútiť aj toto na tlačidle */
         }
          #categoryTitleDisplay {
              color: #333;
