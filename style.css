@@ -312,16 +312,6 @@ nav ul li a:hover {
      text-align: center;
 }
 
-
-/* Pridanie pravého okraja ku všetkým bunkám OKREM poslednej */
-#clubsHeaderTable th:not(:last-child) {
-    border-right: 1px solid #2a6b30;
-}
-#clubsBodyTable td:not(:last-child) {
-     border-right: 1px solid #eee;
-}
-
-
 /* Štýl pre bunku s načítavaním/chybou (s colspan) */
 .data-table tbody tr td[colspan] {
     text-align: center !important;
