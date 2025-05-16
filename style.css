@@ -304,6 +304,7 @@ nav ul li a:hover {
 #clubsHeaderTable th:first-child,
 #clubsBodyTable td:first-child {
     text-align: left;
+    min-width: 10vw;
 }
 
 /* Ostatné stĺpce v hlavičke aj tele - centrovať */
