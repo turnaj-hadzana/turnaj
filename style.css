@@ -243,9 +243,10 @@ nav ul li a:hover {
 /* Apply to both header and body tables */
 #clubsHeaderTable,
 #clubsBodyTable {
-    width: 100%; /* Tabuľky zaberú celú šírku kontajnera */
-    border-collapse: collapse; /* Odstránenie medzier medzi bunkami */
-    table-layout: fixed; /* Kľúčové pre jednotné šírky stĺpcov - tela sa zhodujú s hlavičkou */
+    /* ZMENA: Šírka nastavená na max-content, aby sa prispôsobila obsahu bez zalamovania */
+    width: max-content;
+    border-collapse: collapse;
+    table-layout: fixed; /* Ponechané pre jednotné šírky stĺpcov - tela sa zhodujú s hlavičkou */
 }
 
 /* Remove margin-top from the body table specifically */
@@ -258,9 +259,9 @@ nav ul li a:hover {
     flex-grow: 1; /* Tento div zaberie všetok zvyšný vertikálny priestor */
     overflow-y: auto; /* Zapnutie vertikálneho skrolovania */
 
-    /* Zabezpečí, že sa kontajner zmenší na šírku obsahu, ak flex kontajner to dovoľuje */
-    /* width: auto; */ /* Ak chcete, aby sa zmenšil na šírku obsahu */
-    /* max-width: 100%; */ /* Zabezpečí, že nepretečie */
+    /* ZMENA: Šírka kontajnera sa tiež prispôsobí obsahu tabuľky */
+    width: max-content;
+    max-width: 100%; /* Zabezpečí, že nepretečie z rodičovského flex kontajnera */
 
     /* Štýly pre vzhľad bloku */
     margin-top: 20px; /* Priestor medzi hlavičkovou tabuľkou a skrolovateľným telom */
@@ -284,30 +285,26 @@ nav ul li a:hover {
     border-bottom: 2px solid #2a6b30;
     font-weight: bold;
     font-size: 0.95em;
-    /* white-space: nowrap; */ /* Ponechať, ak nechcete zalamovať text */
+    white-space: nowrap; /* ZMENA: Zabezpečí, že text sa nebude zalamovať */
     /* border-right bude pridaný nižšie */
+
+    /* Pri width: max-content na tabuľke a table-layout: fixed,
+       šírky stĺpcov sa automaticky prispôsobia obsahu. */
+    width: auto; /* ZMENA: Necháme prehliadač určiť šírku podľa obsahu */
 }
 
-/* Nastavenie šírky pre PRVÝ stĺpec (Názov klubu) */
-#clubsHeaderTable th:first-child {
-     width: 20%; /* Šírka prvého stĺpca hlavičky (20% šírky tabuľky) */
-     text-align: left; /* Text názvu klubu zarovnať vľavo */
-     padding: 12px 15px; /* Konzistentné odsadenie */
-}
-
-/* Nastavenie šírky pre DRUHÝ a všetky nasledujúce stĺpce (Tímy a Kategórie) */
-/* Tieto stĺpce si rovnomerne rozdelia zvyšných 80% šírky tabuľky */
-#clubsHeaderTable th:nth-child(n + 2) {
-     /* Šírka nie je explicitne nastavená - table-layout: fixed; a width: 100%; zabezpečia rovnomerné rozdelenie zvyšku */
-     text-align: center; /* Všetky tieto stĺpce chceme centrovať */
-     padding: 12px 15px; /* Konzistentné odsadenie */
-     /* min-width: ...; - ak by bol problém s príliš úzkymi stĺpcami */
-}
+/* Odstránili sme špecifické pravidlá pre šírku prvého a druhého stĺpca */
+/*
+#clubsHeaderTable th:first-child { width: 20%; text-align: left; }
+#clubsHeaderTable th:nth-child(2) { width: 80px; text-align: center; }
+#clubsHeaderTable th:nth-child(n + 3) { width: 100px; text-align: center; }
+*/
+/* Ak chcete, aby prvý stĺpec bol zarovnaný vľavo, nastavte to nižšie pre TD */
 
 
 /* Pridanie pravého okraja ku všetkým bunkám hlavičky OKREM poslednej */
 #clubsHeaderTable th:not(:last-child) {
-    border-right: 1px solid #2a6b30; /* Farba okraja ako spodný okraj */
+    border-right: 1px solid #2a6b30;
 }
 
 
@@ -318,29 +315,29 @@ nav ul li a:hover {
     padding: 10px 15px; /* Konzistentné odsadenie s hlavičkou */
     border-bottom: 1px solid #eee; /* Svetlý spodný okraj */
     /* text-align je nastavený nižšie podľa pozície stĺpca */
-    /* white-space: nowrap; */ /* Ponechať, ak nechcete zalamovať text */
+    white-space: nowrap; /* ZMENA: Zabezpečí, že text sa nebude zalamovať */
     /* border-right bude pridaný nižšie */
 
     /* Šírky buniek tela sa automaticky zhodujú so šírkami th v hlavičke
-       vďaka table-layout: fixed; na oboch tabuľkách. */
+       vďaka table-layout: fixed; na oboch tabuľkách a width: max-content; na tabuľke. */
+    width: auto; /* ZMENA: Necháme prehliadač určiť šírku podľa obsahu */
 }
 
 /* Prvý stĺpec v tele (názov klubu) zarovnať vľavo, aby zodpovedal hlavičke */
 #clubsBodyTable td:first-child {
     text-align: left;
-    /* Šírka: Zhoduje sa s #clubsHeaderTable th:first-child (20%) */
+    /* Šírka: Automaticky sa zhoduje s prvým TH v hlavičke */
 }
 
 /* Druhý a všetky nasledujúce stĺpce v tele (Tímy a Kategórie) - centrovať */
 #clubsBodyTable td:nth-child(n + 2) {
-    text-align: center; /* Zhoduje sa s #clubsHeaderTable th:nth-child(n + 2) */
-    /* Šírka: Zhoduje sa s #clubsHeaderTable th:nth-child(n + 2) (rovnomerné rozdelenie zvyšku) */
+    text-align: center; /* Zhoduje sa s TH v hlavičke */
+    /* Šírka: Automaticky sa zhoduje s TH v hlavičke */
 }
-
 
 /* Pridanie pravého okraja ku všetkým bunkám tela OKREM poslednej */
 #clubsBodyTable td:not(:last-child) {
-     border-right: 1px solid #eee; /* Farba okraja ako spodný okraj buniek tela */
+     border-right: 1px solid #eee;
 }
 
 
@@ -459,7 +456,11 @@ nav ul li a:hover {
      font-weight: normal;
 }
 
-/* Ensure the section-block containing the tables doesn't interfere with alignment */
+/* Ensure the section-block containing the tables shrinks to fit content */
 #clubListSection.section-block {
-     align-items: stretch; /* Zmenené: Zabezpečiť, že sa sekcia roztiahne na celú šírku (pretože ju main centruje) */
+     /* align-items: stretch; */ /* Už nie stretch, ale flex-start/center pre shrink-wrap */
+     align-items: flex-start; /* ZMENA: Sekcia sa zmenší na šírku obsahu */
+     flex-grow: 1; /* Ponechať, aby zaberala priestor vertikálne */
+     display: flex; /* Ponechať */
+     flex-direction: column; /* Ponechať */
 }
