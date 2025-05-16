@@ -10,7 +10,7 @@ header {
     box-sizing: border-box; /* Zahrnie padding do celkovej šírky */
 }
 body {
-    padding-top: 120px;
+    padding-top: 60px;
 }
 nav ul {
     list-style: none;
