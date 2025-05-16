@@ -37,8 +37,10 @@
             display: none; /* Spočiatku skryté, riadené JS */
             /* Používame .display-button pre farby a základný vzhľad */
             padding: 10px 15px; /* Trochu menší padding */
-            margin: 0 10px; /* Medzera medzi tlačidlami Späť */
-            vertical-align: top; /* Zarovnanie na vrchol */
+            /* margin: 0 10px; */ /* Tento margin sme predtým mali pre medzeru medzi tlačidlami, ale margin: auto ho prepíše */
+            margin: 20px auto; /* Nastaví vrchný/spodný okraj 20px a bočné okraje na auto pre centrovanie */
+            display: block; /* Zabezpečí, že sú blokové elementy - nastavené aj JS */
+            vertical-align: top; /* Tento štýl už nie je nutný, keď sú display: block */
         }
 
         /* Hover štýly pre tlačidlá Späť */
