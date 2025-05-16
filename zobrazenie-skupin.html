@@ -151,7 +151,7 @@
 
         /* Štýly pre nadpis skupiny */
         .group-display h3 {
-            background-color: #28a745;
+            background-color: #3a8d41;
             color: #fff;
             margin: 0;
             padding: 10px;
@@ -159,11 +159,19 @@
             text-align: center;
             border-top-left-radius: 3px;
             border-top-right-radius: 3px;
+            cursor: pointer;
         }
 
         .group-display h3:hover {
             background-color: #c46f50;
             color: white
+        }
+
+        #dynamicContentArea.single-group-active .group-display h3 {
+            background-color: #3a8d41; /* Vráti pôvodnú farbu pozadia */
+            color: #fff; /* Vráti pôvodnú farbu textu */
+            cursor: default; /* Vráti predvolený kurzor (šípku) */
+            pointer-events: none; /* Toto je kľúčové - zakáže reagovať na udalosti myši (klik, hover) */
         }
 
          /* Štýl pre tlačidlo v rámci bloku skupiny - ODSTRÁNENÉ */
