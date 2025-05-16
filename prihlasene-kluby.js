@@ -307,24 +307,34 @@ async function displaySubjectDetails(baseName, initialTeamId = null) { // Pridan
                     categoryName = category.name;
                } else {
                    // Ak sa kategória nenašla v allCategories, skús ju získať z ID tímu ako zálohu
+                   // ID tímu je parameter 'team' z URL, už dekódovaný na string
                    const teamIdString = team.id || ''; // Získaj ID tímu ako string
-                   // ZMENA: Upravený Regex na hľadanie vzorov ako "U10 D", "U12 CH", "U15"
-                   // Tento regex predpokladá, že ID kategórie je vo formáte U## alebo U## medzera Písmeno/Písmená
-                   const categoryIdRegex = /(U\d{2}(?:\s?[A-Z]+)?)/; // <--- TU JE UPRAVENÝ REGEX
-                   const match = teamIdString.match(categoryIdRegex);
 
-                   if (match && match[1]) {
-                       // Ak sa nájde vzor kategórie v ID tímu (napr. "U10 D"), použijeme ho ako názov kategórie
-                       categoryName = match[1];
-                       console.warn(`DEBUG: Názov kategórie pre tím "${team.id}" (CategoryID: "${team.categoryId}") sa nenašiel v allCategories. Ako záloha použitý identifikátor "${categoryName}" extrahovaný z ID tímu.`); // Log zálohy
+                   // ZMENA: Namiesto regexu, nájdi index prvého oddelovača " - " alebo "-"
+                   const separator = ' - ';
+                   let separatorIndex = teamIdString.indexOf(separator);
+
+                   if (separatorIndex === -1) {
+                       // Ak sa nenájde " - ", skúsime nájsť iba "-"
+                       separatorIndex = teamIdString.indexOf('-');
+                   }
+
+
+                   if (separatorIndex !== -1) {
+                       // Ak sa nájde oddelovač, vezmeme časť pred ním a orežeme medzery
+                       categoryName = teamIdString.substring(0, separatorIndex).trim();
+                        console.warn(`DEBUG: Názov kategórie pre tím "${team.id}" (CategoryID: "${team.categoryId}") sa nenašiel v allCategories. Ako záloha použitý text "${categoryName}" extrahovaný z ID tímu pred prvým oddelovačom.`); // Log zálohy
+
                    } else {
-                        // Ak sa kategória nenašla ani v allCategories, ani sa nedala extrahovať z ID tímu
-                        console.warn(`DEBUG: Názov kategórie pre tím "${team.id}" (CategoryID: "${team.categoryId}") sa nenašiel v allCategories. Nepodarilo sa extrahovať ani z ID tímu. Použitá predvolená hodnota "${categoryName}".`); // Log zlyhania zálohy
+                        // Ak sa kategória nenašla ani v allCategories, ani sa nedala extrahovať z ID tímu (lebo nemá oddelovač)
+                        console.warn(`DEBUG: Názov kategórie pre tím "${team.id}" (CategoryID: "${team.categoryId}") sa nenašiel v allCategories. V ID tímu sa nenašiel očakávaný oddelovač (" - " alebo "-"). Použitá predvolená hodnota "${categoryName}".`); // Log zlyhania zálohy
                    }
                }
 
                // Nastavenie textu tlačidla
-               teamButton.textContent = `${categoryName} - ${groupName}`;
+               // Zabezpečíme, že ak groupName je 'Nepriradené', formatovanie bude 'Kategoria' namiesto 'Kategoria - Nepriradene'
+               const buttonText = groupName !== 'Nepriradené' ? `${categoryName} - ${groupName}` : categoryName;
+               teamButton.textContent = buttonText;
                teamButton.dataset.teamId = team.id; // Uloženie ID tímu do datasetu
 
                // Pridanie event listeneru na kliknutie
@@ -488,13 +498,13 @@ async function displaySpecificTeamDetails(teamId) {
          if(selectedTeamRealizacnyTimDiv) selectedTeamRealizacnyTimDiv.innerHTML = '<p style="color: red;">Nepodarilo sa načítať detaily realizačného tímu.</p>';
          if(selectedTeamSoupiskaHracovUl) selectedTeamSoupiskaHracovUl.innerHTML = '<li>Nepodarilo sa načítať súpisku.</li>';
     } finally {
-        // ZMENA: Zavolaj highlightTeamButton na konci načítania detailov,
+        // Zavolaj highlightTeamButton na konci načítania detailov,
         // aby sa zabezpečilo zvýraznenie aktívneho tlačidla
         highlightTeamButton(teamId);
     }
 }
 
-// ZMENA: Funkcia na návrat na prehľad teraz zobrazí tabuľku a aktualizuje URL
+// Funkcia na návrat na prehľad teraz zobrazí tabuľku a aktualizuje URL
 function goBackToList() {
     // Zobrazí súhrnnú tabuľku klubov
     displayClubsSummaryTable();
@@ -507,7 +517,7 @@ function goBackToList() {
 }
 
 
-// ZMENA: Funkcia na spracovanie stavu URL pri načítaní stránky a zmene histórie
+// Funkcia na spracovanie stavu URL pri načítaní stránky a zmene histórie
 async function handleUrlState() {
     // Počkaj, kým sa načítajú všetky potrebné dáta
     // allClubs a allCategories by mali byť plne načítané
@@ -552,7 +562,7 @@ async function handleUrlState() {
 }
 
 
-// ZMENA: Spustenie spracovania URL stavu po načítaní DOM
+// Spustenie spracovania URL stavu po načítaní DOM
 document.addEventListener('DOMContentLoaded', () => {
     // Odstránenie starej logiky pri načítaní DOM, voláme handleUrlState
     handleUrlState();
@@ -571,7 +581,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// ZMENA: Spracovanie udalosti 'popstate' pre navigáciu späť/vpred
+// Spracovanie udalosti 'popstate' pre navigáciu späť/vpred
 window.addEventListener('popstate', () => {
     // Pri zmene histórie prehliadača (späť/vpred) znovu spracuj stav URL
     handleUrlState();
