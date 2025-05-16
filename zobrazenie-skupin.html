@@ -28,28 +28,35 @@
         }
         /* Štýl pre nadpisy sekcií kategórií (Chlapci, Dievčatá) */
         .category-section-title {
-            color: #333; /* Tmavošedá farba textu */
-            padding-bottom: 5px; /* Malá medzera pod nadpisom */
-            margin-top: 20px; /* Väčšia medzera nad nadpisom */
-            margin-bottom: 15px; /* Medzera pod nadpisom pred tlačidlami */
+            display: block; /* Zabezpečí, že nadpis bude na vlastnom riadku */
+            /* Existujúce štýly */
+            color: #333;
+            padding-bottom: 5px;
+            margin-top: 20px;
+            margin-bottom: 15px;
             font-weight: bold;
-            font-size: 1.3em; /* Trochu menší ako nadpis kategórie v Úrovni 2 */
-            text-align: center; /* Centrujeme nadpis sekcie */
-            border-bottom: 2px solid #ccc; /* Voliteľné: spodná čiara pod nadpisom sekcie */
+            font-size: 1.3em;
+            text-align: center;
+            border-bottom: 2px solid #ccc;
         }
         /* Kontajner pre tlačidlá v rámci každej sekcie */
         .category-buttons-section {
-            display: flex; /* Uloží tlačidlá vedľa seba */
-            flex-wrap: wrap; /* Povoliť zalamovanie tlačidiel na menších obrazovkách */
-            gap: 10px; /* Medzera medzi tlačidlami */
-            justify-content: center; /* Centruje tlačidlá v sekcii */
-            margin-bottom: 20px; /* Medzera pod sekciou tlačidiel */
+            display: flex; /* Dôležité: Nastaví kontajner ako flexbox, aby sa jeho priami potomkovia (tlačidlá) usporiadali vedľa seba */
+            flex-direction: row; /* Usporiada položky v riadku (predvolené pre flex, ale explicitné pre jasnosť) */
+            flex-wrap: wrap; /* Ak sa tlačidlá nezmestia do jedného riadku, zalomia sa na ďalší */
+            gap: 10px; /* Medzera medzi tlačidlami v riadku aj medzi riadkami */
+            justify-content: center; /* Centruje flex položky v hlavnej osi (vodorovne) */
+            align-items: center; /* Centruje flex položky v priečnej osi (zvisle), aby mali rovnakú výšku, ak majú rôzny obsah */
+            margin-bottom: 20px; /* Medzera pod touto sekciou tlačidiel */
+            padding: 10px; /* Voliteľné: Pridá nejaký vnútorný priestor */
+            /* border: 1px dashed blue; */ /* Voliteľné: Pre ladenie, ukáže hranice flex kontajnera */
         }
         .category-buttons-section .display-button {
-            flex-grow: 1; /* Povoliť tlačidlám roztiahnuť sa */
-            flex-basis: 150px; /* Základná šírka tlačidla pred roztiahnutím */
+            flex-grow: 1; /* Povoliť tlačidlám roztiahnuť sa, ak je voľné miesto */
+            flex-basis: 150px; /* Základná šírka, pred roztiahnutím/zmenšením. Tlačidlá budú mať minimálne túto šírku, ak sa zmestia */
             max-width: 250px; /* Maximálna šírka tlačidla */
-        }    
+            /* display: inline-block; */ /* Toto by malo byť predvolené pre button, ale v rámci flexu už nie je tak dôležité ako display: flex na rodičovi */
+        }   
         #backToCategoriesButton,
         #backToGroupButtonsButton {
             display: none;
@@ -62,9 +69,10 @@
             background-color: #c46f50;
         }
         #categoryButtonsContainer {
-            display: block;
-            text-align: center; /* Centruje obsah v kontajneri, vrátane nadpisov a flex kontajnerov sekcií */
+            display: block; /* Zabezpečí, že sekcie (Chlapci/Dievčatá) budú pod sebou */
+            text-align: center; /* Centruje blokové elementy vo vnútri (nadpisy, sekcie tlačidiel) */
             padding: 20px;
+            /* border: 1px solid red; */ /* Voliteľné: Pre ladenie */
         }
          #categoryTitleDisplay {
              color: #333;
