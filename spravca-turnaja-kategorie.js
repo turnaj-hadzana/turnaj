@@ -56,7 +56,6 @@ function addCategoryRowToTable(categoryName) {
              alert(`Kategória "${categoryToDelete}" úspešne vymazaná.`);
              loadCategoriesTable();
          } catch (error) {
-             console.error('Chyba pri mazaní kategórie a súvisiacich dát: ', error);
              alert('Chyba pri mazaní kategórie! Prosím, skúste znova.');
          }
     };
@@ -87,7 +86,6 @@ async function loadCategoriesTable() {
             });
         }
     } catch (error) {
-        console.error('Chyba pri načítaní kategórií: ', error);
         alert('Chyba pri načítaní kategórií!');
          const errorRow = document.createElement('tr');
          const td = document.createElement('td');
@@ -123,8 +121,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 openModal(categoryModal);
                 if (categoryNameInput) categoryNameInput.focus();
            };
-      } else {
-          console.error("Add button not found on categories page!");
       }
 });
 if (categoryModalCloseBtn) {
@@ -157,7 +153,6 @@ if (categoryForm) {
                 resetCategoryModal();
                 loadCategoriesTable();
             } catch (error) {
-                console.error('Chyba pri pridávaní kategórie: ', error);
                 alert('Chyba pri pridávaní kategórie! Prosím, skúste znova.');
                  if (categoryModal) closeModal(categoryModal);
                  resetCategoryModal();
@@ -166,7 +161,6 @@ if (categoryForm) {
             const oldCategoryName = editingCategoryName;
             const newCategoryName = categoryName;
             if (!oldCategoryName) {
-                console.error("Chyba: Chýba pôvodný názov kategórie pri úprave.");
                 alert("Chyba pri úprave kategórie.");
                 if (categoryModal) closeModal(categoryModal);
                 resetCategoryModal();
@@ -216,7 +210,6 @@ if (categoryForm) {
                 resetCategoryModal();
                 loadCategoriesTable();
             } catch (error) {
-                console.error('Chyba pri premenovaní kategórie a aktualizácii referencií: ', error);
                 alert('Chyba pri premenovaní kategórie! Prosím, skúste znova.');
                  if (categoryModal) closeModal(categoryModal);
                  resetCategoryModal();
