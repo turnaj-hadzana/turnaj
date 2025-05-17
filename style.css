@@ -385,3 +385,9 @@ nav ul li a:hover {
 #clubsHeaderTable th {
     vertical-align: middle;
 }
+#scrollableTableBodyContainer {
+    max-height: 75vh;
+    overflow-y: auto; 
+    border: 1px solid #ccc;
+    scrollbar-gutter: stable both-edges;
+}
