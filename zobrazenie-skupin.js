@@ -76,7 +76,8 @@ async function loadAllTournamentData() {
     }
 }
 function showOnly(containerIdToShow) {
-    if (categoryButtonsContainer) categoryButtonsContainer.style.display = 'none';
+    // This function now primarily manages the visibility of allGroupsContent and singleGroupContent
+    // categoryButtonsContainer visibility is managed directly in the display functions
     if (allGroupsContent) allGroupsContent.style.display = 'none';
     if (singleGroupContent) singleGroupContent.style.display = 'none';
     if (dynamicContentArea) {
@@ -87,11 +88,6 @@ function showOnly(containerIdToShow) {
         }
     }
     switch (containerIdToShow) {
-        case 'categoryButtonsContainer':
-            if (categoryButtonsContainer) categoryButtonsContainer.style.display = 'flex';
-            if (categoryTitleDisplay) categoryTitleDisplay.style.display = 'none';
-            if (groupSelectionButtons) groupSelectionButtons.style.display = 'none';
-            break;
         case 'allGroupsContent':
             if (categoryTitleDisplay) categoryTitleDisplay.style.display = 'block';
             if (groupSelectionButtons) groupSelectionButtons.style.display = 'flex';
@@ -102,8 +98,12 @@ function showOnly(containerIdToShow) {
             if (groupSelectionButtons) groupSelectionButtons.style.display = 'flex';
             if (singleGroupContent) singleGroupContent.style.display = 'block';
             break;
-        default:
-             if (categoryButtonsContainer) categoryButtonsContainer.style.display = 'none';
+        case 'categoryButtonsContainer': // Used for initial state, will also ensure others are hidden
+            if (categoryTitleDisplay) categoryTitleDisplay.style.display = 'none';
+            if (groupSelectionButtons) groupSelectionButtons.style.display = 'none';
+            break;
+        default: // Hide everything if containerIdToShow is null or unrecognized
+             if (categoryButtonsContainer) categoryButtonsContainer.style.display = 'none'; // Should not happen with new logic, but good fallback
              if (categoryTitleDisplay) categoryTitleDisplay.style.display = 'none';
              if (groupSelectionButtons) groupSelectionButtons.style.display = 'none';
              if (allGroupsContent) allGroupsContent.style.display = 'none';
@@ -128,16 +128,19 @@ function displayCategoriesAsButtons() {
      if (!getHTMLElements()) {
          return;
      }
-    if (categoryButtonsContainer) categoryButtonsContainer.innerHTML = '';
+    // Clear content areas except category buttons container
     if (allGroupsContainer) allGroupsContainer.innerHTML = '';
     if (allGroupsUnassignedDisplay) allGroupsUnassignedDisplay.innerHTML = '';
     if (singleGroupDisplayBlock) singleGroupDisplayBlock.innerHTML = '';
     if (singleGroupUnassignedDisplay) singleGroupUnassignedDisplay.innerHTML = '';
     if (groupSelectionButtons) groupSelectionButtons.innerHTML = '';
+    if (categoryTitleDisplay) categoryTitleDisplay.textContent = '';
+    // Manage visibility
+    if (categoryButtonsContainer) categoryButtonsContainer.style.display = 'flex'; // Ensure category buttons are visible
     if (backToCategoriesButton) backToCategoriesButton.style.display = 'none';
     if (backToGroupButtonsButton) backToGroupButtonsButton.style.display = 'none';
-    if (categoryTitleDisplay) categoryTitleDisplay.textContent = '';
-    showOnly('categoryButtonsContainer');
+    showOnly('categoryButtonsContainer'); // Hide other content areas using showOnly
+
     if (window.location.hash) {
         history.replaceState({}, document.title, window.location.pathname);
     }
@@ -145,6 +148,14 @@ function displayCategoriesAsButtons() {
         if (categoryButtonsContainer) categoryButtonsContainer.innerHTML = '<p>Zatiaľ nie sú pridané žiadne kategórie.</p>';
         return;
     }
+    // Rebuild category buttons - required if we cleared innerHTML before, but now we don't clear it.
+    // Let's assume categoryButtonsContainer is only populated once on initial load.
+    // If we need to refresh it, innerHTML = '' would be needed here.
+    // For this request, we assume it's populated once. If not, a different approach is needed.
+    // Based on the original code, it seems displayCategoriesAsButtons is used for initial load and back navigation.
+    // Clearing innerHTML here was correct for the original logic. Let's revert the removal of innerHTML clear here.
+    if (categoryButtonsContainer) categoryButtonsContainer.innerHTML = ''; // Keep clearing for rebuilding
+
     const chlapciCategories = [];
     const dievcataCategories = [];
     const ostatneCategories = [];
@@ -167,7 +178,7 @@ function displayCategoriesAsButtons() {
         heading.textContent = title;
         groupDiv.appendChild(heading);
         const buttonsDiv = document.createElement('div');
-        buttonsDiv.classList.add('category-buttons'); 
+        buttonsDiv.classList.add('category-buttons');
         groupDiv.appendChild(buttonsDiv);
         categories.forEach(category => {
             const button = document.createElement('button');
@@ -207,20 +218,26 @@ function displayGroupsForCategory(categoryId) {
          goBackToCategories();
          return;
      }
-    if (categoryButtonsContainer) categoryButtonsContainer.innerHTML = '';
+    // Clear group specific content, keep category buttons
     if (allGroupsContainer) allGroupsContainer.innerHTML = '';
     if (allGroupsUnassignedDisplay) allGroupsUnassignedDisplay.innerHTML = '';
     if (singleGroupDisplayBlock) singleGroupDisplayBlock.innerHTML = '';
     if (singleGroupUnassignedDisplay) singleGroupUnassignedDisplay.innerHTML = '';
-    if (groupSelectionButtons) groupSelectionButtons.innerHTML = '';
+    if (groupSelectionButtons) groupSelectionButtons.innerHTML = ''; // Keep clearing group selection buttons as they are specific to the selected category
     if (categoryTitleDisplay) categoryTitleDisplay.textContent = '';
-    if (backToCategoriesButton) backToCategoriesButton.style.display = 'block';
+
+    // Manage visibility
+    if (categoryButtonsContainer) categoryButtonsContainer.style.display = 'flex'; // Ensure category buttons are visible
+    if (backToCategoriesButton) backToCategoriesButton.style.display = 'none'; // Hide back to categories button
     if (backToGroupButtonsButton) backToGroupButtonsButton.style.display = 'none';
+    showOnly('allGroupsContent'); // Show all groups content area, hide single group content area using showOnly
+
     window.location.hash = 'category-' + encodeURIComponent(categoryId);
     const selectedCategory = allCategories.find(cat => cat.id === categoryId);
     if (!selectedCategory) {
          if (dynamicContentArea) dynamicContentArea.innerHTML = `<p>Chyba: Kategória "${categoryId}" sa nenašla. Prosím, skúste znova alebo kontaktujte administrátora.</p>`;
-         goBackToCategories();
+         // Optionally go back to categories or display an error state
+         // goBackToCategories(); // Decided not to automatically go back on error for debugging
         return;
     }
      if (categoryTitleDisplay) categoryTitleDisplay.textContent = selectedCategory.name || selectedCategory.id;
@@ -278,7 +295,7 @@ function displayGroupsForCategory(categoryId) {
                 });
                 const teamList = document.createElement('ul');
                 teamsInGroup.forEach(team => {
-                    const teamItem = document.createElement('li');                     
+                    const teamItem = document.createElement('li');
                     const teamNameSpan = document.createElement('span');
                     teamNameSpan.classList.add('team-name');
                     teamNameSpan.textContent = team.name || 'Neznámy tím';
@@ -319,14 +336,13 @@ function displayGroupsForCategory(categoryId) {
      } else {
           if (allGroupsUnassignedDisplay) allGroupsUnassignedDisplay.innerHTML = '';
      }
-     showOnly('allGroupsContent');
 }
 function displaySingleGroup(groupId) {
      const group = allGroups.find(g => g.id === groupId);
      if (!group) {
            if (backToCategoriesButton) backToCategoriesButton.style.display = 'none';
            if (backToGroupButtonsButton) backToGroupButtonsButton.style.display = 'none';
-           showOnly(null);
+           showOnly(null); // Hide all content areas using showOnly
            if (dynamicContentArea) dynamicContentArea.innerHTML = '<p>Vybraná skupina sa nenašla.</p>';
            currentCategoryId = null;
            currentGroupId = null;
@@ -335,13 +351,18 @@ function displaySingleGroup(groupId) {
      currentCategoryId = group.categoryId;
      currentGroupId = groupId;
      if (!getHTMLElements()) {
-         goBackToCategories();
+         goBackToCategories(); // Go back if elements not found
          return;
      }
-    if (backToCategoriesButton) backToCategoriesButton.style.display = 'none';
-    if (backToGroupButtonsButton) backToGroupButtonsButton.style.display = 'block';
+    // Clear specific content areas
     if (singleGroupDisplayBlock) singleGroupDisplayBlock.innerHTML = '';
     if (singleGroupUnassignedDisplay) singleGroupUnassignedDisplay.innerHTML = '';
+    // Manage visibility
+    if (categoryButtonsContainer) categoryButtonsContainer.style.display = 'flex'; // Ensure category buttons are visible
+    if (backToCategoriesButton) backToCategoriesButton.style.display = 'none'; // Hide back to categories button
+    if (backToGroupButtonsButton) backToGroupButtonsButton.style.display = 'block'; // Show back to groups button
+    showOnly('singleGroupContent'); // Show single group content area, hide all groups content area using showOnly
+
      window.location.hash = `category-${encodeURIComponent(currentCategoryId)}/group-${encodeURIComponent(groupId)}`;
       const category = allCategories.find(cat => cat.id === currentCategoryId);
       if (category && categoryTitleDisplay) {
@@ -370,7 +391,7 @@ function displaySingleGroup(groupId) {
               });
               const teamList = document.createElement('ul');
               teamsInGroup.forEach(team => {
-                   const teamItem = document.createElement('li');                       
+                   const teamItem = document.createElement('li');
                    const teamNameSpan = document.createElement('span');
                    teamNameSpan.classList.add('team-name');
                    teamNameSpan.textContent = team.name || 'Neznámy tím';
@@ -386,6 +407,7 @@ function displaySingleGroup(groupId) {
      );
      if (unassignedTeamsInCategory.length > 0) {
          if (singleGroupUnassignedDisplay) {
+             singleGroupUnassignedDisplay.innerHTML = ''; // Clear previous unassigned teams
              const unassignedDivContent = document.createElement('div');
              unassignedDivContent.classList.add('unassigned-teams-display');
              const unassignedTitle = document.createElement('h2');
@@ -407,8 +429,9 @@ function displaySingleGroup(groupId) {
                   singleGroupUnassignedDisplay.appendChild(unassignedDivContent);
              }
           }
+     } else {
+          if (singleGroupUnassignedDisplay) singleGroupUnassignedDisplay.innerHTML = ''; // Clear if no unassigned teams
      }
-      showOnly('singleGroupContent');
 }
 function goBackToCategories() {
     currentCategoryId = null;
@@ -416,32 +439,47 @@ function goBackToCategories() {
      if (!getHTMLElements()) {
          return;
      }
-    if (categoryButtonsContainer) categoryButtonsContainer.innerHTML = '';
+    // Clear content areas except category buttons container
     if (allGroupsContainer) allGroupsContainer.innerHTML = '';
     if (allGroupsUnassignedDisplay) allGroupsUnassignedDisplay.innerHTML = '';
     if (singleGroupDisplayBlock) singleGroupDisplayBlock.innerHTML = '';
     if (singleGroupUnassignedDisplay) singleGroupUnassignedDisplay.innerHTML = '';
     if (groupSelectionButtons) groupSelectionButtons.innerHTML = '';
     if (categoryTitleDisplay) categoryTitleDisplay.textContent = '';
-    showOnly('categoryButtonsContainer');
+
+    // Manage visibility
+    if (categoryButtonsContainer) categoryButtonsContainer.style.display = 'flex'; // Ensure category buttons are visible
+    if (backToCategoriesButton) backToCategoriesButton.style.display = 'none';
+    if (backToGroupButtonsButton) backToGroupButtonsButton.style.display = 'none';
+    showOnly('categoryButtonsContainer'); // Hide other content areas using showOnly
+
     if (window.location.hash) {
         history.replaceState({}, document.title, window.location.pathname);
     }
-     displayCategoriesAsButtons();
+     displayCategoriesAsButtons(); // Re-render category buttons if needed (or just rely on display:flex if they weren't cleared)
 }
 function goBackToGroupView() {
      currentGroupId = null;
      if (!getHTMLElements()) {
-          goBackToCategories();
+          goBackToCategories(); // Go back further if elements not found
          return;
      }
      if (!currentCategoryId) {
-         goBackToCategories();
+         goBackToCategories(); // If no category is set, go back to categories
          return;
      }
+    // Clear single group content
     if (singleGroupDisplayBlock) singleGroupDisplayBlock.innerHTML = '';
     if (singleGroupUnassignedDisplay) singleGroupUnassignedDisplay.innerHTML = '';
-    displayGroupsForCategory(currentCategoryId);
+
+    // Manage visibility (category buttons remain visible)
+    if (categoryButtonsContainer) categoryButtonsContainer.style.display = 'flex'; // Ensure category buttons are visible
+    if (backToCategoriesButton) backToCategoriesButton.style.display = 'none';
+    if (backToGroupButtonsButton) backToGroupButtonsButton.style.display = 'none'; // Hide back to groups button
+    showOnly('allGroupsContent'); // Show all groups content area, hide single group content area using showOnly
+
+    window.location.hash = 'category-' + encodeURIComponent(currentCategoryId); // Update hash
+    displayGroupsForCategory(currentCategoryId); // Re-render group list for the category
 }
 function findMaxTableContentWidth(containerElement) {
     let maxWidth = 0;
@@ -529,18 +567,23 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (decodedGroupId) {
                  const groupExists = allGroups.some(group => group.id === decodedGroupId && group.categoryId === decodedCategoryId);
                  if (groupExists) {
-                      displayGroupsForCategory(decodedCategoryId);
-                      displaySingleGroup(decodedGroupId);
+                      // First display category groups, then the single group
+                      displayGroupsForCategory(decodedCategoryId); // This will show category buttons and group selection/all groups
+                      displaySingleGroup(decodedGroupId); // This will switch to single group view and keep category buttons visible
                  } else {
+                      // Group in hash not found, display category groups
                       displayGroupsForCategory(decodedCategoryId);
                  }
             } else {
+                // Only category in hash, display category groups
                 displayGroupsForCategory(decodedCategoryId);
             }
         } else {
+            // Category in hash not found, display all categories
             displayCategoriesAsButtons();
         }
     } else {
+        // No valid hash, display all categories
         displayCategoriesAsButtons();
     }
 
@@ -551,22 +594,38 @@ window.addEventListener('resize', () => {
      }
     if (currentCategoryId !== null) {
          let containerElement = null;
+         // Determine which container is currently visible to resize its groups
          if (currentGroupId === null) {
-             containerElement = allGroupsContainer;
+              // All groups view
+              containerElement = allGroupsContainer; // This is the container *within* allGroupsContent
          } else {
-              containerElement = singleGroupContent;
+              // Single group view
+              containerElement = singleGroupContent; // singleGroupContent directly contains the group-display in this view
          }
-         if (containerElement && window.getComputedStyle(containerElement).display !== 'none') {
+         // Check if the relevant content area is actually displayed before trying to resize
+         const isAllGroupsVisible = allGroupsContent && window.getComputedStyle(allGroupsContent).display !== 'none';
+         const isSingleGroupVisible = singleGroupContent && window.getComputedStyle(singleGroupContent).display !== 'none';
+
+         if (isAllGroupsVisible && containerElement === allGroupsContainer) {
              const uniformWidth = findMaxTableContentWidth(containerElement);
               if (uniformWidth > 0) {
                  setUniformTableWidth(uniformWidth, containerElement);
               }
-          }
+         } else if (isSingleGroupVisible && containerElement === singleGroupContent) {
+              // For single group view, we need to find the group-display element inside singleGroupContent
+              const singleGroupDisplay = singleGroupContent.querySelector('.group-display');
+              if (singleGroupDisplay) {
+                   const uniformWidth = findMaxTableContentWidth(singleGroupContent); // findMaxTableContentWidth takes container
+                   if (uniformWidth > 0) {
+                       setUniformTableWidth(uniformWidth, singleGroupContent); // setUniformTableWidth takes container
+                   }
+              }
+         }
     }
  });
 window.addEventListener('hashchange', () => {
     if (!getHTMLElements()) {
-         return; 
+         return;
      }
     const hash = window.location.hash;
     const categoryPrefix = '#category-';
@@ -582,25 +641,30 @@ window.addEventListener('hashchange', () => {
              const alreadyInTargetState = (currentCategoryId === decodedCategoryId) &&
                                           (currentGroupId === decodedGroupId);
              if (alreadyInTargetState) {
-                 return;
+                 return; // Already in the state defined by the hash
              }
-            currentCategoryId = decodedCategoryId;
+            currentCategoryId = decodedCategoryId; // Update current state
             currentGroupId = decodedGroupId;
             if (decodedGroupId) {
                  const groupExists = allGroups.some(group => group.id === decodedGroupId && group.categoryId === decodedCategoryId);
                  if (groupExists) {
+                      // Display category groups and then single group
                       displayGroupsForCategory(decodedCategoryId);
                       displaySingleGroup(decodedGroupId);
                  } else {
+                      // Group not found, display category groups
                       displayGroupsForCategory(decodedCategoryId);
                  }
             } else {
+                // Only category in hash, display category groups
                 displayGroupsForCategory(decodedCategoryId);
             }
         } else {
+             // Category not found, go back to categories view
              displayCategoriesAsButtons();
         }
     } else {
+         // Hash doesn't start with category prefix, go back to categories view
          displayCategoriesAsButtons();
     }
 });
