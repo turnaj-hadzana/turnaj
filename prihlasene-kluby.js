@@ -160,82 +160,8 @@ function displayClubsSummaryTable() {
     // Sort base names alphabetically
     const sortedBaseNames = Object.keys(clubsByBaseName).sort((a, b) => a.localeCompare(b, 'sk-SK'));
 
-
-    // --- PRIDANÝ KÓD PRE RIADOK S NAJDLHŠÍM NÁZVOM ---
-
-    // 1. Nájdeme základný názov subjektu s najdlhším reťazcom
-    let longestBaseName = '';
-    if (sortedBaseNames.length > 0) {
-        longestBaseName = sortedBaseNames.reduce((a, b) => a.length > b.length ? a : b);
-    }
-
-    // Skontrolujeme, či sme nejaký názov našli (aby sme predišli chybám, ak je zoznam prázdny)
-    if (longestBaseName) {
-        // Nájdeme dáta klubov, ktoré patria pod tento základný názov
-        const clubsForLongestBaseName = allClubs.filter(club => getClubBaseName(club) === longestBaseName);
-
-        // Ak existujú kluby pre tento názov, vytvoríme špeciálny riadok
-        if (clubsForLongestBaseName.length > 0) {
-            const longestNameRow = clubsSummaryTableBody.insertRow(0); // Vložíme riadok na začiatok tabuľky (index 0)
-            longestNameRow.style.backgroundColor = '#ffffcc'; // Voliteľné: zvýrazni riadok
-            longestNameRow.style.fontWeight = 'bold'; // Voliteľné: tučný text
-            longestNameRow.dataset.baseName = longestBaseName; // Pridáme dataset atribút pre prípadné použitie
-
-            // Pridáme event listener, ak chcete, aby bol aj tento riadok klikateľný
-            longestNameRow.style.cursor = 'pointer';
-            longestNameRow.addEventListener('click', () => {
-                 const url = new URL(window.location.href);
-                 url.searchParams.set('club', longestBaseName);
-                 url.searchParams.delete('team');
-                 history.pushState({ baseName: longestBaseName }, '', url.toString());
-                 displaySubjectDetails(longestBaseName);
-            });
-
-
-            // 2. Vytvoríme bunky riadku podobne ako v hlavnom cykle
-            // Bunka pre Názov klubu
-            const baseNameCell = longestNameRow.insertCell();
-            baseNameCell.textContent = longestBaseName;
-
-            // Bunka pre celkový počet Tímov pre tento subjekt
-            let totalTeamsCount = 0;
-            allCategories.forEach(category => {
-                const categoryId = category.id;
-                const teamsInCategoryCount = clubsForLongestBaseName.filter(club => club.categoryId === categoryId).length;
-                totalTeamsCount += teamsInCategoryCount;
-            });
-            const totalTeamsCell = longestNameRow.insertCell();
-            totalTeamsCell.textContent = totalTeamsCount > 0 ? totalTeamsCount : '';
-            totalTeamsCell.style.textAlign = 'center';
-
-
-            // Bunky pre počty tímov v jednotlivých kategóriách
-            allCategories.forEach(category => {
-                const countCell = longestNameRow.insertCell();
-                const categoryId = category.id;
-                const teamsInCategoryCount = clubsForLongestBaseName.filter(club => club.categoryId === categoryId).length;
-                countCell.textContent = teamsInCategoryCount > 0 ? teamsInCategoryCount : '';
-                countCell.style.textAlign = 'center';
-            });
-
-            // Ak by bol prítomný aj posledný stĺpec (ktorý bol v kóde odstránený),
-            // bolo by potrebné pridať aj bunku pre neho:
-            // const lastCell = longestNameRow.insertCell();
-            // lastCell.textContent = ''; // Alebo iná hodnota podľa potreby
-        }
-    }
-
-    // --- KONIEC PRIDANÉHO KÓDU ---
-
-
-    // Populate the table body with all other rows
+    // Populate the table body
     sortedBaseNames.forEach(baseName => {
-         // Preskočíme subjekt s najdlhším názvom, ak sme ho už pridali ako špeciálny riadok
-         if (baseName === longestBaseName && longestBaseName) {
-             return; // Preskočíme tento riadok, pretože už bol pridaný na začiatok
-         }
-
-
         const row = clubsSummaryTableBody.insertRow();
         row.dataset.baseName = baseName;
         row.style.cursor = 'pointer';
@@ -300,7 +226,7 @@ function highlightTeamButton(teamIdToHighlight) {
           });
 
           // Find and highlight the target button
-          const targetButton = teamsInCategoryButtonsDiv.querySelector('button[data-team-id="' + teamIdToHighlight + '']');
+          const targetButton = teamsInCategoryButtonsDiv.querySelector('button[data-team-id="' + teamIdToHighlight + '"]');
           if (targetButton) {
               targetButton.style.fontWeight = 'bold';
               // Nastav farby aktívneho stavu inline (prepíše CSS triedu)
