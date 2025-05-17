@@ -268,7 +268,8 @@ nav ul li a:hover {
 /* Ostatné stĺpce v hlavičke aj tele - centrovať */
 #clubsHeaderTable th:nth-child(n + 2),
 #clubsBodyTable td:nth-child(n + 2) {
-     text-align: center;
+    text-align: center;
+    width: auto;
 }
 
 /* ZMENA: ODSTRÁNENIE Štýlu pre POSLEDNÝ stĺpec v hlavičke (šírka 17px) */
