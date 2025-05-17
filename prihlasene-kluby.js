@@ -5,8 +5,9 @@ const clubListSection = document.getElementById('clubListSection');
 const clubsSummaryTable = document.getElementById('clubsSummaryTable'); // Referencia na hornú tabuľku (s thead a novým tbody)
 const clubsSummaryTableHeader = document.getElementById('clubsSummaryTableHeader'); // Referencia na thead
 const clubsSummaryTableBody = document.getElementById('clubsSummaryTableBody'); // Referencia na tbody rolujúcej tabuľky
-const longestNameRowFixedBody = document.getElementById('longestNameRowFixedBody'); // NOVÁ REFERENCIA na tbody pre fixný riadok
-// ODSTRÁNILI SME: const longestNameRowFixedDiv = document.getElementById('longestNameRowFixed');
+const longestNameRowFixedBody = document.getElementById('longestNameRowFixedBody'); // REFERENCIA na tbody pre fixný riadok v hornej tabuľke
+const clubsBodyTableHeader = document.getElementById('clubsBodyTableHeader'); // REFERENCIA na thead spodnej tabuľky (ak existuje)
+// ODSTRÁNILI SME REFERENCIU: const longestNameRowFixedDiv = document.getElementById('longestNameRowFixed');
 const clubDetailSection = document.getElementById('clubDetailSection');
 const backToListButton = document.getElementById('backToListButton');
 const clubDetailTitleSpan = document.querySelector('#clubDetailTitle span');
@@ -77,44 +78,89 @@ function getClubBaseName(club) {
     return initialBaseName;
 }
 
-// Function to add the "Tímy" header and category headers (without any extra column)
+// Function to add the "Tímy" header and category headers
 function updateHeaderColspan(numCategoryColumns) {
-    if (clubsSummaryTableHeader) {
-        // Clear existing headers except the first one
-        clubsSummaryTableHeader.querySelectorAll('th:not(:first-child)').forEach(th => th.remove());
+    // Zoznam hlavičiek, ktoré budeme generovať
+    const headersToGenerate = ['Tímy', ...allCategories.map(cat => cat.name || cat.id)];
 
-        // Add the "Tímy" header right after "Názov klubu"
-        const teamsTh = document.createElement('th');
-        teamsTh.textContent = 'Tímy';
-        teamsTh.style.textAlign = 'center';
-        // Insert the new header after the first child (Názov klubu)
-        clubsSummaryTableHeader.querySelector('th').insertAdjacentElement('afterend', teamsTh);
+    // Referencie na THEAD elementy, ktoré treba aktualizovať
+    const theadElementsToUpdate = [];
+    if (clubsSummaryTableHeader) { // thead hornej tabuľky
+        theadElementsToUpdate.push(clubsSummaryTableHeader);
+    }
+    if (clubsBodyTableHeader) { // thead spodnej tabuľky
+        theadElementsToUpdate.push(clubsBodyTableHeader);
+    }
 
-        // Add category headers
-        if (allCategories.length > 0) {
-            allCategories.forEach(category => {
-                const th = document.createElement('th');
-                th.textContent = category.name || category.id;
-                th.dataset.categoryId = category.id;
-                th.style.textAlign = 'center';
-                clubsSummaryTableHeader.appendChild(th);
-            });
+    theadElementsToUpdate.forEach(thead => {
+        // V každej thead nájdeme prvý riadok (ak existuje)
+        let headerRow = thead.querySelector('tr');
+        if (!headerRow) {
+            // Ak riadok neexistuje, vytvoríme ho
+            headerRow = document.createElement('tr');
+            thead.appendChild(headerRow);
+             // Špeciálne pre hornú tabuľku, prvý TH už existuje v HTML, tak ho tam necháme (alebo ho vytvoríme, ak thead bola prázdna)
+             if (thead.id === 'clubsSummaryTableHeader') {
+                  // Skontrolujeme, či prvý TH už existuje z HTML
+                  if (!headerRow.querySelector('th:first-child')) {
+                       const firstTh = document.createElement('th');
+                       firstTh.textContent = 'Názov klubu';
+                       headerRow.insertBefore(firstTh, headerRow.firstChild); // Vložíme na začiatok
+                  }
+             } else {
+                  // Pre spodnú tabuľku, musíme vytvoriť aj prvý TH (ak neexistuje)
+                   if (!headerRow.querySelector('th:first-child')) {
+                       const firstTh = document.createElement('th');
+                       firstTh.textContent = 'Názov klubu';
+                        headerRow.insertBefore(firstTh, headerRow.firstChild); // Vložíme na začiatok
+                   }
+             }
         }
+
+
+        // Clear existing headers *except the first one*
+        headerRow.querySelectorAll('th:not(:first-child)').forEach(th => th.remove());
+
+
+        // Add the "Tímy" header and category headers to the current thead
+        headersToGenerate.forEach((headerText, index) => {
+            const th = document.createElement('th');
+            th.textContent = headerText;
+            th.style.textAlign = 'center';
+
+            // Pre stĺpce kategórií pridáme aj dataset atribút
+            if (index >= 1) { // Index 0 je pre 'Tímy', od 1 začínajú kategórie v headersToGenerate
+                 // Nájdeme príslušnú kategóriu podľa indexu (index v headersToGenerate - 1, lebo prvý je Tímy)
+                 const category = allCategories[index - 1];
+                 if (category) {
+                      th.dataset.categoryId = category.id;
+                 }
+            }
+
+             headerRow.appendChild(th);
+        });
 
         // KÓD NA PRIDANIE NOVÉHO POSLEDNÉHO STĹPCA DO HLAVIČKY BOL ODSTRÁNENÝ
-    }
+    });
+
 
      // Update colspan for the initial loading/error row in the body (v rolujúcej tabuľke)
-    if (clubsSummaryTableBody) {
-        const firstRow = clubsSummaryTableBody.querySelector('tr');
-        if (firstRow) {
-            const firstCell = firstRow.querySelector('td');
-            if (firstCell) {
-                 // colspan = 1 (Názov klubu) + 1 (Tímy) + allCategories.length (Správny colspan pre telo)
-                firstCell.colSpan = 1 + 1 + allCategories.length; // Colspan calculation remains correct for the body
-            }
-        }
-    }
+     // Ak fixná tbody existuje, aktualizujeme aj jej placeholder colspan
+     const tbodyElementsForColspan = [clubsSummaryTableBody];
+     if (longestNameRowFixedBody) {
+         tbodyElementsForColspan.push(longestNameRowFixedBody);
+     }
+
+     tbodyElementsForColspan.forEach(tbody => {
+          const firstRow = tbody.querySelector('tr');
+          if (firstRow) {
+               const firstCell = firstRow.querySelector('td');
+               if (firstCell) {
+                    // colspan = 1 (Názov klubu) + 1 (Tímy) + allCategories.length (Správny colspan pre telo)
+                   firstCell.colSpan = 1 + 1 + allCategories.length; // Colspan calculation remains correct for the body
+               }
+          }
+     });
 }
 
 function displayClubsSummaryTable() {
@@ -140,7 +186,7 @@ function displayClubsSummaryTable() {
     longestNameRowFixedBody.innerHTML = ''; // Vyčistíme obsah fixnej tbody
 
 
-    // Update header with "Tímy" column and category columns (bez extra stĺpca)
+    // Update header with "Tímy" column and category columns pre obe thead
     updateHeaderColspan(allCategories.length);
 
     if (allClubs.length === 0) {
@@ -151,9 +197,19 @@ function displayClubsSummaryTable() {
         cell.textContent = "Zatiaľ nie sú pridané žiadne kluby pre prehľad.";
         cell.style.textAlign = 'center';
 
-        // A vyčistíme fixný riadok
-        longestNameRowFixedBody.innerHTML = ''; // Prázdny fixný riadok
-        return;
+        // A vyčistíme fixný riadok (alebo zobrazíme podobnú správu aj tam?)
+        // Necháme fixný riadok prázdny, ak nie sú kluby
+        if (longestNameRowFixedBody) {
+             // Voliteľne môžete zobraziť inú správu vo fixnom riadku
+             const noClubsFixedRow = longestNameRowFixedBody.insertRow();
+             const fixedCell = noClubsFixedRow.insertCell();
+              fixedCell.colSpan = 1 + 1 + allCategories.length;
+              fixedCell.textContent = "Žiadne kluby."; // Alebo iná krátka správa
+              fixedCell.style.textAlign = 'center';
+              fixedCell.style.fontStyle = 'italic';
+        }
+
+        return; // Ukončíme funkciu, ak nie sú kluby
     }
 
     // Group clubs by base name
@@ -185,11 +241,12 @@ function displayClubsSummaryTable() {
     }
 
     // Ak sme našli najdlhší názov, vygenerujeme a vložíme riadok do fixnej tbody
-    if (longestBaseName) {
+    if (longestBaseName && longestNameRowFixedBody) {
         const longestNameRow = longestNameRowFixedBody.insertRow(); // Vložíme riadok do fixnej tbody
         longestNameRow.style.fontWeight = 'bold'; // Voliteľné: tučný text
         longestNameRow.dataset.baseName = longestBaseName; // Pridáme dataset atribút
         longestNameRow.style.cursor = 'pointer'; // Aby bol klikateľný
+         longestNameRow.style.backgroundColor = '#ffffcc'; // Voliteľné zvýraznenie
 
         // Pridáme event listener pre kliknutie na fixný riadok
         longestNameRow.addEventListener('click', () => {
@@ -217,6 +274,7 @@ function displayClubsSummaryTable() {
         const cellTotalTeams = longestNameRow.insertCell();
         cellTotalTeams.textContent = totalTeamsCount > 0 ? totalTeamsCount : '';
         cellTotalTeams.style.textAlign = 'center';
+        if (totalTeamsCount > 0) { cellTotalTeams.style.fontWeight = 'bold'; }
          // Voliteľné štýly pre zarovnanie
          // cellTotalTeams.style.width = 'Ypx'; // Nastavte šírku podľa stĺpca Tímy
 
@@ -227,6 +285,7 @@ function displayClubsSummaryTable() {
             const teamsInCategoryCount = clubsForLongestBaseName.filter(club => club.categoryId === categoryId).length;
             countCell.textContent = teamsInCategoryCount > 0 ? teamsInCategoryCount : '';
             countCell.style.textAlign = 'center';
+             if (teamsInCategoryCount > 0) { countCell.style.fontWeight = 'bold'; }
              // Voliteľné štýly pre zarovnanie
              // countCell.style.width = 'Zpx'; // Nastavte šírku podľa stĺpcov kategórií
         });
@@ -236,18 +295,16 @@ function displayClubsSummaryTable() {
         // lastCell.textContent = '';
     }
 
-    // --- KONIEC NOVÉHO KÓDU pre fixný riadok v fixnej tbody ---
+    // --- KONIEC KÓDU pre fixný riadok v fixnej tbody ---
 
 
     // Populate the table body (kód pre generovanie riadkov v rolujúcej tabuľke)
+    // Tento cyklus vygeneruje VŠETKY riadky do rolujúcej tabuľky, vrátane toho, ktorý je duplicitne zobrazený hore.
     sortedBaseNames.forEach(baseName => {
-        // Skontrolujeme, či tento riadok je ten s najdlhším názvom.
-        // Ak áno, PRESKOČÍME ho, pretože ho chceme zobraziť IBA v hornej fixnej tbody.
-        if (baseName === longestBaseName) {
-             return;
-        }
+        // UŽ NEPRESKAKUJEME RIADOK S NAJDLHŠÍM NÁZVOM, chceme ho aj tu!
+        // if (baseName === longestBaseName) { return; } // TENTO RIADOK JE ODSTRÁNENÝ
 
-        // Kód pre generovanie riadku v rolujúcej tabuľke (clubsSummaryTableBody)
+
         const row = clubsSummaryTableBody.insertRow();
         row.dataset.baseName = baseName;
         row.style.cursor = 'pointer';
@@ -436,21 +493,11 @@ async function displaySubjectDetails(baseName, initialTeamId = null) { // Pridan
           // --- KÓD pre automatický výber a zvýraznenie tímu (ÚPRAVA) ---
           // Táto časť sa vykoná po vytvorení tlačidiel
            if (teamsForSubject.length > 0 && initialTeamId) {
-               // Ak bol initialTeamId zadaný (z URL/histórie), nájdi tím a zobraz detaily
-               const initialTeam = teamsForSubject.find(t => t.id === initialTeamId);
-               if (initialTeam) {
-                    console.log(`DEBUG: InitialTeamId "${initialTeamId}" provided. Displaying details for this team.`);
-                    displaySpecificTeamDetails(initialTeamId); // Zobraz detaily pre konkrétny tím
-               } else {
-                    console.warn(`DEBUG: InitialTeamId "${initialTeamId}" provided, but team not found among teams for baseName.`);
-                     // Ak tím z URL neexistuje v rámci tohto subjektu, zobrazíme detaily prvého tímu
-                     const firstTeamId = teamsForSubject[0].id;
-                     console.log(`DEBUG: Displaying details for the first team instead: "${firstTeamId}".`);
-                     displaySpecificTeamDetails(firstTeamId);
-               }
-
+               // Ak bol initialTeamId zadaný (z URL/histórie), zobraz detaily pre tento tím
+               console.log(`DEBUG: InitialTeamId "${initialTeamId}" provided. Displaying details for this team.`);
+               displaySpecificTeamDetails(initialTeamId);
            } else if (teamsForSubject.length > 0 && !initialTeamId) {
-                // Ak nebol initialTeamId zadaný a sú tu tímy, zobraz detaily prvého tímu
+                // Ak nebol initialTeamId zadaný a sú tu tímy, zobraz detaily prvého tímu (bez zvýraznenia v URL)
                const firstTeamId = teamsForSubject[0].id;
                console.log(`DEBUG: No InitialTeamId provided. Displaying details for the first team: "${firstTeamId}".`);
                 displaySpecificTeamDetails(firstTeamId); // Toto by malo volať highlightTeamButton na konci
@@ -624,7 +671,7 @@ async function handleUrlState() {
         if (team) {
             const baseName = getClubBaseName(team);
              // Zobraz detaily subjektu (tým sa vytvoria tlačidlá tímov)
-             // Posielame teamId do displaySubjectDetails, aby sa hneď vybral príslušný tím
+             // Posielame teamId do displaySubjectDetails
             displaySubjectDetails(baseName, teamId);
             // displaySpecificTeamDetails(teamId) sa teraz volá vo vnútri displaySubjectDetails
             // ak initialTeamId existuje
@@ -639,7 +686,7 @@ async function handleUrlState() {
         // Ak je v URL iba parameter club, zobraz detaily subjektu
          const clubExists = allClubs.some(club => getClubBaseName(club) === clubBaseName);
          if (clubExists) {
-              displaySubjectDetails(clubBaseName); // Nezobrazuj detaily konkrétneho tímu, len subjektu
+              displaySubjectDetails(clubBaseName); // Nezobrazuj detaily konkrétneho tímu
          } else {
               // Subjekt s daným baseName sa nenašiel, zobraz zoznam klubov
               console.warn(`Subjekt "${clubBaseName}" sa nenašiel.`);
@@ -661,7 +708,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (backToListButton) {
         // Zabezpečiť, že tlačidlo Späť volá novú funkciu goBackToList
         // Odstráň existujúce listenery kliknutia, aby sa nepridali duplicitne
-        // Ponechávam pôvodnú logiku klonovania, ak funguje.
         const newButton = backToListButton.cloneNode(true);
         backToListButton.parentNode.replaceChild(newButton, backToListButton);
         const updatedBackButton = document.getElementById('backToListButton');
