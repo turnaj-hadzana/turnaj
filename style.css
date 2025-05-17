@@ -295,15 +295,6 @@ nav ul li a:hover {
 #clubsBodyTable td:not(:last-child) {
      border-right: 1px solid #eee;
 }
-#clubsBodyTable td,
-#longestNameRowFixedBody td { 
-    padding: 10px 15px;
-    border-bottom: 1px solid #eee;
-    white-space: nowrap;
-    min-width: 3vw;
-    color: transparent;
-}
-
 /* Štýl pre bunku s načítavaním/chybou (s colspan) */
 .data-table tbody tr td[colspan] {
     text-align: center !important;
@@ -340,6 +331,14 @@ nav ul li a:hover {
      display: flex; /* Ponechať */
      flex-direction: column;
      padding-bottom: 5vh;
+}
+#clubsBodyTable td,
+#longestNameRowFixedBody td { 
+    padding: 10px 15px;
+    border-bottom: 1px solid #eee;
+    white-space: nowrap;
+    min-width: 3vw;
+    color: transparent;
 }
 .action-button, #backToListButton.action-button {
     display: inline-block;
