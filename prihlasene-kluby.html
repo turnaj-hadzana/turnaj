@@ -6,7 +6,7 @@
     <title>Prihlásené kluby</title>
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="style.css">
-<body>
+<body style="overflow-y: hidden;">
     <script type="module" src="auth.js"></script>
     <script src="script.js"></script>
     <h1>Prihlásené kluby</h1>
@@ -16,14 +16,8 @@
             <table id="clubsHeaderTable" class="data-table">
                  <thead>
                      <tr id="clubsSummaryTableHeader">
-                        <th>Názov klubu</th>
-                         </tr>
+                        <th>Názov klubu</th> </tr>
                 </thead>
-                <tbody id="clubsHeaderTableBody">
-                     <tr>
-                         <td style="text-align: center;">Načítavam prehľad...</td>
-                     </tr>
-                 </tbody>
             </table>
 
             <div id="scrollableTableBodyContainer" style="max-height: 75vh; overflow-y: auto; border: 1px solid #ccc;">
