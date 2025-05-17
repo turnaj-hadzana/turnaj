@@ -383,5 +383,5 @@ nav ul li a:hover {
     text-overflow: clip !important;
 }
 #clubsHeaderTable th {
-    vertical-align: center;
+    vertical-align: middle;
 }
