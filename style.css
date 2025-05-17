@@ -381,3 +381,19 @@ nav ul li a:hover {
 #clubsHeaderTable tbody td {
     white-space: nowrap;
 }
+#clubsHeaderTable tbody tr,
+#clubsHeaderTable tbody td {
+    height: 0 !important; 
+    padding: 0 !important;
+    border-top: none !important;
+    border-bottom: none !important;
+    overflow: hidden !important;
+}
+#clubsBodyTable thead tr,
+#clubsBodyTable thead th {
+    height: 0 !important;
+    padding: 0 !important;
+    border-top: none !important;
+    border-bottom: none !important;
+    overflow: hidden !important;
+}
