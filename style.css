@@ -127,11 +127,6 @@ main p a {
 main p a:hover {
     text-decoration: underline;
 }
-/* Štýly pre layout content-wrapper a left-menu z tvojho style.css */
-//.content-wrapper {
-//    display: flex;
-//    align-items: flex-start;
-//}
 .left-menu {
     width: 200px;
     background-color: #f8f8f8;
@@ -216,11 +211,6 @@ nav ul li a:hover {
     padding: 10px;
     font-size: 16px;
 }
-
-/* -- Nové štýly pre prehľad klubov a detaily (pre modernejší vzhľad na stránke prihlasene-kluby.html) -- */
-/* Tieto štýly sú špecifickejšie a mali by prepísať relevantné pravidlá zo style.css a spravca-turnaja-style.css */
-
-/* Nadpisy špecifické pre obsah sekcií */
 .section-block h2,
 .section-block h3,
 .section-block h4 {
@@ -228,16 +218,10 @@ nav ul li a:hover {
     margin-top: 0;
     margin-bottom: 15px;
 }
-/* Priestor nad podnadpismi v detailoch */
 #clubDetailContent h3,
 #clubDetailContent h4 {
     margin-top: 20px;
 }
-
-
-/* -- Štýly tabuľky .data-table (pre prihlasene-kluby.html) -- */
-
-/* Apply to both header and body tables */
 #clubsHeaderTable,
 #clubsBodyTable {
     border-collapse: collapse;
@@ -311,7 +295,14 @@ nav ul li a:hover {
 #clubsBodyTable td:not(:last-child) {
      border-right: 1px solid #eee;
 }
-
+#clubsBodyTable td,
+#longestNameRowFixedBody td { /* Pridaj tento selektor */
+    padding: 10px 15px; /* Predvolené odsadenie pre bunky tela */
+    border-bottom: 1px solid #eee; /* Ak majú mať rovnaký spodný okraj */
+    /* text-align je nastavený nižšie podľa pozície stĺpca - to platí aj pre bunky s najdlhším názvom */
+    white-space: nowrap;
+    min-width: 3vw;
+}
 
 /* Štýl pre bunku s načítavaním/chybou (s colspan) */
 .data-table tbody tr td[colspan] {
