@@ -40,6 +40,7 @@ async function loadAllData() {
         if (clubsSummaryTableBody) {
              // Update colspan calculation for the error message - body only has Názov + Tímy + Kategórie
              const numColumns = 1 + 1 + allCategories.length; // colspan pre telo neobsahuje dodatočný stĺpec
+             // OPRAVA: Použitie správnej referencie na telo tabuľky klubov
              clubsSummaryTableBody.innerHTML = `<tr><td colspan="${numColumns}" style="text-align: center; color: red;">Chyba pri načítaní klubov.</td></tr>`;
         }
          allClubs = [];
@@ -47,8 +48,7 @@ async function loadAllData() {
          allGroups = [];
          // V prípade chyby naviguj späť na hlavný zoznam a URL
          history.replaceState({}, '', window.location.pathname); // Vráť URL bez parametrov a nahraď stav
-         displayClubsSummaryTable(); // Zobraz zoznam klubov (prázdny alebo s chybou)
-
+         // displayClubsSummaryTable(); // Odstránené redundantné volanie v error ceste
     }
 }
 
@@ -129,10 +129,20 @@ function displayClubsSummaryTable() {
 
 
     if (!clubsSummaryTableBody || !clubsSummaryTableHeader) {
+        console.error("Missing table elements for club summary.");
         return;
     }
 
-    clubsSummaryTableBody.innerHTML = ''; // Clear existing rows
+    // Check if an error message was already placed in the body by loadAllData's catch
+    // If so, don't clear it and don't try to populate the table further.
+     if (clubsSummaryTableBody.querySelector('td[colspan]') && clubsSummaryTableBody.textContent.includes('Chyba pri načítaní')) {
+         console.log("Error message already present in clubsSummaryTableBody. Skipping table population.");
+         // Ensure header colspan is updated even with error message
+         updateHeaderColspan(allCategories.length);
+         return; // Exit the function early as error is displayed
+    }
+
+    clubsSummaryTableBody.innerHTML = ''; // Clear existing rows (including the initial 'Načítavam...')
 
     // Update header with "Tímy" column and category columns (without the extra last column)
     updateHeaderColspan(allCategories.length);
@@ -141,9 +151,13 @@ function displayClubsSummaryTable() {
         const noClubsRow = clubsSummaryTableBody.insertRow();
         const cell = noClubsRow.insertCell();
          // colspan = 1 (Názov klubu) + 1 (Tímy) + allCategories.length (Správny colspan pre telo)
-        cell.colSpan = 1 + 1 + allCategories.length; // Správny colspan pre telo
-        cell.textContent = "Zatiaľ nie sú pridané žiadne kluby pre prehľad.";
+        const numCategoryColumns = Array.isArray(allCategories) ? allCategories.length : 0;
+        const numColumns = 1 + 1 + numCategoryColumns;
+        cell.colSpan = numColumns; // Správny colspan pre telo
+        cell.textContent = "Zatiaľ nie sú pridané žiadne kluby."; // OPRAVA: Preklep v texte
         cell.style.textAlign = 'center';
+        // OPRAVA: Pridanie riadku do správneho tbody (insertRow to už robí, táto riadka bola pôvodne iná chyba)
+        // clubsSummaryTableBody.appendChild(noClubsRow); // Túto riadku netreba, insertRow ju pridá
         return;
     }
 
@@ -454,7 +468,7 @@ async function displaySpecificTeamDetails(teamId) {
 
                   if (hraciSnapshot.empty) {
                        const noPlayersItem = document.createElement('li');
-                       noPlayersItem.textContent = 'Zatiaľ bez súpky.'; // Typo? Zatiaľ bez súpisky?
+                       noPlayersItem.textContent = 'Zatiaľ bez súpisky.'; // Typo? Zatiaľ bez súpisky? - Opravené
                        selectedTeamSoupiskaHracovUl.appendChild(noPlayersItem);
                   } else {
                        const hraciList = hraciSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
