@@ -1,128 +1,102 @@
-/* Základné nastavenia pre HTML a telo stránky */
+/* Pridajte na začiatok súboru, ak tam už nie je */
 html, body {
     height: 100%; /* Zabezpečí, že 100vh sa vzťahuje na celú výšku okna */
     margin: 0; /* Zabezpečí, že telo nemá predvolené okraje */
     padding: 0; /* Zabezpečí, že telo nemá predvolené odsadenie */
-    font-family: 'Arial', sans-serif; /* Nastavenie predvoleného písma */
-    line-height: 1.6; /* Nastavenie výšky riadku */
-    color: #333; /* Predvolená farba textu */
-    background-color: #ffffff; /* Predvolená farba pozadia */
 }
 
-/* Štýly pre hlavičku stránky (ak je fixná) */
 header {
     background-color: #f0f0f0;
     padding: 10px 0;
     border-bottom: 1px solid #ccc;
-    position: fixed; /* Fixná pozícia na vrchu */
+    position: fixed;
     top: 0;
-    left: 0; /* Pridané pre plnú šírku */
     width: 100%;
-    z-index: 1000; /* Zabezpečí, že hlavička bude nad ostatným obsahom */
-    box-sizing: border-box; /* Vloží padding do šírky */
+    z-index: 1000;
+    box-sizing: border-box;
 }
-
-/* Štýly pre navigačné menu v hlavičke */
-header nav ul {
+body {
+    padding-top: 60px; /* Ponechané tvoje pôvodné odsadenie kvôli fixnej hlavičke */
+    display: flex;
+    flex-direction: column; /* Uloží priame deti (vrátane main) pod sebou */
+    min-height: 100%; /* Zabezpečí, že telo má minimálne výšku okna */
+    /* Ostatné pôvodné štýly tela */
+    font-family: 'Arial', sans-serif;
+    line-height: 1.6;
+    color: #333;
+    background-color: #ffffff;
+    margin: 0; /* Ponechať */
+    padding-left: 0; /* Zabezpečiť, že ľavý padding je 0 ak bol zmenený */
+    padding-right: 0; /* Zabezpečiť, že pravý padding je 0 ak bol zmenený */
+    /* Ak máte aj iné paddingy na tele, zvážte ich úpravu alebo použitie pading-block/inline */
+}
+nav ul {
     list-style: none;
     padding: 0;
     margin: 0;
-    display: flex; /* Použitie flexbox pre položky menu */
-    justify-content: center; /* Centrovanie položiek menu */
+    display: flex;
+    justify-content: center;
     align-items: center;
 }
-
-header nav ul li {
-    margin: 0 15px; /* Medzi položkami menu */
+nav ul li {
+    margin: 0 15px;
 }
-
-header nav ul li a {
+nav ul li a {
     text-decoration: none;
     color: #333;
     font-weight: bold;
-    padding: 8px 15px; /* Väčšia klikateľná plocha */
-    border-radius: 5px; /* Zaoblené rohy */
-    transition: background-color 0.3s ease, color 0.3s ease; /* Plynulý prechod */
+    padding: 8px 15px;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+}
+nav ul li a:hover {
+    color: #3a8d41;
+    background-color: #e0e0e0;
+}
+nav ul li.active a {
+    background-color: #00cc00;
+    color: #333;
+}
+h1 {
+    text-align: center;
+    color: #333;
+    margin-bottom: 20px;
 }
 
-header nav ul li a:hover {
-    color: #3a8d41; /* Farba pri prejdení myšou */
-    background-color: #e0e0e0; /* Svetlejšie pozadie pri hover */
-}
-
-header nav ul li.active a {
-    background-color: #00cc00; /* Zelené pozadie pre aktívnu položku */
-    color: #333; /* Farba textu pre aktívnu položku */
-}
-
-/* Štýly pre položku prihláseného používateľa */
-header nav ul li#usernameItem {
-    margin-right: 20px; /* Odsadenie od pravého okraja */
-    font-weight: normal;
-    color: #555;
-    margin-left: auto; /* Posunie item úplne doprava v rámci flex kontajnera */
-}
-
-
-/* Odsadenie tela stránky, aby obsah nebol pod fixnou hlavičkou */
-body {
-    padding-top: 60px; /* Uprav podľa výšky tvojej hlavičky */
-    display: flex; /* Použité pre jednoduchšie vertikálne rozloženie */
-    flex-direction: column;
-    min-height: 100%;
-    margin: 0;
-    padding-left: 0; /* Zabezpečiť, že ľavý padding je 0 ak bol zmenený */
-    padding-right: 0; /* Zabezpečiť, že pravý padding je 0 ak bol zmenený */
-    font-family: 'Arial', sans-serif; /* Nastavenie predvoleného písma */
-    line-height: 1.6; /* Nastavenie výšky riadku */
-    color: #333; /* Predvolená farba textu */
-    background-color: #ffffff; /* Predvolená farba pozadia */
-}
-
+/* Upravte existujúce pravidlo pre main */
 main {
     flex-grow: 1; /* Main zaberie všetok dostupný priestor pod h1 */
     padding: 20px;
     display: flex; /* Nastavíme aj main ako flex kontajner */
     flex-direction: column; /* Uloží deti (section) pod sebou */
-    align-items: center; /* Centrovanie detí (sekcií a H1) horizontálne */
+    align-items: center; /* ZMENA: Centrovanie detí (sekcií a H1) horizontálne */
     min-width: 0; /* Povoliť zmenšenie v flex kontexy */
     overflow-x: hidden; /* Skryť horizontálny overflow */
 }
-h1 {
-    text-align: center;
-    color: #333;
-    margin-top: 0; /* Odstráni horný okraj H1, ak je main flex-direction: column */
-    margin-bottom: 20px;
-}
-
-/* Všeobecné štýly pre formuláre */
 form {
     background-color: #fff;
     padding: 30px;
     border-radius: 8px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    width: 350px; /* Predvolená šírka formulára */
-    max-width: 100%; /* Zabezpečí, že formulár neprekročí šírku rodiča */
+    width: 350px;
+    max-width: 100%;
 }
 form div {
     margin-bottom: 20px;
 }
 form label {
-    display: block; /* Zobrazí label nad inputom */
+    display: block;
     margin-bottom: 5px;
     color: #555;
     font-weight: bold;
 }
 form input[type="text"],
-form input[type="password"],
-form input[type="number"],
-form select {
-    width: calc(100% - 22px); /* Šírka s ohľadom na padding a border */
+form input[type="password"] {
+    width: calc(100% - 22px);
     padding: 10px;
     border: 1px solid #ccc;
     border-radius: 4px;
     font-size: 16px;
-    box-sizing: border-box; /* Zahrnie padding a border do šírky */
 }
 form button[type="submit"] {
     background-color: #3a8d41;
@@ -133,21 +107,18 @@ form button[type="submit"] {
     font-size: 18px;
     cursor: pointer;
     transition: background-color 0.3s ease;
-    width: 100%; /* Tlačidlo zaberie plnú šírku formulára */
+    width: 100%;
 }
 form button[type="submit"]:hover {
     background-color: #c46f50; /* Tvoja pôvodná farba */
 }
 .error-message {
-    color: red;
-    font-weight: bold;
     margin-top: 10px;
-    text-align: center;
+    font-size: 14px;
 }
 main p {
     margin-top: 20px;
     color: #777;
-    text-align: center;
 }
 main p a {
     color: #007bff;
@@ -156,114 +127,130 @@ main p a {
 main p a:hover {
     text-decoration: underline;
 }
-
-
-/* -- Štýly pre layout content-wrapper a left-menu (pre stránky správcu) -- */
-.content-wrapper {
-    display: flex;
-    width: 100%;
-    margin: 20px 0; /* Vertikálne okraje okolo obsahu */
-    padding: 0 20px; /* Horizontálne odsadenie */
-    box-sizing: border-box;
-    gap: 20px; /* Priestor medzi ľavým menu a hlavným obsahom */
-    align-items: flex-start; /* Zarovnanie položiek flexboxu na začiatok */
-}
-
+/* Štýly pre layout content-wrapper a left-menu z tvojho style.css */
+//.content-wrapper {
+//    display: flex;
+//    align-items: flex-start;
+//}
 .left-menu {
-    background-color: #fff;
-    padding: 15px;
-    border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    position: sticky; /* Fixná pozícia pri skrolovaní */
-    top: 90px; /* Odsadenie od vrchu (pod hlavičkou) */
-    align-self: flex-start; /* Zabezpečí, že menu začína na vrchu kontajnera flex */
-    max-height: calc(100vh - 110px); /* Maximálna výška s ohľadom na okraje/hlavičku */
-    overflow-y: auto; /* Povoliť skrolovanie v menu, ak je príliš dlhé */
-    z-index: 1002; /* Zabezpečí, že menu je nad obsahom */
-    min-width: 180px; /* Minimálna šírka menu */
-    flex-shrink: 0; /* Zabraňuje zmenšeniu menu pod min-width */
+    width: 200px;
+    background-color: #f8f8f8;
+    padding: 20px 10px;
+    box-shadow: 2px 0 5px rgba(0,0,0,0.1);
 }
-
 .left-menu ul {
+    display: block;
     list-style: none;
     padding: 0;
     margin: 0;
 }
-
 .left-menu li {
-    margin-bottom: 10px;
+    display: block;
+    margin-bottom: 5px;
 }
-
-.left-menu a {
+nav ul li a {
+    display: block;
     text-decoration: none;
-    color: #007bff; /* Farba odkazov */
-    font-size: 1.1em;
-    display: block; /* Zabezpečí, že celá plocha li je klikateľná */
-    padding: 8px 5px;
-    border-radius: 4px;
-    transition: background-color 0.2s ease, color 0.2s ease;
-    white-space: nowrap; /* Zabraňuje zalamovaniu v menu */
+    color: #333;
+    padding: 10px 15px;
 }
-
-.left-menu a:hover {
-    background-color: #e9ecef;
-    color: #0056b3;
+nav ul li a:hover {
+    color: #3a8d41;
+    background-color: #e0e0e0;
 }
-
-.left-menu a:active {
-    color: #004085;
+/* Pôvodný add-button a modal štýly z tvojho style.css */
+.add-button {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background-color: #3a8d41;
+    color: white;
+    font-size: 32px;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    transition: background-color 0.3s ease;
+    z-index: 1000;
 }
-
-/* Hlavná obsahová časť vedľa ľavého menu */
-.content-wrapper main {
-    flex-grow: 1; /* Hlavný obsah zaberie zvyšný priestor */
-    padding: 0; /* Odstráni predvolený padding z main */
-    box-shadow: none;
-    background-color: transparent;
-    min-width: 0; /* Umožní zmenšenie hlavného obsahu, ak je menu široké */
-    overflow-x: auto; /* Povoliť horizontálne skrolovanie */
+.add-button:hover {
+    background-color: #c46f50; /* Tvoja pôvodná farba */
 }
-
-/* Sekcie s obsahom v hlavnej časti (napr. Vytvorenie kategórií) */
-.section-block {
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 2000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.5);
+}
+.modal-content {
     background-color: #fff;
-    padding: 20px;
-    margin-bottom: 20px;
+    margin: 10% auto;
+    padding: 30px;
     border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    width: 400px;
+    max-width: 90%;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+.close {
+    float: right;
+    font-size: 24px;
+    cursor: pointer;
+}
+.modal-content h2 {
+    margin-top: 0;
+}
+.modal-content form {
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
-    width: 100%; /* Sekcia zaberie plnú šírku rodiča */
-    box-sizing: border-box; /* Zahrnie padding do šírky */
+}
+.modal-content input,
+.modal-content button {
+    margin-top: 15px;
+    padding: 10px;
+    font-size: 16px;
+}
+
+/* -- Nové štýly pre prehľad klubov a detaily (pre modernejší vzhľad na stránke prihlasene-kluby.html) -- */
+/* Tieto štýly sú špecifickejšie a mali by prepísať relevantné pravidlá zo style.css a spravca-turnaja-style.css */
+
+/* Nadpisy špecifické pre obsah sekcií */
+.section-block h2,
+.section-block h3,
+.section-block h4 {
+    color: #555;
+    margin-top: 0;
+    margin-bottom: 15px;
+}
+/* Priestor nad podnadpismi v detailoch */
+#clubDetailContent h3,
+#clubDetailContent h4 {
+    margin-top: 20px;
 }
 
 
-/* -- ŠTÝLY ŠPECIFICKÉ PRE TABUĽKY NA PRIHLASENE-KLUBY.HTML -- */
+/* -- Štýly tabuľky .data-table (pre prihlasene-kluby.html) -- */
 
-/* Všeobecné štýly pre dátové tabuľky (.data-table) */
-/* Aplikované na #clubsHeaderTable a #clubsBodyTable */
-.data-table {
-    width: 100%; /* Tabuľka zaberie plnú šírku kontajnera */
-    border-collapse: collapse; /* Spojí okraje buniek */
+/* OPRAVA: Apply table-layout: fixed to both header and body tables */
+#clubsHeaderTable,
+#clubsBodyTable {
+    border-collapse: collapse;
     /* ZMENA: Nastavte table-layout na fixed pre konzistentné šírky stĺpcov */
-    /* Toto je kľúčové pre zarovnanie stĺpcov medzi dvomi tabuľkami */
     table-layout: fixed;
 }
 
-/* Aplikované na obe tabuľky pre prehľad klubov */
-#clubsHeaderTable,
+/* Remove margin-top from the body table specifically */
 #clubsBodyTable {
-    border-collapse: collapse; /* Zabezpečí zdedenie border-collapse */
-    table-layout: fixed; /* Zabezpečí fixed layout aj tu */
+    margin-top: 0; /* Už nastavené na kontajneri */
 }
 
-/* Odstráni horný okraj zo spodnej tabuľky, aby nadväzovala na hornú */
-#clubsBodyTable {
-    margin-top: 0;
-}
-
-/* Skrolovateľný kontajner div pre telo spodnej tabuľky */
+/* Skrolovateľný kontajner div */
 #scrollableTableBodyContainer {
     flex-grow: 1; /* Tento div zaberie väčšinu zostávajúceho vertikálneho priestoru */
     max-height: 75vh; /* Maximálna výška pred aktiváciou posúvania */
@@ -275,19 +262,17 @@ main p a:hover {
     border-radius: 5px;
     background-color: #fff;
     box-sizing: border-box;
-    /* Možno bude potrebné nastaviť šírku o scrollbar, ak je problém so zarovnaním */
-    /* width: calc(100% - 17px); */
 }
 
-/* -- Štýly buniek (TH a TD) špecifické pre clubs tabuľky -- */
+/* -- Štýly buniek (TH a TD) -- */
 
-/* Style for header cells */
+/* Style for header cells in the header table */
 #clubsHeaderTable th {
-    background-color: #3a8d41; /* Zelené pozadie */
-    color: white; /* Biely text */
-    padding: 12px 15px; /* Vnútorné odsadenie */
+    background-color: #3a8d41;
+    color: white;
+    padding: 12px 15px;
     text-align: center; /* Predvolené centrovanie */
-    border-bottom: 2px solid #2a6b30; /* Tmavší spodný okraj */
+    border-bottom: 2px solid #2a6b30;
     font-weight: bold;
     font-size: 0.95em;
     white-space: nowrap; /* Kľúčové: Zabezpečí, že text sa nebude zalamovať */
@@ -295,30 +280,34 @@ main p a:hover {
     overflow: hidden; /* Ensure content outside padding/border is hidden */
     text-overflow: ellipsis;
 }
-/* Style for header cells in the body table (should look the same as top header) */
+
+/* OPRAVA: Style for header cells in the body table (target TH elements) */
 #clubsBodyTable th {
      background-color: #3a8d41;
      color: white;
      padding: 12px 15px;
-     text-align: center;
+     text-align: center; /* Predvolené centrovanie */
      border-bottom: 2px solid #2a6b30;
      font-weight: bold;
      font-size: 0.95em;
-     white-space: nowrap;
+     white-space: nowrap; /* Kľúčové: Zabezpečí, že text sa nebude zalamovať */
      box-sizing: border-box;
      overflow: hidden;
      text-overflow: ellipsis;
+     /* Min-width is applied via :first-child below */
 }
 
 
 /* Style for body cells in the body table */
 #clubsBodyTable td {
     padding: 10px 15px; /* Predvolené odsadenie pre bunky tela */
-    border-bottom: 1px solid #eee; /* Svetlý spodný okraj */
-    white-space: nowrap; /* Zabezpečí, že text sa nebude zalamovať */
+    border-bottom: 1px solid #eee;
+    /* text-align je nastavený nižšie podľa pozície stĺpca */
+    white-space: nowrap; /* Kľúčové: Zabezpečí, že text sa nebude zalamovať */
     box-sizing: border-box; /* Zahrnie padding a border do šírky bunky */
-     overflow: hidden; /* Ensure content outside padding/border is hidden */
+    overflow: hidden; /* Ensure content outside padding/border is hidden */
     text-overflow: ellipsis;
+    min-width: 3vw; /* Dajme tu aspoň nejaký min-width aj pre TD pre prípad */
 }
 /* Style for body cells in the header table (should look the same as body table cells) */
 #clubsHeaderTable td {
@@ -331,9 +320,9 @@ main p a:hover {
 }
 
 
-/* Prvý stĺpec v hlavičke aj tele - zarovnať vľavo a nastaviť šírku */
+/* OPRAVA: Prvý stĺpec v hlavičke aj tele - zarovnať vľavo a nastaviť šírku (target TH and TD) */
 #clubsHeaderTable th:first-child,
-#clubsBodyTable th:first-child,
+#clubsBodyTable th:first-child, /* OPRAVA: Target TH in body table */
 #clubsHeaderTable td:first-child,
 #clubsBodyTable td:first-child {
     text-align: left;
@@ -342,9 +331,9 @@ main p a:hover {
     width: 15vw; /* Nastaví presnú šírku prvého stĺpca */
 }
 
-/* Ostatné stĺpce v hlavičke aj tele - centrovať a nechať rozdeliť šírku */
+/* OPRAVA: Ostatné stĺpce v hlavičke aj tele - centrovať a nechať rozdeliť šírku (target TH and TD) */
 #clubsHeaderTable th:nth-child(n + 2),
-#clubsBodyTable th:nth-child(n + 2),
+#clubsBodyTable th:nth-child(n + 2), /* OPRAVA: Target TH in body table */
 #clubsHeaderTable td:nth-child(n + 2),
 #clubsBodyTable td:nth-child(n + 2) {
      text-align: center;
@@ -353,12 +342,12 @@ main p a:hover {
 }
 
 
-/* Pridanie pravého okraja ku všetkým bunkám OKREM poslednej */
+/* OPRAVA: Pridanie pravého okraja ku všetkým bunkám OKREM poslednej (target TH and TD) */
 #clubsHeaderTable th:not(:last-child) {
     border-right: 1px solid #2a6b30;
 }
 #clubsBodyTable th:not(:last-child) {
-     border-right: 1px solid #2a6b30; /* Aj hlavička spodnej tabuľky */
+     border-right: 1px solid #2a6b30; /* OPRAVA: Aj hlavička spodnej tabuľky */
 }
 #clubsHeaderTable td:not(:last-child) {
     border-right: 1px solid #eee;
@@ -368,13 +357,13 @@ main p a:hover {
 }
 
 
-/* Štýl pre POSLEDNÚ bunku v tele spodnej tabuľky - odstrániť pravý padding a border */
+/* OPRAVA: Štýl pre POSLEDNÚ bunku v tele spodnej tabuľky - odstrániť pravý padding a border */
 #clubsBodyTable td:last-child {
     padding: 10px 0; /* Nastaví top/bottom padding na 10px, left/right na 0px */
     box-sizing: border-box;
     border-right: none !important; /* Ensure no right border on the last cell */
 }
-/* Štýl pre POSLEDNÚ bunku v hlavičke spodnej tabuľky - odstrániť pravý padding a border */
+/* OPRAVA: Štýl pre POSLEDNÚ bunku v hlavičke spodnej tabuľky - odstrániť pravý padding a border (target TH) */
 #clubsBodyTable th:last-child {
     padding: 12px 0;
     box-sizing: border-box;
@@ -426,7 +415,7 @@ main p a:hover {
     transition: background-color 0.2s ease;
 }
 
-/* Efekt pri prejdení myšou cez riadok tela spodnej tabuľky */
+/* Efekt pri prejdení myšou cez riadok tabuľky tela spodnej tabuľky */
 #clubsBodyTable tbody tr:hover {
     background-color: #e9e9e9;
 }
@@ -643,7 +632,7 @@ main p a:hover {
 
     /* Prispôsobenie prvého stĺpca */
     #clubsHeaderTable th:first-child,
-    #clubsBodyTable th:first-child,
+    #clubsBodyTable th:first-child, /* OPRAVA: Target TH in body table */
     #clubsHeaderTable td:first-child,
     #clubsBodyTable td:first-child {
         min-width: 25vw; /* Väčšia minimálna šírka pre prvý stĺpec */
@@ -662,7 +651,7 @@ main p a:hover {
         width: 100%;
         max-height: none;
         overflow-y: visible;
-        flex-shrink: 1; /* Umožní zmenšenie menu, ak je to potrebné */
+        flex-shrink: 1; /* Umožní zmenšenie menu pod min-width */
     }
     /* Hlavná obsahová časť zaberie plnú šírku */
     .content-wrapper main {
