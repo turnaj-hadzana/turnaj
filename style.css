@@ -255,7 +255,7 @@ nav ul li a:hover {
 #clubsHeaderTable th {
     background-color: #3a8d41;
     color: white;
-    padding: 12px 15px;
+    padding: 10px 15px;
     text-align: center; /* Predvolené centrovanie */
     border-bottom: 2px solid #2a6b30;
     font-weight: bold;
@@ -276,6 +276,7 @@ nav ul li a:hover {
 /* Prvý stĺpec v hlavičke aj tele - zarovnať vľavo a nastaviť minimálnu šírku */
 #clubsHeaderTable th:first-child,
 #clubsBodyTable td:first-child {
+    padding: 10px 15px;
     text-align: left;
     min-width: 15vw; /* Minimálna šírka PRVÉHO stĺpca na 10vw */
 }
