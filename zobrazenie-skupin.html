@@ -23,9 +23,11 @@
         .display-button:hover {
             background-color: #c46f50;
         }
+        /* Pôvodný back-buttons-container štýl, teraz bude v dynamicContentArea */
         .back-buttons-container {
              text-align: center;
-             margin-bottom: 20px;
+             margin-bottom: 20px; /* Možno bude potrebné upraviť margin podľa nového umiestnenia */
+             margin-top: 20px; /* Pridaný top margin pre oddelenie od kategórií */
         }
 
         .category-group {
@@ -39,34 +41,37 @@
        }
 
        .category-group h3 {
-           margin-top: 0; 
-           margin-bottom: 15px; 
+           margin-top: 0;
+           margin-bottom: 15px;
            color: #333;
            font-size: 1.3em;
-           border-bottom: 2px solid #3a8d41; 
+           border-bottom: 2px solid #3a8d41;
            padding-bottom: 5px;
        }
 
        .category-buttons {
-           display: flex; 
-           flex-wrap: wrap; 
-           gap: 10px; 
-           justify-content: center; 
+           display: flex;
+           flex-wrap: wrap;
+           gap: 10px;
+           justify-content: center;
        }
-        
+
         #backToCategoriesButton,
         #backToGroupButtonsButton {
-            display: none;
+            /* display: none;  Toto bude riadiť JS */
             padding: 10px 15px;
-            margin: 20px auto;
-            display: block;
+            /* margin: 20px auto; */ /* Margin sa riadi kontajnerom .back-buttons-container */
+            display: block; /* Základné nastavenie, viditeľnosť riadi JS */
+            width: auto; /* Umožní tlačidlu prispôsobiť šírku obsahu */
+            margin-left: auto;
+            margin-right: auto;
         }
         #backToCategoriesButton:hover,
         #backToGroupButtonsButton:hover {
             background-color: #c46f50;
         }
         #categoryButtonsContainer {
-            display: flex;
+            display: flex; /* JS bude riadiť, či je flex alebo none */
             flex-wrap: wrap;
             gap: 15px;
             justify-content: center;
@@ -79,10 +84,10 @@
              font-weight: bold;
              font-size: 1.5em;
              text-align: center;
-             margin-top: 20px;
+             margin-top: 20px; /* Pridaný top margin pre oddelenie od tlačidla späť */
          }
         #groupSelectionButtons {
-            display: flex;
+            display: flex; /* JS bude riadiť, či je flex alebo none */
             flex-wrap: wrap;
             gap: 15px;
             justify-content: center;
@@ -90,7 +95,7 @@
             margin-top: 20px;
         }
         #allGroupsContent {
-             margin-top: 20px;
+             margin-top: 20px; /* Možno bude potrebné upraviť podľa nového umiestnenia */
         }
         #allGroupsContent .groups-container {
              display: flex;
@@ -100,7 +105,7 @@
              align-items: stretch;
         }
          #singleGroupContent {
-             margin-top: 20px;
+             margin-top: 20px; /* Možno bude potrebné upraviť podľa nového umiestnenia */
              text-align: left;
          }
         #singleGroupContent .group-display {
@@ -140,12 +145,23 @@
             background-color: #c46f50;
             color: white
         }
-        #dynamicContentArea.single-group-active .group-display h3 {
+        /* Tento štýl už nemusí byť presne takýto, lebo dynamicContentArea už neobsahuje len single group */
+        /* #dynamicContentArea.single-group-active .group-display h3 {
             background-color: #3a8d41;
             color: #fff;
             cursor: default;
             pointer-events: none;
+        } */
+
+        /* Upravený štýl pre názov skupiny v single group view */
+        #singleGroupContent .group-display h3 {
+            background-color: #3a8d41;
+            color: #fff;
+            cursor: default; /* V detaile skupiny názov nie je klikateľný */
+            pointer-events: none;
         }
+
+
         .group-display ul {
             list-style: none;
             padding: 10px;
@@ -227,12 +243,14 @@
         </nav>
         <main>
             <section class="section-block">
-                <div class="back-buttons-container">
-                    <button id="backToCategoriesButton" class="display-button">← Späť na kategórie</button>
-                    <button id="backToGroupButtonsButton" class="display-button">← Späť na skupiny</button>
-                </div>
                 <div id="dynamicContentArea">
                     <div id="categoryButtonsContainer" style="display: none;"></div>
+
+                    <div class="back-buttons-container">
+                        <button id="backToCategoriesButton" class="display-button">← Späť na kategórie</button>
+                        <button id="backToGroupButtonsButton" class="display-button">← Späť na skupiny</button>
+                    </div>
+
                     <h2 id="categoryTitleDisplay" style="display: none;"></h2>
                     <div id="groupSelectionButtons" style="display: none;"></div>
                     <div id="allGroupsContent" style="display: none;">
