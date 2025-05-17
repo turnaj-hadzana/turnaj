@@ -104,8 +104,8 @@ function updateHeaderColspan(numCategoryColumns) {
                   // Skontrolujeme, či prvý TH už existuje z HTML
                   if (!headerRow.querySelector('th:first-child')) {
                        const firstTh = document.createElement('th');
-                       firstTh.textContent = 'Názov klubu';
-                       headerRow.insertBefore(firstTh, headerRow.firstChild); // Vložíme na začiatok
+//                       firstTh.textContent = 'Názov klubu';
+//                       headerRow.insertBefore(firstTh, headerRow.firstChild); // Vložíme na začiatok
                   }
              } else {
                   // Pre spodnú tabuľku, musíme vytvoriť aj prvý TH (ak neexistuje)
