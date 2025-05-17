@@ -296,12 +296,12 @@ nav ul li a:hover {
      border-right: 1px solid #eee;
 }
 #clubsBodyTable td,
-#longestNameRowFixedBody td { /* Pridaj tento selektor */
-    padding: 10px 15px; /* Predvolené odsadenie pre bunky tela */
-    border-bottom: 1px solid #eee; /* Ak majú mať rovnaký spodný okraj */
-    /* text-align je nastavený nižšie podľa pozície stĺpca - to platí aj pre bunky s najdlhším názvom */
+#longestNameRowFixedBody td { 
+    padding: 10px 15px;
+    border-bottom: 1px solid #eee;
     white-space: nowrap;
     min-width: 3vw;
+    color: transparent;
 }
 
 /* Štýl pre bunku s načítavaním/chybou (s colspan) */
