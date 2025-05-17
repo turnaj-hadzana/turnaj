@@ -52,7 +52,7 @@ function getHTMLElements() {
       return true;
 }
 
-// Funkcia na načítanie dát z databázy
+// Funkcia na načítanie dát z databázy (zostala nezmenená)
 async function loadAllTournamentData() {
     try {
         const categoriesSnapshot = await getDocs(categoriesCollectionRef);
@@ -98,7 +98,7 @@ async function loadAllTournamentData() {
     }
 }
 
-// Táto funkcia teraz riadi IBA zobrazenie allGroupsContent a singleGroupContent
+// Táto funkcia teraz riadi IBA zobrazenie allGroupsContent a singleGroupContent (zostala nezmenená)
 function showOnly(containerIdToShow) {
     if (allGroupsContent) allGroupsContent.style.display = 'none';
     if (singleGroupContent) singleGroupContent.style.display = 'none';
@@ -124,7 +124,7 @@ function showOnly(containerIdToShow) {
             break;
     }
 
-     // Logic for resizing tables within the displayed content
+     // Logic for resizing tables within the displayed content (zostala nezmenená)
      if (containerIdToShow === 'allGroupsContent' && allGroupsContainer && window.getComputedStyle(allGroupsContent).display !== 'none') {
          const uniformWidth = findMaxTableContentWidth(allGroupsContainer);
           if (uniformWidth > 0) {
@@ -137,6 +137,68 @@ function showOnly(containerIdToShow) {
             }
      }
 }
+
+// --- Pomocné funkcie pre správu aktívnych tried tlačidiel ---
+
+// Odstráni triedu 'active' zo všetkých tlačidiel kategórií
+function clearActiveCategoryButtons() {
+    const categoryButtons = categoryButtonsContainer ? categoryButtonsContainer.querySelectorAll('.display-button') : [];
+    categoryButtons.forEach(button => button.classList.remove('active'));
+}
+
+// Pridá triedu 'active' tlačidlu kategórie s daným ID
+function setActiveCategoryButton(categoryId) {
+    clearActiveCategoryButtons(); // Najprv odstráni 'active' zo všetkých ostatných
+    const categoryButton = categoryButtonsContainer ? categoryButtonsContainer.querySelector(`.display-button[data-category-id="${categoryId}"]`) : null;
+    if (categoryButton) {
+        categoryButton.classList.add('active');
+    }
+}
+
+// Odstráni triedu 'active' zo všetkých tlačidiel výberu skupiny
+function clearActiveGroupButtons() {
+     const groupButtons = groupSelectionButtons ? groupSelectionButtons.querySelectorAll('.display-button') : [];
+     groupButtons.forEach(button => button.classList.remove('active'));
+
+     // Tiež odstrániť z názvov skupín v prehľade, ak boli aktívne (aj keď teraz nie sú klikateľné v single view)
+     // Pôvodne názvy skupín v prehľade boli klikateľné a mali hover, po kliknutí na ne sa prešlo na single view.
+     // Ak chceme, aby aj tie vizuálne naznačovali "aktívnu" skupinu v prehľade, potrebujeme pridať logiku aj sem.
+     // Pre zjednodušenie sa zatiaľ zameriame len na tlačidlá v groupSelectionButtons.
+
+     // Logika pre názvy skupín v prehľade (h3 elementy v .group-display):
+     const groupTitlesInAllView = allGroupsContainer ? allGroupsContainer.querySelectorAll('.group-display h3') : [];
+     groupTitlesInAllView.forEach(title => title.classList.remove('active-title')); // Použijeme inú triedu pre názvy
+}
+
+// Pridá triedu 'active' tlačidlu výberu skupiny s daným ID
+function setActiveGroupButton(groupId) {
+    clearActiveGroupButtons(); // Najprv odstráni 'active' zo všetkých ostatných tlačidiel skupín
+    const groupButton = groupSelectionButtons ? groupSelectionButtons.querySelector(`.display-button[data-group-id="${groupId}"]`) : null;
+    if (groupButton) {
+        groupButton.classList.add('active');
+    }
+
+     // Logika pre názvy skupín v prehľade: Pridať triedu 'active-title' zodpovedajúcemu názvu
+     const groupTitleInAllView = allGroupsContainer ? allGroupsContainer.querySelector(`.group-display h3`) : null; // Toto nájde prvý h3, potrebujeme nájsť ten správny podľa ID skupiny
+     // Na nájdenie správneho h3 potrebujeme prejsť skupiny v allGroupsContainer a porovnať ID
+     if (allGroupsContainer) {
+         const groupDisplays = allGroupsContainer.querySelectorAll('.group-display');
+         groupDisplays.forEach(groupDiv => {
+             const h3Title = groupDiv.querySelector('h3');
+             // Potrebujeme zistiť, ku ktorej skupine tento div patrí.
+             // V súčasnosti nemáme v HTML elemente skupiny ID skupiny.
+             // Môžeme buď pridať data-group-id k .group-display alebo h3, alebo nájsť názov skupiny v h3 a porovnať s názvom aktuálnej skupiny.
+             // Pridanie data-group-id je robustnejšie. Upravím HTML generovanie v displayGroupsForCategory.
+
+             // Zatiaľ (ak neupravíme HTML generovanie) skúsime podľa textu názvu skupiny:
+              const group = allGroups.find(g => g.id === groupId);
+              if (group && h3Title && h3Title.textContent === (group.name || group.id)) {
+                   h3Title.classList.add('active-title');
+              }
+         });
+     }
+}
+
 
 // Zobrazí úvodný pohľad s tlačidlami kategórií
 function displayCategoriesAsButtons() {
@@ -160,6 +222,11 @@ function displayCategoriesAsButtons() {
     // Vyčistiť a znova vygenerovať tlačidlá kategórií
     if (categoryButtonsContainer) categoryButtonsContainer.innerHTML = '';
 
+    // Odstrániť triedy 'active' z tlačidiel (v tomto pohľade nie je žiadne aktívne)
+    clearActiveCategoryButtons();
+    clearActiveGroupButtons();
+
+
     if (window.location.hash) {
         // Ak je hash, ale vraciame sa na kategórie, odstránime hash
         history.replaceState({}, document.title, window.location.pathname);
@@ -170,7 +237,7 @@ function displayCategoriesAsButtons() {
         return;
     }
 
-    // Zoskupiť kategórie (Chlapci, Dievčatá, Ostatné) a vytvoriť tlačidlá
+    // Zoskupiť kategórie (Chlapci, Dievčatá, Ostatné) a vytvoriť tlačidlá (zostalo nezmenené, pridaný iba event listener)
     const chlapciCategories = [];
     const dievcataCategories = [];
     const ostatneCategories = [];
@@ -225,7 +292,6 @@ function displayCategoriesAsButtons() {
               categoryButtonsContainer.appendChild(ostatneGroup);
          }
 
-         // Ak po pridaní skupín kategórií stále nie je žiadny obsah (napr. žiadne kategórie), zobrazíme správu
          if (categoryButtonsContainer.children.length === 0) {
               categoryButtonsContainer.innerHTML = '<p>Zatiaľ nie sú pridané žiadne kategórie.</p>';
          }
@@ -241,7 +307,7 @@ function displayGroupsForCategory(categoryId) {
          return;
      }
 
-    // Zabezpečiť viditeľnosť základných elementov
+    // Nastaviť viditeľnosť pre pohľad prehľadu skupín
     if (categoryButtonsContainer) categoryButtonsContainer.style.display = 'flex'; // Kategórie sú vždy viditeľné
     if (categoryTitleDisplay) categoryTitleDisplay.style.display = 'block';
     if (groupSelectionButtons) groupSelectionButtons.style.display = 'flex'; // Tlačidlá výberu skupiny viditeľné
@@ -257,6 +323,10 @@ function displayGroupsForCategory(categoryId) {
 
     // Zobraziť oblasť všetkých skupín, skryť detail jednej skupiny
     showOnly('allGroupsContent');
+
+    // Nastaviť aktívnu triedu pre vybranú kategóriu
+    setActiveCategoryButton(categoryId);
+    clearActiveGroupButtons(); // Pri zobrazení prehľadu skupín by nemala byť aktívna žiadna konkrétna skupina
 
     // Aktualizovať hash v URL
     window.location.hash = 'category-' + encodeURIComponent(categoryId);
@@ -310,10 +380,11 @@ function displayGroupsForCategory(categoryId) {
             if (groupSelectionButtons) groupSelectionButtons.appendChild(button);
         });
 
-        // Vygenerovať zobrazenie všetkých skupín s tímami
+        // Vygenerovať zobrazenie všetkých skupín s tímami (Upravené pre pridanie data-group-id)
         groupsInCategory.forEach(group => {
             const groupDiv = document.createElement('div');
             groupDiv.classList.add('group-display');
+            groupDiv.dataset.groupId = group.id; // Pridané data-group-id k div.group-display
             const groupTitle = document.createElement('h3');
             groupTitle.textContent = group.name || group.id;
             groupDiv.appendChild(groupTitle);
@@ -332,7 +403,7 @@ function displayGroupsForCategory(categoryId) {
             } else {
                 teamsInGroup.sort((a, b) => {
                     const orderA = a.orderInGroup || Infinity;
-                    const orderB = b.orderB || Infinity; // Oprava: malo byť orderB.orderInGroup
+                    const orderB = b.orderInGroup || Infinity;
                     if (orderA !== orderB) {
                         return orderA - orderB;
                     }
@@ -355,7 +426,7 @@ function displayGroupsForCategory(categoryId) {
         });
     }
 
-    // Zobraziť nepriradené tímy
+    // Zobraziť nepriradené tímy (zostalo nezmenené)
     const unassignedTeamsInCategory = allTeams.filter(team =>
         (!team.groupId || (typeof team.groupId === 'string' && team.groupId.trim() === '')) &&
         team.categoryId === categoryId
@@ -394,7 +465,6 @@ function displaySingleGroup(groupId) {
      if (!group) {
            console.error(`Skupina "${groupId}" sa nenašla.`);
            // Ak sa skupina nenájde, vrátiť sa na zobrazenie skupín pre kategóriu
-           // Potrebujeme zistiť ID kategórie z hashu alebo currentCategoryId
            const hash = window.location.hash;
            const categoryPrefix = '#category-';
            const hashParts = hash.startsWith(categoryPrefix) ? hash.substring(categoryPrefix.length).split('/')[0] : null;
@@ -423,12 +493,16 @@ function displaySingleGroup(groupId) {
     if (backToCategoriesButton) backToCategoriesButton.style.display = 'none'; // Tlačidlo späť na kategórie skryté
     if (backToGroupButtonsButton) backToGroupButtonsButton.style.display = 'block'; // Tlačidlo späť na skupiny viditeľné
 
-    // Vyčistiť obsah oblastí
+    // Vyčistiť obsah oblastí detailu skupiny
     if (singleGroupDisplayBlock) singleGroupDisplayBlock.innerHTML = ''; // Clear single group content
     if (singleGroupUnassignedDisplay) singleGroupUnassignedDisplay.innerHTML = ''; // Clear single group unassigned
 
     // Zobraziť detail jednej skupiny, skryť oblasť všetkých skupín
     showOnly('singleGroupContent');
+
+    // Nastaviť aktívnu triedu pre vybranú kategóriu a skupinu
+    setActiveCategoryButton(currentCategoryId); // Kategória by mala byť stále aktívna
+    setActiveGroupButton(groupId); // Nastaviť aktívnu skupinu
 
      // Aktualizovať hash v URL
      window.location.hash = `category-${encodeURIComponent(currentCategoryId)}/group-${encodeURIComponent(groupId)}`;
@@ -439,8 +513,13 @@ function displaySingleGroup(groupId) {
       }
 
      if (singleGroupDisplayBlock) {
+         // Pre detail skupiny vygenerujeme len samotnú skupinu
          const groupTitle = document.createElement('h3');
          groupTitle.textContent = group.name || group.id;
+         // Názov skupiny v detaile NIE JE klikateľný
+         groupTitle.style.cursor = 'default';
+         groupTitle.style.pointerEvents = 'none';
+
          singleGroupDisplayBlock.appendChild(groupTitle);
 
          const teamsInGroup = allTeams.filter(team => team.groupId === group.id);
@@ -452,7 +531,7 @@ function displaySingleGroup(groupId) {
          } else {
               teamsInGroup.sort((a, b) => {
                    const orderA = a.orderInGroup || Infinity;
-                   const orderB = b.orderInGroup || Infinity; // Oprava: bolo orderB.orderInGroup
+                   const orderB = b.orderInGroup || Infinity;
                    if (orderA !== orderB) {
                        return orderA - orderB;
                    }
@@ -473,7 +552,7 @@ function displaySingleGroup(groupId) {
          }
      }
 
-     // Zobraziť nepriradené tímy pre danú kategóriu
+     // Zobraziť nepriradené tímy pre danú kategóriu (zostalo nezmenené)
      const unassignedTeamsInCategory = allTeams.filter(team =>
          (!team.groupId || (typeof team.groupId === 'string' && team.groupId.trim() === '')) &&
          team.categoryId === currentCategoryId
@@ -523,9 +602,8 @@ function goBackToCategories() {
     if (backToCategoriesButton) backToCategoriesButton.style.display = 'none';
     if (backToGroupButtonsButton) backToGroupButtonsButton.style.display = 'none';
 
-    // Vyčistiť a znova vygenerovať tlačidlá kategórií (zabezpečí displayCategoriesAsButtons)
-    // Vyčistiť ostatný obsah
-    if (allGroupsContainer) allGroupsContainer.innerHTML = '';
+    // Vyčistiť obsah (okrem categoryButtonsContainer, ten displayCategoriesAsButtons vyčistí a znova naplní)
+     if (allGroupsContainer) allGroupsContainer.innerHTML = '';
     if (allGroupsUnassignedDisplay) allGroupsUnassignedDisplay.innerHTML = '';
     if (singleGroupDisplayBlock) singleGroupDisplayBlock.innerHTML = '';
     if (singleGroupUnassignedDisplay) singleGroupUnassignedDisplay.innerHTML = '';
@@ -533,6 +611,10 @@ function goBackToCategories() {
 
     // Skryť ostatné hlavné obsahové oblasti
     showOnly(null);
+
+    // Odstrániť triedy 'active' z tlačidiel
+    clearActiveCategoryButtons();
+    clearActiveGroupButtons();
 
     // Odstrániť hash z URL
     if (window.location.hash) {
@@ -572,10 +654,16 @@ function goBackToGroupView() {
     // Zobraziť oblasť všetkých skupín, skryť detail jednej skupiny
     showOnly('allGroupsContent');
 
+    // Aktívnou zostáva kategória, aktívna skupina sa ruší
+    setActiveCategoryButton(categoryIdToReturnTo);
+    clearActiveGroupButtons();
+
+
     // Aktualizovať hash v URL (odstrániť časť so skupinou)
     window.location.hash = 'category-' + encodeURIComponent(categoryIdToReturnTo);
 
-    displayGroupsForCategory(categoryIdToReturnTo); // Zobraziť prehľad skupín pre danú kategóriu (znova vygeneruje)
+    // Zobraziť prehľad skupín pre danú kategóriu (znova vygeneruje)
+    displayGroupsForCategory(categoryIdToReturnTo);
 }
 
 // Funkcie na úpravu šírky tabuliek (zostali nezmenené)
@@ -677,32 +765,32 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             if (categoryExists) {
                 // Kategória z hashu existuje, prejdeme na zobrazenie skupín pre túto kategóriu
-                displayGroupsForCategory(decodedCategoryId); // Toto zobrazí nadpis kategórie, tlačidlá výberu skupiny a prehľad všetkých skupín
+                displayGroupsForCategory(decodedCategoryId); // Toto zobrazí nadpis kategórie, tlačidlá výberu skupiny a prehľad všetkých skupín a nastaví aktívnu kategóriu
 
                 if (decodedGroupId) {
                      const groupExists = allGroups.some(group => group.id === decodedGroupId && group.categoryId === decodedCategoryId);
                      if (groupExists) {
                           // Skupina z hashu existuje v danej kategórii, prejdeme na zobrazenie detailu skupiny
-                          displaySingleGroup(decodedGroupId); // Toto prepne zobrazenie na detail skupiny a zobrazí tlačidlo späť na skupiny
+                          displaySingleGroup(decodedGroupId); // Toto prepne zobrazenie na detail skupiny a nastaví aktívnu skupinu
                      } else {
-                          // Skupina z hashu sa nenašla v danej kategórii, zostaneme na prehľade skupín kategórie (čo už displayGroupsForCategory nastavilo)
+                          // Skupina z hashu sa nenašla v danej kategórii, zostaneme na prehľade skupín kategórie
                           console.warn(`Skupina "${decodedGroupId}" z URL sa nenašla v kategórii "${decodedCategoryId}". Zobrazujem prehľad skupín kategórie.`);
-                          // displayGroupsForCategory(decodedCategoryId); // Už bolo volané
+                          // Aktívna kategória je už nastavená, aktívna skupina sa ruší v displayGroupsForCategory
                      }
                 } else {
-                    // V hashi je iba kategória, zostaneme na prehľade skupín kategórie (čo už displayGroupsForCategory nastavilo)
+                    // V hashi je iba kategória, zostaneme na prehľade skupín kategórie
                      console.log(`V hashi je iba kategória "${decodedCategoryId}". Zobrazujem prehľad skupín.`);
-                    // displayGroupsForCategory(decodedCategoryId); // Už bolo volané
+                    // Aktívna kategória je už nastavená, aktívna skupina sa ruší v displayGroupsForCategory
                 }
             } else {
-                // Kategória z hashu sa nenašla, zostaneme na úvodnom zobrazení kategórií (čo už displayCategoriesAsButtons nastavilo)
+                // Kategória z hashu sa nenašla, zostaneme na úvodnom zobrazení kategórií
                 console.warn(`Kategória "${decodedCategoryId}" z URL sa nenašla. Zobrazujem úvodné kategórie.`);
-                // displayCategoriesAsButtons(); // Už bolo volané
+                // displayCategoriesAsButtons(); // Už bolo volané, ruší aktívne triedy
             }
         } else {
-            // Žiadny platný hash alebo prázdny hash, zostaneme na úvodnom zobrazení kategórií (čo už displayCategoriesAsButtons nastavilo)
+            // Žiadny platný hash alebo prázdny hash, zostaneme na úvodnom zobrazení kategórií
              console.log("Žiadny platný hash. Zobrazujem úvodné kategórie.");
-            // displayCategoriesAsButtons(); // Už bolo volané
+            // displayCategoriesAsButtons(); // Už bolo volané, ruší aktívne triedy
         }
     }
     // Ak načítanie dát zlyhalo, chybová správa je zobrazená vo loadAllTournamentData
@@ -745,27 +833,27 @@ window.addEventListener('hashchange', () => {
                  const groupExists = allGroups.some(group => group.id === decodedGroupId && group.categoryId === decodedCategoryId);
                  if (groupExists) {
                       // Skupina existuje, zobraziť prehľad kategórie a potom detail skupiny
-                      displayGroupsForCategory(decodedCategoryId); // Nastaví pohľad kategórie
-                      displaySingleGroup(decodedGroupId); // Prepne na detail skupiny
+                      displayGroupsForCategory(decodedCategoryId); // Nastaví pohľad kategórie a aktívnu kategóriu
+                      displaySingleGroup(decodedGroupId); // Prepne na detail skupiny a nastaví aktívnu skupinu
                  } else {
                       // Skupina sa nenašla, zobraziť prehľad skupín kategórie
                       console.warn(`Skupina "${decodedGroupId}" z URL sa nenašla pri zmene hashu. Zobrazujem prehľad skupín kategórie "${decodedCategoryId}".`);
-                      displayGroupsForCategory(decodedCategoryId);
+                      displayGroupsForCategory(decodedCategoryId); // Nastaví pohľad kategórie a aktívnu kategóriu
                  }
             } else {
                 // V hashi je iba kategória, zobraziť prehľad skupín kategórie
                  console.log(`V hashi je iba kategória "${decodedCategoryId}" pri zmene hashu. Zobrazujem prehľad skupín.`);
-                displayGroupsForCategory(decodedCategoryId);
+                displayGroupsForCategory(decodedCategoryId); // Nastaví pohľad kategórie a aktívnu kategóriu
             }
         } else {
              // Kategória sa nenašla, vrátiť sa na úvodné zobrazenie kategórií a odstrániť hash
              console.warn(`Kategória "${decodedCategoryId}" z URL sa nenašla pri zmene hashu. Vraciam sa na úvod.`);
-             goBackToCategories(); // Toto odstráni hash a vráti sa na úvod
+             goBackToCategories(); // Toto odstráni hash a vráti sa na úvod (ruší aktívne triedy)
         }
     } else {
          // Hash nezačína category prefixom alebo je prázdny, vrátiť sa na úvodné zobrazenie kategórií
          console.log("Hash nezačína 'category-' alebo je prázdny pri zmene hashu. Vraciam sa na úvod.");
-         goBackToCategories(); // Toto odstráni hash a vráti sa na úvod
+         goBackToCategories(); // Toto odstráni hash a vráti sa na úvod (ruší aktívne triedy)
     }
 });
 
