@@ -187,17 +187,16 @@ function displayClubsSummaryTable() {
     // Ak sme našli najdlhší názov, vygenerujeme a vložíme riadok do fixnej tbody
     if (longestBaseName) {
         const longestNameRow = longestNameRowFixedBody.insertRow(); // Vložíme riadok do fixnej tbody
-        longestNameRow.style.fontWeight = 'bold'; // Voliteľné: tučný text
         longestNameRow.dataset.baseName = longestBaseName; // Pridáme dataset atribút
-        longestNameRow.style.cursor = 'pointer'; // Aby bol klikateľný
+//        longestNameRow.style.cursor = 'pointer'; // Aby bol klikateľný
 
         // Pridáme event listener pre kliknutie na fixný riadok
-        longestNameRow.addEventListener('click', () => {
-             const url = new URL(window.location.href);
-             url.searchParams.set('club', longestBaseName);
-             url.searchParams.delete('team');
-             history.pushState({ baseName: longestBaseName }, '', url.toString());
-             displaySubjectDetails(longestBaseName);
+//        longestNameRow.addEventListener('click', () => {
+//             const url = new URL(window.location.href);
+//             url.searchParams.set('club', longestBaseName);
+//             url.searchParams.delete('team');
+//             history.pushState({ baseName: longestBaseName }, '', url.toString());
+//             displaySubjectDetails(longestBaseName);
         });
 
         // Vytvoríme bunky riadku
@@ -296,6 +295,24 @@ function displayClubsSummaryTable() {
 
         // KÓD NA PRIDANIE POSLEDNEJ BUNKY DO TELA JE ODSTRÁNENÝ
     });
+    
+    if (clubsSummaryTable && clubsSummaryTableHeader && longestNameRowFixedBody) {
+        // Získame referencie na rodičovský element (horná tabuľka)
+        const parentTable = clubsSummaryTable; // Toto je vaša clubsHeaderTable
+
+        // Získame referencie na prvky, ktoré chceme prehodiť
+        const thead = clubsSummaryTableHeader.parentNode; // Získame thead element (rodič tr)
+        const fixedTbody = longestNameRowFixedBody;
+
+        // Skontrolujeme, či sú oba elementy prítomné a či rodič existuje
+        if (parentTable && thead && fixedTbody) {
+            // Použijeme appendChild na presunutie thead na koniec rodiča (bude za fixedTbody)
+            // Toto presunie thead na poslednú pozíciu medzi deťmi parentTable
+            parentTable.appendChild(thead); // Tento riadok vykoná prehodenie
+        } else {
+             console.warn("Nepodarilo sa prehodiť THEAD a fixnú TBODY v hornej tabuľke. Jeden alebo oba elementy alebo rodič neboli nájdené.");
+        }
+    }
 }
 
 
