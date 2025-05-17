@@ -108,7 +108,7 @@ function updateHeaderColspan(numCategoryColumns) {
         if (firstRow) {
             const firstCell = firstRow.querySelector('td');
             if (firstCell) {
-                 // colspan = 1 (Názov klubu) + 1 (Tímy) + numCategoryColumns (Správny colspan pre telo)
+                 // colspan = 1 (Názov klubu) + 1 (Tímy) + allCategories.length (Správny colspan pre telo)
                 firstCell.colSpan = 1 + 1 + numCategoryColumns; // Colspan calculation remains correct for the body
             }
         }
@@ -304,7 +304,8 @@ function highlightTeamButton(teamIdToHighlight) {
           });
 
           // Find and highlight the target button
-          const targetButton = teamsInCategoryButtonsDiv.querySelector('button[data-team-id="' + teamIdToHighlight + '']');
+          // OPRAVENÝ RIADOK: Správne uzatvorenie selektora atribútu
+          const targetButton = teamsInCategoryButtonsDiv.querySelector(`button[data-team-id="${teamIdToHighlight}"]`);
           if (targetButton) {
               targetButton.style.fontWeight = 'bold';
               // Nastav farby aktívneho stavu inline (prepíše CSS triedu)
@@ -541,7 +542,7 @@ async function displaySpecificTeamDetails(teamId) {
 
                   if (hraciSnapshot.empty) {
                        const noPlayersItem = document.createElement('li');
-                       noPlayersItem.textContent = 'Zatiaľ bez súpky.'; // Typo? Zatiaľ bez súpisky? (Opravené v komentári)
+                       noPlayersItem.textContent = 'Zatiaľ bez súpisky.'; // Opravené typo
                        selectedTeamSoupiskaHracovUl.appendChild(noPlayersItem);
                   } else {
                        const hraciList = hraciSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
