@@ -249,25 +249,6 @@ nav ul li a:hover {
     margin-top: 0; /* Už nastavené na kontajneri */
 }
 
-/* Skrolovateľný kontajner div */
-#scrollableTableBodyContainer {
-    flex-grow: 1; /* Tento div zaberie väčšinu zostávajúceho vertikálneho priestoru */
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;  /* Firefox */
-    overflow-y: auto; /* Ponechať vertikálne skrolovanie v boxe */
-    overflow-x: auto; /* Ponechať horizontálne skrolovanie v boxe */
-    margin-top: 0px;
-    border: 1px solid #ccc;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-    border-radius: 5px;
-    background-color: #fff;
-    box-sizing: border-box;
-}
-#scrollableTableBodyContainer::-webkit-scrollbar {
-    display: none; /* Skryje samotný posuvník */
-    width: 0; /* Pre Chrome, Safari, Edge */
-}
-
 /* -- Štýly buniek (TH a TD) -- */
 
 /* Style for header cells */
