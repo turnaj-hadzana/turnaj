@@ -27,11 +27,12 @@ header nav ul {
     list-style: none;
     padding: 0;
     margin: 0;
-    text-align: center; /* Centrovanie položiek menu */
+    display: flex; /* Použitie flexbox pre položky menu */
+    justify-content: center; /* Centrovanie položiek menu */
+    align-items: center;
 }
 
 header nav ul li {
-    display: inline-block; /* Zobrazí položky v rade */
     margin: 0 15px; /* Medzi položkami menu */
 }
 
@@ -39,12 +40,19 @@ header nav ul li a {
     text-decoration: none;
     color: #333;
     font-weight: bold;
-    padding: 5px 0;
-    transition: color 0.3s ease;
+    padding: 8px 15px; /* Väčšia klikateľná plocha */
+    border-radius: 5px; /* Zaoblené rohy */
+    transition: background-color 0.3s ease, color 0.3s ease; /* Plynulý prechod */
 }
 
 header nav ul li a:hover {
-    color: #c46f50; /* Farba pri prejdení myšou */
+    color: #3a8d41; /* Farba pri prejdení myšou */
+    background-color: #e0e0e0; /* Svetlejšie pozadie pri hover */
+}
+
+header nav ul li.active a {
+    background-color: #00cc00; /* Zelené pozadie pre aktívnu položku */
+    color: #333; /* Farba textu pre aktívnu položku */
 }
 
 /* Štýly pre položku prihláseného používateľa */
@@ -53,7 +61,10 @@ header nav ul li#usernameItem {
     margin-right: 20px; /* Odsadenie od pravého okraja */
     font-weight: normal;
     color: #555;
+    /* Pridané flexbox vlastnosti, ak je rodič flex */
+    margin-left: auto; /* Posunie item úplne doprava */
 }
+
 
 /* Odsadenie tela stránky, aby obsah nebol pod fixnou hlavičkou */
 body {
@@ -62,265 +73,114 @@ body {
     flex-direction: column;
     min-height: 100%;
     margin: 0;
+    padding-left: 0; /* Zabezpečiť, že ľavý padding je 0 ak bol zmenený */
+    padding-right: 0; /* Zabezpečiť, že pravý padding je 0 ak bol zmenený */
+    /* Ak máte aj iné paddingy na tele, zvážte ich úpravu alebo použitie pading-block/inline */
 }
 
 main {
-    flex-grow: 1; /* Zabezpečí, že main zaberie dostupný priestor */
+    flex-grow: 1; /* Main zaberie všetok dostupný priestor pod h1 */
     padding: 20px;
-    box-sizing: border-box;
+    display: flex; /* Nastavíme aj main ako flex kontajner */
+    flex-direction: column; /* Uloží deti (section) pod sebou */
+    align-items: center; /* Centrovanie detí (sekcií a H1) horizontálne */
+    min-width: 0; /* Povoliť zmenšenie v flex kontexy */
+    overflow-x: hidden; /* Skryť horizontálny overflow */
 }
-
-/* Základné štýly pre sekcie obsahu */
-.section-block {
-    background-color: #fff;
-    padding: 20px;
-    margin-bottom: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    display: flex; /* Použité pre flexibilné usporiadanie v sekcii */
-    flex-direction: column;
-     align-items: flex-start; /* Prispôsobí šírku sekcie obsahu (napr. tabuľke) */
-}
-
-
-/* Všeobecné štýly pre dátové tabuľky (.data-table) */
-.data-table {
-    width: 100%; /* Uistí sa, že tabuľka zaberá plnú šírku kontajnera */
-    border-collapse: collapse; /* Spojí okraje buniek */
-    margin-top: 15px; /* Predvolený horný okraj tabuľky */
-}
-
-/* Štýly pre bunky hlavičky (th) a tela (td) v .data-table */
-.data-table th,
-.data-table td {
-    padding: 10px; /* Predvolené vnútorné odsadenie buniek */
-    border: 1px solid #eee; /* Základný okraj buniek */
-    white-space: nowrap; /* Zabráni zalamovaniu textu v bunkách */
-    overflow: hidden; /* Skryje obsah, ktorý presahuje rozmery bunky */
-    text-overflow: ellipsis; /* Zobrazí tri bodky (...) pri pretečení textu */
-    text-align: left; /* Predvolené zarovnanie textu v bunkách */
-}
-
-/* Špecifický štýl pre prvý stĺpec tabuľky */
-.data-table th:first-child,
-.data-table td:first-child {
-    min-width: 15vw; /* Minimálna šírka pre prvý stĺpec (napr. Názov klubu) */
-}
-
-/* Pravidlo pre nezalamovanie textu v bunkách tela (tbody) PRVEJ tabuľky (#clubsHeaderTable) */
-#clubsHeaderTable tbody td {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    /* Výška, padding a border nie sú tu nastavené na 0, čím sa zabezpečí viditeľnosť riadkov */
-}
-
-
-/* ODSTRÁNENÉ: Pravidlá pre skrytie thead v #clubsBodyTable boli odstránené */
-
-
-/* Štýl pre bunky s načítavaním/chybou/žiadne kluby (používajú colspan) */
-.data-table tbody tr td[colspan] {
-    text-align: center !important;
-    font-style: italic;
-    color: #777;
-    background-color: transparent !important;
-    border-right: none !important;
-    font-size: initial !important; /* Zabezpečí zobrazenie textu správy */
-    line-height: initial !important; /* Zabezpečí zobrazenie textu správy */
-}
-
-/* Štýl pre telo tabuľky v posuvnom kontajneri */
-#clubsBodyTable {
-    margin-top: 0; /* Odstráni horný okraj, aby nadväzovala na hlavičku */
-}
-
-/* Štýly pre riadky tela tabuľky v posuvnej časti */
-#clubsBodyTable tbody tr {
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-}
-
-/* Efekt pri prejdení myšou cez riadok tela tabuľky v posuvnej časti */
-#clubsBodyTable tbody tr:hover {
-    background-color: #e9e9e9;
-}
-
-/* Štýl pre striedajúce farby riadkov v posuvnom tele tabuľky */
-#clubsBodyTable tbody tr:nth-child(even) {
-    background-color: #f9f9f9;
-}
-
-
-/* --- Všeobecné štýly pre formuláre a tlačidlá (ak sú v tomto súbore) --- */
-
-/* Základné štýly pre tlačidlá */
-.action-button {
-    padding: 8px 15px;
-    background-color: #4CAF50; /* Zelená */
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 0.9em;
-    transition: background-color 0.3s ease;
-    margin-right: 5px; /* Malý okraj medzi tlačidlami */
-}
-
-.action-button:hover {
-    background-color: #45a049; /* Tmavšia zelená pri hover */
-}
-
-/* Štýl pre tlačidlo Späť */
-#backToListButton {
-    background-color: #f0f0f0;
+h1 {
+    text-align: center;
     color: #333;
-    border: 1px solid #ccc;
-}
-
-#backToListButton:hover {
-    background-color: #e0e0e0;
-}
-
-/* Štýly pre chybové správy */
-.error-message {
-    color: red;
-    font-weight: bold;
-    margin-top: 10px;
-}
-
-/* Štýly pre pridať tlačidlo (napr. "+") */
-.add-button {
-     position: fixed; /* Fixná pozícia */
-     bottom: 20px; /* 20px od spodného okraja */
-     right: 20px; /* 20px od pravého okraja */
-     width: 50px; /* Šírka tlačidla */
-     height: 50px; /* Výška tlačidla */
-     border-radius: 50%; /* Okrúhly tvar */
-     background-color: #c46f50; /* Oranžová */
-     color: white;
-     font-size: 30px; /* Veľkosť textu "+" */
-     line-height: 50px; /* Centrovanie "+" vertikálne */
-     text-align: center; /* Centrovanie "+" horizontálne */
-     border: none;
-     cursor: pointer;
-     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* Tieň */
-     z-index: 1000; /* Zabezpečí, že je nad obsahom */
-     transition: background-color 0.3s ease;
-}
-
-.add-button:hover {
-     background-color: #a05a40; /* Tmavšia oranžová pri hover */
-}
-
-
-/* Štýly pre modálne okná (ak sú v tomto súbore) */
-.modal {
-    display: none; /* Skryté predvolene */
-    position: fixed; /* Fixná pozícia */
-    z-index: 1001; /* Zabezpečí, že je nad všetkým (vrátane add-button) */
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    overflow: auto; /* Povoliť posúvanie, ak je obsah príliš dlhý */
-    background-color: rgba(0, 0, 0, 0.4); /* Polopriehľadné pozadie */
-    padding-top: 60px;
-}
-
-.modal-content {
-    background-color: #fefefe;
-    margin: 5% auto; /* 5% z vrchu a centrované horizontálne */
-    padding: 20px;
-    border: 1px solid #888;
-    width: 80%; /* Predvolená šírka */
-    max-width: 500px; /* Maximálna šírka */
-    border-radius: 8px;
-    position: relative; /* Pre umiestnenie zatváracieho tlačidla */
-    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-}
-
-.modal-content h2 {
-    margin-top: 0;
-    border-bottom: 1px solid #eee;
-    padding-bottom: 10px;
+    margin-top: 0; /* Odstráni horný okraj H1, ak je main flex-direction: column */
     margin-bottom: 20px;
 }
 
-.modal-content form div {
-    margin-bottom: 15px;
+/* Všeobecné štýly pre formuláre */
+form {
+    background-color: #fff;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    width: 350px; /* Predvolená šírka formulára */
+    max-width: 100%; /* Zabezpečí, že formulár neprekročí šírku rodiča */
 }
-
-.modal-content form label {
+form div {
+    margin-bottom: 20px;
+}
+form label {
     display: block; /* Zobrazí label nad inputom */
     margin-bottom: 5px;
+    color: #555;
     font-weight: bold;
 }
-
-.modal-content form input[type="text"],
-.modal-content form input[type="number"],
-.modal-content form select {
+form input[type="text"],
+form input[type="password"],
+form input[type="number"],
+form select {
     width: calc(100% - 22px); /* Šírka s ohľadom na padding a border */
     padding: 10px;
     border: 1px solid #ccc;
     border-radius: 4px;
-    font-size: 1em;
+    font-size: 16px;
     box-sizing: border-box; /* Zahrnie padding a border do šírky */
 }
-
-.modal-content form button[type="submit"] {
-    background-color: #4CAF50; /* Zelená */
+form button[type="submit"] {
+    background-color: #3a8d41;
     color: white;
-    padding: 10px 20px;
+    padding: 12px 20px;
     border: none;
-    border-radius: 4px;
+    border-radius: 5px;
+    font-size: 18px;
     cursor: pointer;
-    font-size: 1em;
     transition: background-color 0.3s ease;
+    width: 100%; /* Tlačidlo zaberie plnú šírku formulára */
 }
-
-.modal-content form button[type="submit"]:hover {
-    background-color: #45a049; /* Tmavšia zelená */
+form button[type="submit"]:hover {
+    background-color: #c46f50; /* Tvoja pôvodná farba */
 }
-
-
-/* Štýl pre zatváracie tlačidlo modálneho okna */
-.close {
-    color: #aaa;
-    float: right;
-    font-size: 28px;
+.error-message {
+    color: red;
     font-weight: bold;
-    position: absolute; /* Umiestnenie vzhľadom na modal-content */
-    top: 10px;
-    right: 15px;
+    margin-top: 10px;
+    text-align: center;
 }
-
-.close:hover,
-.close:focus {
-    color: black;
+main p {
+    margin-top: 20px;
+    color: #777;
+    text-align: center;
+}
+main p a {
+    color: #007bff;
     text-decoration: none;
-    cursor: pointer;
+}
+main p a:hover {
+    text-decoration: underline;
 }
 
 
-/* Štýly pre ľavé menu (ak sa používa v tomto súbore) */
+/* -- Štýly pre layout content-wrapper a left-menu (pre stránky správcu) -- */
 .content-wrapper {
     display: flex;
-    flex-grow: 1;
+    width: 100%;
+    margin: 20px 0; /* Vertikálne okraje okolo obsahu */
+    padding: 0 20px; /* Horizontálne odsadenie */
+    box-sizing: border-box;
+    gap: 20px; /* Priestor medzi ľavým menu a hlavným obsahom */
+    align-items: flex-start; /* Zarovnanie položiek flexboxu na začiatok */
 }
 
 .left-menu {
-    width: 200px; /* Šírka menu */
-    padding: 20px;
-    background-color: #f9f9f9;
-    border-right: 1px solid #eee;
-    /* Fixed position ak je menu fixné */
-    /*
-    position: fixed;
-    top: 60px;
-    bottom: 0;
-    overflow-y: auto;
-    */
+    background-color: #fff;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    position: sticky; /* Fixná pozícia pri skrolovaní */
+    top: 90px; /* Odsadenie od vrchu (pod hlavičkou) */
+    align-self: flex-start; /* Zabezpečí, že menu začína na vrchu kontajnera flex */
+    max-height: calc(100vh - 110px); /* Maximálna výška s ohľadom na okraje/hlavičku */
+    overflow-y: auto; /* Povoliť skrolovanie v menu, ak je príliš dlhé */
+    z-index: 1002; /* Zabezpečí, že menu je nad obsahom */
+    min-width: 180px; /* Minimálna šírka menu */
+    flex-shrink: 0; /* Zabraňuje zmenšeniu menu pod min-width */
 }
 
 .left-menu ul {
@@ -333,76 +193,446 @@ main {
     margin-bottom: 10px;
 }
 
-.left-menu li a {
+.left-menu a {
     text-decoration: none;
-    color: #555;
-    font-weight: normal;
-    transition: color 0.3s ease;
+    color: #007bff; /* Farba odkazov */
+    font-size: 1.1em;
     display: block; /* Zabezpečí, že celá plocha li je klikateľná */
-    padding: 5px 0;
+    padding: 8px 5px;
+    border-radius: 4px;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    white-space: nowrap; /* Zabraňuje zalamovaniu v menu */
 }
 
-.left-menu li a:hover {
-    color: #c46f50;
+.left-menu a:hover {
+    background-color: #e9ecef;
+    color: #0056b3;
 }
 
-.left-menu li a.active {
-    font-weight: bold;
-    color: #c46f50;
+.left-menu a:active {
+    color: #004085;
 }
 
-/* Štýl pre hlavnú obsahovú časť vedľa menu */
+/* Hlavná obsahová časť vedľa ľavého menu */
 .content-wrapper main {
-    flex-grow: 1;
+    flex-grow: 1; /* Hlavný obsah zaberie zvyšný priestor */
+    padding: 0; /* Odstráni predvolený padding z main */
+    box-shadow: none;
+    background-color: transparent;
+    min-width: 0; /* Umožní zmenšenie hlavného obsahu, ak je menu široké */
+    overflow-x: auto; /* Povoliť horizontálne skrolovanie, ak obsah presiahne šírku */
+}
+
+/* Sekcie s obsahom v hlavnej časti (napr. Vytvorenie kategórií) */
+.section-block {
+    background-color: #fff;
     padding: 20px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%; /* Sekcia zaberie plnú šírku rodiča */
+    box-sizing: border-box; /* Zahrnie padding do šírky */
 }
 
 
-/* Responsive úpravy (príklad) */
+/* -- ŠTÝLY ŠPECIFICKÉ PRE TABUĽKY NA PRIHLASENE-KLUBY.HTML -- */
+
+/* Všeobecné štýly pre dátové tabuľky (.data-table) */
+/* Aplikované na #clubsHeaderTable a #clubsBodyTable */
+.data-table {
+    width: 100%; /* Tabuľka zaberie plnú šírku kontajnera */
+    border-collapse: collapse; /* Spojí okraje buniek */
+    /* ZMENA: Nastavte table-layout na fixed pre konzistentné šírky stĺpcov */
+    /* Toto je kľúčové pre zarovnanie stĺpcov medzi dvomi tabuľkami */
+    table-layout: fixed;
+}
+
+/* Aplikované na obe tabuľky pre prehľad klubov */
+#clubsHeaderTable,
+#clubsBodyTable {
+    border-collapse: collapse; /* Zabezpečí zdedenie border-collapse */
+}
+
+/* Odstráni horný okraj zo spodnej tabuľky, aby nadväzovala na hornú */
+#clubsBodyTable {
+    margin-top: 0;
+}
+
+/* Skrolovateľný kontajner div pre telo spodnej tabuľky */
+#scrollableTableBodyContainer {
+    flex-grow: 1; /* Tento div zaberie väčšinu zostávajúceho vertikálneho priestoru */
+    max-height: 75vh; /* Maximálna výška pred aktiváciou posúvania */
+    overflow-y: auto; /* Povoliť vertikálne posúvanie */
+    overflow-x: auto; /* Povoliť horizontálne posúvanie, ak obsah presiahne šírku */
+    margin-top: 0px;
+    border: 1px solid #ccc;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    border-radius: 5px;
+    background-color: #fff;
+    box-sizing: border-box;
+    /* MOŽNÁ ÚPRAVA: Zohľadniť šírku posuvníka */
+    /* Ak je problém so zarovnaním kvôli posuvníku, môže byť potrebné
+       odobrať jeho šírku z kontajnera alebo tabuľky. */
+    /* Napr.: width: calc(100% - 17px); */
+    /* Alebo použiť scrollbar-gutter ak je podpora dostatočná: */
+    /* scrollbar-gutter: stable both-edges; */
+}
+
+/* -- Štýly buniek (TH a TD) špecifické pre clubs tabuľky -- */
+
+/* Štýly pre bunky hlavičky v hornej tabuľke */
+#clubsHeaderTable th {
+    background-color: #3a8d41; /* Zelené pozadie */
+    color: white; /* Biely text */
+    padding: 12px 15px; /* Vnútorné odsadenie */
+    text-align: center; /* Predvolené centrovanie */
+    border-bottom: 2px solid #2a6b30; /* Tmavší spodný okraj */
+    font-weight: bold;
+    font-size: 0.95em;
+    white-space: nowrap; /* Zabezpečí, že text sa nebude zalamovať (okrem <br>) */
+    /* min-width: 3vw; -- menej efektívne pri fixed layout, šírku určuje prvý riadok */
+    box-sizing: border-box; /* Zahrnie padding a border do šírky bunky */
+    /* Ponechajte overflow a text-overflow pre prípad pretečenia na jednom riadku */
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Štýly pre bunky tela v spodnej (posuvnej) tabuľke */
+#clubsBodyTable td {
+    padding: 10px 15px; /* Predvolené odsadenie pre bunky tela */
+    border-bottom: 1px solid #eee; /* Svetlý spodný okraj */
+    /* text-align je nastavený nižšie podľa pozície stĺpca */
+    white-space: nowrap; /* Zabezpečí, že text sa nebude zalamovať */
+    /* min-width: 3vw; -- menej efektívne pri fixed layout */
+    box-sizing: border-box; /* Zahrnie padding a border do šírky bunky */
+    /* Ponechajte overflow a text-overflow */
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Prvý stĺpec v hlavičke aj tele - zarovnať vľavo a nastaviť šírku */
+#clubsHeaderTable th:first-child,
+#clubsBodyTable td:first-child {
+    text-align: left; /* Zarovnanie textu vľavo */
+    min-width: 15vw; /* Minimálna šírka pre prípad potreby */
+    /* ZMENA: Explicitné nastavenie šírky pre prvý stĺpec */
+    width: 15vw; /* Nastaví presnú šírku prvého stĺpca pri fixed layout */
+}
+
+/* Ostatné stĺpce v hlavičke aj tele - centrovať */
+#clubsHeaderTable th:nth-child(n + 2),
+#clubsBodyTable td:nth-child(n + 2) {
+     text-align: center; /* Centrovanie textu */
+     /* Pri fixed layoute sa šírka ostatných stĺpcov automaticky rozdelí
+        z dostupného priestoru po odpočítaní šírky stĺpcov s explicitnou šírkou. */
+     width: auto; /* Explicitne nastaví auto, aby sa šírka rozdelila */
+}
+
+
+/* Pridanie pravého okraja ku všetkým bunkám OKREM poslednej v riadku */
+#clubsHeaderTable th:not(:last-child) {
+    border-right: 1px solid #2a6b30; /* Tmavší pravý okraj pre hlavičky */
+}
+#clubsBodyTable td:not(:last-child) {
+     border-right: 1px solid #eee; /* Svetlejší pravý okraj pre bunky tela */
+}
+
+/* Štýl pre POSLEDNÚ bunku v tele spodnej tabuľky - odstrániť pravý padding */
+#clubsBodyTable td:last-child {
+    padding: 10px 0; /* Nastaví top/bottom padding na 10px, left/right na 0px */
+    box-sizing: border-box; /* Zabezpečí, že padding je zahrnutý */
+    /* border-right je odstránený v pravidle not(:last-child) */
+}
+
+
+/* Štýl pre bunky s načítavaním/chybou/žiadne kluby (používajú colspan) */
+/* Tieto bunky by sa mali zobrazovať v tele (tbody) oboch tabuliek, ak sa tam vložia */
+.data-table tbody tr td[colspan] {
+    text-align: center !important;
+    font-style: italic;
+    color: #777;
+    background-color: transparent !important;
+    border-right: none !important; /* Bez pravého okraja */
+    /* white-space: nowrap; is inherited from .data-table td */
+    /* Tieto riadky musia byť viditeľné, takže font-size a line-height musia byť normálne */
+    font-size: initial !important; /* Zabezpečí zobrazenie textu správy */
+    line-height: initial !important; /* Zabezpečí zobrazenie textu správy */
+    padding: 10px !important; /* Zabezpečí normálny padding */
+    border-bottom: 1px solid #eee !important; /* Zabezpečí spodný okraj */
+    border-left: 1px solid #eee !important; /* Zabezpečí ľavý okraj */
+    border-top: 1px solid #eee !important; /* Zabezpečí horný okraj */
+}
+
+
+/* Pôvodné nth-child(even) - aplikujeme špecifickejšie pre body table */
+#clubsBodyTable tbody tr:nth-child(even) {
+    background-color: #f9f9f9; /* Svetlo šedé pozadie pre párne riadky */
+}
+
+/* Riadky tela spodnej tabuľky (interaktívne) */
+#clubsBodyTable tbody tr {
+    cursor: pointer; /* Zmení kurzor pri prejdení myšou */
+    transition: background-color 0.2s ease; /* Jemný prechod farby pozadia */
+}
+
+/* Efekt pri prejdení myšou cez riadok tela spodnej tabuľky */
+#clubsBodyTable tbody tr:hover {
+    background-color: #e9e9e9; /* Svetlejšie pozadie pri hover */
+}
+
+
+/* Štýl pre riadky tela v hornej tabuľke (#clubsHeaderTable tbody) */
+/* Tieto riadky sú viditeľné a text sa v nich nemá zalamovať */
+#clubsHeaderTable tbody td {
+    white-space: nowrap; /* Zabezpečí nezalamovanie textu */
+    overflow: hidden; /* Skryje pretečujúci text */
+    text-overflow: ellipsis; /* Zobrazí ... */
+    /* Výška, padding a border sú zdedené z .data-table td a nie sú nastavené na 0 */
+}
+
+/* --- Všeobecné štýly pre tlačidlá --- */
+.action-button {
+    display: inline-block; /* Zobrazí ako riadkový blok */
+    padding: 8px 12px; /* Vnútorné odsadenie */
+    margin: 5px; /* Vonkajší okraj */
+    border-radius: 4px; /* Zaoblené rohy */
+    background-color: #3a8d41; /* Zelené pozadie */
+    color: #ffffff; /* Biely text */
+    font-size: 1em;
+    cursor: pointer; /* Zmení kurzor */
+    text-align: center;
+    text-decoration: none; /* Odstráni podčiarknutie u odkazov */
+    border: none; /* Odstráni predvolený okraj tlačidla */
+    transition: background-color 0.2s ease; /* Plynulý prechod farby pozadia */
+}
+.action-button:hover {
+    background-color: #c46f50; /* Oranžové pozadie pri hover */
+}
+
+/* Štýl pre tlačidlo Späť */
+#backToListButton.action-button {
+    background-color: #f0f0f0; /* Svetlo šedé pozadie */
+    color: #333; /* Tmavý text */
+    border: 1px solid #ccc; /* Svetlý okraj */
+}
+#backToListButton.action-button:hover {
+    background-color: #e0e0e0; /* Tmavšie šedé pozadie pri hover */
+}
+
+
+/* Štýly pre pridať tlačidlo (napr. "+") */
+.add-button {
+    position: fixed; /* Fixná pozícia */
+    bottom: 20px; /* 20px od spodného okraja */
+    right: 20px; /* 20px od pravého okraja */
+    width: 50px; /* Šírka tlačidla */
+    height: 50px; /* Výška tlačidla */
+    border-radius: 50%; /* Okrúhly tvar */
+    background-color: #28a745; /* Zelená */
+    color: white; /* Biely text */
+    font-size: 2em; /* Veľkosť textu "+" */
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* Tieň */
+    z-index: 1000; /* Zabezpečí, že je nad obsahom */
+    display: flex; /* Použitie flexboxu pre centrovanie obsahu */
+    justify-content: center; /* Centrovanie horizontálne */
+    align-items: center; /* Centrovanie vertikálne */
+    transition: background-color 0.3s ease;
+}
+.add-button:hover {
+    background-color: #218838; /* Tmavšia zelená pri hover */
+}
+
+
+/* --- Štýly pre modálne okná --- */
+.modal {
+    display: none; /* Skryté predvolene */
+    position: fixed; /* Fixná pozícia */
+    z-index: 1001; /* Zabezpečí, že je nad všetkým (vrátane add-button) */
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto; /* Povoliť posúvanie, ak je obsah príliš dlhý */
+    background-color: rgba(0, 0, 0, 0.4); /* Polopriehľadné pozadie */
+    justify-content: center; /* Centrovanie modálu horizontálne */
+    align-items: center; /* Centrovanie modálu vertikálne */
+    /* Pridané pre flexbox centrovanie */
+    display: flex; /* Zobrazí sa ako flexbox, ak sa display zmení z 'none' */
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: auto; /* Zabezpečí centrovanie s display: flex */
+    padding: 20px;
+    border: 1px solid #888;
+    width: 90%; /* Predvolená šírka */
+    max-width: 600px; /* Maximálna šírka */
+    border-radius: 8px;
+    position: relative; /* Pre umiestnenie zatváracieho tlačidla */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    box-sizing: border-box; /* Zahrnie padding a border do šírky */
+}
+
+.modal-content h2 {
+    margin-top: 0;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+
+.modal-content .close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    position: absolute; /* Umiestnenie vzhľadom na modal-content */
+    top: 10px;
+    right: 15px;
+    cursor: pointer;
+}
+
+.modal-content .close:hover,
+.modal-content .close:focus {
+    color: black;
+    text-decoration: none;
+}
+.modal-content form div {
+    margin-bottom: 15px;
+}
+
+/* Štýly pre formuláre v modáloch (prepisujú všeobecné form štýly) */
+.modal-content form input[type="text"],
+.modal-content form input[type="number"],
+.modal-content form select {
+    width: calc(100% - 20px); /* Šírka s ohľadom na padding */
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+    font-size: 1em;
+}
+
+.modal-content form button[type="submit"] {
+    background-color: #007bff; /* Modrá */
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1em;
+    transition: background-color 0.3s ease;
+    width: auto; /* Tlačidlo v modáli nemá zaberať plnú šírku formulára */
+}
+
+.modal-content form button[type="submit"]:hover {
+    background-color: #0056b3; /* Tmavšia modrá */
+}
+
+
+/* Responsive úpravy */
 @media (max-width: 768px) {
-    header nav ul li {
-        margin: 0 10px;
-    }
+    /* Prispôsobenie headeru na menších obrazovkách */
+     header nav ul {
+         flex-direction: column; /* Položky menu pod sebou */
+         padding: 10px 0;
+     }
+     header nav ul li {
+         margin: 5px 0; /* Menší priestor medzi položkami */
+     }
+      header nav ul li#usernameItem {
+          float: none; /* Zruší float */
+          margin: 5px 0 5px auto; /* Zarovná doprava v rámci stĺpca */
+      }
 
+    /* Prispôsobenie tela a main */
+    body {
+        padding-top: 100px; /* Väčšie odsadenie, ak je header vyšší */
+    }
     main {
-        padding: 10px;
+        padding: 10px; /* Menšie vnútorné odsadenie main */
     }
 
+    /* Prispôsobenie sekcií obsahu */
     .section-block {
         padding: 15px;
     }
 
+    /* Prispôsobenie tabuliek .data-table */
     .data-table th,
     .data-table td {
-        padding: 8px;
+        padding: 8px; /* Menšie odsadenie buniek */
     }
 
-    .data-table th:first-child,
-    .data-table td:first-child {
-        min-width: 25vw; /* Väčšia minimálna šírka na menších obrazovkách */
+    /* Prispôsobenie prvého stĺpca */
+    #clubsHeaderTable th:first-child,
+    #clubsBodyTable td:first-child {
+        min-width: 25vw; /* Väčšia minimálna šírka pre prvý stĺpec */
+        width: 25vw; /* Väčšia explicitná šírka pre prvý stĺpec */
     }
 
-    .left-menu {
-        width: 100%; /* Menu zaberie celú šírku */
-        position: static; /* Už nebude fixné */
-        border-right: none;
-        border-bottom: 1px solid #eee;
-        padding: 10px;
-    }
-
+    /* Prispôsobenie layoutu content-wrapper a left-menu */
     .content-wrapper {
-        flex-direction: column; /* Obsah pod menu */
+        flex-direction: column; /* Menu a obsah pod sebou */
+        padding: 0 10px;
+        gap: 10px; /* Menší priestor medzi menu a obsahom */
+    }
+    .left-menu {
+        position: static; /* Menu už nie je fixné */
+        margin-bottom: 20px;
+        width: 100%;
+        max-height: none;
+        overflow-y: visible;
+        flex-shrink: 1; /* Umožní zmenšenie menu, ak je to potrebné */
+    }
+    /* Hlavná obsahová časť zaberie plnú šírku */
+    .content-wrapper main {
+        width: 100%;
+        overflow-x: auto; /* Ponechať horizontálne skrolovanie */
     }
 
+    /* Prispôsobenie špecifických kontajnerov skupín/klubov */
+    #groupsContent,
+    #clubsContent {
+        flex-direction: column;
+        gap: 10px;
+    }
+    #groupsContent .section-block,
+    #clubsContent .section-block {
+        min-width: 100%;
+    }
+
+    /* Prispôsobenie modálnych okien */
+    .modal-content {
+        width: 95%; /* Väčšia šírka modálu */
+        margin: 10% auto; /* Väčšie horné odsadenie */
+    }
+    .modal-content form input[type="text"],
+    .modal-content form input[type="number"],
+    .modal-content form select {
+        width: calc(100% - 20px); /* Šírka s ohľadom na padding */
+    }
+    /* Prispôsobenie elementov v modáli pre menšie obrazovky */
+    .category-count-pair {
+        flex-direction: column;
+        gap: 5px;
+        align-items: stretch;
+    }
+    .category-count-pair select,
+    .category-count-pair input[type="number"] {
+        max-width: none;
+        width: 100%;
+    }
+
+    /* Prispôsobenie add-button */
      .add-button {
-         width: 40px;
+         width: 40px; /* Menšia veľkosť tlačidla */
          height: 40px;
          font-size: 24px;
-         line-height: 40px;
-     }
-
-     .modal-content {
-         width: 95%;
-         margin: 10% auto;
+         line-height: 40px; /* Zmenená výška riadku pre centrovanie "+" */
      }
 }
