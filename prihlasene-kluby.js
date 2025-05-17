@@ -197,7 +197,7 @@ function displayClubsSummaryTable() {
 //             url.searchParams.delete('team');
 //             history.pushState({ baseName: longestBaseName }, '', url.toString());
 //             displaySubjectDetails(longestBaseName);
-        });
+//        });
 
         // Vytvoríme bunky riadku
         // Bunka pre Názov klubu
