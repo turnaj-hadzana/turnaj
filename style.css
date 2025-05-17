@@ -389,5 +389,4 @@ nav ul li a:hover {
     max-height: 75vh;
     overflow-y: auto; 
     border: 1px solid #ccc;
-    scrollbar-gutter: stable both-edges;
 }
