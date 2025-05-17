@@ -84,6 +84,7 @@ function updateHeaderColspan(numCategoryColumns) {
         // Add the "Tímy" header right after "Názov klubu"
         const teamsTh = document.createElement('th');
         teamsTh.textContent = 'Tímy';
+        teamsTh.innerHTML = teamsTh.textContent.replace(/ /g, '<br>');
         teamsTh.style.textAlign = 'center';
         // Insert the new header after the first child (Názov klubu)
         clubsSummaryTableHeader.querySelector('th').insertAdjacentElement('afterend', teamsTh);
@@ -93,6 +94,7 @@ function updateHeaderColspan(numCategoryColumns) {
             allCategories.forEach(category => {
                 const th = document.createElement('th');
                 th.textContent = category.name || category.id;
+                teamsTh.innerHTML = teamsTh.textContent.replace(/ /g, '<br>');
                 th.dataset.categoryId = category.id;
                 th.style.textAlign = 'center';
                 clubsSummaryTableHeader.appendChild(th);
