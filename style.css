@@ -18,7 +18,7 @@ header {
 body {
     padding-top: 60px; /* Ponechané tvoje pôvodné odsadenie kvôli fixnej hlavičke */
     display: flex;
-    flex-direction: column; /* Uloží priame deti (vrátane main) pod sebou */
+    flex-direction: column; /* Uloží priame deti (vrátane main) pod seba */
     min-height: 100%; /* Zabezpečí, že telo má minimálne výšku okna */
     /* Ostatné pôvodné štýly tela */
     font-family: 'Arial', sans-serif;
@@ -212,18 +212,18 @@ main { /* Prepis existujúceho pravidla pre main v spravca-turnaja-style.css */
 /* Všeobecné štýly pre dátové tabuľky (.data-table) */
 /* Aplikované na #clubsHeaderTable a #clubsBodyTable */
 .data-table {
-    width: 100%; /* Tabuľka zaberie plnú šírku kontajnera */
+    /* ZMENA: table-layout: auto; aby sa šírka prispôsobila obsahu */
+    table-layout: auto;
     border-collapse: collapse; /* Spojí okraje buniek */
-    /* ZMENA: Nastavte table-layout na fixed pre konzistentné šírky stĺpcov */
-    /* Toto je kľúčové pre zarovnanie stĺpcov medzi dvomi tabuľkami */
-    table-layout: fixed;
+    /* ODSTRÁNENÉ: width: 100%; - tabuľka nebude vypĺňať celú šírku kontajnera */
 }
 
 /* Aplikované na obe tabuľky pre prehľad klubov */
 #clubsHeaderTable,
 #clubsBodyTable {
     border-collapse: collapse; /* Zabezpečí zdedenie border-collapse */
-    table-layout: fixed; /* Zabezpečí fixed layout aj tu */
+    /* ZMENA: table-layout: auto; */
+    table-layout: auto;
 }
 
 /* Odstráni horný okraj zo spodnej tabuľky, aby nadväzovala na hornú */
@@ -236,13 +236,14 @@ main { /* Prepis existujúceho pravidla pre main v spravca-turnaja-style.css */
     flex-grow: 1; /* Tento div zaberie väčšinu zostávajúceho vertikálneho priestoru */
     max-height: 75vh; /* Maximálna výška pred aktiváciou posúvania */
     overflow-y: auto; /* Povoliť vertikálne posúvanie */
-    overflow-x: auto; /* Povoliť horizontálne posúvanie, ak obsah presiahne šírku */
+    overflow-x: auto; /* Povoliť horizontálne posúvanie, ak obsah presiahne šírku tabuľky */
     margin-top: 0px;
     border: 1px solid #ccc;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
     border-radius: 5px;
     background-color: #fff;
     box-sizing: border-box;
+    width: 100%; /* Kontajner vyplní šírku rodiča, tabuľka v ňom sa bude prispôsobovať obsahu */
 }
 
 /* -- Štýly buniek (TH a TD) -- */
@@ -259,12 +260,9 @@ main { /* Prepis existujúceho pravidla pre main v spravca-turnaja-style.css */
     white-space: nowrap; /* Kľúčové: Zabezpečí, že text sa nebude zalamovať */
     box-sizing: border-box; /* Zahrnie padding a border do šírky bunky */
     overflow: hidden; /* Ensure content outside padding/border is hidden */
-    text-overflow: ellipsis;
+    text-overflow: ellipsis; /* Stále necháme ellipsis pre dlhé názvy, aj keď by nemali byť */
+    /* ODSTRÁNENÉ: width, min-width - šírka sa určí automaticky */
 }
-
-/* ODSTRÁNENÉ: Style for header cells in the body table (#clubsBodyTable th) */
-/* Tieto už nebudú existovať */
-
 
 /* Style for body cells in the body table */
 #clubsBodyTable td {
@@ -274,9 +272,8 @@ main { /* Prepis existujúceho pravidla pre main v spravca-turnaja-style.css */
     white-space: nowrap; /* Kľúčové: Zabezpečí, že text sa nebude zalamovať */
     box-sizing: border-box; /* Zahrnie padding a border do šírky bunky */
      overflow: hidden; /* Ensure content outside padding/border is hidden */
-    text-overflow: ellipsis;
-    /* Min-width môže pomôcť s initial auto layout, ale fixed to ignoreuje */
-    /* min-width: 3vw; */
+    text-overflow: ellipsis; /* Stále necháme ellipsis pre dlhé názvy */
+    /* ODSTRÁNENÉ: min-width, width - šírka sa určí automaticky */
 }
 /* Style for body cells in the header table (should look the same as body table cells) */
 #clubsHeaderTable td {
@@ -286,14 +283,12 @@ main { /* Prepis existujúceho pravidla pre main v spravca-turnaja-style.css */
     box-sizing: border-box;
     overflow: hidden;
     text-overflow: ellipsis;
+    /* ODSTRÁNENÉ: width, min-width */
 }
 
 /* NOVÝ ŠTÝL: Riadok v tele druhej tabuľky, ktorý vyzerá ako hlavička */
 #clubsBodyTable tbody tr.pseudo-header-row {
-    /* Môžete pridať špecifické pozadie, ak chcete odlíšiť od bežných riadkov */
-    /* background-color: #f0f0f0; */
     cursor: default; /* Zrušiť kurzor na ukazovateľ ruky */
-    /* border-bottom je nastavený na pseudo-header-cell */
 }
 
 /* NOVÝ ŠTÝL: Bunky (TD) v pseudo-hlavičkovom riadku */
@@ -308,8 +303,9 @@ main { /* Prepis existujúceho pravidla pre main v spravca-turnaja-style.css */
      white-space: nowrap; /* Kľúčové: Zabezpečí, že text sa nebude zalamovať */
      box-sizing: border-box; /* Zahrnie padding a border do šírky bunky */
      overflow: hidden; /* Ensure content outside padding/border is hidden */
-     text-overflow: ellipsis;
+     text-overflow: ellipsis; /* Stále necháme ellipsis pre dlhé názvy */
      border-right: 1px solid #2a6b30; /* Pravý okraj ako TH */
+     /* ODSTRÁNENÉ: width, min-width */
 }
 /* NOVÝ ŠTÝL: Posledná bunka v pseudo-hlavičkovom riadku */
 #clubsBodyTable tbody tr.pseudo-header-row td.pseudo-header-cell:last-child {
@@ -318,25 +314,24 @@ main { /* Prepis existujúceho pravidla pre main v spravca-turnaja-style.css */
 }
 
 
-/* OPRAVA: Prvý stĺpec v hlavičke (TH) a tele (TD/pseudo-header-cell) - zarovnať vľavo a nastaviť šírku */
+/* OPRAVA: Prvý stĺpec v hlavičke (TH) a tele (TD/pseudo-header-cell) - zarovnať vľavo */
+/* ODSTRÁNENÉ: Nastavenie šírky */
 #clubsHeaderTable th:first-child,
 #clubsHeaderTable td:first-child,
 #clubsBodyTable tbody tr td:first-child, /* Cielenie na prvý TD v BODY */
 #clubsBodyTable tbody tr.pseudo-header-row td.pseudo-header-cell:first-child { /* Cielenie na prvý pseudo-header TD */
     text-align: left;
-    min-width: 15vw; /* Still useful as a hint */
-    /* ZMENA: Explicitné nastavenie šírky pre prvý stĺpec */
-    width: 15vw; /* Nastaví presnú šírku prvého stĺpca */
+    /* ODSTRÁNENÉ: min-width, width */
 }
 
-/* OPRAVA: Ostatné stĺpce v hlavičke (TH) a tele (TD/pseudo-header-cell) - centrovať a nechať rozdeliť šírku */
+/* OPRAVA: Ostatné stĺpce v hlavičke (TH) a tele (TD/pseudo-header-cell) - centrovať */
+/* ODSTRÁNENÉ: Nastavenie šírky */
 #clubsHeaderTable th:nth-child(n + 2),
 #clubsHeaderTable td:nth-child(n + 2),
 #clubsBodyTable tbody tr td:nth-child(n + 2), /* Cielenie na ostatné TD v BODY */
 #clubsBodyTable tbody tr.pseudo-header-row td.pseudo-header-cell:nth-child(n + 2) { /* Cielenie na ostatné pseudo-header TD */
      text-align: center;
-     /* ZMENA: Umožniť týmto stĺpcom rozdeliť zvyšnú šírku */
-     width: auto;
+     /* ODSTRÁNENÉ: width */
 }
 
 
@@ -344,8 +339,6 @@ main { /* Prepis existujúceho pravidla pre main v spravca-turnaja-style.css */
 #clubsHeaderTable th:not(:last-child) {
     border-right: 1px solid #2a6b30;
 }
-/* ODSTRÁNENÉ: Pravý okraj na TH v body tabuľke - už neexistujú */
-
 #clubsHeaderTable td:not(:last-child) {
     border-right: 1px solid #eee;
 }
@@ -361,7 +354,6 @@ main { /* Prepis existujúceho pravidla pre main v spravca-turnaja-style.css */
     box-sizing: border-box;
     border-right: none !important; /* Ensure no right border on the last cell */
 }
-/* ODSTRÁNENÉ: Posledná TH v body tabuľke - už neexistujú */
 
 /* Štýl pre POSLEDNÚ bunku v tele hornej tabuľky - odstrániť pravý padding a border */
 #clubsHeaderTable td:last-child {
@@ -395,7 +387,7 @@ main { /* Prepis existujúceho pravidla pre main v spravca-turnaja-style.css */
 
 /* Pôvodný nth-child(even) - aplikujeme špecifickejšie pre body table */
 /* OPRAVA: Neaplikovať striedavé farby na pseudo-header riadok */
-#clubsBodyTable tbody tr:not(.pseudo-header-row):nth-child(odd) {
+#clubsBodyTable tbody tr:not(.pseudo-header-row):nth-child(odd) { /* Zmenené z even na odd, ak prvý riadok je pseudo-header */
     background-color: #f9f9f9;
 }
 /* Striedajúce farby aj pre hornú tabuľku pre konzistenciu */
@@ -626,13 +618,24 @@ main { /* Prepis existujúceho pravidla pre main v spravca-turnaja-style.css */
         padding: 8px; /* Menšie odsadenie buniek */
     }
 
-    /* OPRAVA: Prispôsobenie prvého stĺpca pre TH aj TD na menších obrazovkách */
+    /* OPRAVA: Prispôsobenie prvého stĺpca pre TH aj TD na menších obrazovkách - ODSTRÁNENÉ ŠÍRKY */
     #clubsHeaderTable th:first-child,
-    #clubsBodyTable tbody tr td:first-child, /* OPRAVA: Cielenie na prvý TD v BODY */
+    #clubsHeaderTable td:first-child,
+    #clubsBodyTable tbody tr td:first-child, /* Cielenie na prvý TD v BODY */
     #clubsBodyTable tbody tr.pseudo-header-row td.pseudo-header-cell:first-child { /* Cielenie na prvý pseudo-header TD */
-        min-width: 25vw; /* Väčšia minimálna šírka pre prvý stĺpec */
-        width: 25vw; /* Väčšia explicitná šírka pre prvý stĺpec */
+        text-align: left;
+         /* ODSTRÁNENÉ: min-width, width */
     }
+
+     /* OPRAVA: Ostatné stĺpce - centrovať, nechať auto šírku */
+     #clubsHeaderTable th:nth-child(n + 2),
+     #clubsHeaderTable td:nth-child(n + 2),
+     #clubsBodyTable tbody tr td:nth-child(n + 2),
+     #clubsBodyTable tbody tr.pseudo-header-row td.pseudo-header-cell:nth-child(n + 2) {
+          text-align: center;
+          /* ODSTRÁNENÉ: width */
+     }
+
 
     /* Prispôsobenie layoutu content-wrapper a left-menu */
     .content-wrapper {
@@ -765,10 +768,10 @@ main { /* Prepis existujúceho pravidla pre main v spravca-turnaja-style.css */
     gap: 5px;
 }
 /* Oprava: Cielenie na posledný stĺpec v TH aj TD */
+/* ODSTRÁNENÉ: Nastavenie šírky */
 #createdTeamsTable th:last-child,
 #createdTeamsTable td:last-child {
-    width: 180px; /* Šírka stĺpca s akciami */
-    min-width: 180px;
+    /* ODSTRÁNENÉ: width, min-width */
     text-align: center;
     padding: 5px; /* Menší padding */
 }
