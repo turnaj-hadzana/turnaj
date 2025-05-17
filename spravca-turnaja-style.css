@@ -312,7 +312,7 @@ td:last-child {
     transition: background-color 0.3s ease;
 }
 .add-button:hover {
-    background-color: #218838;
+    background-color: #c46f50;
 }
 .modal {
     display: none;
