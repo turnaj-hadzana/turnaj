@@ -332,7 +332,6 @@ nav ul li a:hover {
      flex-direction: column;
      padding-bottom: 5vh;
 }
-#clubsBodyTable td,
 #longestNameRowFixedBody td { 
     padding: 10px 15px;
     border-bottom: 1px solid #eee;
