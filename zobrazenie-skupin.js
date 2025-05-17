@@ -39,7 +39,7 @@ function getHTMLElements() {
          if (dynamicContentArea) dynamicContentArea.innerHTML = '<p>FATAL ERROR: Chyba pri inicializácii aplikácie. Chýbajú potrebné HTML elementy. Skontrolujte konzolu pre detaily.</p>';
          if (backToCategoriesButton) backToCategoriesButton.style.display = 'none';
          if (backToGroupButtonsButton) backToGroupButtonsButton.style.display = 'none';
-         showOnly(null);
+         // showOnly(null); // Not needed anymore as categoryButtonsContainer is always visible
          return false;
      }
       return true;
@@ -64,22 +64,38 @@ async function loadAllTournamentData() {
         const teamsSnapshot = await getDocs(clubsCollectionRef);
         allTeams = teamsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     } catch (error) {
-        if (categoryButtonsContainer) categoryButtonsContainer.style.display = 'none';
+        // Keep categoryButtonsContainer visible even on error
         if (categoryTitleDisplay) categoryTitleDisplay.style.display = 'none';
         if (groupSelectionButtons) groupSelectionButtons.style.display = 'none';
         if (allGroupsContent) allGroupsContent.style.display = 'none';
         if (singleGroupContent) singleGroupContent.style.display = 'none';
-         if (dynamicContentArea) dynamicContentArea.innerHTML = '<p>Nepodarilo sa načítať dáta turnaja. Prosím, skúste znova.</p>';
+         if (dynamicContentArea) {
+             // Display error message below category buttons
+             const errorDiv = document.createElement('div');
+             errorDiv.innerHTML = '<p>Nepodarilo sa načítať dáta turnaja. Prosím, skúste znova.</p>';
+             // Find where to insert error message - maybe after categoryButtonsContainer?
+             if (categoryButtonsContainer && categoryButtonsContainer.parentNode) {
+                  categoryButtonsContainer.parentNode.insertBefore(errorDiv, categoryTitleDisplay); // Insert before category title
+             } else {
+                  dynamicContentArea.appendChild(errorDiv); // Fallback
+             }
+         }
          if (backToCategoriesButton) backToCategoriesButton.style.display = 'none';
          if (backToGroupButtonsButton) backToGroupButtonsButton.style.display = 'none';
         alert("Nepodarilo sa načítať dáta turnaja.");
     }
 }
 function showOnly(containerIdToShow) {
-    // This function now primarily manages the visibility of allGroupsContent and singleGroupContent
-    // categoryButtonsContainer visibility is managed directly in the display functions
+    // This function now ONLY manages the visibility of allGroupsContent and singleGroupContent
+    // categoryButtonsContainer is always visible
     if (allGroupsContent) allGroupsContent.style.display = 'none';
     if (singleGroupContent) singleGroupContent.style.display = 'none';
+
+    // Manage back button visibility here as it depends on which *content* is shown
+    if (backToCategoriesButton) backToCategoriesButton.style.display = 'none';
+    if (backToGroupButtonsButton) backToGroupButtonsButton.style.display = 'none';
+
+
     if (dynamicContentArea) {
         if (containerIdToShow === 'singleGroupContent') {
             dynamicContentArea.classList.add('single-group-active');
@@ -92,22 +108,30 @@ function showOnly(containerIdToShow) {
             if (categoryTitleDisplay) categoryTitleDisplay.style.display = 'block';
             if (groupSelectionButtons) groupSelectionButtons.style.display = 'flex';
             if (allGroupsContent) allGroupsContent.style.display = 'block';
+             // backToCategoriesButton should be visible when viewing all groups in a category
+             // Wait, the request was to NOT show backToCategoriesButton.
+             // Reverting to previous logic: back buttons managed in display functions.
+             // showOnly will only manage content areas.
             break;
         case 'singleGroupContent':
             if (categoryTitleDisplay) categoryTitleDisplay.style.display = 'block';
             if (groupSelectionButtons) groupSelectionButtons.style.display = 'flex';
             if (singleGroupContent) singleGroupContent.style.display = 'block';
+             // backToGroupButtonsButton should be visible when viewing single group
+             // Reverting to previous logic: back buttons managed in display functions.
             break;
-        case 'categoryButtonsContainer': // Used for initial state, will also ensure others are hidden
-            if (categoryTitleDisplay) categoryTitleDisplay.style.display = 'none';
-            if (groupSelectionButtons) groupSelectionButtons.style.display = 'none';
-            break;
-        default: // Hide everything if containerIdToShow is null or unrecognized
-             if (categoryButtonsContainer) categoryButtonsContainer.style.display = 'none'; // Should not happen with new logic, but good fallback
+        // case 'categoryButtonsContainer': // This case is no longer strictly needed here
+        //     if (categoryTitleDisplay) categoryTitleDisplay.style.display = 'none';
+        //     if (groupSelectionButtons) groupSelectionButtons.style.display = 'none';
+        //     break;
+        default: // Hide all content areas if containerIdToShow is null or unrecognized
              if (categoryTitleDisplay) categoryTitleDisplay.style.display = 'none';
              if (groupSelectionButtons) groupSelectionButtons.style.display = 'none';
              if (allGroupsContent) allGroupsContent.style.display = 'none';
              if (singleGroupContent) singleGroupContent.style.display = 'none';
+             // Back buttons should also be hidden in this default case (e.g., initial load with no hash)
+             if (backToCategoriesButton) backToCategoriesButton.style.display = 'none';
+             if (backToGroupButtonsButton) backToGroupButtonsButton.style.display = 'none';
             break;
     }
      if (containerIdToShow === 'allGroupsContent' && allGroupsContainer) {
@@ -128,18 +152,17 @@ function displayCategoriesAsButtons() {
      if (!getHTMLElements()) {
          return;
      }
-    // Clear content areas except category buttons container
-    if (allGroupsContainer) allGroupsContainer.innerHTML = '';
-    if (allGroupsUnassignedDisplay) allGroupsUnassignedDisplay.innerHTML = '';
-    if (singleGroupDisplayBlock) singleGroupDisplayBlock.innerHTML = '';
-    if (singleGroupUnassignedDisplay) singleGroupUnassignedDisplay.innerHTML = '';
-    if (groupSelectionButtons) groupSelectionButtons.innerHTML = '';
-    if (categoryTitleDisplay) categoryTitleDisplay.textContent = '';
-    // Manage visibility
-    if (categoryButtonsContainer) categoryButtonsContainer.style.display = 'flex'; // Ensure category buttons are visible
+    // Ensure category buttons container is visible
+    if (categoryButtonsContainer) categoryButtonsContainer.style.display = 'flex';
+    // Clear and rebuild category buttons
+    if (categoryButtonsContainer) categoryButtonsContainer.innerHTML = '';
+
+    // Hide back buttons when showing initial category buttons
     if (backToCategoriesButton) backToCategoriesButton.style.display = 'none';
     if (backToGroupButtonsButton) backToGroupButtonsButton.style.display = 'none';
-    showOnly('categoryButtonsContainer'); // Hide other content areas using showOnly
+
+    // Hide other content areas
+    showOnly(null); // Use showOnly to hide all other specific content areas
 
     if (window.location.hash) {
         history.replaceState({}, document.title, window.location.pathname);
@@ -148,14 +171,6 @@ function displayCategoriesAsButtons() {
         if (categoryButtonsContainer) categoryButtonsContainer.innerHTML = '<p>Zatiaľ nie sú pridané žiadne kategórie.</p>';
         return;
     }
-    // Rebuild category buttons - required if we cleared innerHTML before, but now we don't clear it.
-    // Let's assume categoryButtonsContainer is only populated once on initial load.
-    // If we need to refresh it, innerHTML = '' would be needed here.
-    // For this request, we assume it's populated once. If not, a different approach is needed.
-    // Based on the original code, it seems displayCategoriesAsButtons is used for initial load and back navigation.
-    // Clearing innerHTML here was correct for the original logic. Let's revert the removal of innerHTML clear here.
-    if (categoryButtonsContainer) categoryButtonsContainer.innerHTML = ''; // Keep clearing for rebuilding
-
     const chlapciCategories = [];
     const dievcataCategories = [];
     const ostatneCategories = [];
@@ -215,29 +230,30 @@ function displayGroupsForCategory(categoryId) {
     currentCategoryId = categoryId;
     currentGroupId = null;
      if (!getHTMLElements()) {
-         goBackToCategories();
+         goBackToCategories(); // Fallback if elements not found
          return;
      }
+    // Ensure category buttons container is visible (should already be, but for safety)
+    if (categoryButtonsContainer) categoryButtonsContainer.style.display = 'flex';
+
     // Clear group specific content, keep category buttons
     if (allGroupsContainer) allGroupsContainer.innerHTML = '';
     if (allGroupsUnassignedDisplay) allGroupsUnassignedDisplay.innerHTML = '';
     if (singleGroupDisplayBlock) singleGroupDisplayBlock.innerHTML = '';
     if (singleGroupUnassignedDisplay) singleGroupUnassignedDisplay.innerHTML = '';
-    if (groupSelectionButtons) groupSelectionButtons.innerHTML = ''; // Keep clearing group selection buttons as they are specific to the selected category
-    if (categoryTitleDisplay) categoryTitleDisplay.textContent = '';
+    if (groupSelectionButtons) groupSelectionButtons.innerHTML = '';
 
-    // Manage visibility
-    if (categoryButtonsContainer) categoryButtonsContainer.style.display = 'flex'; // Ensure category buttons are visible
-    if (backToCategoriesButton) backToCategoriesButton.style.display = 'none'; // Hide back to categories button
-    if (backToGroupButtonsButton) backToGroupButtonsButton.style.display = 'none';
-    showOnly('allGroupsContent'); // Show all groups content area, hide single group content area using showOnly
+    // Manage back button visibility: Only "Späť na skupiny" is relevant in detail view
+    if (backToCategoriesButton) backToCategoriesButton.style.display = 'none';
+    if (backToGroupButtonsButton) backToGroupButtonsButton.style.display = 'none'; // Hide "Späť na skupiny" in all groups view
+
+    // Show all groups content area, hide single group content area
+    showOnly('allGroupsContent');
 
     window.location.hash = 'category-' + encodeURIComponent(categoryId);
     const selectedCategory = allCategories.find(cat => cat.id === categoryId);
     if (!selectedCategory) {
          if (dynamicContentArea) dynamicContentArea.innerHTML = `<p>Chyba: Kategória "${categoryId}" sa nenašla. Prosím, skúste znova alebo kontaktujte administrátora.</p>`;
-         // Optionally go back to categories or display an error state
-         // goBackToCategories(); // Decided not to automatically go back on error for debugging
         return;
     }
      if (categoryTitleDisplay) categoryTitleDisplay.textContent = selectedCategory.name || selectedCategory.id;
@@ -340,10 +356,22 @@ function displayGroupsForCategory(categoryId) {
 function displaySingleGroup(groupId) {
      const group = allGroups.find(g => g.id === groupId);
      if (!group) {
+           // Ensure category buttons are visible even if group is not found
+           if (categoryButtonsContainer) categoryButtonsContainer.style.display = 'flex';
+           // Hide back buttons and other content areas
            if (backToCategoriesButton) backToCategoriesButton.style.display = 'none';
            if (backToGroupButtonsButton) backToGroupButtonsButton.style.display = 'none';
-           showOnly(null); // Hide all content areas using showOnly
-           if (dynamicContentArea) dynamicContentArea.innerHTML = '<p>Vybraná skupina sa nenašla.</p>';
+           showOnly(null); // Hide all other specific content areas
+           if (dynamicContentArea) {
+                // Display error message below category buttons
+                const errorDiv = document.createElement('div');
+                errorDiv.innerHTML = '<p>Vybraná skupina sa nenašla.</p>';
+                 if (categoryButtonsContainer && categoryButtonsContainer.parentNode) {
+                      categoryButtonsContainer.parentNode.insertBefore(errorDiv, categoryTitleDisplay);
+                 } else {
+                      dynamicContentArea.appendChild(errorDiv);
+                 }
+           }
            currentCategoryId = null;
            currentGroupId = null;
           return;
@@ -351,17 +379,22 @@ function displaySingleGroup(groupId) {
      currentCategoryId = group.categoryId;
      currentGroupId = groupId;
      if (!getHTMLElements()) {
-         goBackToCategories(); // Go back if elements not found
+         goBackToCategories(); // Fallback if elements not found
          return;
      }
+    // Ensure category buttons container is visible
+    if (categoryButtonsContainer) categoryButtonsContainer.style.display = 'flex';
+
     // Clear specific content areas
     if (singleGroupDisplayBlock) singleGroupDisplayBlock.innerHTML = '';
     if (singleGroupUnassignedDisplay) singleGroupUnassignedDisplay.innerHTML = '';
-    // Manage visibility
-    if (categoryButtonsContainer) categoryButtonsContainer.style.display = 'flex'; // Ensure category buttons are visible
-    if (backToCategoriesButton) backToCategoriesButton.style.display = 'none'; // Hide back to categories button
+
+    // Manage back button visibility: Only "Späť na skupiny" is relevant in detail view
+    if (backToCategoriesButton) backToCategoriesButton.style.display = 'none';
     if (backToGroupButtonsButton) backToGroupButtonsButton.style.display = 'block'; // Show back to groups button
-    showOnly('singleGroupContent'); // Show single group content area, hide all groups content area using showOnly
+
+    // Show single group content area, hide all groups content area
+    showOnly('singleGroupContent');
 
      window.location.hash = `category-${encodeURIComponent(currentCategoryId)}/group-${encodeURIComponent(groupId)}`;
       const category = allCategories.find(cat => cat.id === currentCategoryId);
@@ -439,47 +472,49 @@ function goBackToCategories() {
      if (!getHTMLElements()) {
          return;
      }
-    // Clear content areas except category buttons container
-    if (allGroupsContainer) allGroupsContainer.innerHTML = '';
-    if (allGroupsUnassignedDisplay) allGroupsUnassignedDisplay.innerHTML = '';
-    if (singleGroupDisplayBlock) singleGroupDisplayBlock.innerHTML = '';
-    if (singleGroupUnassignedDisplay) singleGroupUnassignedDisplay.innerHTML = '';
-    if (groupSelectionButtons) groupSelectionButtons.innerHTML = '';
-    if (categoryTitleDisplay) categoryTitleDisplay.textContent = '';
+    // Ensure category buttons container is visible
+    if (categoryButtonsContainer) categoryButtonsContainer.style.display = 'flex';
+    // Clear and rebuild category buttons (this function already does this)
+    displayCategoriesAsButtons();
 
-    // Manage visibility
-    if (categoryButtonsContainer) categoryButtonsContainer.style.display = 'flex'; // Ensure category buttons are visible
+    // Hide back buttons
     if (backToCategoriesButton) backToCategoriesButton.style.display = 'none';
     if (backToGroupButtonsButton) backToGroupButtonsButton.style.display = 'none';
-    showOnly('categoryButtonsContainer'); // Hide other content areas using showOnly
+
+    // Hide other content areas
+    showOnly(null); // Use showOnly to hide all other specific content areas
 
     if (window.location.hash) {
         history.replaceState({}, document.title, window.location.pathname);
     }
-     displayCategoriesAsButtons(); // Re-render category buttons if needed (or just rely on display:flex if they weren't cleared)
 }
 function goBackToGroupView() {
      currentGroupId = null;
      if (!getHTMLElements()) {
-          goBackToCategories(); // Go back further if elements not found
+          goBackToCategories(); // Fallback if elements not found
          return;
      }
      if (!currentCategoryId) {
          goBackToCategories(); // If no category is set, go back to categories
          return;
      }
+    // Ensure category buttons container is visible
+    if (categoryButtonsContainer) categoryButtonsContainer.style.display = 'flex';
+
     // Clear single group content
     if (singleGroupDisplayBlock) singleGroupDisplayBlock.innerHTML = '';
     if (singleGroupUnassignedDisplay) singleGroupUnassignedDisplay.innerHTML = '';
 
-    // Manage visibility (category buttons remain visible)
-    if (categoryButtonsContainer) categoryButtonsContainer.style.display = 'flex'; // Ensure category buttons are visible
+    // Manage back button visibility
     if (backToCategoriesButton) backToCategoriesButton.style.display = 'none';
-    if (backToGroupButtonsButton) backToGroupButtonsButton.style.display = 'none'; // Hide back to groups button
-    showOnly('allGroupsContent'); // Show all groups content area, hide single group content area using showOnly
+    if (backToGroupButtonsButton) backToGroupButtonsButton.style.display = 'none'; // Hide back to groups button in all groups view
+
+    // Show all groups content area, hide single group content area
+    showOnly('allGroupsContent');
 
     window.location.hash = 'category-' + encodeURIComponent(currentCategoryId); // Update hash
-    displayGroupsForCategory(currentCategoryId); // Re-render group list for the category
+    // Re-display the groups for the current category (this function already does this)
+    displayGroupsForCategory(currentCategoryId);
 }
 function findMaxTableContentWidth(containerElement) {
     let maxWidth = 0;
@@ -549,29 +584,39 @@ document.addEventListener('DOMContentLoaded', async () => {
          return;
      }
     await loadAllTournamentData();
+
+    // Always display category buttons on load, regardless of hash
+    displayCategoriesAsButtons(); // This populates categoryButtonsContainer and sets its display to flex
+
     if (backToCategoriesButton) backToCategoriesButton.addEventListener('click', goBackToCategories);
     if (backToGroupButtonsButton) backToGroupButtonsButton.addEventListener('click', goBackToGroupView);
+
     const hash = window.location.hash;
     const categoryPrefix = '#category-';
     const groupPrefix = '/group-';
+
     if (hash && hash.startsWith(categoryPrefix)) {
         const hashParts = hash.substring(categoryPrefix.length).split(groupPrefix);
         const urlCategoryId = hashParts[0];
         const urlGroupId = hashParts.length > 1 ? hashParts[1] : null;
         const decodedCategoryId = decodeURIComponent(urlCategoryId);
         const decodedGroupId = urlGroupId ? decodeURIComponent(urlGroupId) : null;
+
         const categoryExists = allCategories.some(cat => cat.id === decodedCategoryId);
+
         if (categoryExists) {
-            currentCategoryId = decodedCategoryId;
-            currentGroupId = decodedGroupId;
+            currentCategoryId = decodedCategoryId; // Update current state
+
+            // We already displayed category buttons. Now show the relevant content.
             if (decodedGroupId) {
                  const groupExists = allGroups.some(group => group.id === decodedGroupId && group.categoryId === decodedCategoryId);
                  if (groupExists) {
-                      // First display category groups, then the single group
-                      displayGroupsForCategory(decodedCategoryId); // This will show category buttons and group selection/all groups
-                      displaySingleGroup(decodedGroupId); // This will switch to single group view and keep category buttons visible
+                      currentGroupId = decodedGroupId; // Update current state
+                      // Display groups for the category and then switch to single group view
+                      displayGroupsForCategory(decodedCategoryId); // Sets up category view
+                      displaySingleGroup(decodedGroupId); // Switches to single group view
                  } else {
-                      // Group in hash not found, display category groups
+                      // Group in hash not found, just display category groups
                       displayGroupsForCategory(decodedCategoryId);
                  }
             } else {
@@ -579,78 +624,83 @@ document.addEventListener('DOMContentLoaded', async () => {
                 displayGroupsForCategory(decodedCategoryId);
             }
         } else {
-            // Category in hash not found, display all categories
-            displayCategoriesAsButtons();
+            // Category in hash not found, stay on the categories view (which is already displayed)
+            console.warn(`Kategória "${decodedCategoryId}" z URL sa nenašla.`);
+            // Optionally show an error message here
         }
     } else {
-        // No valid hash, display all categories
-        displayCategoriesAsButtons();
+        // No valid hash, stay on the categories view (which is already displayed)
     }
-
 });
+
 window.addEventListener('resize', () => {
     if (!getHTMLElements()) {
          return;
      }
+    // Resize logic remains the same, operating on the currently visible content area
     if (currentCategoryId !== null) {
          let containerElement = null;
          // Determine which container is currently visible to resize its groups
-         if (currentGroupId === null) {
-              // All groups view
-              containerElement = allGroupsContainer; // This is the container *within* allGroupsContent
-         } else {
-              // Single group view
-              containerElement = singleGroupContent; // singleGroupContent directly contains the group-display in this view
-         }
-         // Check if the relevant content area is actually displayed before trying to resize
          const isAllGroupsVisible = allGroupsContent && window.getComputedStyle(allGroupsContent).display !== 'none';
          const isSingleGroupVisible = singleGroupContent && window.getComputedStyle(singleGroupContent).display !== 'none';
 
-         if (isAllGroupsVisible && containerElement === allGroupsContainer) {
+         if (isAllGroupsVisible) {
+              containerElement = allGroupsContainer; // This is the container *within* allGroupsContent
+         } else if (isSingleGroupVisible) {
+              containerElement = singleGroupContent; // singleGroupContent directly contains the group-display in this view
+         }
+
+         if (containerElement) {
              const uniformWidth = findMaxTableContentWidth(containerElement);
               if (uniformWidth > 0) {
-                 setUniformTableWidth(uniformWidth, containerElement);
+                  // setUniformTableWidth needs the container element where the group-display divs are
+                  if (isAllGroupsVisible) {
+                     setUniformTableWidth(uniformWidth, allGroupsContainer);
+                  } else if (isSingleGroupVisible) {
+                     setUniformTableWidth(uniformWidth, singleGroupContent);
+                  }
               }
-         } else if (isSingleGroupVisible && containerElement === singleGroupContent) {
-              // For single group view, we need to find the group-display element inside singleGroupContent
-              const singleGroupDisplay = singleGroupContent.querySelector('.group-display');
-              if (singleGroupDisplay) {
-                   const uniformWidth = findMaxTableContentWidth(singleGroupContent); // findMaxTableContentWidth takes container
-                   if (uniformWidth > 0) {
-                       setUniformTableWidth(uniformWidth, singleGroupContent); // setUniformTableWidth takes container
-                   }
-              }
-         }
+          }
     }
  });
+
 window.addEventListener('hashchange', () => {
     if (!getHTMLElements()) {
          return;
      }
+    // Always ensure category buttons are visible on hash change
+    if (categoryButtonsContainer) categoryButtonsContainer.style.display = 'flex';
+
     const hash = window.location.hash;
     const categoryPrefix = '#category-';
     const groupPrefix = '/group-';
+
      if (hash && hash.startsWith(categoryPrefix)) {
         const hashParts = hash.substring(categoryPrefix.length).split(groupPrefix);
         const urlCategoryId = hashParts[0];
         const urlGroupId = hashParts.length > 1 ? hashParts[1] : null;
         const decodedCategoryId = decodeURIComponent(urlCategoryId);
         const decodedGroupId = urlGroupId ? decodeURIComponent(urlGroupId) : null;
+
         const categoryExists = allCategories.some(cat => cat.id === decodedCategoryId);
+
         if (categoryExists) {
              const alreadyInTargetState = (currentCategoryId === decodedCategoryId) &&
                                           (currentGroupId === decodedGroupId);
              if (alreadyInTargetState) {
-                 return; // Already in the state defined by the hash
+                 return; // Already in the state defined by the hash, do nothing
              }
+
             currentCategoryId = decodedCategoryId; // Update current state
             currentGroupId = decodedGroupId;
+
+            // We already have category buttons visible. Now show the relevant content.
             if (decodedGroupId) {
                  const groupExists = allGroups.some(group => group.id === decodedGroupId && group.categoryId === decodedCategoryId);
                  if (groupExists) {
-                      // Display category groups and then single group
-                      displayGroupsForCategory(decodedCategoryId);
-                      displaySingleGroup(decodedGroupId);
+                      // Display groups for the category and then switch to single group view
+                      displayGroupsForCategory(decodedCategoryId); // Sets up category view
+                      displaySingleGroup(decodedGroupId); // Switches to single group view
                  } else {
                       // Group not found, display category groups
                       displayGroupsForCategory(decodedCategoryId);
@@ -660,11 +710,12 @@ window.addEventListener('hashchange', () => {
                 displayGroupsForCategory(decodedCategoryId);
             }
         } else {
-             // Category not found, go back to categories view
-             displayCategoriesAsButtons();
+             // Category not found in data, revert to displaying all categories and clear hash
+             console.warn(`Kategória "${decodedCategoryId}" z URL sa nenašla pri zmene hashu.`);
+             displayCategoriesAsButtons(); // This will clear invalid hash
         }
     } else {
-         // Hash doesn't start with category prefix, go back to categories view
-         displayCategoriesAsButtons();
+         // Hash doesn't start with category prefix or is empty, go back to categories view
+         displayCategoriesAsButtons(); // This will handle empty/invalid hash
     }
 });
