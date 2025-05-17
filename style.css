@@ -378,3 +378,6 @@ nav ul li a:hover {
 .action-button:hover, #backToListButton.action-button:hover {
     background-color: #c46f50;
 }
+#clubsHeaderTable tbody td {
+    white-space: nowrap;
+}
