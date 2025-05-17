@@ -243,9 +243,9 @@ function displayClubsSummaryTable() {
     sortedBaseNames.forEach(baseName => {
         // Skontrolujeme, či tento riadok je ten s najdlhším názvom.
         // Ak áno, PRESKOČÍME ho, pretože ho chceme zobraziť IBA v hornej fixnej tbody.
-        if (baseName === longestBaseName) {
-             return;
-        }
+//        if (baseName === longestBaseName) {
+//             return;
+//        }
 
         // Kód pre generovanie riadku v rolujúcej tabuľke (clubsSummaryTableBody)
         const row = clubsSummaryTableBody.insertRow();
