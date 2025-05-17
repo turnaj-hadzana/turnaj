@@ -339,6 +339,11 @@ nav ul li a:hover {
     min-width: 3vw;
     color: transparent;
 }
+#clubsSummaryTable {
+    width: 100%; 
+    table-layout: fixed;
+    border-collapse: collapse; 
+}
 .action-button, #backToListButton.action-button {
     display: inline-block;
     padding: 8px 12px;
