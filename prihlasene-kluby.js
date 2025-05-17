@@ -87,16 +87,17 @@ function updateHeaderColspan(numCategoryColumns) {
         return;
     }
 
-    // --- UPRAVENÉ: Modifikuj existujúcu "Názov klubu" hlavičku v OBCH tabuľkách ---
+    // --- UPRAVENÉ: Nastav text pre "Názov klubu" priamo, bez použitia splitHeaderText ---
+    // Vyber prvú hlavičku v oboch tabuľkách
     const firstThSummary = clubsSummaryTableHeader.querySelector('th:first-child');
     if (firstThSummary) {
-        // Použi textContent pre získanie pôvodného textu pred modifikáciou
-        firstThSummary.innerHTML = splitHeaderText(firstThSummary.textContent);
+        // Nastav textContent na pôvodný text (jednoriadkový)
+        firstThSummary.textContent = 'Názov klubu';
     }
      const firstThBody = clubsBodyTableHeader.querySelector('th:first-child');
      if (firstThBody) {
-         // Použi textContent pre získanie pôvodného textu
-         firstThBody.innerHTML = splitHeaderText(firstThBody.textContent);
+         // Nastav textContent na pôvodný text (jednoriadkový)
+         firstThBody.textContent = 'Názov klubu';
      }
 
 
@@ -107,6 +108,7 @@ function updateHeaderColspan(numCategoryColumns) {
 
     // --- UPRAVENÉ: Vytvor a pridaj "Tímy" hlavičku ---
     const teamsThText = "Tímy"; // Pôvodný text
+    // Aplikuj splitHeaderText na text "Tímy"
     const teamsThInnerHTML = splitHeaderText(teamsThText); // Modifikovaný text s <br>
 
     // Pridaj hlavičku "Tímy" do OBCH tabuliek (za prvú hlavičku)
@@ -124,6 +126,7 @@ function updateHeaderColspan(numCategoryColumns) {
     // --- UPRAVENÉ: Vytvor a pridaj hlavičky kategórií ---
     allCategories.forEach(category => {
         const categoryName = category.name || category.id;
+        // Aplikuj splitHeaderText na názov kategórie
         const categoryThInnerHTML = splitHeaderText(categoryName); // Modifikovaný text s <br>
 
         const categoryThSummary = document.createElement('th');
