@@ -479,6 +479,7 @@ function highlightTeamButton(teamIdToHighlight) {
           const targetButton = teamsInCategoryButtonsDiv.querySelector(`button[data-team-id="${teamIdToHighlight}"]`);
           if (targetButton) {
               targetButton.style.fontWeight = 'bold'; // Keep style for immediate visual feedback
+              targetButton.style.backgroundColor = '#c46f50';
               targetButton.classList.add('active-team-button'); // Add class for potential CSS styling
                // CSS might define background/color for .active-team-button
           }
