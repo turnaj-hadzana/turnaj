@@ -246,7 +246,6 @@ nav ul li a:hover {
     margin-top: 0; /* Už nastavené na kontajneri */
     /* Odstrániť horný okraj, ak ho má, aby ladil s kontajnerom */
     border-top: none;
-    border-right: 1px solid #eee;
 }
 
 /* --- Štýly buniek (TH a TD) --- */
@@ -320,6 +319,7 @@ nav ul li a:hover {
 #clubsBodyTable td:nth-child(n + 2) {
     text-align: center;
     width: auto;
+    border-right: 1px solid #eee;
 }
 
 /* Štýl pre POSLEDNÚ bunku v tele tabuľky - odstrániť pravý padding a okraj pre zladenie s posuvníkom */
