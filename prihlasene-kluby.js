@@ -409,8 +409,10 @@ function adjustTableWidthsAndCleanUp() {
         }
     });
     
-    removeTransparentRows(longestNameRowFixedBody);
-    removeTransparentRows(clubsSummaryTableBody);
+    removeTransparentRows(clubsSummaryTableBody);         // <tbody> v scrollovacej tabuľke
+    removeTransparentRows(longestNameRowFixedBody);       // <tbody> pevnej hlavičky
+    removeTransparentRows(clubsSummaryTableHeader);       // <tfoot> = hlavička v druhej tabuľke
+
     // Now clean up rows with total teams count of 0
     cleanUpZeroRows();
 }
@@ -733,10 +735,10 @@ function goBackToList() {
 
 
 
-function removeTransparentRows(tableBody) {
-    if (!tableBody) return;
+function removeTransparentRows(container) {
+    if (!container) return;
 
-    const rows = Array.from(tableBody.querySelectorAll('tr'));
+    const rows = Array.from(container.querySelectorAll('tr'));
     for (const row of rows) {
         const hasTransparentCell = Array.from(row.cells).some(cell => {
             const style = window.getComputedStyle(cell);
