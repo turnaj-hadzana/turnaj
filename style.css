@@ -313,14 +313,12 @@ nav ul li a:hover {
     padding: 10px 15px;
     text-align: left;
     min-width: 15vw;
-    border-right: 1px solid #eee;
 }
 
 /* Ostatné stĺpce v tele - centrovať */
 #clubsBodyTable td:nth-child(n + 2) {
     text-align: center;
     width: auto;
-    border-right: 1px solid #eee;
 }
 
 /* Štýl pre POSLEDNÚ bunku v tele tabuľky - odstrániť pravý padding a okraj pre zladenie s posuvníkom */
@@ -375,10 +373,12 @@ nav ul li a:hover {
 #longestNameRowFixedBody td {
     /* Tieto štýly by mali byť zhodné s prvým TD v clubsBodyTable pre zarovnanie */
     padding: 10px 15px; /* Rovnaký padding ako prvý TD */
+    border-bottom: 1px solid #eee;
     white-space: nowrap;
     min-width: 15vw; /* Mala by mať šírku prvého stĺpca */
     color: transparent; /* Text je priehľadný, slúži len na určenie šírky */
     text-align: left; /* Zarovnať vľavo ako prvý stĺpec */
+    border-right: 1px solid #eee; /* Pridať pravý okraj, ako pri ostatných bunkách v tele */
 }
 
 /* Špecifické štýly pre druhú a ďalšie TD v longestNameRowFixedBody, ak existujú (napr. pre stĺpec "Tímy") */
@@ -386,6 +386,7 @@ nav ul li a:hover {
      padding: 10px 15px; /* Rovnaký padding */
      text-align: center; /* Centrovať ako ostatné stĺpce */
      min-width: 3vw; /* Menšia minimálna šírka */
+     border-right: 1px solid #eee; /* Pridať pravý okraj */
 }
 
 /* Zabezpečiť, že posledná TD v longestNameRowFixedBody nemá pravý okraj */
