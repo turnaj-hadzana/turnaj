@@ -252,7 +252,6 @@ nav ul li a:hover {
 
 /* Spoločné štýly pre TH bunky v pätičkách OBOCH tabuliek (vizuálna hlavička aj skutočná pätička) */
 #clubsHeaderTable tfoot th,
-#clubsBodyTable tfoot th {
     background-color: #3a8d41; /* Rovnaké pozadie ako hlavička */
     color: white; /* Rovnaká farba textu ako hlavička */
     padding: 10px 15px; /* Rovnaké odsadenie (padding) ako hlavička */
@@ -263,6 +262,19 @@ nav ul li a:hover {
     min-width: 3vw; /* Minimálna šírka, ako v hlavičke */
     box-sizing: border-box; /* Zabezpečiť, že padding a border neovplyvnia celkovú šírku */
 }
+
+#clubsBodyTable tfoot th {
+//    background-color: #3a8d41;
+    color: transparent; 
+    padding: 10px 15px; 
+    text-align: center;
+    font-weight: bold;
+    font-size: 0.95em;
+    white-space: nowrap; 
+    min-width: 3vw; 
+    box-sizing: border-box;
+}
+
 
 /* Špecifický spodný okraj pre TH v pätičke hornej tabuľky (vizuálna hlavička) */
 #clubsHeaderTable tfoot th {
@@ -306,6 +318,7 @@ nav ul li a:hover {
     white-space: nowrap;
     min-width: 3vw;
     box-sizing: border-box;
+    border-right: 1px solid #eee;
 }
 
 /* Prvý stĺpec v tele - zarovnať vľavo a nastaviť minimálnu šírku */
@@ -378,7 +391,6 @@ nav ul li a:hover {
     min-width: 15vw; /* Mala by mať šírku prvého stĺpca */
     color: transparent; /* Text je priehľadný, slúži len na určenie šírky */
     text-align: left; /* Zarovnať vľavo ako prvý stĺpec */
-    border-right: 1px solid #eee; /* Pridať pravý okraj, ako pri ostatných bunkách v tele */
 }
 
 /* Špecifické štýly pre druhú a ďalšie TD v longestNameRowFixedBody, ak existujú (napr. pre stĺpec "Tímy") */
@@ -386,7 +398,6 @@ nav ul li a:hover {
      padding: 10px 15px; /* Rovnaký padding */
      text-align: center; /* Centrovať ako ostatné stĺpce */
      min-width: 3vw; /* Menšia minimálna šírka */
-     border-right: 1px solid #eee; /* Pridať pravý okraj */
 }
 
 /* Zabezpečiť, že posledná TD v longestNameRowFixedBody nemá pravý okraj */
