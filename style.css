@@ -313,14 +313,12 @@ nav ul li a:hover {
     padding: 10px 15px;
     text-align: left;
     min-width: 15vw;
-    border-right: 1px solid #eee;
 }
 
 /* Ostatné stĺpce v tele - centrovať */
 #clubsBodyTable td:nth-child(n + 2) {
     text-align: center;
     width: auto;
-    border-right: 1px solid #eee;
 }
 
 /* Štýl pre POSLEDNÚ bunku v tele tabuľky - odstrániť pravý padding a okraj pre zladenie s posuvníkom */
