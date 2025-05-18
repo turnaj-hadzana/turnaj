@@ -313,6 +313,7 @@ nav ul li a:hover {
     padding: 10px 15px;
     text-align: left;
     min-width: 15vw;
+    border-right: 1px solid #eee;
 }
 
 /* Ostatné stĺpce v tele - centrovať */
