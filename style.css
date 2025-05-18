@@ -272,7 +272,7 @@ nav ul li a:hover {
 
 /* Špecifický horný okraj pre TH v pätičke rolujúcej tabuľky */
 #clubsBodyTable tfoot th {
-     border-top: 2px solid #2a6b30;
+     border-top: 2px solid transparent;
      border-bottom: none; /* Zabezpečiť, že nemá spodný okraj */
      color: transparent;
 }
@@ -288,8 +288,11 @@ nav ul li a:hover {
 
 /* Pridanie pravého okraja ku všetkým TH bunkám v pätičkách OKREM poslednej */
 #clubsHeaderTable tfoot th:not(:last-child),
-#clubsBodyTable tfoot th:not(:last-child) {
     border-right: 1px solid #2a6b30; /* Rovnaký okraj ako v hlavičke */
+}
+
+#clubsBodyTable tfoot th:not(:last-child) {
+    border-right: 1px solid transparent;
 }
 
 /* Zabezpečiť, že posledná TH bunka v pätičke nemá pravý okraj */
