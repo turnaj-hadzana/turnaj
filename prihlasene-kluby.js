@@ -161,7 +161,15 @@ function displayClubsSummaryTable() {
         const longestNameRow = longestNameRowFixedBody.insertRow(); // Vložíme riadok do fixnej tbody
         longestNameRow.dataset.baseName = longestBaseName; // Pridáme dataset atribút
         const cellBaseName = longestNameRow.insertCell();
-        cellBaseName.textContent = longestBaseName;
+//        cellBaseName.textContent = longestBaseName;
+
+        
+        const textWrapperSpan = document.createElement('span');
+        textWrapperSpan.classList.add('text-wrapper'); // Pridanie triedy pre CSS
+        textWrapperSpan.textContent = longestBaseName; // Text vnútri spanu
+        cellBaseName.appendChild(textWrapperSpan); // Vloženie spanu do td
+
+        
         let totalTeamsCount = 0;
         allCategories.forEach(category => {
             const categoryId = category.id;
