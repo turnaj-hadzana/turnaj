@@ -176,6 +176,7 @@ function updateHeaderAndFooter() { // Premenovaná funkcia
             });
         }
         clubsBodyTableFooter.appendChild(footerRow); // Pridáme riadok do pätičky
+        removeTransparentRows(clubsBodyTableFooter);
     }
 
     // Adjust colspan for initial loading message if still present
