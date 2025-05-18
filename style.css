@@ -233,7 +233,7 @@ nav ul li a:hover {
 
 /* Kontajner pre rolujúcu časť tela tabuľky */
 #scrollableTableBodyContainer {
-    max-height: 75vh; /* Maximálna výška pre posúvanie */
+    max-height: 65vh; /* Maximálna výška pre posúvanie */
     overflow-y: auto; /* Umožní vertikálne posúvanie */
     border: 1px solid #ccc; /* Okraj okolo rolujúcej časti */
     /* Dôležité: Odstrániť spodný okraj, aby ladil s pätičkou */
