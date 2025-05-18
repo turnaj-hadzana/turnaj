@@ -408,7 +408,9 @@ function adjustTableWidthsAndCleanUp() {
             bodyCols[index].style.width = `${finalWidth}px`;
         }
     });
-
+    
+    removeTransparentRows(clubsSummaryTableBody);
+    removeTransparentRows(longestNameRowFixedBody);
     // Now clean up rows with total teams count of 0
     cleanUpZeroRows();
 }
@@ -726,6 +728,29 @@ function goBackToList() {
     history.replaceState({}, '', window.location.pathname);
     // No need to manually clear details here, displayClubsSummaryTable handles hiding the detail section
 }
+
+
+
+
+
+function removeTransparentRows(tableBody) {
+    if (!tableBody) return;
+
+    const rows = Array.from(tableBody.querySelectorAll('tr'));
+    for (const row of rows) {
+        const hasTransparentCell = Array.from(row.cells).some(cell => {
+            const style = window.getComputedStyle(cell);
+            return style.color === 'rgba(0, 0, 0, 0)' || style.color === 'transparent';
+        });
+
+        if (hasTransparentCell) {
+            row.remove();
+        }
+    }
+}
+
+
+
 
 
 // Function to handle URL state on load and popstate
