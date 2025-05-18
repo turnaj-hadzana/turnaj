@@ -339,6 +339,7 @@ nav ul li a:hover {
     min-width: 3vw;
     color: transparent;
     height: 1px;
+    overflow: hidden;
 }
 #clubsSummaryTable {
     width: 100%; 
