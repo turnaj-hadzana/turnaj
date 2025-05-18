@@ -409,8 +409,8 @@ function adjustTableWidthsAndCleanUp() {
         }
     });
     
-    removeTransparentRows(clubsSummaryTableBody);
     removeTransparentRows(longestNameRowFixedBody);
+    removeTransparentRows(clubsSummaryTableBody);
     // Now clean up rows with total teams count of 0
     cleanUpZeroRows();
 }
