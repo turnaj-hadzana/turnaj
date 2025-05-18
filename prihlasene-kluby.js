@@ -55,8 +55,8 @@ async function loadAllData() {
 
 function getClubBaseName(club) {
     let initialBaseName;
-    if (club.createdFromBase && typeof club.createdFromBase === 'string' && club.createdFromBase.trim() !== '') {
-        initialBaseName = club.createdFromBase.trim();
+    if (club.name && typeof club.name === 'string' && club.name.trim() !== '') {
+        initialBaseName = club.name.trim();
     } else if (club.id && typeof club.id === 'string' && club.id.includes(' - ')) {
         initialBaseName = club.id.split(' - ')[0].trim();
     } else {
