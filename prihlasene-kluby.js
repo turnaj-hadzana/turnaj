@@ -278,7 +278,7 @@ function displayClubsSummaryTable() {
 
         const cellTotalTeams = longestNameRow.insertCell();
         // Set the actual number, we will use data attributes to identify zero later
-        cellTotalTeams.textContent = totalTeamsCount.toString();
+        cellTotalTeams.textContent = totalTeamsCount > 0 ? totalTeamsCount.toString() : '';
         cellTotalTeams.style.textAlign = 'center';
         cellTotalTeams.dataset.isCountCell = 'true'; // Mark as count cell
 
@@ -287,7 +287,7 @@ function displayClubsSummaryTable() {
             const categoryId = category.id;
             const teamsInCategoryCount = clubsForLongestBaseName.filter(club => club.categoryId === categoryId).length;
              // Set the actual number
-            countCell.textContent = teamsInCategoryCount.toString();
+            countCell.textContent = teamsInCategoryCount > 0 ? teamsInCategoryCount.toString() : '';
             countCell.style.textAlign = 'center';
             countCell.dataset.isCountCell = 'true'; // Mark as count cell
             countCell.dataset.categoryId = categoryId; // Add category ID
@@ -332,7 +332,7 @@ function displayClubsSummaryTable() {
             const categoryId = category.id;
             const teamsInCategoryCount = clubsByBaseName[baseName].filter(club => club.categoryId === categoryId).length;
             // Set the actual number
-            countCell.textContent = teamsInCategoryCount.toString();
+            countCell.textContent = teamsInCategoryCount > 0 ? teamsInCategoryCount.toString() : '';
             countCell.style.textAlign = 'center';
             countCell.dataset.isCountCell = 'true'; // Mark as count cell
             countCell.dataset.categoryId = categoryId; // Add category ID
