@@ -222,87 +222,124 @@ nav ul li a:hover {
 #clubDetailContent h4 {
     margin-top: 20px;
 }
+
+/* --- Štýly pre tabuľky prehľadu klubov --- */
 #clubsHeaderTable,
 #clubsBodyTable {
     border-collapse: collapse;
     table-layout: auto; /* Ponechané auto, aby sa šírky prispôsobili obsahu a min-width */
+    width: 100%; /* Zabezpečiť, že tabuľky vyplnia kontajner */
 }
+
+/* Kontajner pre rolujúcu časť tela tabuľky */
+#scrollableTableBodyContainer {
+    max-height: 75vh; /* Maximálna výška pre posúvanie */
+    overflow-y: auto; /* Umožní vertikálne posúvanie */
+    border: 1px solid #ccc; /* Okraj okolo rolujúcej časti */
+    /* Dôležité: Odstrániť spodný okraj, aby ladil s pätičkou */
+    border-bottom: none;
+}
+
 
 /* Remove margin-top from the body table specifically */
 #clubsBodyTable {
     margin-top: 0; /* Už nastavené na kontajneri */
+    /* Odstrániť horný okraj, ak ho má, aby ladil s kontajnerom */
+    border-top: none;
 }
 
-/* -- Štýly buniek (TH a TD) -- */
+/* --- Štýly buniek (TH a TD) --- */
 
-/* Style for header cells */
-#clubsHeaderTable th {
-    background-color: #3a8d41;
-    color: white;
-    padding: 10px 15px;
-    text-align: center; /* Predvolené centrovanie */
-    border-bottom: 2px solid #2a6b30;
-    font-weight: bold;
-    font-size: 0.95em;
-    white-space: nowrap; /* Kľúčové: Zabezpečí, že text sa nebude zalamovať */
-    min-width: 3vw; /* Minimálna šírka bunky 5% šírky viewportu */
+/* Spoločné štýly pre TH bunky v pätičkách OBOCH tabuliek (vizuálna hlavička aj skutočná pätička) */
+#clubsHeaderTable tfoot th,
+#clubsBodyTable tfoot th {
+    background-color: #3a8d41; /* Rovnaké pozadie ako hlavička */
+    color: white; /* Rovnaká farba textu ako hlavička */
+    padding: 10px 15px; /* Rovnaké odsadenie (padding) ako hlavička */
+    text-align: center; /* Centrovať text */
+    font-weight: bold; /* Tučné písmo */
+    font-size: 0.95em; /* Veľkosť písma */
+    white-space: nowrap; /* Zabrániť zalamovaniu textu */
+    min-width: 3vw; /* Minimálna šírka, ako v hlavičke */
+    box-sizing: border-box; /* Zabezpečiť, že padding a border neovplyvnia celkovú šírku */
 }
 
-/* Style for body cells */
+/* Špecifický spodný okraj pre TH v pätičke hornej tabuľky (vizuálna hlavička) */
+#clubsHeaderTable tfoot th {
+     border-bottom: 2px solid #2a6b30;
+     border-top: none; /* Zabezpečiť, že nemá horný okraj */
+}
+
+/* Špecifický horný okraj pre TH v pätičke rolujúcej tabuľky */
+#clubsBodyTable tfoot th {
+     border-top: 2px solid #2a6b30;
+     border-bottom: none; /* Zabezpečiť, že nemá spodný okraj */
+}
+
+
+/* Štýl pre prvý stĺpec v pätičkách OBOCH tabuliek (zarovnať vľavo, väčšia min-width) */
+#clubsHeaderTable tfoot th:first-child,
+#clubsBodyTable tfoot th:first-child {
+    padding: 10px 15px; /* Zabezpečiť konzistentné odsadenie */
+    text-align: left; /* Zarovnať vľavo */
+    min-width: 15vw; /* Zväčšiť minimálnu šírku, ako v hlavičke */
+}
+
+/* Pridanie pravého okraja ku všetkým TH bunkám v pätičkách OKREM poslednej */
+#clubsHeaderTable tfoot th:not(:last-child),
+#clubsBodyTable tfoot th:not(:last-child) {
+    border-right: 1px solid #2a6b30; /* Rovnaký okraj ako v hlavičke */
+}
+
+/* Zabezpečiť, že posledná TH bunka v pätičke nemá pravý okraj */
+#clubsHeaderTable tfoot th:last-child,
+#clubsBodyTable tfoot th:last-child {
+    border-right: none;
+}
+
+
+/* --- Existujúce štýly pre TD bunky v tele rolujúcej tabuľky --- */
+/* Tieto štýly sú dôležité pre zobrazenie dát a posúvanie */
 #clubsBodyTable td {
     padding: 10px 15px; /* Predvolené odsadenie pre bunky tela */
     border-bottom: 1px solid #eee;
-    /* text-align je nastavený nižšie podľa pozície stĺpca */
-    white-space: nowrap; /* Kľúčové: Zabezpečí, že text sa nebude zalamovať */
-    min-width: 3vw; /* Minimálna šírka bunky 5% šírky viewportu */
+    white-space: nowrap;
+    min-width: 3vw;
+    box-sizing: border-box;
 }
 
-/* Prvý stĺpec v hlavičke aj tele - zarovnať vľavo a nastaviť minimálnu šírku */
-#clubsHeaderTable th:first-child,
+/* Prvý stĺpec v tele - zarovnať vľavo a nastaviť minimálnu šírku */
 #clubsBodyTable td:first-child {
     padding: 10px 15px;
     text-align: left;
-    min-width: 15vw; /* Minimálna šírka PRVÉHO stĺpca na 10vw */
+    min-width: 15vw;
 }
 
-/* Ostatné stĺpce v hlavičke aj tele - centrovať */
-#clubsHeaderTable th:nth-child(n + 2),
+/* Ostatné stĺpce v tele - centrovať */
 #clubsBodyTable td:nth-child(n + 2) {
     text-align: center;
     width: auto;
 }
 
-/* ZMENA: ODSTRÁNENIE Štýlu pre POSLEDNÝ stĺpec v hlavičke (šírka 17px) */
-/*
-#clubsHeaderTable th:last-child {
-    width: 17px;
-    min-width: 17px;
-    text-align: center;
-    padding: 12px 0;
-}
-*/
-
-/* ZMENA: Štýl pre POSLEDNÚ bunku v tele tabuľky - odstrániť pravý padding (TOTO PONECHAŤ) */
+/* Štýl pre POSLEDNÚ bunku v tele tabuľky - odstrániť pravý padding a okraj pre zladenie s posuvníkom */
 #clubsBodyTable td:last-child {
     padding: 10px 0; /* Nastaví top/bottom padding na 10px, left/right na 0px */
-    /* Toto odstráni priestor medzi obsahom poslednej bunky a posuvníkom */
+    border-right: none;
 }
 
-
-/* Pridanie pravého okraja ku všetkým bunkám OKREM poslednej */
-#clubsHeaderTable th:not(:last-child) {
-    border-right: 1px solid #2a6b30;
-}
-#clubsBodyTable td:not(:last-child) {
-     border-right: 1px solid #eee;
-}
-/* Štýl pre bunku s načítavaním/chybou (s colspan) */
+/* Zabezpečiť, že bunka s colspan (napr. pri načítavaní/chybe) má správne odsadenie a žiadny pravý okraj */
 .data-table tbody tr td[colspan] {
     text-align: center !important;
     font-style: italic;
     color: #777;
     background-color: transparent !important;
     border-right: none !important;
+    padding: 10px 15px; /* Aplikovať všeobecné odsadenie bunky */
+}
+
+/* Explicitne zabezpečiť, že colspan bunka nemá špeciálne odsadenie posledného stĺpca */
+.data-table tbody tr td[colspan]:last-child {
+     padding: 10px 15px;
 }
 
 
@@ -323,7 +360,7 @@ nav ul li a:hover {
 }
 
 
-/* ... (zvyšok štýlov) ... */
+/* ... (zvyšok pôvodných štýlov, ktoré neboli zmenené) ... */
 
 /* Ensure the section-block containing the tables shrinks to fit content */
 #clubListSection.section-block {
@@ -333,17 +370,35 @@ nav ul li a:hover {
      flex-direction: column;
      padding-bottom: 5vh;
 }
-#longestNameRowFixedBody td { 
-    padding: 10px 15px;
+#longestNameRowFixedBody td {
+    /* Tieto štýly by mali byť zhodné s prvým TD v clubsBodyTable pre zarovnanie */
+    padding: 10px 15px; /* Rovnaký padding ako prvý TD */
     border-bottom: 1px solid #eee;
     white-space: nowrap;
-    min-width: 3vw;
-    color: transparent;
+    min-width: 15vw; /* Mala by mať šírku prvého stĺpca */
+    color: transparent; /* Text je priehľadný, slúži len na určenie šírky */
+    text-align: left; /* Zarovnať vľavo ako prvý stĺpec */
+    border-right: 1px solid #eee; /* Pridať pravý okraj, ako pri ostatných bunkách v tele */
 }
+
+/* Špecifické štýly pre druhú a ďalšie TD v longestNameRowFixedBody, ak existujú (napr. pre stĺpec "Tímy") */
+#longestNameRowFixedBody td:nth-child(n + 2) {
+     padding: 10px 15px; /* Rovnaký padding */
+     text-align: center; /* Centrovať ako ostatné stĺpce */
+     min-width: 3vw; /* Menšia minimálna šírka */
+     border-right: 1px solid #eee; /* Pridať pravý okraj */
+}
+
+/* Zabezpečiť, že posledná TD v longestNameRowFixedBody nemá pravý okraj */
+#longestNameRowFixedBody td:last-child {
+     border-right: none;
+}
+
+
 #clubsSummaryTable {
-    width: 100%; 
-    table-layout: fixed;
-    border-collapse: collapse; 
+    width: 100%;
+    table-layout: fixed; /* Môže pomôcť s konzistenciou šírky, ale 'auto' s min-width funguje tiež */
+    border-collapse: collapse;
 }
 .action-button, #backToListButton.action-button {
     display: inline-block;
