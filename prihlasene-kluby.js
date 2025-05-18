@@ -144,6 +144,7 @@ function updateHeaderAndFooter() { // Premenovaná funkcia
                 clubsSummaryTableHeader.appendChild(th);
             });
         }
+        removeTransparentRows(clubsSummaryTableHeader.parentElement);
     }
 
     // Aktualizácia pätičky (clubsBodyTableFooter) - Kód pre pätičku (tfoot for the body table)
