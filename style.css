@@ -321,7 +321,7 @@ nav ul li a:hover {
 
 /* Ostatné stĺpce v tele - centrovať */
 #clubsBodyTable td:nth-child(n + 2) {
-    text-align: center;
+    text-align: right;
     width: auto;
 }
 
