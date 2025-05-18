@@ -19,14 +19,22 @@
                            <td></td>
                            <td></td> </tr>
                  </tbody>
-                 <thead id="clubsSummaryTableHeader"> <tr>
+                 <tfoot>
+                     <tr id="clubsSummaryTableHeader">
                         <th>Názov klubu</th> </tr>
-                </thead>
+                </tfoot>
             </table>
 
             <div id="scrollableTableBodyContainer" style="max-height: 65vh; overflow-y: auto; border: 1px solid #ccc;">
                 <table id="clubsBodyTable" class="data-table">
-                     <thead id="clubsBodyTableHeader"></thead> <thead id="clubsBodyTableFooter"> </thead>
+                     <thead id="clubsBodyTableHeader"></thead>
+                     <tbody id="clubsSummaryTableBody">
+                        <tr>
+                            <td style="text-align: center;">Načítavam prehľad...</td>
+                        </tr>
+                    </tbody>
+                    <tfoot id="clubsBodyTableFooter">
+                        </tfoot>
                 </table>
             </div>
 
