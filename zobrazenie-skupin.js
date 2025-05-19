@@ -146,6 +146,14 @@ function showOnly(containerIdToShow) {
     if (allGroupsContent) allGroupsContent.style.display = 'none';
     if (singleGroupContent) singleGroupContent.style.display = 'none';
 
+    if (categoryButtonsContainer) {
+        if (containerIdToShow !== null) { // Ak sa zobrazuje nejaký obsah (nie iba kategórie)
+            categoryButtonsContainer.style.display = 'flex';
+        } else { // Ak sa zobrazujú iba kategórie
+            categoryButtonsContainer.style.display = 'flex'; // Aj tak ich chceme zobraziť
+        }
+    }
+         
     if (dynamicContentArea) {
         if (containerIdToShow === 'singleGroupContent') {
             dynamicContentArea.classList.add('single-group-active');
