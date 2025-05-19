@@ -25,6 +25,7 @@ const selectedTeamSoupiskaHracovUl = document.getElementById('selectedTeamSoupis
 let allClubs = [];
 let allCategories = [];
 let allGroups = [];
+let referringPage = ''; // Added to store the referring page
 
 async function loadAllData() {
     try {
@@ -410,7 +411,7 @@ function adjustTableWidthsAndCleanUp() {
             bodyCols[index].style.width = `${finalWidth}px`;
         }
     });
-    
+
     removeTransparentRows(clubsSummaryTableBody);         // <tbody> v scrollovacej tabuľke
     removeTransparentRows(longestNameRowFixedBody);       // <tbody> pevnej hlavičky
     removeTransparentRows(clubsSummaryTableHeader);       // <tfoot> = hlavička v druhej tabuľke
@@ -726,16 +727,17 @@ async function displaySpecificTeamDetails(teamId) {
     }
 }
 
+// Modified goBackToList function
 function goBackToList() {
-    // Display the summary table, which will trigger the cleanup of zero rows
-    displayClubsSummaryTable();
-    // Update URL to the base path
-    history.replaceState({}, '', window.location.pathname);
-    // No need to manually clear details here, displayClubsSummaryTable handles hiding the detail section
+    // If the referring page was 'zobrazenie-skupin.html', use history.back()
+    // Otherwise, go to the base URL for prihlasene-kluby.html
+    if (referringPage.includes('zobrazenie-skupin.html')) {
+        history.back();
+    } else {
+        displayClubsSummaryTable();
+        history.replaceState({}, '', window.location.pathname);
+    }
 }
-
-
-
 
 
 function removeTransparentRows(container) {
@@ -755,13 +757,18 @@ function removeTransparentRows(container) {
 }
 
 
-
-
-
 // Function to handle URL state on load and popstate
 async function handleUrlState() {
     // Ensure data is loaded before processing URL parameters
     await loadAllData();
+
+    // Capture the referrer when the page is first loaded
+    // This will only be available on initial page load if navigating from another page
+    // It won't persist across direct URL changes or reloads.
+    if (document.referrer) {
+        const referrerUrl = new URL(document.referrer);
+        referringPage = referrerUrl.pathname;
+    }
 
     const urlParams = new URLSearchParams(window.location.search);
     const clubBaseName = urlParams.get('club');
