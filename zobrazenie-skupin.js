@@ -23,55 +23,6 @@ let allTeams = [];
 let currentCategoryId = null;
 let currentGroupId = null;
 
-// Funkcia na získanie HTML elementov
-// Uistí sa, že všetky elementy sú definované
-function getHTMLElements() {
-    dynamicContentArea = document.getElementById('dynamicContentArea');
-    backToCategoriesButton = document.getElementById('backToCategoriesButton');
-    backToGroupButtonsButton = document.getElementById('backToGroupButtonsButton');
-    categoryButtonsContainer = document.getElementById('categoryButtonsContainer');
-    categoryTitleDisplay = document.getElementById('categoryTitleDisplay');
-    groupSelectionButtons = document.getElementById('groupSelectionButtons');
-    allGroupsContent = document.getElementById('allGroupsContent');
-    singleGroupContent = document.getElementById('singleGroupContent');
-    allGroupsContainer = document.getElementById('allGroupsContainer');
-    allGroupsUnassignedDisplay = document.getElementById('allGroupsUnassignedDisplay');
-    singleGroupDisplayBlock = document.getElementById('singleGroupDisplayBlock');
-    singleGroupUnassignedDisplay = document.getElementById('singleGroupUnassignedDisplay');
-
-    if (!dynamicContentArea || !backToCategoriesButton || !backToGroupButtonsButton ||
-        !categoryButtonsContainer || !categoryTitleDisplay || !groupSelectionButtons ||
-        !allGroupsContent || !singleGroupContent || !allGroupsContainer ||
-        !allGroupsUnassignedDisplay || !singleGroupDisplayBlock || !singleGroupUnassignedDisplay) {
-        console.error("Chyba: Niektoré HTML elementy neboli nájdené.");
-        return false;
-    }
-    return true;
-}
-
-// Funkcia na načítanie všetkých dát
-async function loadAllData() {
-    try {
-        const categoriesSnapshot = await getDocs(categoriesCollectionRef);
-        allCategories = categoriesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        allCategories.sort((a, b) => (a.name || a.id).localeCompare((b.name || b.id), 'sk-SK'));
-
-        const groupsSnapshot = await getDocs(groupsCollectionRef);
-        allGroups = groupsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-        const clubsSnapshot = await getDocs(clubsCollectionRef);
-        allTeams = clubsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-    } catch (error) {
-        alert('Nepodarilo sa načítať dáta turnaja. Skúste obnoviť stránku.');
-        console.error("Chyba pri načítaní dát turnaja:", error);
-         // Clear data arrays on error to ensure empty state is reflected
-         allCategories = [];
-         allGroups = [];
-         allTeams = [];
-    }
-}
-
 // Funkcia na získanie "čistého" názvu klubu pre URL
 // Prioritne čistí z rawClubNameFromData, ale ak je prázdne, použije teamNameForCleaning.
 function getCleanClubNameForUrl(rawClubNameFromData, categoryNameFromData, teamNameForCleaning) {
@@ -85,505 +36,842 @@ function getCleanClubNameForUrl(rawClubNameFromData, categoryNameFromData, teamN
 
     if (!cleanedName) return 'Neznámy klub'; // Fallback ak ani team.name nie je k dispozícii
 
-    // Odstrániť suffix, ktorý môže byť kategóriou alebo iným identifikátorom tímu
-    // Napríklad: "MŠK Žilina - U11" -> "MŠK Žilina"
-    // Napríklad: "FBC Mikuláš - Chlapci" -> "FBC Mikuláš"
-    // Regex na odstránenie najbežnejších suffixov po pomlčke alebo čísla na konci
-    // Upravené tak, aby nerozprávalo názvy ako "ŠK Odeva Lipany"
-    const suffixRegex = /\s*[-–—]\s*(U\d{1,2}|Muži|Ženy|Chlapci|Dievčatá|\d+)$/i;
-    cleanedName = cleanedName.replace(suffixRegex, '').trim();
-
-    // Odstrániť prípadný prebytočný suffix "- A", "- B", " - 01" atď.
-    // Dôležité: Nepoužívať príliš agresívny regex, aby sa predišlo orezaniu mien ako "SK Partizánske"
-    // Toto je bezpečné, pretože hľadá iba číslo alebo jedno-tri písmena na konci, ak predchádza medzera
-    const trailingCodeRegex = /\s+[A-Z]{1,3}$|\s+\d+$/;
-    let match = cleanedName.match(trailingCodeRegex);
-    if (match) {
-        cleanedName = cleanedName.substring(0, match.index).trim();
+    // Odstránenie koncových písmen (A, B, C, atď.) s medzerou pred nimi
+    const regexEndLetter = /\s[A-Z]$/;
+    if (regexEndLetter.test(cleanedName)) {
+        cleanedName = cleanedName.replace(regexEndLetter, '').trim();
     }
 
-    // Ak je categoryNameFromData platná kategória a je v názve, odstrániť ju
-    if (categoryNameFromData && cleanedName.endsWith(` - ${categoryNameFromData}`)) {
-        cleanedName = cleanedName.substring(0, cleanedName.length - (` - ${categoryNameFromData}`).length).trim();
+    // Odstránenie prefixu kategórie (napr. "U10 CH - ")
+    // Predpokladáme, že categoryNameFromData už je "U10 CH", nie "U10 CH - "
+    if (categoryNameFromData) {
+        const categoryRegexPattern = `^${categoryNameFromData.replace(/[-\s]/g, '[-\\s]')}\\s*-\\s*`;
+        const categoryRegex = new RegExp(categoryRegexPattern, 'i');
+        cleanedName = cleanedName.replace(categoryRegex, '').trim();
     }
-    // Ešte raz skontrolovať či názov náhodou nie je ID kategórie (edge case)
-    if (allCategories.some(cat => cat.id === cleanedName)) {
-        cleanedName = rawClubNameFromData || teamNameForCleaning || 'Neznámy klub'; // Fallback to raw if it was just a category ID
-    }
-
-    return cleanedName;
+    
+    return cleanedName.trim();
 }
 
+// Funkcia na získanie HTML elementov a kontrolu ich existencie
+function getHTMLElements() {
+    dynamicContentArea = document.getElementById('dynamicContentArea');
+    backToCategoriesButton = document.getElementById('backToCategoriesButton');
+    backToGroupButtonsButton = document.getElementById('backToGroupButtonsButton');
+    categoryButtonsContainer = document.getElementById('categoryButtonsContainer');
+    categoryTitleDisplay = document.getElementById('categoryTitleDisplay');
+    groupSelectionButtons = document.getElementById('groupSelectionButtons');
+    allGroupsContent = document.getElementById('allGroupsContent');
+    singleGroupContent = document.getElementById('singleGroupContent');
+    
+    // Uistite sa, že podriadené elementy existujú predtým, než sa k nim pokúsite pristupovať
+    allGroupsContainer = allGroupsContent ? allGroupsContent.querySelector('.groups-container') : null;
+    allGroupsUnassignedDisplay = allGroupsContent ? allGroupsContent.querySelector('.unassigned-teams-display') : null;
+    singleGroupDisplayBlock = singleGroupContent ? singleGroupContent.querySelector('.group-display') : null;
+    singleGroupUnassignedDisplay = singleGroupContent ? singleGroupContent.querySelector('.unassigned-teams-display') : null;
 
-// Navigačné funkcie
-function goBackToCategories() {
-    if (!getHTMLElements()) return;
+    const elementsFound = dynamicContentArea && backToCategoriesButton && backToGroupButtonsButton &&
+                            categoryButtonsContainer && categoryTitleDisplay && groupSelectionButtons &&
+                            allGroupsContent && singleGroupContent &&
+                            allGroupsContainer && allGroupsUnassignedDisplay &&
+                            singleGroupDisplayBlock && singleGroupUnassignedDisplay;
+    
+    if (!elementsFound) {
+        if (dynamicContentArea) dynamicContentArea.innerHTML = '<p>FATAL ERROR: Chyba pri inicializácii aplikácie. Chýbajú potrebné HTML elementy. Skontrolujte konzolu pre detaily.</p>';
+        if (categoryButtonsContainer) categoryButtonsContainer.style.display = 'none';
+        if (categoryTitleDisplay) categoryTitleDisplay.style.display = 'none';
+        if (groupSelectionButtons) groupSelectionButtons.style.display = 'none';
+        if (allGroupsContent) allGroupsContent.style.display = 'none';
+        if (singleGroupContent) singleGroupContent.style.display = 'none';
+        if (backToCategoriesButton) backToCategoriesButton.style.display = 'none';
+        if (backToGroupButtonsButton) backToGroupButtonsButton.style.display = 'none';
+        console.error("Chýbajúce HTML elementy pre správnu funkčnosť aplikácie!");
+        return false;
+    }
+    return true;
+}
 
+// Načítanie všetkých potrebných dát z Firebase
+async function loadAllTournamentData() {
+    try {
+        const categoriesSnapshot = await getDocs(categoriesCollectionRef);
+        allCategories = categoriesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        allCategories.sort((a, b) => (a.name || a.id || '').localeCompare((b.name || b.id || ''), 'sk-SK'));
+
+        const groupsSnapshot = await getDocs(groupsCollectionRef);
+        allGroups = groupsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        allGroups = allGroups.map(group => {
+            if (!group.categoryId) {
+                const categoryFromId = allCategories.find(cat => group.id.startsWith(`${cat.id} - `));
+                if (categoryFromId) {
+                    group.categoryId = categoryFromId.id;
+                }
+            }
+            return group;
+        }).filter(group => group.categoryId);
+        allGroups.sort((a, b) => (a.name || a.id || '').localeCompare((b.name || a.id || ''), 'sk-SK'));
+
+        const teamsSnapshot = await getDocs(clubsCollectionRef);
+        allTeams = teamsSnapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                ...data,
+                clubName: data.clubName || data.name || ''
+            };
+        });
+
+    } catch (error) {
+        console.error("Chyba pri načítaní dát turnaja:", error);
+        if (dynamicContentArea && categoryButtonsContainer) {
+            const errorDiv = document.createElement('div');
+            errorDiv.innerHTML = '<p class="error-message">Nepodarilo sa načítať dáta turnaja. Prosím, skúste znova.</p>';
+            categoryButtonsContainer.parentNode.insertBefore(errorDiv, categoryButtonsContainer.nextSibling);
+        } else if (dynamicContentArea) {
+            dynamicContentArea.innerHTML = '<p class="error-message">Nepodarilo sa načítať dáta turnaja. Prosím, skúste znova.</p>';
+        }
+        if (categoryButtonsContainer) categoryButtonsContainer.style.display = 'none';
+        if (categoryTitleDisplay) categoryTitleDisplay.style.display = 'none';
+        if (groupSelectionButtons) groupSelectionButtons.style.display = 'none';
+        if (allGroupsContent) allGroupsContent.style.display = 'none';
+        if (singleGroupContent) singleGroupContent.style.display = 'none';
+        if (backToCategoriesButton) backToCategoriesButton.style.display = 'none';
+        if (backToGroupButtonsButton) backToGroupButtonsButton.style.display = 'none';
+        alert("Nepodarilo sa načítať dáta turnaja.");
+    }
+}
+
+// Funkcia na zobrazenie len konkrétnej sekcie obsahu
+function showOnly(containerIdToShow) {
+    if (allGroupsContent) allGroupsContent.style.display = 'none';
+    if (singleGroupContent) singleGroupContent.style.display = 'none';
+
+    if (dynamicContentArea) {
+        if (containerIdToShow === 'singleGroupContent') {
+            dynamicContentArea.classList.add('single-group-active');
+        } else {
+            dynamicContentArea.classList.remove('single-group-active');
+        }
+    }
+
+    switch (containerIdToShow) {
+        case 'allGroupsContent':
+            if (allGroupsContent) allGroupsContent.style.display = 'block';
+            break;
+        case 'singleGroupContent':
+            if (singleGroupContent) singleGroupContent.style.display = 'block';
+            break;
+        default:
+            if (allGroupsContent) allGroupsContent.style.display = 'none';
+            if (singleGroupContent) singleGroupContent.style.display = 'none';
+            break;
+    }
+
+    if (containerIdToShow === 'allGroupsContent' && allGroupsContainer && window.getComputedStyle(allGroupsContent).display !== 'none') {
+        const uniformWidth = findMaxTableContentWidth(allGroupsContainer);
+        if (uniformWidth > 0) {
+            setUniformTableWidth(uniformWidth, allGroupsContainer);
+        }
+    } else if (containerIdToShow === 'singleGroupContent' && singleGroupContent && window.getComputedStyle(singleGroupContent).display !== 'none') {
+        const uniformWidth = findMaxTableContentWidth(singleGroupContent);
+        if (uniformWidth > 0) {
+            setUniformTableWidth(uniformWidth, singleGroupContent);
+        }
+    }
+}
+
+// Odstráni triedu 'active' zo všetkých tlačidiel kategórií
+function clearActiveCategoryButtons() {
+    const categoryButtons = categoryButtonsContainer ? categoryButtonsContainer.querySelectorAll('.display-button') : [];
+    categoryButtons.forEach(button => button.classList.remove('active'));
+}
+
+// Pridá triedu 'active' k špecifickému tlačidlu kategórie
+function setActiveCategoryButton(categoryId) {
+    clearActiveCategoryButtons();
+    const categoryButton = categoryButtonsContainer ? categoryButtonsContainer.querySelector(`.display-button[data-category-id="${categoryId}"]`) : null;
+    if (categoryButton) {
+        categoryButton.classList.add('active');
+    }
+}
+
+// Odstráni triedu 'active' zo všetkých tlačidiel skupín a titulkov skupín
+function clearActiveGroupButtons() {
+    const groupButtons = groupSelectionButtons ? groupSelectionButtons.querySelectorAll('.display-button') : [];
+    groupButtons.forEach(button => button.classList.remove('active'));
+    const groupTitlesInAllView = allGroupsContainer ? allGroupsContainer.querySelectorAll('.group-display h3') : [];
+    groupTitlesInAllView.forEach(title => title.classList.remove('active-title'));
+}
+
+// Pridá triedu 'active' k špecifickému tlačidlu skupiny a titulku skupiny
+function setActiveGroupButton(groupId) {
+    clearActiveGroupButtons();
+    const groupButton = groupSelectionButtons ? groupSelectionButtons.querySelector(`.display-button[data-group-id="${groupId}"]`) : null;
+    if (groupButton) {
+        groupButton.classList.add('active');
+    }
+    if (allGroupsContainer) {
+        const groupDisplays = allGroupsContainer.querySelectorAll('.group-display');
+        groupDisplays.forEach(groupDiv => {
+            if (groupDiv.dataset.groupId === groupId) {
+                const h3Title = groupDiv.querySelector('h3');
+                if (h3Title) {
+                    h3Title.classList.add('active-title');
+                }
+            }
+        });
+    }
+}
+
+// Zobrazí kategórie ako tlačidlá na úvodnej stránke
+function displayCategoriesAsButtons() {
     currentCategoryId = null;
     currentGroupId = null;
-    window.location.hash = ''; // Clear hash
-    displayCategories();
-}
-
-function goBackToGroupButtons() {
-    if (!getHTMLElements()) return;
-
-    if (currentCategoryId) {
-        displayGroupsForCategory(currentCategoryId);
-    } else {
-        goBackToCategories();
+    if (!getHTMLElements()) {
+        return;
     }
-}
 
-function displayCategories() {
-    if (!getHTMLElements()) return;
+    if (categoryButtonsContainer) categoryButtonsContainer.style.display = 'flex';
+    if (categoryTitleDisplay) categoryTitleDisplay.style.display = 'none';
+    if (groupSelectionButtons) groupSelectionButtons.style.display = 'none';
+    if (backToCategoriesButton) backToCategoriesButton.style.display = 'none';
+    if (backToGroupButtonsButton) backToGroupButtonsButton.style.display = 'none';
 
-    dynamicContentArea.style.display = 'block';
-    categoryButtonsContainer.style.display = 'block';
-    groupSelectionButtons.style.display = 'none';
-    allGroupsContent.style.display = 'none';
-    singleGroupContent.style.display = 'none';
+    showOnly(null);
 
-    backToCategoriesButton.style.display = 'none';
-    backToGroupButtonsButton.style.display = 'none';
-    categoryTitleDisplay.textContent = 'Výber kategórie'; // Default title for category selection
+    if (categoryButtonsContainer) categoryButtonsContainer.innerHTML = '';
 
-    categoryButtonsContainer.innerHTML = ''; // Clear existing buttons
+    clearActiveCategoryButtons();
+    clearActiveGroupButtons();
+
+    if (window.location.hash) {
+        history.replaceState({}, document.title, window.location.pathname);
+    }
 
     if (allCategories.length === 0) {
-        categoryButtonsContainer.innerHTML = '<p>Zatiaľ nie sú definované žiadne kategórie.</p>';
+        if (categoryButtonsContainer) categoryButtonsContainer.innerHTML = '<p>Zatiaľ nie sú pridané žiadne kategórie.</p>';
         return;
     }
 
-    allCategories.forEach(category => {
-        const button = document.createElement('button');
-        button.className = 'category-button';
-        button.textContent = category.name || category.id;
-        button.dataset.categoryId = category.id;
-        button.addEventListener('click', () => {
-            currentCategoryId = category.id;
-            window.location.hash = `category-${category.id}`; // Set hash
-            displayGroupsForCategory(category.id);
-        });
-        categoryButtonsContainer.appendChild(button);
+    const chlapciCategories = [];
+    const dievcataCategories = [];
+    const ostatneCategories = [];
+    const sortedCategories = [...allCategories].sort((a, b) => (a.name || a.id || '').localeCompare((b.name || b.id || ''), 'sk-SK'));
+
+    sortedCategories.forEach(category => {
+        const categoryName = category.name || category.id;
+        if (categoryName.endsWith(' CH')) {
+            chlapciCategories.push(category);
+        } else if (categoryName.endsWith(' D')) {
+            dievcataCategories.push(category);
+        } else {
+            ostatneCategories.push(category);
+        }
     });
-}
 
-function displayGroupsForCategory(categoryId) {
-    if (!getHTMLElements()) return;
-
-    currentCategoryId = categoryId;
-    currentGroupId = null; // Reset current group when changing category
-
-    categoryButtonsContainer.style.display = 'none';
-    groupSelectionButtons.style.display = 'block';
-    allGroupsContent.style.display = 'none';
-    singleGroupContent.style.display = 'none';
-
-    backToCategoriesButton.style.display = 'block';
-    backToGroupButtonsButton.style.display = 'none';
-
-    const selectedCategory = allCategories.find(cat => cat.id === categoryId);
-    categoryTitleDisplay.textContent = selectedCategory ? `Kategória: ${selectedCategory.name || selectedCategory.id}` : 'Neznáma kategória';
-
-    groupSelectionButtons.innerHTML = ''; // Clear existing buttons
-
-    const groupsInThisCategory = allGroups.filter(group => group.categoryId === categoryId);
-    const teamsInThisCategory = allTeams.filter(team => team.categoryId === categoryId);
-
-    if (groupsInThisCategory.length > 0) {
-        // Sort groups by name or ID
-        groupsInThisCategory.sort((a, b) => (a.name || a.id).localeCompare((b.name || b.id), 'sk-SK'));
-
-        groupsInThisCategory.forEach(group => {
-            const groupTeams = teamsInThisCategory.filter(team => team.groupId === group.id);
-            if (groupTeams.length > 0) { // Only show group button if there are teams in it
-                const button = document.createElement('button');
-                button.className = 'group-button';
-                button.textContent = group.name || group.id;
-                button.dataset.groupId = group.id;
-                button.addEventListener('click', () => {
-                    currentGroupId = group.id;
-                    window.location.hash = `category-${categoryId}-group-${group.id}`; // Set hash for group
-                    displaySingleGroup(categoryId, group.id);
-                });
-                groupSelectionButtons.appendChild(button);
-            }
-        });
-    }
-
-    const unassignedTeams = teamsInThisCategory.filter(team => !team.groupId || allGroups.every(g => g.id !== team.groupId));
-    if (unassignedTeams.length > 0) {
-        const unassignedButton = document.createElement('button');
-        unassignedButton.className = 'group-button unassigned-button';
-        unassignedButton.textContent = 'Nepriradené tímy';
-        unassignedButton.dataset.groupId = 'unassigned';
-        unassignedButton.addEventListener('click', () => {
-            currentGroupId = 'unassigned';
-            window.location.hash = `category-${categoryId}-group-unassigned`; // Set hash for unassigned
-            displaySingleGroup(categoryId, 'unassigned');
-        });
-        groupSelectionButtons.appendChild(unassignedButton);
-    }
-
-    if (groupSelectionButtons.innerHTML === '') {
-        groupSelectionButtons.innerHTML = '<p>Pre túto kategóriu zatiaľ nie sú priradené žiadne tímy.</p>';
-    }
-
-    // Always show "Zobraziť všetky skupiny" button if there are any teams in the category
-    if (teamsInThisCategory.length > 0) {
-        const allGroupsButton = document.createElement('button');
-        allGroupsButton.className = 'group-button all-groups-button';
-        allGroupsButton.textContent = 'Zobraziť všetky skupiny';
-        allGroupsButton.addEventListener('click', () => {
-            currentGroupId = null; // Clear current group
-            window.location.hash = `category-${categoryId}-all`; // Set hash for all groups
-            displayAllGroupsForCategory(categoryId);
-        });
-        groupSelectionButtons.appendChild(allGroupsButton);
-    }
-}
-
-
-function displayAllGroupsForCategory(categoryId) {
-    if (!getHTMLElements()) return;
-
-    currentCategoryId = categoryId; // Keep category selected
-    currentGroupId = null; // No specific group selected
-
-    categoryButtonsContainer.style.display = 'none';
-    groupSelectionButtons.style.display = 'none';
-    allGroupsContent.style.display = 'block';
-    singleGroupContent.style.display = 'none';
-
-    backToCategoriesButton.style.display = 'block';
-    backToGroupButtonsButton.style.display = 'block';
-
-    const selectedCategory = allCategories.find(cat => cat.id === categoryId);
-    categoryTitleDisplay.textContent = selectedCategory ? `Všetky skupiny: ${selectedCategory.name || selectedCategory.id}` : 'Všetky skupiny (Neznáma kategória)';
-
-    allGroupsContainer.innerHTML = ''; // Clear previous content
-    allGroupsUnassignedDisplay.innerHTML = ''; // Clear unassigned content
-
-    const groupsInThisCategory = allGroups.filter(group => group.categoryId === categoryId);
-    const teamsInThisCategory = allTeams.filter(team => team.categoryId === categoryId);
-
-    if (groupsInThisCategory.length > 0) {
-        groupsInThisCategory.sort((a, b) => (a.name || a.id).localeCompare((b.name || b.id), 'sk-SK'));
-
-        groupsInThisCategory.forEach(group => {
-            const groupTeams = teamsInThisCategory.filter(team => team.groupId === group.id);
-
-            if (groupTeams.length > 0) {
-                const groupDiv = document.createElement('div');
-                groupDiv.className = 'group-block';
-
-                const groupTitle = document.createElement('h3');
-                groupTitle.textContent = `Skupina: ${group.name || group.id}`;
-                groupDiv.appendChild(groupTitle);
-
-                const table = document.createElement('table');
-                table.className = 'group-table';
-                const thead = table.createTHead();
-                const tbody = table.createTBody();
-
-                // Headers
-                const headerRow = thead.insertRow();
-                ['Názov tímu', 'Klub', 'Link'].forEach(text => {
-                    const th = document.createElement('th');
-                    th.textContent = text;
-                    headerRow.appendChild(th);
-                });
-
-                // Sort teams within the group by their name
-                groupTeams.sort((a, b) => (a.name || a.id).localeCompare((b.name || b.id), 'sk-SK'));
-
-                groupTeams.forEach(team => {
-                    const row = tbody.insertRow();
-                    const nameCell = row.insertCell();
-                    nameCell.textContent = team.name || team.id;
-
-                    const clubName = team.clubName || getCleanClubNameForUrl(team.clubName, team.categoryId, team.name);
-                    const clubCell = row.insertCell();
-                    clubCell.textContent = clubName;
-
-
-                    const linkCell = row.insertCell();
-                    const linkButton = document.createElement('a');
-                    linkButton.href = `prihlasene-kluby.html?club=${encodeURIComponent(clubName)}&team=${encodeURIComponent(team.id)}`;
-                    linkButton.textContent = 'Zobraziť detaily';
-                    linkButton.target = '_blank'; // Open in new tab
-                    linkCell.appendChild(linkButton);
-                });
-
-                groupDiv.appendChild(table);
-                allGroupsContainer.appendChild(groupDiv);
-            }
-        });
-    }
-
-    const unassignedTeams = teamsInThisCategory.filter(team => !team.groupId || allGroups.every(g => g.id !== team.groupId));
-    if (unassignedTeams.length > 0) {
-        const unassignedDiv = document.createElement('div');
-        unassignedDiv.className = 'group-block unassigned-block';
-
-        const unassignedTitle = document.createElement('h3');
-        unassignedTitle.textContent = 'Nepriradené tímy';
-        unassignedDiv.appendChild(unassignedTitle);
-
-        const table = document.createElement('table');
-        table.className = 'group-table';
-        const thead = table.createTHead();
-        const tbody = table.createTBody();
-
-        // Headers
-        const headerRow = thead.insertCell();
-        ['Názov tímu', 'Klub', 'Link'].forEach(text => {
-            const th = document.createElement('th');
-            th.textContent = text;
-            headerRow.appendChild(th);
-        });
-
-        // Sort unassigned teams
-        unassignedTeams.sort((a, b) => (a.name || a.id).localeCompare((b.name || b.id), 'sk-SK'));
-
-        unassignedTeams.forEach(team => {
-            const row = tbody.insertRow();
-            const nameCell = row.insertCell();
-            nameCell.textContent = team.name || team.id;
-
-            const clubName = team.clubName || getCleanClubNameForUrl(team.clubName, team.categoryId, team.name);
-            const clubCell = row.insertCell();
-            clubCell.textContent = clubName;
-
-            const linkCell = row.insertCell();
-            const linkButton = document.createElement('a');
-            linkButton.href = `prihlasene-kluby.html?club=${encodeURIComponent(clubName)}&team=${encodeURIComponent(team.id)}`;
-            linkButton.textContent = 'Zobraziť detaily';
-            linkButton.target = '_blank'; // Open in new tab
-            linkCell.appendChild(linkButton);
-        });
-
-        unassignedDiv.appendChild(table);
-        allGroupsUnassignedDisplay.appendChild(unassignedDiv);
-    }
-
-    if (allGroupsContainer.innerHTML === '' && allGroupsUnassignedDisplay.innerHTML === '') {
-        allGroupsContent.innerHTML = '<p>Pre túto kategóriu zatiaľ nie sú priradené žiadne tímy ani skupiny.</p>';
-    } else {
-        // Apply uniform width after content is rendered
-        requestAnimationFrame(() => {
-            const uniformWidth = findMaxTableContentWidth(allGroupsContent);
-            if (uniformWidth > 0) {
-                setUniformTableWidth(uniformWidth, allGroupsContent);
-            }
-        });
-    }
-}
-
-function displaySingleGroup(categoryId, groupId) {
-    if (!getHTMLElements()) return;
-
-    currentCategoryId = categoryId; // Keep category selected
-    currentGroupId = groupId; // Set current group selected
-
-    categoryButtonsContainer.style.display = 'none';
-    groupSelectionButtons.style.display = 'none';
-    allGroupsContent.style.display = 'none';
-    singleGroupContent.style.display = 'block';
-
-    backToCategoriesButton.style.display = 'block';
-    backToGroupButtonsButton.style.display = 'block';
-
-    const selectedCategory = allCategories.find(cat => cat.id === categoryId);
-    let groupTitleText;
-    if (groupId === 'unassigned') {
-        groupTitleText = `Nepriradené tímy v kategórii: ${selectedCategory ? selectedCategory.name || selectedCategory.id : 'Neznáma kategória'}`;
-    } else {
-        const selectedGroup = allGroups.find(group => group.id === groupId);
-        groupTitleText = selectedGroup ? `Skupina: ${selectedGroup.name || selectedGroup.id}` : 'Neznáma skupina';
-        if (selectedCategory) {
-            groupTitleText += ` (Kategória: ${selectedCategory.name || selectedCategory.id})`;
-        }
-    }
-    categoryTitleDisplay.textContent = groupTitleText;
-
-
-    singleGroupDisplayBlock.innerHTML = ''; // Clear previous content
-    singleGroupUnassignedDisplay.innerHTML = ''; // Clear unassigned content
-
-    let teamsToDisplay;
-    if (groupId === 'unassigned') {
-        teamsToDisplay = allTeams.filter(team => team.categoryId === categoryId && (!team.groupId || allGroups.every(g => g.id !== team.groupId)));
-    } else {
-        teamsToDisplay = allTeams.filter(team => team.categoryId === categoryId && team.groupId === groupId);
-    }
-
-    if (teamsToDisplay.length === 0) {
-        singleGroupContent.innerHTML = '<p>Žiadne tímy v tejto skupine/kategórii.</p>';
-    } else {
-        const table = document.createElement('table');
-        table.className = 'group-table';
-        const thead = table.createTHead();
-        const tbody = table.createTBody();
-
-        // Headers
-        const headerRow = thead.insertRow();
-        ['Názov tímu', 'Klub', 'Link'].forEach(text => {
-            const th = document.createElement('th');
-            th.textContent = text;
-            headerRow.appendChild(th);
-        });
-
-        // Sort teams
-        teamsToDisplay.sort((a, b) => (a.name || a.id).localeCompare((b.name || b.id), 'sk-SK'));
-
-        teamsToDisplay.forEach(team => {
-            const row = tbody.insertRow();
-            const nameCell = row.insertCell();
-            nameCell.textContent = team.name || team.id;
-
-            const clubName = team.clubName || getCleanClubNameForUrl(team.clubName, team.categoryId, team.name);
-            const clubCell = row.insertCell();
-            clubCell.textContent = clubName;
-
-            const linkCell = row.insertCell();
-            const linkButton = document.createElement('a');
-            linkButton.href = `prihlasene-kluby.html?club=${encodeURIComponent(clubName)}&team=${encodeURIComponent(team.id)}`;
-            linkButton.textContent = 'Zobraziť detaily';
-            linkButton.target = '_blank'; // Open in new tab
-            linkCell.appendChild(linkButton);
-        });
-        singleGroupDisplayBlock.appendChild(table);
-
-        // Apply uniform width after content is rendered
-        requestAnimationFrame(() => {
-            const uniformWidth = findMaxTableContentWidth(singleGroupContent);
-            if (uniformWidth > 0) {
-                setUniformTableWidth(uniformWidth, singleGroupContent);
-            }
-        });
-    }
-}
-
-
-function findMaxTableContentWidth(container) {
-    let maxWidth = 0;
-    const tables = container.querySelectorAll('.group-table');
-
-    tables.forEach(table => {
-        // Clone the table to measure without affecting current layout
-        const clonedTable = table.cloneNode(true);
-        clonedTable.style.position = 'absolute';
-        clonedTable.style.visibility = 'hidden';
-        clonedTable.style.width = 'auto'; // Allow content to dictate width
-        document.body.appendChild(clonedTable);
-
-        // Calculate content width by summing up column widths
-        // Ensure colgroup is present for proper measurement
-        let colgroup = clonedTable.querySelector('colgroup');
-        if (!colgroup) {
-            colgroup = document.createElement('colgroup');
-            clonedTable.prepend(colgroup);
-        }
-        colgroup.innerHTML = ''; // Clear existing cols
-
-        // Add cols to the cloned table, then measure cells to get their natural width
-        let currentTableWidth = 0;
-        const headerCells = clonedTable.querySelector('thead tr')?.cells;
-        if (headerCells && headerCells.length > 0) {
-            Array.from(headerCells).forEach((cell, index) => {
-                const col = document.createElement('col');
-                const cellWidth = cell.offsetWidth; // This gets the rendered width
-                col.style.width = `${cellWidth}px`;
-                colgroup.appendChild(col);
-                currentTableWidth += cellWidth;
+    const createCategoryGroupDisplay = (title, categories) => {
+        if (categories.length === 0) return null;
+        const groupDiv = document.createElement('div');
+        groupDiv.classList.add('category-group');
+        const heading = document.createElement('h3');
+        heading.textContent = title;
+        groupDiv.appendChild(heading);
+        const buttonsDiv = document.createElement('div');
+        buttonsDiv.classList.add('category-buttons');
+        groupDiv.appendChild(buttonsDiv);
+        categories.forEach(category => {
+            const button = document.createElement('button');
+            button.classList.add('display-button');
+            button.textContent = category.name || category.id;
+            button.dataset.categoryId = category.id;
+            button.addEventListener('click', () => {
+                const categoryId = button.dataset.categoryId;
+                displayGroupsForCategory(categoryId);
             });
-             maxWidth = Math.max(maxWidth, currentTableWidth);
+            buttonsDiv.appendChild(button);
+        });
+        return groupDiv;
+    };
+
+    if (categoryButtonsContainer) {
+        const chlapciGroup = createCategoryGroupDisplay('Chlapci', chlapciCategories);
+        if (chlapciGroup) {
+            categoryButtonsContainer.appendChild(chlapciGroup);
         }
-        document.body.removeChild(clonedTable);
-    });
+        const dievcataGroup = createCategoryGroupDisplay('Dievčatá', dievcataCategories);
+        if (dievcataGroup) {
+            categoryButtonsContainer.appendChild(dievcataGroup);
+        }
+        const ostatneGroup = createCategoryGroupDisplay('Ostatné kategórie', ostatneCategories);
+        if (ostatneGroup) {
+            categoryButtonsContainer.appendChild(ostatneGroup);
+        }
 
-    return maxWidth;
+        if (categoryButtonsContainer.children.length === 0) {
+            categoryButtonsContainer.innerHTML = '<p>Zatiaľ nie sú pridané žiadne kategórie.</p>';
+        }
+    }
 }
 
-
-function setUniformTableWidth(width, container) {
-    const tables = container.querySelectorAll('.group-table');
-    tables.forEach(table => {
-        table.style.width = `${width}px`;
-        // To make columns distribute evenly within the new fixed width,
-        // you might need to adjust column widths using <col> tags within <colgroup>.
-        // This is complex and usually requires re-measuring relative widths or
-        // using flexbox/grid for column layout if table-layout: fixed is not desired.
-        // For now, we'll just set table width. If columns still look off,
-        // table-layout: fixed; and explicit <col> widths might be needed.
-    });
-}
-
-
-// Spracovanie hashu URL pri načítaní a pri zmene hashu
-async function handleHashChange() {
+// Zobrazí skupiny pre vybranú kategóriu
+function displayGroupsForCategory(categoryId) {
+    currentCategoryId = categoryId;
+    currentGroupId = null;
     if (!getHTMLElements()) {
-        console.error("HTML elements not ready for hash change handling.");
+        goBackToCategories();
         return;
     }
 
-    // Ensure data is loaded before processing hash
-    await loadAllData(); // <--- AWAITING DATA LOADING HERE
+    if (categoryButtonsContainer) categoryButtonsContainer.style.display = 'flex';
+    if (categoryTitleDisplay) categoryTitleDisplay.style.display = 'block';
+    if (groupSelectionButtons) groupSelectionButtons.style.display = 'flex';
+    if (backToCategoriesButton) backToCategoriesButton.style.display = 'none';
+    if (backToGroupButtonsButton) backToGroupButtonsButton.style.display = 'none';
 
-    const hash = window.location.hash.substring(1); // Remove '#'
-    console.log(`Spracoávam hash: ${hash}`);
+    if (allGroupsContainer) allGroupsContainer.innerHTML = '';
+    if (allGroupsUnassignedDisplay) allGroupsUnassignedDisplay.innerHTML = '';
+    if (singleGroupDisplayBlock) singleGroupDisplayBlock.innerHTML = '';
+    if (singleGroupUnassignedDisplay) singleGroupUnassignedDisplay.innerHTML = '';
+    if (groupSelectionButtons) groupSelectionButtons.innerHTML = '';
 
-    if (hash.startsWith('category-')) {
-        const parts = hash.split('-');
-        const decodedCategoryId = parts[1]; // e.g., "U11"
-        const decodedGroupParam = parts[3]; // e.g., "group", "unassigned", "all"
+    showOnly('allGroupsContent');
+
+    setActiveCategoryButton(categoryId);
+    clearActiveGroupButtons();
+
+    // Kódovanie hashu zostáva zachované
+    window.location.hash = 'category-' + encodeURIComponent(categoryId);
+
+    const selectedCategory = allCategories.find(cat => cat.id === categoryId);
+    if (!selectedCategory) {
+        console.error(`Kategória "${categoryId}" sa nenašla.`);
+        if (categoryTitleDisplay) categoryTitleDisplay.style.display = 'none';
+        if (groupSelectionButtons) groupSelectionButtons.style.display = 'none';
+        showOnly(null);
+        if (dynamicContentArea && categoryButtonsContainer) {
+            const errorDiv = document.createElement('div');
+            errorDiv.innerHTML = `<p class="error-message">Chyba: Kategória "${categoryId}" sa nenašla. Prosím, skúste znova alebo kontaktujte administrátora.</p>`;
+            categoryButtonsContainer.parentNode.insertBefore(errorDiv, categoryButtonsContainer.nextSibling);
+        }
+        return;
+    }
+
+    if (categoryTitleDisplay) categoryTitleDisplay.textContent = selectedCategory.name || selectedCategory.id;
+
+    const groupsInCategory = allGroups.filter(group => group.categoryId === categoryId);
+
+    if (allGroupsContainer) {
+        if (groupsInCategory.length === 5) {
+            allGroupsContainer.classList.add('force-3-plus-2-layout');
+        } else {
+            allGroupsContainer.classList.remove('force-3-plus-2-layout');
+        }
+    }
+
+    groupsInCategory.sort((a, b) => (a.name || a.id || '').localeCompare((b.name || a.id || ''), 'sk-SK'));
+
+    if (groupsInCategory.length === 0) {
+        if (groupSelectionButtons) groupSelectionButtons.style.display = 'none';
+        if (allGroupsContainer) allGroupsContainer.innerHTML = `<p>V kategórii "${selectedCategory.name || selectedCategory.id}" zatiaľ nie sú vytvorené žiadne skupiny.</p>`;
+    } else {
+        if (groupSelectionButtons) groupSelectionButtons.style.display = 'flex';
+        groupsInCategory.forEach(group => {
+            const button = document.createElement('button');
+            button.classList.add('display-button');
+            button.textContent = group.name || group.id;
+            button.dataset.groupId = group.id;
+            button.addEventListener('click', () => {
+                const groupIdToDisplay = button.dataset.groupId;
+                displaySingleGroup(groupIdToDisplay);
+            });
+            if (groupSelectionButtons) groupSelectionButtons.appendChild(button);
+        });
+
+        groupsInCategory.forEach(group => {
+            const groupDiv = document.createElement('div');
+            groupDiv.classList.add('group-display');
+            groupDiv.dataset.groupId = group.id;
+
+            const groupTitle = document.createElement('h3');
+            groupTitle.textContent = group.name || group.id;
+            groupDiv.appendChild(groupTitle);
+            groupTitle.style.cursor = 'pointer';
+            groupTitle.addEventListener('click', () => {
+                const groupIdToDisplay = group.id;
+                displaySingleGroup(groupIdToDisplay);
+            });
+
+            const teamsInGroup = allTeams.filter(team => team.groupId === group.id);
+            if (teamsInGroup.length === 0) {
+                const noTeamsPara = document.createElement('p');
+                noTeamsPara.textContent = 'V tejto skupine zatiaľ nie sú žiadne tímy.';
+                noTeamsPara.style.padding = '10px';
+                groupDiv.appendChild(noTeamsPara);
+            } else {
+                teamsInGroup.sort((a, b) => {
+                    const orderA = a.orderInGroup || Infinity;
+                    const orderB = b.orderInGroup || Infinity;
+                    if (orderA !== orderB) {
+                        return orderA - orderB;
+                    }
+                    const nameA = (a.name || a.id || '').toLowerCase();
+                    const nameB = (b.name || b.id || '').toLowerCase();
+                    return nameA.localeCompare(nameB, 'sk-SK');
+                });
+                const teamList = document.createElement('ul');
+                teamList.classList.add('team-list');
+                teamsInGroup.forEach(team => {
+                    const teamItem = document.createElement('li');
+                    teamItem.classList.add('team-list-item');
+                    teamItem.textContent = team.name || 'Neznámy tím';
+                    teamItem.style.cursor = 'pointer';
+
+                    const rawClubNameForCleaning = team.clubName || team.name || '';
+                    teamItem.dataset.clubName = rawClubNameForCleaning;
+
+                    const categoryForUrl = allCategories.find(cat => cat.id === currentCategoryId);
+                    const categoryNameForUrl = categoryForUrl ? (categoryForUrl.name || categoryForUrl.id) : '';
+                    
+                    const fullTeamName = `${categoryNameForUrl} - ${team.name || 'Neznámy tím'}`.trim();
+                    // *** TU SA POUŽIJE LEN NAHRADENIE MEDZIER ZA '+' ***
+                    const cleanedTeamName = fullTeamName.replace(/\s/g, '+');
+
+
+                    teamItem.addEventListener('click', (event) => {
+                        const clickedClubNameRaw = event.currentTarget.dataset.clubName;
+                        
+                        // *** TU SA POUŽIJE LEN NAHRADENIE MEDZIER ZA '+' ***
+                        const cleanedClubName = getCleanClubNameForUrl(clickedClubNameRaw, categoryNameForUrl, team.name)
+                            .replace(/\s/g, '+');
+
+                        const url = `prihlasene-kluby.html?club=${cleanedClubName}&team=${cleanedTeamName}`;
+                        console.log("Generovaná URL (všetky skupiny):", url);
+
+                        window.location.href = url;
+                    });
+                    teamList.appendChild(teamItem);
+                });
+                groupDiv.appendChild(teamList);
+            }
+            if (allGroupsContainer) allGroupsContainer.appendChild(groupDiv);
+        });
+    }
+
+    const unassignedTeamsInCategory = allTeams.filter(team =>
+        (!team.groupId || (typeof team.groupId === 'string' && team.groupId.trim() === '')) &&
+        team.categoryId === categoryId
+    );
+
+    if (unassignedTeamsInCategory.length > 0) {
+        if (allGroupsUnassignedDisplay) allGroupsUnassignedDisplay.innerHTML = '';
+        const unassignedDivContent = document.createElement('div');
+        unassignedDivContent.classList.add('unassigned-teams-section');
+        const unassignedTitle = document.createElement('h2');
+        unassignedTitle.textContent = 'Nepriradené tímy v tejto kategórii';
+        unassignedDivContent.appendChild(unassignedTitle);
+        unassignedTeamsInCategory.sort((a, b) => {
+            const nameA = (a.name || a.id || '').toLowerCase();
+            const nameB = (b.name || b.id || '').toLowerCase();
+            return nameA.localeCompare(nameB, 'sk-SK');
+        });
+        const unassignedList = document.createElement('ul');
+        unassignedList.classList.add('unassigned-team-list');
+        unassignedTeamsInCategory.forEach(team => {
+            const teamItem = document.createElement('li');
+            teamItem.classList.add('unassigned-team-list-item');
+            teamItem.textContent = team.name || 'Neznámy tím';
+            unassignedList.appendChild(teamItem);
+        });
+        unassignedDivContent.appendChild(unassignedList);
+        if (allGroupsUnassignedDisplay) {
+            allGroupsUnassignedDisplay.appendChild(unassignedDivContent);
+        }
+    } else {
+        if (allGroupsUnassignedDisplay) allGroupsUnassignedDisplay.innerHTML = '';
+    }
+}
+
+// Zobrazí detail jednej skupiny
+function displaySingleGroup(groupId) {
+    const group = allGroups.find(g => g.id === groupId);
+    if (!group) {
+        console.error(`Skupina "${groupId}" sa nenašla.`);
+        const hash = window.location.hash;
+        const categoryPrefix = '#category-';
+        const hashParts = hash.startsWith(categoryPrefix) ? hash.substring(categoryPrefix.length).split('/')[0] : null;
+        // Dekódovanie hashu zostáva zachované
+        const categoryIdFromHash = hashParts ? decodeURIComponent(hashParts) : null;
+
+        if (categoryIdFromHash && allCategories.some(cat => cat.id === categoryIdFromHash)) {
+            displayGroupsForCategory(categoryIdFromHash);
+        } else {
+            goBackToCategories();
+        }
+        return;
+    }
+
+    currentCategoryId = group.categoryId;
+    currentGroupId = groupId;
+
+    if (!getHTMLElements()) {
+        goBackToCategories();
+        return;
+    }
+
+    if (categoryButtonsContainer) categoryButtonsContainer.style.display = 'flex';
+    if (categoryTitleDisplay) categoryTitleDisplay.style.display = 'block';
+    if (groupSelectionButtons) groupSelectionButtons.style.display = 'flex';
+    if (backToCategoriesButton) backToCategoriesButton.style.display = 'none';
+    if (backToGroupButtonsButton) backToGroupButtonsButton.style.display = 'block';
+
+    if (singleGroupDisplayBlock) singleGroupDisplayBlock.innerHTML = '';
+    if (singleGroupUnassignedDisplay) singleGroupUnassignedDisplay.innerHTML = '';
+
+    showOnly('singleGroupContent');
+
+    setActiveCategoryButton(currentCategoryId);
+    setActiveGroupButton(groupId);
+
+    // Kódovanie hashu zostáva zachované
+    window.location.hash = `category-${encodeURIComponent(currentCategoryId)}/group-${encodeURIComponent(groupId)}`;
+
+    const category = allCategories.find(cat => cat.id === currentCategoryId);
+    if (category && categoryTitleDisplay) {
+        categoryTitleDisplay.textContent = category.name || category.id;
+    }
+
+    if (singleGroupDisplayBlock) {
+        const groupTitle = document.createElement('h3');
+        groupTitle.textContent = group.name || group.id;
+        groupTitle.style.cursor = 'default';
+        groupTitle.style.pointerEvents = 'none';
+        singleGroupDisplayBlock.appendChild(groupTitle);
+
+        const teamsInGroup = allTeams.filter(team => team.groupId === group.id);
+        if (teamsInGroup.length === 0) {
+            const noTeamsPara = document.createElement('p');
+            noTeamsPara.textContent = 'V tejto skupine zatiaľ nie sú žiadne tímy.';
+            noTeamsPara.style.padding = '10px';
+            singleGroupDisplayBlock.appendChild(noTeamsPara);
+        } else {
+            teamsInGroup.sort((a, b) => {
+                const orderA = a.orderInGroup || Infinity;
+                const orderB = b.orderInGroup || Infinity;
+                if (orderA !== orderB) {
+                    return orderA - orderB;
+                }
+                const nameA = (a.name || a.id || '').toLowerCase();
+                const nameB = (b.name || b.id || '').toLowerCase();
+                return nameA.localeCompare(nameB, 'sk-SK');
+            });
+            const teamList = document.createElement('ul');
+            teamList.classList.add('team-list');
+            teamsInGroup.forEach(team => {
+                const teamItem = document.createElement('li');
+                teamItem.classList.add('team-list-item');
+                teamItem.textContent = team.name || 'Neznámy tím';
+                teamItem.style.cursor = 'pointer';
+
+                const rawClubNameForCleaning = team.clubName || team.name || '';
+                teamItem.dataset.clubName = rawClubNameForCleaning;
+
+                const categoryForUrl = allCategories.find(cat => cat.id === currentCategoryId);
+                const categoryNameForUrl = categoryForUrl ? (categoryForUrl.name || categoryForUrl.id) : '';
+                
+                const fullTeamName = `${categoryNameForUrl} - ${team.name || 'Neznámy tím'}`.trim();
+                // *** TU SA POUŽIJE LEN NAHRADENIE MEDZIER ZA '+' ***
+                const cleanedTeamName = fullTeamName.replace(/\s/g, '+');
+
+
+                teamItem.addEventListener('click', (event) => {
+                    const clickedClubNameRaw = event.currentTarget.dataset.clubName;
+                    
+                    // *** TU SA POUŽIJE LEN NAHRADENIE MEDZIER ZA '+' ***
+                    const cleanedClubName = getCleanClubNameForUrl(clickedClubNameRaw, categoryNameForUrl, team.name)
+                        .replace(/\s/g, '+');
+
+                    const url = `prihlasene-kluby.html?club=${cleanedClubName}&team=${cleanedTeamName}`;
+                    console.log("Generovaná URL (jedna skupina):", url);
+
+                    window.location.href = url;
+                });
+                teamList.appendChild(teamItem);
+            });
+            singleGroupDisplayBlock.appendChild(teamList);
+        }
+    }
+
+    const unassignedTeamsInCategory = allTeams.filter(team =>
+        (!team.groupId || (typeof team.groupId === 'string' && team.groupId.trim() === '')) &&
+        team.categoryId === currentCategoryId
+    );
+
+    if (unassignedTeamsInCategory.length > 0) {
+        if (singleGroupUnassignedDisplay) {
+            singleGroupUnassignedDisplay.innerHTML = '';
+            const unassignedDivContent = document.createElement('div');
+            unassignedDivContent.classList.add('unassigned-teams-section');
+            const unassignedTitle = document.createElement('h2');
+            unassignedTitle.textContent = 'Nepriradené tímy v tejto kategórii';
+            unassignedDivContent.appendChild(unassignedTitle);
+            unassignedTeamsInCategory.sort((a, b) => {
+                const nameA = (a.name || a.id || '').toLowerCase();
+                const nameB = (b.name || b.id || '').toLowerCase();
+                return nameA.localeCompare(nameB, 'sk-SK');
+            });
+            const unassignedList = document.createElement('ul');
+            unassignedList.classList.add('unassigned-team-list');
+            unassignedTeamsInCategory.forEach(team => {
+                const teamItem = document.createElement('li');
+                teamItem.classList.add('unassigned-team-list-item');
+                teamItem.textContent = team.name || 'Neznámy tím';
+                unassignedList.appendChild(teamItem);
+            });
+            unassignedDivContent.appendChild(unassignedList);
+            if (singleGroupUnassignedDisplay) {
+                singleGroupUnassignedDisplay.appendChild(unassignedDivContent);
+            }
+        }
+    } else {
+        if (singleGroupUnassignedDisplay) singleGroupUnassignedDisplay.innerHTML = '';
+    }
+}
+
+// Funkcia pre návrat na zobrazenie kategórií
+function goBackToCategories() {
+    currentCategoryId = null;
+    currentGroupId = null;
+    if (!getHTMLElements()) {
+        return;
+    }
+
+    if (categoryButtonsContainer) categoryButtonsContainer.style.display = 'flex';
+    if (categoryTitleDisplay) categoryTitleDisplay.style.display = 'none';
+    if (groupSelectionButtons) groupSelectionButtons.style.display = 'none';
+    if (backToCategoriesButton) backToCategoriesButton.style.display = 'none';
+    if (backToGroupButtonsButton) backToGroupButtonsButton.style.display = 'none';
+
+    showOnly(null);
+
+    clearActiveCategoryButtons();
+    clearActiveGroupButtons();
+
+    if (window.location.hash) {
+        history.replaceState({}, document.title, window.location.pathname);
+    }
+
+    displayCategoriesAsButtons();
+}
+
+// Funkcia pre návrat na zobrazenie všetkých skupín aktuálnej kategórie
+function goBackToGroupView() {
+    const categoryIdToReturnTo = currentCategoryId;
+    currentGroupId = null;
+
+    if (!getHTMLElements()) {
+        goBackToCategories();
+        return;
+    }
+
+    if (!categoryIdToReturnTo) {
+        goBackToCategories();
+        return;
+    }
+
+    if (categoryButtonsContainer) categoryButtonsContainer.style.display = 'flex';
+    if (categoryTitleDisplay) categoryTitleDisplay.style.display = 'block';
+    if (groupSelectionButtons) groupSelectionButtons.style.display = 'flex';
+    if (backToCategoriesButton) backToCategoriesButton.style.display = 'none';
+    if (backToGroupButtonsButton) backToGroupButtonsButton.style.display = 'none';
+
+    if (singleGroupDisplayBlock) singleGroupDisplayBlock.innerHTML = '';
+    if (singleGroupUnassignedDisplay) singleGroupUnassignedDisplay.innerHTML = '';
+
+    showOnly('allGroupsContent');
+
+    setActiveCategoryButton(categoryIdToReturnTo);
+    clearActiveGroupButtons();
+
+    // Kódovanie hashu zostáva zachované
+    window.location.hash = 'category-' + encodeURIComponent(categoryIdToReturnTo);
+
+    displayGroupsForCategory(categoryIdToReturnTo);
+}
+
+// Pomocné funkcie pre šírku tabuliek (zostali nezmenené)
+function findMaxTableContentWidth(containerElement) {
+    let maxWidth = 0;
+    if (!containerElement) {
+        return 0;
+    }
+    const groupDisplays = containerElement.querySelectorAll('.group-display');
+    if (groupDisplays.length === 0) {
+        return 0;
+    }
+    groupDisplays.forEach(displayDiv => {
+        const originalStyles = {
+            flexBasis: displayDiv.style.flexBasis,
+            width: displayDiv.style.width,
+            minWidth: displayDiv.style.minWidth,
+            maxWidth: displayDiv.style.maxWidth,
+            flexShrink: displayDiv.style.flexShrink,
+            flexGrow: displayDiv.style.flexGrow,
+            display: displayDiv.style.display
+        };
+        let tempDisplay = originalStyles.display;
+        if (window.getComputedStyle(displayDiv).display === 'none') {
+            displayDiv.style.display = 'block';
+        }
+        displayDiv.style.flexBasis = 'max-content';
+        displayDiv.style.width = 'auto';
+        displayDiv.style.minWidth = 'auto';
+        displayDiv.style.maxWidth = 'none';
+        displayDiv.style.flexShrink = '0';
+        displayDiv.style.flexGrow = '0';
+        const requiredWidth = displayDiv.offsetWidth;
+        displayDiv.style.flexBasis = originalStyles.flexBasis;
+        displayDiv.style.width = originalStyles.width;
+        displayDiv.style.minWidth = originalStyles.minWidth;
+        displayDiv.style.maxWidth = originalStyles.maxWidth;
+        displayDiv.style.flexShrink = originalStyles.flexShrink;
+        displayDiv.style.flexGrow = originalStyles.flexGrow;
+        if (window.getComputedStyle(displayDiv).display === 'block' && tempDisplay === 'none') {
+            displayDiv.style.display = originalStyles.display;
+        }
+        if (requiredWidth > maxWidth) {
+            maxWidth = requiredWidth;
+        }
+    });
+    const safetyPadding = 20;
+    return maxWidth > 0 ? maxWidth + safetyPadding : 0;
+}
+
+function setUniformTableWidth(width, containerElement) {
+    if (width <= 0 || !containerElement) {
+        return;
+    }
+    const groupDisplays = containerElement.querySelectorAll('.group-display');
+    if (groupDisplays.length === 0) {
+        return;
+    }
+    groupDisplays.forEach(displayDiv => {
+        displayDiv.style.width = `${width}px`;
+        displayDiv.style.minWidth = `${width}px`;
+        displayDiv.style.maxWidth = `${width}px`;
+        displayDiv.style.flexBasis = 'auto';
+        displayDiv.style.flexShrink = '0';
+        displayDiv.style.flexGrow = '0';
+    });
+}
+
+// Spracovanie načítania stránky a zmeny hashu URL
+document.addEventListener('DOMContentLoaded', async () => {
+    if (!getHTMLElements()) {
+        return;
+    }
+
+    await loadAllTournamentData();
+
+    if (backToCategoriesButton) backToCategoriesButton.addEventListener('click', goBackToCategories);
+    if (backToGroupButtonsButton) backToGroupButtonsButton.addEventListener('click', goBackToGroupView);
+
+    const hash = window.location.hash;
+    const categoryPrefix = '#category-';
+    const groupPrefix = '/group-';
+
+    if (allCategories.length > 0) {
+        if (hash && hash.startsWith(categoryPrefix)) {
+            const hashParts = hash.substring(categoryPrefix.length).split(groupPrefix);
+            const urlCategoryId = hashParts[0];
+            const urlGroupId = hashParts.length > 1 ? hashParts[1] : null;
+            
+            // Dekódovanie hashu zostáva zachované
+            const decodedCategoryId = decodeURIComponent(urlCategoryId);
+            const decodedGroupId = urlGroupId ? decodeURIComponent(urlGroupId) : null;
+
+            const categoryExists = allCategories.some(cat => cat.id === decodedCategoryId);
+
+            if (categoryExists) {
+                displayGroupsForCategory(decodedCategoryId);
+
+                if (decodedGroupId) {
+                    const groupExists = allGroups.some(group => group.id === decodedGroupId && group.categoryId === decodedCategoryId);
+                    if (groupExists) {
+                        displaySingleGroup(decodedGroupId);
+                    } else {
+                        console.warn(`Skupina "${decodedGroupId}" z URL sa nenašla v kategórii "${decodedCategoryId}". Zobrazujem prehľad skupín kategórie.`);
+                    }
+                } else {
+                    console.log(`V hashi je iba kategória "${decodedCategoryId}". Zobrazujem prehľad skupín.`);
+                }
+            } else {
+                console.warn(`Kategória "${decodedCategoryId}" z URL sa nenašla. Zobrazujem úvodné kategórie.`);
+                displayCategoriesAsButtons();
+            }
+        } else {
+            console.log("Žiadny platný hash. Zobrazujem úvodné kategórie.");
+            displayCategoriesAsButtons();
+        }
+    } else {
+        displayCategoriesAsButtons();
+    }
+});
+
+// Poslucháč udalostí pre zmenu hashu v URL (napr. pri použití tlačidiel Späť/Vpred v prehliadači)
+window.addEventListener('hashchange', () => {
+    if (!getHTMLElements()) {
+        return;
+    }
+
+    if (categoryButtonsContainer) categoryButtonsContainer.style.display = 'flex';
+
+    const hash = window.location.hash;
+    const categoryPrefix = '#category-';
+    const groupPrefix = '/group-';
+
+    if (hash && hash.startsWith(categoryPrefix)) {
+        const hashParts = hash.substring(categoryPrefix.length).split(groupPrefix);
+        const urlCategoryId = hashParts[0];
+        const urlGroupId = hashParts.length > 1 ? hashParts[1] : null;
+        
+        // Dekódovanie hashu zostáva zachované
+        const decodedCategoryId = decodeURIComponent(urlCategoryId);
+        const decodedGroupId = urlGroupId ? decodeURIComponent(urlGroupId) : null;
 
         const categoryExists = allCategories.some(cat => cat.id === decodedCategoryId);
 
         if (categoryExists) {
-            if (decodedGroupParam === 'all') {
-                console.log(`V hashi je kategória \"${decodedCategoryId}\" a 'all' skupiny. Zobrazujem všetky skupiny.`);
-                displayAllGroupsForCategory(decodedCategoryId);
-            } else if (decodedGroupParam && decodedGroupParam !== 'group') { // Check for specific group ID or 'unassigned'
-                 console.log(`V hashi je kategória \"${decodedCategoryId}\" a skupina/param \"${decodedGroupParam}\". Zobrazujem jednu skupinu.`);
-                 displaySingleGroup(decodedCategoryId, decodedGroupParam);
+            const alreadyInTargetState = (currentCategoryId === decodedCategoryId) &&
+                                         (currentGroupId === decodedGroupId);
+            if (alreadyInTargetState) {
+                return;
+            }
+
+            currentCategoryId = decodedCategoryId;
+            currentGroupId = decodedGroupId;
+
+            if (decodedGroupId) {
+                const groupExists = allGroups.some(group => group.id === decodedGroupId && group.categoryId === decodedCategoryId);
+                if (groupExists) {
+                    displayGroupsForCategory(decodedCategoryId);
+                    displaySingleGroup(decodedGroupId);
+                } else {
+                    console.warn(`Skupina "${decodedGroupId}" z URL sa nenašla pri zmene hashu. Zobrazujem prehľad skupín kategórie "${decodedCategoryId}".`);
+                    displayGroupsForCategory(decodedCategoryId);
+                }
             } else {
-                console.log(`V hashi je iba kategória \"${decodedCategoryId}\". Zobrazujem prehľad skupín.`);
+                console.log(`V hashi je iba kategória "${decodedCategoryId}" pri zmene hashu. Zobrazujem prehľad skupín.`);
                 displayGroupsForCategory(decodedCategoryId);
             }
         } else {
-            console.warn(`Kategória \"${decodedCategoryId}\" z URL sa nenašla. Vraciam sa na úvod.`);
+            console.warn(`Kategória "${decodedCategoryId}" z URL sa nenašla pri zmene hashu. Vraciam sa na úvod.`);
             goBackToCategories();
         }
     } else {
-        console.log("Hash nezačína 'category-' alebo je prázdny. Zobrazujem úvodnú obrazovku.");
-        displayCategories(); // Show default categories view
-    }
-}
-
-
-// Event listeners
-document.addEventListener('DOMContentLoaded', async () => {
-    // Get HTML elements first
-    if (!getHTMLElements()) return;
-
-    // Load data and then handle URL state
-    await loadAllData(); // <--- AWAIT THIS CALL
-    handleHashChange(); // Now call after data is loaded
-
-    // Add event listeners
-    if (backToCategoriesButton) {
-        backToCategoriesButton.addEventListener('click', goBackToCategories);
-    }
-    if (backToGroupButtonsButton) {
-        backToGroupButtonsButton.addEventListener('click', goBackToGroupButtons);
+        console.log("Hash nezačína 'category-' alebo je prázdny pri zmene hashu. Vraciam sa na úvod.");
+        goBackToCategories();
     }
 });
-
-// Reakcia na zmenu hashu v URL (pre prehliadačové tlačidlá späť/vpred)
-window.addEventListener('hashchange', handleHashChange);
 
 // Reakcia na zmenu veľkosti okna (pre prispôsobenie šírky tabuliek)
 window.addEventListener('resize', () => {
