@@ -239,7 +239,6 @@ function displayCategoriesAsButtons() {
         return;
     }
 
-    if (categoryButtonsContainer) categoryButtonsContainer.style.display = 'flex';
     if (categoryTitleDisplay) categoryTitleDisplay.style.display = 'none';
     if (groupSelectionButtons) groupSelectionButtons.style.display = 'none';
     if (backToCategoriesButton) backToCategoriesButton.style.display = 'none';
@@ -330,7 +329,6 @@ function displayGroupsForCategory(categoryId) {
         return;
     }
 
-    if (categoryButtonsContainer) categoryButtonsContainer.style.display = 'flex';
     if (categoryTitleDisplay) categoryTitleDisplay.style.display = 'block';
     if (groupSelectionButtons) groupSelectionButtons.style.display = 'flex';
     if (backToCategoriesButton) backToCategoriesButton.style.display = 'none';
@@ -526,7 +524,6 @@ function displaySingleGroup(groupId) {
         return;
     }
 
-    if (categoryButtonsContainer) categoryButtonsContainer.style.display = 'flex';
     if (categoryTitleDisplay) categoryTitleDisplay.style.display = 'block';
     if (groupSelectionButtons) groupSelectionButtons.style.display = 'flex';
     if (backToCategoriesButton) backToCategoriesButton.style.display = 'none';
@@ -653,7 +650,6 @@ function goBackToCategories() {
         return;
     }
 
-    if (categoryButtonsContainer) categoryButtonsContainer.style.display = 'flex';
     if (categoryTitleDisplay) categoryTitleDisplay.style.display = 'none';
     if (groupSelectionButtons) groupSelectionButtons.style.display = 'none';
     if (backToCategoriesButton) backToCategoriesButton.style.display = 'none';
@@ -686,7 +682,6 @@ function goBackToGroupView() {
         return;
     }
 
-    if (categoryButtonsContainer) categoryButtonsContainer.style.display = 'flex';
     if (categoryTitleDisplay) categoryTitleDisplay.style.display = 'block';
     if (groupSelectionButtons) groupSelectionButtons.style.display = 'flex';
     if (backToCategoriesButton) backToCategoriesButton.style.display = 'none';
@@ -830,8 +825,6 @@ window.addEventListener('hashchange', () => {
     if (!getHTMLElements()) {
         return;
     }
-
-    if (categoryButtonsContainer) categoryButtonsContainer.style.display = 'flex';
 
     const hash = window.location.hash;
     const categoryPrefix = '#category-';
