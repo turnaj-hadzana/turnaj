@@ -1,7 +1,10 @@
+// zobrazenie-skupin.js
+
+// Importy z common súboru (predpokladá sa, že spravca-turnaja-common.js existuje a obsahuje tieto exporty)
 import { db, categoriesCollectionRef, groupsCollectionRef, clubsCollectionRef,
          getDocs, query, where } from './spravca-turnaja-common.js';
 
-// Globálne premenné pre HTML elementy a dáta
+// --- Globálne premenné pre HTML elementy a dáta ---
 let dynamicContentArea = null;
 let backToCategoriesButton = null;
 let backToGroupButtonsButton = null;
@@ -15,16 +18,61 @@ let allGroupsUnassignedDisplay = null;
 let singleGroupDisplayBlock = null;
 let singleGroupUnassignedDisplay = null;
 
-// Dáta z databázy
+// Dáta z databázy (budú naplnené po načítaní)
 let allCategories = [];
 let allGroups = [];
 let allTeams = []; // Predpokladá sa, že toto pole obsahuje informácie o tímoch vrátane `clubName`
 
-// Premenné pre sledovanie aktuálneho stavu zobrazenia
+// Premenné pre sledovanie aktuálneho stavu zobrazenia (pre navigáciu histórie)
 let currentCategoryId = null;
 let currentGroupId = null;
 
-// --- Funkcie na získanie HTML elementov a kontrolu ich existencie ---
+---
+
+### Pomocné funkcie
+
+```javascript
+/**
+ * Pomocná funkcia na získanie "čistého" názvu klubu z názvu tímu pre URL parameter 'club'.
+ * Odstráni koncové písmeno (napr. 'A', 'B') a prípadné prebytočné názvy kategórií,
+ * ak sa nechtiac vyskytli v názve klubu.
+ *
+ * @param {string} rawClubNameFromData - Názov klubu, ako je v dátach (napr. "HC Tatran Stupava A").
+ * @param {string} categoryNameFromData - Názov kategórie (napr. "U10 CH"), pre prípadné odstránenie z názvu klubu.
+ * @returns {string} Vyčistený názov klubu pre URL (napr. "HC Tatran Stupava").
+ */
+function getCleanClubNameForUrl(rawClubNameFromData, categoryNameFromData) {
+    if (!rawClubNameFromData) return 'Neznámy klub';
+
+    let cleanedName = rawClubNameFromData;
+
+    // 1. Odstránenie koncového písmena (napr. 'A', 'B') oddeleného medzerou
+    // Regex: medzera + jedno veľké písmeno (A-Z) na konci reťazca
+    const regexEndLetter = /\s[A-Z]$/;
+    if (regexEndLetter.test(cleanedName)) {
+        cleanedName = cleanedName.replace(regexEndLetter, '');
+    }
+
+    // 2. Odstránenie názvu kategórie, ak je náhodou na začiatku názvu klubu.
+    // Niekedy sa môže stať, že názov klubu obsahuje aj názov kategórie (ak boli dáta spojené).
+    // Napr. "U10 CH - HC Tatran Stupava", chceme len "HC Tatran Stupava".
+    if (categoryNameFromData) {
+        // Vytvoríme regex, ktorý hľadá názov kategórie na začiatku reťazca,
+        // s voliteľnými medzerami a pomlčkami. 'i' pre ignorovanie veľkých/malých písmen.
+        // `replace(/[-\s]/g, '[-+\\s]')` zabezpečí, že regex bude hľadať medzery/pomlčky
+        // ktoré môžu byť aj ako `+` alebo `%20` v URL-enkódovanom stave.
+        const categoryRegex = new RegExp(`^${categoryNameFromData.replace(/[-\s]/g, '[-+\\s]')}\\s*-\\s*`, 'i');
+        cleanedName = cleanedName.replace(categoryRegex, '');
+    }
+
+    // Na záver odstránime prebytočné medzery na začiatku/konci
+    return cleanedName.trim();
+}
+
+/**
+ * Získava referencie na všetky potrebné HTML elementy.
+ * @returns {boolean} True, ak boli všetky kľúčové elementy nájdené, inak false.
+ */
 function getHTMLElements() {
     dynamicContentArea = document.getElementById('dynamicContentArea');
     backToCategoriesButton = document.getElementById('backToCategoriesButton');
@@ -35,7 +83,7 @@ function getHTMLElements() {
     allGroupsContent = document.getElementById('allGroupsContent');
     singleGroupContent = document.getElementById('singleGroupContent');
     
-    // QuerySelector pre vnútorne elementy, ktoré nemajú ID
+    // QuerySelector pre vnútorné elementy, ktoré nemajú ID
     allGroupsContainer = allGroupsContent ? allGroupsContent.querySelector('.groups-container') : null;
     allGroupsUnassignedDisplay = allGroupsContent ? allGroupsContent.querySelector('.unassigned-teams-display') : null;
     singleGroupDisplayBlock = singleGroupContent ? singleGroupContent.querySelector('.group-display') : null;
@@ -45,10 +93,10 @@ function getHTMLElements() {
     const elementsFound = dynamicContentArea && backToCategoriesButton && backToGroupButtonsButton &&
                             categoryButtonsContainer && categoryTitleDisplay && groupSelectionButtons &&
                             allGroupsContent && singleGroupContent &&
-                            allGroupsContainer && allGroupsUnassignedDisplay && // Tieto môžu byť null, ak nie sú zobrazené
-                            singleGroupDisplayBlock && singleGroupUnassignedDisplay; // Tieto môžu byť null, ak nie sú zobrazené
+                            allGroupsContainer && allGroupsUnassignedDisplay &&
+                            singleGroupDisplayBlock && singleGroupUnassignedDisplay;
     
-    // Ak niektoré kľúčové elementy chýbajú, zobraziť chybu a skryť ostatné
+    // Ak niektoré kľúčové elementy chýbajú, zobraziť chybu a skryť ostatné časti UI
     if (!elementsFound) {
         if (dynamicContentArea) dynamicContentArea.innerHTML = '<p>FATAL ERROR: Chyba pri inicializácii aplikácie. Chýbajú potrebné HTML elementy. Skontrolujte konzolu pre detaily.</p>';
         if (categoryButtonsContainer) categoryButtonsContainer.style.display = 'none';
@@ -64,16 +112,20 @@ function getHTMLElements() {
     return true;
 }
 
-// --- Funkcia na načítanie dát z databázy ---
+/**
+ * Načíta všetky potrebné dáta (kategórie, skupiny, tímy) z Firebase Firestore.
+ */
 async function loadAllTournamentData() {
     try {
+        // Načítanie kategórií
         const categoriesSnapshot = await getDocs(categoriesCollectionRef);
         allCategories = categoriesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         allCategories.sort((a, b) => (a.name || a.id || '').localeCompare((b.name || b.id || ''), 'sk-SK'));
 
+        // Načítanie skupín
         const groupsSnapshot = await getDocs(groupsCollectionRef);
         allGroups = groupsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        // Zabezpečiť, že categoryId je správne prepojené (pre spätnú kompatibilitu)
+        // Zabezpečiť, že categoryId je správne prepojené (pre spätnú kompatibilitu alebo ak chýba)
         allGroups = allGroups.map(group => {
             if (!group.categoryId) {
                 const categoryFromId = allCategories.find(cat => group.id.startsWith(`${cat.id} - `));
@@ -85,16 +137,15 @@ async function loadAllTournamentData() {
         }).filter(group => group.categoryId); // Filtrovať skupiny bez platného categoryId
         allGroups.sort((a, b) => (a.name || a.id || '').localeCompare((b.name || a.id || ''), 'sk-SK'));
 
-        const teamsSnapshot = await getDocs(clubsCollectionRef); // Podľa komentára sa tu načítavajú tímy, nie kluby
+        // Načítanie tímov (predpokladá sa, že clubsCollectionRef obsahuje dáta o tímoch)
+        const teamsSnapshot = await getDocs(clubsCollectionRef);
         allTeams = teamsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        // Ak 'clubsCollectionRef' naozaj obsahuje kluby a nie tímy, budeš musieť mať 'allClubs' a potom mapovať team.clubId na club.name
-        // Pre tento kód predpokladáme, že allTeams už obsahuje tímy s clubName (alebo clubId a názvy klubov sa budú musieť dodatočne načítať/spojiť)
-        // Ak 'allTeams' má len 'clubId', pridaj sem načítanie klubov:
-        // const clubsSnapshot = await getDocs(clubsCollectionRef);
-        // const allClubsData = clubsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        // A potom pri vytváraní URL dohľadaj clubName z allClubsData
+        // Ak 'clubsCollectionRef' naozaj obsahuje len kluby a nie tímy,
+        // museli by ste tu načítať aj kolekciu tímov a spojiť ich dáta s klubmi.
+        // Pre tento kód predpokladáme, že `allTeams` už obsahuje tímy s `clubName` alebo `clubId`.
     } catch (error) {
         console.error("Chyba pri načítaní dát turnaja:", error);
+        // Zobrazenie chybovej správy v UI
         if (dynamicContentArea && categoryButtonsContainer) {
             const errorDiv = document.createElement('div');
             errorDiv.innerHTML = '<p class="error-message">Nepodarilo sa načítať dáta turnaja. Prosím, skúste znova.</p>';
@@ -102,7 +153,7 @@ async function loadAllTournamentData() {
         } else if (dynamicContentArea) {
             dynamicContentArea.innerHTML = '<p class="error-message">Nepodarilo sa načítať dáta turnaja. Prosím, skúste znova.</p>';
         }
-        // Skryť všetko okrem prípadnej chybovej správy
+        // Skryť ostatné časti UI, ak sa dáta nenačítali
         if (categoryButtonsContainer) categoryButtonsContainer.style.display = 'none';
         if (categoryTitleDisplay) categoryTitleDisplay.style.display = 'none';
         if (groupSelectionButtons) groupSelectionButtons.style.display = 'none';
@@ -110,11 +161,14 @@ async function loadAllTournamentData() {
         if (singleGroupContent) singleGroupContent.style.display = 'none';
         if (backToCategoriesButton) backToCategoriesButton.style.display = 'none';
         if (backToGroupButtonsButton) backToGroupButtonsButton.style.display = 'none';
-        alert("Nepodarilo sa načítať dáta turnaja."); // Voliteľné upozornenie pre používateľa
+        alert("Nepodarilo sa načítať dáta turnaja. Skontrolujte prosím internetové pripojenie.");
     }
 }
 
-// --- Funkcia na kontrolu zobrazenia hlavných obsahových oblastí ---
+/**
+ * Zobrazí len jeden špecifikovaný kontajner s obsahom a skryje ostatné.
+ * @param {string|null} containerIdToShow - ID kontajnera, ktorý sa má zobraziť ('allGroupsContent', 'singleGroupContent'), alebo null pre skrytie oboch.
+ */
 function showOnly(containerIdToShow) {
     // Skryť obe hlavné obsahové oblasti na začiatku
     if (allGroupsContent) allGroupsContent.style.display = 'none';
@@ -137,13 +191,13 @@ function showOnly(containerIdToShow) {
         case 'singleGroupContent':
             if (singleGroupContent) singleGroupContent.style.display = 'block';
             break;
-        default: // Skryť obe hlavné obsahové oblasti
+        default: // Ak žiadny nie je určený, skryť oba
             if (allGroupsContent) allGroupsContent.style.display = 'none';
             if (singleGroupContent) singleGroupContent.style.display = 'none';
             break;
     }
 
-    // Logika pre zmenu veľkosti tabuliek (ak sa zobrazuje)
+    // Logika pre dynamickú zmenu šírky tabuliek (pre lepší layout)
     if (containerIdToShow === 'allGroupsContent' && allGroupsContainer && window.getComputedStyle(allGroupsContent).display !== 'none') {
         const uniformWidth = findMaxTableContentWidth(allGroupsContainer);
         if (uniformWidth > 0) {
@@ -157,12 +211,18 @@ function showOnly(containerIdToShow) {
     }
 }
 
-// --- Funkcie pre správu aktívnych tried tlačidiel ---
+/**
+ * Odstráni triedu 'active' zo všetkých tlačidiel kategórií.
+ */
 function clearActiveCategoryButtons() {
     const categoryButtons = categoryButtonsContainer ? categoryButtonsContainer.querySelectorAll('.display-button') : [];
     categoryButtons.forEach(button => button.classList.remove('active'));
 }
 
+/**
+ * Nastaví triedu 'active' pre špecifické tlačidlo kategórie.
+ * @param {string} categoryId - ID kategórie, ktorej tlačidlo má byť aktívne.
+ */
 function setActiveCategoryButton(categoryId) {
     clearActiveCategoryButtons();
     const categoryButton = categoryButtonsContainer ? categoryButtonsContainer.querySelector(`.display-button[data-category-id="${categoryId}"]`) : null;
@@ -171,15 +231,22 @@ function setActiveCategoryButton(categoryId) {
     }
 }
 
+/**
+ * Odstráni triedu 'active' zo všetkých tlačidiel skupín a názvov skupín.
+ */
 function clearActiveGroupButtons() {
     const groupButtons = groupSelectionButtons ? groupSelectionButtons.querySelectorAll('.display-button') : [];
     groupButtons.forEach(button => button.classList.remove('active'));
 
-    // Odstrániť 'active-title' z názvov skupín v prehľade
+    // Odstrániť 'active-title' z názvov skupín v prehľade (ak sú zobrazené)
     const groupTitlesInAllView = allGroupsContainer ? allGroupsContainer.querySelectorAll('.group-display h3') : [];
     groupTitlesInAllView.forEach(title => title.classList.remove('active-title'));
 }
 
+/**
+ * Nastaví triedu 'active' pre špecifické tlačidlo skupiny a jej názov v prehľade.
+ * @param {string} groupId - ID skupiny, ktorej tlačidlo a názov má byť aktívny.
+ */
 function setActiveGroupButton(groupId) {
     clearActiveGroupButtons();
     const groupButton = groupSelectionButtons ? groupSelectionButtons.querySelector(`.display-button[data-group-id="${groupId}"]`) : null;
@@ -187,11 +254,11 @@ function setActiveGroupButton(groupId) {
         groupButton.classList.add('active');
     }
 
-    // Pridať triedu 'active-title' zodpovedajúcemu názvu skupiny v prehľade
+    // Pridať triedu 'active-title' zodpovedajúcemu názvu skupiny v prehľade (ak je zobrazený)
     if (allGroupsContainer) {
         const groupDisplays = allGroupsContainer.querySelectorAll('.group-display');
         groupDisplays.forEach(groupDiv => {
-            if (groupDiv.dataset.groupId === groupId) { // Používame dataset.groupId
+            if (groupDiv.dataset.groupId === groupId) {
                 const h3Title = groupDiv.querySelector('h3');
                 if (h3Title) {
                     h3Title.classList.add('active-title');
@@ -201,12 +268,20 @@ function setActiveGroupButton(groupId) {
     }
 }
 
-// --- Funkcie pre navigáciu a zobrazenie obsahu ---
+---
+
+### Funkcie pre navigáciu a zobrazenie obsahu
+
+```javascript
+/**
+ * Zobrazí úvodnú obrazovku s tlačidlami kategórií.
+ */
 function displayCategoriesAsButtons() {
-    currentCategoryId = null;
-    currentGroupId = null;
+    currentCategoryId = null; // Resetuje aktuálne vybranú kategóriu
+    currentGroupId = null;    // Resetuje aktuálne vybranú skupinu
+
     if (!getHTMLElements()) {
-        return;
+        return; // Ak chýbajú kľúčové HTML elementy, zastaviť
     }
 
     // Nastaviť viditeľnosť pre pohľad s tlačidlami kategórií
@@ -216,16 +291,17 @@ function displayCategoriesAsButtons() {
     if (backToCategoriesButton) backToCategoriesButton.style.display = 'none';
     if (backToGroupButtonsButton) backToGroupButtonsButton.style.display = 'none';
 
-    // Skryť ostatné hlavné obsahové oblasti
+    // Skryť ostatné hlavné obsahové oblasti (prehľad skupín, detail skupiny)
     showOnly(null);
 
     // Vyčistiť a znova vygenerovať tlačidlá kategórií
     if (categoryButtonsContainer) categoryButtonsContainer.innerHTML = '';
 
-    // Odstrániť triedy 'active' z tlačidiel
+    // Odstrániť triedy 'active' z predtým aktívnych tlačidiel
     clearActiveCategoryButtons();
     clearActiveGroupButtons();
 
+    // Vyčistiť hash z URL (ak existuje)
     if (window.location.hash) {
         history.replaceState({}, document.title, window.location.pathname);
     }
@@ -235,7 +311,7 @@ function displayCategoriesAsButtons() {
         return;
     }
 
-    // Zoskupiť kategórie (Chlapci, Dievčatá, Ostatné) a vytvoriť tlačidlá
+    // Zoskupiť kategórie (Chlapci, Dievčatá, Ostatné) a vytvoriť tlačidlá pre každú skupinu
     const chlapciCategories = [];
     const dievcataCategories = [];
     const ostatneCategories = [];
@@ -252,6 +328,12 @@ function displayCategoriesAsButtons() {
         }
     });
 
+    /**
+     * Pomocná funkcia na vytvorenie divu pre skupinu kategórií s tlačidlami.
+     * @param {string} title - Názov skupiny kategórií (napr. "Chlapci").
+     * @param {Array<Object>} categories - Pole kategórií, ktoré patria do tejto skupiny.
+     * @returns {HTMLDivElement|null} Vytvorený div element, alebo null, ak nie sú žiadne kategórie.
+     */
     const createCategoryGroupDisplay = (title, categories) => {
         if (categories.length === 0) return null;
         const groupDiv = document.createElement('div');
@@ -266,16 +348,17 @@ function displayCategoriesAsButtons() {
             const button = document.createElement('button');
             button.classList.add('display-button');
             button.textContent = category.name || category.id;
-            button.dataset.categoryId = category.id;
+            button.dataset.categoryId = category.id; // Uloží ID kategórie do datasetu
             button.addEventListener('click', () => {
                 const categoryId = button.dataset.categoryId;
-                displayGroupsForCategory(categoryId);
+                displayGroupsForCategory(categoryId); // Zobrazí skupiny pre vybranú kategóriu
             });
             buttonsDiv.appendChild(button);
         });
         return groupDiv;
     };
 
+    // Pridanie skupín kategórií do kontajnera tlačidiel
     if (categoryButtonsContainer) {
         const chlapciGroup = createCategoryGroupDisplay('Chlapci', chlapciCategories);
         if (chlapciGroup) {
@@ -296,12 +379,16 @@ function displayCategoriesAsButtons() {
     }
 }
 
-// Zobrazí prehľad skupín pre vybranú kategóriu
+/**
+ * Zobrazí prehľad všetkých skupín pre vybranú kategóriu.
+ * @param {string} categoryId - ID kategórie, pre ktorú sa majú zobraziť skupiny.
+ */
 function displayGroupsForCategory(categoryId) {
-    currentCategoryId = categoryId;
-    currentGroupId = null;
+    currentCategoryId = categoryId; // Nastaví aktuálne vybranú kategóriu
+    currentGroupId = null;        // Resetuje vybranú skupinu
+
     if (!getHTMLElements()) {
-        goBackToCategories();
+        goBackToCategories(); // Ak chýbajú HTML elementy, vrátiť sa na kategórie
         return;
     }
 
@@ -312,7 +399,7 @@ function displayGroupsForCategory(categoryId) {
     if (backToCategoriesButton) backToCategoriesButton.style.display = 'none';
     if (backToGroupButtonsButton) backToGroupButtonsButton.style.display = 'none';
 
-    // Vyčistiť obsah oblastí
+    // Vyčistiť obsah oblastí pred novým zobrazením
     if (allGroupsContainer) allGroupsContainer.innerHTML = '';
     if (allGroupsUnassignedDisplay) allGroupsUnassignedDisplay.innerHTML = '';
     if (singleGroupDisplayBlock) singleGroupDisplayBlock.innerHTML = '';
@@ -322,16 +409,17 @@ function displayGroupsForCategory(categoryId) {
     // Zobraziť oblasť všetkých skupín, skryť detail jednej skupiny
     showOnly('allGroupsContent');
 
-    // Nastaviť aktívnu triedu pre vybranú kategóriu
+    // Nastaviť aktívnu triedu pre vybranú kategóriu a vyčistiť aktívne skupiny
     setActiveCategoryButton(categoryId);
     clearActiveGroupButtons();
 
-    // Aktualizovať hash v URL
+    // Aktualizovať hash v URL s ID kategórie
     window.location.hash = 'category-' + encodeURIComponent(categoryId);
 
     const selectedCategory = allCategories.find(cat => cat.id === categoryId);
     if (!selectedCategory) {
         console.error(`Kategória "${categoryId}" sa nenašla.`);
+        // Ak sa kategória nenašla, skryť relevantné časti UI a zobraziť chybu
         if (categoryTitleDisplay) categoryTitleDisplay.style.display = 'none';
         if (groupSelectionButtons) groupSelectionButtons.style.display = 'none';
         showOnly(null);
@@ -343,11 +431,13 @@ function displayGroupsForCategory(categoryId) {
         return;
     }
 
+    // Zobraziť názov vybranej kategórie
     if (categoryTitleDisplay) categoryTitleDisplay.textContent = selectedCategory.name || selectedCategory.id;
 
+    // Filtrovať a zoradiť skupiny patriace do tejto kategórie
     const groupsInCategory = allGroups.filter(group => group.categoryId === categoryId);
 
-    // Apply special layout class if exactly 5 groups for this category
+    // Aplikovať špeciálnu triedu pre rozloženie, ak je presne 5 skupín (pre špecifický CSS layout)
     if (allGroupsContainer) {
         if (groupsInCategory.length === 5) {
             allGroupsContainer.classList.add('force-3-plus-2-layout');
@@ -359,9 +449,11 @@ function displayGroupsForCategory(categoryId) {
     groupsInCategory.sort((a, b) => (a.name || a.id || '').localeCompare((b.name || a.id || ''), 'sk-SK'));
 
     if (groupsInCategory.length === 0) {
+        // Ak nie sú žiadne skupiny v kategórii
         if (groupSelectionButtons) groupSelectionButtons.style.display = 'none';
         if (allGroupsContainer) allGroupsContainer.innerHTML = `<p>V kategórii "${selectedCategory.name || selectedCategory.id}" zatiaľ nie sú vytvorené žiadne skupiny.</p>`;
     } else {
+        // Vygenerovať tlačidlá pre výber skupín
         if (groupSelectionButtons) groupSelectionButtons.style.display = 'flex';
         groupsInCategory.forEach(group => {
             const button = document.createElement('button');
@@ -370,16 +462,16 @@ function displayGroupsForCategory(categoryId) {
             button.dataset.groupId = group.id;
             button.addEventListener('click', () => {
                 const groupIdToDisplay = button.dataset.groupId;
-                displaySingleGroup(groupIdToDisplay);
+                displaySingleGroup(groupIdToDisplay); // Zobrazí detail vybranej skupiny
             });
             if (groupSelectionButtons) groupSelectionButtons.appendChild(button);
         });
 
-        // Vygenerovať zobrazenie všetkých skupín s tímami (upravené pre UL/LI klik)
+        // Vygenerovať zobrazenie všetkých skupín s ich tímami
         groupsInCategory.forEach(group => {
             const groupDiv = document.createElement('div');
             groupDiv.classList.add('group-display');
-            groupDiv.dataset.groupId = group.id; // Pridané data-group-id k div.group-display
+            groupDiv.dataset.groupId = group.id; // Uloží ID skupiny na div element
 
             const groupTitle = document.createElement('h3');
             groupTitle.textContent = group.name || group.id;
@@ -387,7 +479,7 @@ function displayGroupsForCategory(categoryId) {
             groupTitle.style.cursor = 'pointer'; // Názov skupiny v prehľade je klikateľný
             groupTitle.addEventListener('click', () => {
                 const groupIdToDisplay = group.id;
-                displaySingleGroup(groupIdToDisplay);
+                displaySingleGroup(groupIdToDisplay); // Zobrazí detail skupiny po kliknutí na názov
             });
 
             const teamsInGroup = allTeams.filter(team => team.groupId === group.id);
@@ -397,6 +489,7 @@ function displayGroupsForCategory(categoryId) {
                 noTeamsPara.style.padding = '10px';
                 groupDiv.appendChild(noTeamsPara);
             } else {
+                // Zoradí tímy v skupine (najprv podľa orderInGroup, potom abecedne)
                 teamsInGroup.sort((a, b) => {
                     const orderA = a.orderInGroup || Infinity;
                     const orderB = b.orderInGroup || Infinity;
@@ -415,27 +508,33 @@ function displayGroupsForCategory(categoryId) {
                     teamItem.textContent = team.name || 'Neznámy tím';
                     teamItem.style.cursor = 'pointer'; // Vizuálna indikácia klikateľnosti
 
-                    // Predpokladáme, že 'team' objekt má vlastnosť 'clubName'
-                    // Ak 'clubName' nie je priamo na 'team' objekte, musíš ho tu získať (napr. z allClubs cez team.clubId)
-                    const clubName = team.clubName || 'Neznámy klub';
+                    // Získa názov klubu z dát (napr. z team.clubName alebo z prepojenej kolekcie klubov)
+                    const clubNameForListItem = team.clubName || 'Neznámy klub';
 
-                    // Uložiť názov klubu do data atribútu LI elementu
-                    teamItem.dataset.clubName = clubName; 
+                    // Uloží názov klubu do data atribútu LI elementu, aby sa dal získať pri kliknutí
+                    teamItem.dataset.clubName = clubNameForListItem;
 
-                    // Získať aktuálnu kategóriu (bez názvu skupiny)
+                    // Získa názov kategórie pre URL (napr. "U10 CH")
                     const categoryForUrl = allCategories.find(cat => cat.id === currentCategoryId);
+                    const categoryNameForUrl = categoryForUrl ? (categoryForUrl.name || categoryForUrl.id) : '';
                     
-                    // Zostavenie celého názvu tímu (iba kategória a názov tímu)
-                    const fullTeamName = `${categoryForUrl ? (categoryForUrl.name || categoryForUrl.id) : ''} - ${team.name || 'Neznámy tím'}`.trim();
+                    // Zostavenie celého názvu tímu pre parameter '&team='
+                    // Formát: "Kategória - Názov tímu" (napr. "U10 CH - HC Tatran Stupava A")
+                    const fullTeamName = `${categoryNameForUrl} - ${team.name || 'Neznámy tím'}`.trim();
                     
-                    // Bezpečné kódovanie pre URL
+                    // Bezpečné URL kódovanie pre parameter 'team' (medzery sa menia na '+')
                     const cleanedTeamName = encodeURIComponent(fullTeamName.replace(/\s/g, '+'));
 
-                    teamItem.addEventListener('click', (event) => { // Pridaný parameter 'event'
-                        // Získanie názvu klubu priamo z kliknutého LI elementu
-                        const clickedClubName = event.currentTarget.dataset.clubName;
-                        const cleanedClubName = encodeURIComponent(clickedClubName.replace(/\s/g, '+'));
+                    // Poslucháč udalosti pre kliknutie na tím
+                    teamItem.addEventListener('click', (event) => {
+                        // Získa názov klubu priamo z kliknutého LI elementu
+                        const clickedClubNameRaw = event.currentTarget.dataset.clubName;
 
+                        // Vyčistí názov klubu pomocou getCleanClubNameForUrl() a potom ho URL-enkóduje
+                        // Výsledok: "ŠKP+Topoľčany" (bez 'A', 'B' atď.)
+                        const cleanedClubName = encodeURIComponent(getCleanClubNameForUrl(clickedClubNameRaw, categoryNameForUrl).replace(/\s/g, '+'));
+
+                        // Vytvorí finálnu URL a presmeruje prehliadač
                         const url = `prihlasene-kluby.html?club=${cleanedClubName}&team=${cleanedTeamName}`;
                         window.location.href = url;
                     });
@@ -447,8 +546,9 @@ function displayGroupsForCategory(categoryId) {
         });
     }
 
-    // Zobraziť nepriradené tímy
+    // Zobraziť nepriradené tímy v danej kategórii
     const unassignedTeamsInCategory = allTeams.filter(team =>
+        // Tím je nepriradený, ak nemá groupId alebo má prázdne groupId, a patrí do aktuálnej kategórie
         (!team.groupId || (typeof team.groupId === 'string' && team.groupId.trim() === '')) &&
         team.categoryId === categoryId
     );
@@ -456,7 +556,7 @@ function displayGroupsForCategory(categoryId) {
     if (unassignedTeamsInCategory.length > 0) {
         if (allGroupsUnassignedDisplay) allGroupsUnassignedDisplay.innerHTML = '';
         const unassignedDivContent = document.createElement('div');
-        unassignedDivContent.classList.add('unassigned-teams-section'); // Nová trieda pre sekciu nepriradených tímov
+        unassignedDivContent.classList.add('unassigned-teams-section');
         const unassignedTitle = document.createElement('h2');
         unassignedTitle.textContent = 'Nepriradené tímy v tejto kategórii';
         unassignedDivContent.appendChild(unassignedTitle);
@@ -466,12 +566,12 @@ function displayGroupsForCategory(categoryId) {
             return nameA.localeCompare(nameB, 'sk-SK');
         });
         const unassignedList = document.createElement('ul');
-        unassignedList.classList.add('unassigned-team-list'); // Trieda pre UL nepriradených tímov
+        unassignedList.classList.add('unassigned-team-list');
         unassignedTeamsInCategory.forEach(team => {
             const teamItem = document.createElement('li');
             teamItem.classList.add('unassigned-team-list-item');
             teamItem.textContent = team.name || 'Neznámy tím';
-            // Nepriradené tímy pravdepodobne nebudú klikateľné na presmerovanie, ale ak by mali byť, pridaj event listener
+            // Nepriradené tímy tu nie sú klikateľné, ale ak by mali byť, pridajte event listener ako vyššie
             unassignedList.appendChild(teamItem);
         });
         unassignedDivContent.appendChild(unassignedList);
@@ -479,15 +579,19 @@ function displayGroupsForCategory(categoryId) {
             allGroupsUnassignedDisplay.appendChild(unassignedDivContent);
         }
     } else {
-        if (allGroupsUnassignedDisplay) allGroupsUnassignedDisplay.innerHTML = '';
+        if (allGroupsUnassignedDisplay) allGroupsUnassignedDisplay.innerHTML = ''; // Vyčistiť, ak nie sú nepriradené tímy
     }
 }
 
-// Zobrazí detail jednej skupiny
+/**
+ * Zobrazí detail jednej skupiny.
+ * @param {string} groupId - ID skupiny, ktorej detail sa má zobraziť.
+ */
 function displaySingleGroup(groupId) {
     const group = allGroups.find(g => g.id === groupId);
     if (!group) {
         console.error(`Skupina "${groupId}" sa nenašla.`);
+        // Pokus o návrat do predchádzajúceho platného stavu
         const hash = window.location.hash;
         const categoryPrefix = '#category-';
         const hashParts = hash.startsWith(categoryPrefix) ? hash.substring(categoryPrefix.length).split('/')[0] : null;
@@ -501,8 +605,8 @@ function displaySingleGroup(groupId) {
         return;
     }
 
-    currentCategoryId = group.categoryId;
-    currentGroupId = groupId;
+    currentCategoryId = group.categoryId; // Nastaví aktuálnu kategóriu
+    currentGroupId = groupId;            // Nastaví aktuálnu skupinu
 
     if (!getHTMLElements()) {
         goBackToCategories();
@@ -514,20 +618,20 @@ function displaySingleGroup(groupId) {
     if (categoryTitleDisplay) categoryTitleDisplay.style.display = 'block';
     if (groupSelectionButtons) groupSelectionButtons.style.display = 'flex';
     if (backToCategoriesButton) backToCategoriesButton.style.display = 'none';
-    if (backToGroupButtonsButton) backToGroupButtonsButton.style.display = 'block';
+    if (backToGroupButtonsButton) backToGroupButtonsButton.style.display = 'block'; // Zobrazí tlačidlo späť na prehľad skupín
 
     // Vyčistiť obsah oblastí detailu skupiny
     if (singleGroupDisplayBlock) singleGroupDisplayBlock.innerHTML = '';
     if (singleGroupUnassignedDisplay) singleGroupUnassignedDisplay.innerHTML = '';
 
-    // Zobraziť detail jednej skupiny, skryť oblasť všetkých skupín
+    // Zobraziť oblasť detailu jednej skupiny, skryť prehľad všetkých skupín
     showOnly('singleGroupContent');
 
     // Nastaviť aktívnu triedu pre vybranú kategóriu a skupinu
     setActiveCategoryButton(currentCategoryId);
     setActiveGroupButton(groupId);
 
-    // Aktualizovať hash v URL
+    // Aktualizovať hash v URL s ID kategórie a skupiny
     window.location.hash = `category-${encodeURIComponent(currentCategoryId)}/group-${encodeURIComponent(groupId)}`;
 
     const category = allCategories.find(cat => cat.id === currentCategoryId);
@@ -538,8 +642,8 @@ function displaySingleGroup(groupId) {
     if (singleGroupDisplayBlock) {
         const groupTitle = document.createElement('h3');
         groupTitle.textContent = group.name || group.id;
-        groupTitle.style.cursor = 'default';
-        groupTitle.style.pointerEvents = 'none';
+        groupTitle.style.cursor = 'default';      // Názov skupiny v detaile už nie je klikateľný
+        groupTitle.style.pointerEvents = 'none'; // Zakáže kliknutie
         singleGroupDisplayBlock.appendChild(groupTitle);
 
         const teamsInGroup = allTeams.filter(team => team.groupId === group.id);
@@ -549,6 +653,7 @@ function displaySingleGroup(groupId) {
             noTeamsPara.style.padding = '10px';
             singleGroupDisplayBlock.appendChild(noTeamsPara);
         } else {
+            // Zoradí tímy v skupine
             teamsInGroup.sort((a, b) => {
                 const orderA = a.orderInGroup || Infinity;
                 const orderB = b.orderInGroup || Infinity;
@@ -567,27 +672,31 @@ function displaySingleGroup(groupId) {
                 teamItem.textContent = team.name || 'Neznámy tím';
                 teamItem.style.cursor = 'pointer'; // Vizuálna indikácia klikateľnosti
 
-                // Predpokladáme, že 'team' objekt má vlastnosť 'clubName'
-                // Ak 'clubName' nie je priamo na 'team' objekte, musíš ho tu získať (napr. z allClubs cez team.clubId)
-                const clubName = team.clubName || 'Neznámy klub';
+                // Získa názov klubu z dát
+                const clubNameForListItem = team.clubName || 'Neznámy klub';
 
-                // Uložiť názov klubu do data atribútu LI elementu
-                teamItem.dataset.clubName = clubName; 
+                // Uloží názov klubu do data atribútu LI elementu
+                teamItem.dataset.clubName = clubNameForListItem;
 
-                // Získať aktuálnu kategóriu (bez názvu skupiny)
+                // Získa názov kategórie pre URL
                 const categoryForUrl = allCategories.find(cat => cat.id === currentCategoryId);
+                const categoryNameForUrl = categoryForUrl ? (categoryForUrl.name || categoryForUrl.id) : '';
                 
-                // Zostavenie celého názvu tímu (iba kategória a názov tímu)
-                const fullTeamName = `${categoryForUrl ? (categoryForUrl.name || categoryForUrl.id) : ''} - ${team.name || 'Neznámy tím'}`.trim();
+                // Zostavenie celého názvu tímu pre parameter '&team='
+                const fullTeamName = `${categoryNameForUrl} - ${team.name || 'Neznámy tím'}`.trim();
                 
-                // Bezpečné kódovanie pre URL
+                // Bezpečné URL kódovanie pre parameter 'team'
                 const cleanedTeamName = encodeURIComponent(fullTeamName.replace(/\s/g, '+'));
 
-                teamItem.addEventListener('click', (event) => { // Pridaný parameter 'event'
-                    // Získanie názvu klubu priamo z kliknutého LI elementu
-                    const clickedClubName = event.currentTarget.dataset.clubName;
-                    const cleanedClubName = encodeURIComponent(clickedClubName.replace(/\s/g, '+'));
+                // Poslucháč udalosti pre kliknutie na tím
+                teamItem.addEventListener('click', (event) => {
+                    // Získa názov klubu priamo z kliknutého LI elementu
+                    const clickedClubNameRaw = event.currentTarget.dataset.clubName;
 
+                    // Vyčistí názov klubu pomocou getCleanClubNameForUrl() a potom ho URL-enkóduje
+                    const cleanedClubName = encodeURIComponent(getCleanClubNameForUrl(clickedClubNameRaw, categoryNameForUrl).replace(/\s/g, '+'));
+
+                    // Vytvorí finálnu URL a presmeruje prehliadač
                     const url = `prihlasene-kluby.html?club=${cleanedClubName}&team=${cleanedTeamName}`;
                     window.location.href = url;
                 });
@@ -597,7 +706,7 @@ function displaySingleGroup(groupId) {
         }
     }
 
-    // Zobraziť nepriradené tímy pre danú kategóriu
+    // Zobraziť nepriradené tímy pre danú kategóriu pod detailom skupiny
     const unassignedTeamsInCategory = allTeams.filter(team =>
         (!team.groupId || (typeof team.groupId === 'string' && team.groupId.trim() === '')) &&
         team.categoryId === currentCategoryId
@@ -634,10 +743,13 @@ function displaySingleGroup(groupId) {
     }
 }
 
-// Návrat na zobrazenie kategórií
+/**
+ * Vráti sa na zobrazenie úvodných tlačidiel kategórií.
+ */
 function goBackToCategories() {
-    currentCategoryId = null;
-    currentGroupId = null;
+    currentCategoryId = null; // Resetuje aktuálnu kategóriu
+    currentGroupId = null;    // Resetuje aktuálnu skupinu
+
     if (!getHTMLElements()) {
         return;
     }
@@ -671,10 +783,12 @@ function goBackToCategories() {
     displayCategoriesAsButtons(); // Zobraziť úvodné tlačidlá kategórií
 }
 
-// Návrat na prehľad skupín v aktuálnej kategórii
+/**
+ * Vráti sa na prehľad skupín v aktuálne vybranej kategórii.
+ */
 function goBackToGroupView() {
-    const categoryIdToReturnTo = currentCategoryId;
-    currentGroupId = null;
+    const categoryIdToReturnTo = currentCategoryId; // Uloží ID aktuálnej kategórie
+    currentGroupId = null;                         // Resetuje aktuálnu skupinu
 
     if (!getHTMLElements()) {
         goBackToCategories();
@@ -682,7 +796,7 @@ function goBackToGroupView() {
     }
 
     if (!categoryIdToReturnTo) {
-        goBackToCategories();
+        goBackToCategories(); // Ak nie je aktuálna kategória, vráti sa na úvod
         return;
     }
 
@@ -711,17 +825,28 @@ function goBackToGroupView() {
     displayGroupsForCategory(categoryIdToReturnTo);
 }
 
-// --- Pomocné funkcie pre šírku tabuliek (zostali nezmenené) ---
+---
+
+### Pomocné funkcie pre šírku tabuliek
+
+```javascript
+/**
+ * Nájde maximálnu potrebnú šírku pre zobrazenie obsahu skupín (tabuliek)
+ * v danom kontajneri. Používa sa na zabezpečenie jednotnej šírky stĺpcov.
+ * @param {HTMLElement} containerElement - HTML element kontajnera (.groups-container alebo singleGroupContent).
+ * @returns {number} Maximálna šírka v pixeloch.
+ */
 function findMaxTableContentWidth(containerElement) {
     let maxWidth = 0;
     if (!containerElement) {
         return 0;
     }
-    const groupDisplays = containerElement.querySelectorAll('.group-display'); // Zmenené z groupTables na groupDisplays
+    const groupDisplays = containerElement.querySelectorAll('.group-display');
     if (groupDisplays.length === 0) {
         return 0;
     }
-    groupDisplays.forEach(displayDiv => { // Zmenené z table na displayDiv
+    groupDisplays.forEach(displayDiv => {
+        // Uloží pôvodné štýly, aby sme ich mohli obnoviť po výpočte
         const originalStyles = {
             flexBasis: displayDiv.style.flexBasis,
             width: displayDiv.style.width,
@@ -732,16 +857,21 @@ function findMaxTableContentWidth(containerElement) {
             display: displayDiv.style.display
         };
         let tempDisplay = originalStyles.display;
+        // Ak je element skrytý, dočasne ho zobraziť, aby sme mohli zmerať jeho šírku
         if (window.getComputedStyle(displayDiv).display === 'none') {
             displayDiv.style.display = 'block';
         }
+        // Nastaví štýly tak, aby element zaujal len toľko miesta, koľko potrebuje jeho obsah
         displayDiv.style.flexBasis = 'max-content';
         displayDiv.style.width = 'auto';
         displayDiv.style.minWidth = 'auto';
         displayDiv.style.maxWidth = 'none';
         displayDiv.style.flexShrink = '0';
         displayDiv.style.flexGrow = '0';
-        const requiredWidth = displayDiv.offsetWidth;
+
+        const requiredWidth = displayDiv.offsetWidth; // Získa skutočnú šírku obsahu
+
+        // Obnoví pôvodné štýly
         displayDiv.style.flexBasis = originalStyles.flexBasis;
         displayDiv.style.width = originalStyles.width;
         displayDiv.style.minWidth = originalStyles.minWidth;
@@ -755,19 +885,24 @@ function findMaxTableContentWidth(containerElement) {
             maxWidth = requiredWidth;
         }
     });
-    const safetyPadding = 20;
+    const safetyPadding = 20; // Pridá malý padding pre istotu
     return maxWidth > 0 ? maxWidth + safetyPadding : 0;
 }
 
+/**
+ * Nastaví uniformnú šírku pre všetky zobrazenia skupín (tabuliek) v danom kontajneri.
+ * @param {number} width - Šírka v pixeloch, na ktorú sa majú tabuľky nastaviť.
+ * @param {HTMLElement} containerElement - HTML element kontajnera.
+ */
 function setUniformTableWidth(width, containerElement) {
     if (width <= 0 || !containerElement) {
         return;
     }
-    const groupDisplays = containerElement.querySelectorAll('.group-display'); // Zmenené z groupTables na groupDisplays
+    const groupDisplays = containerElement.querySelectorAll('.group-display');
     if (groupDisplays.length === 0) {
         return;
     }
-    groupDisplays.forEach(displayDiv => { // Zmenené z table na displayDiv
+    groupDisplays.forEach(displayDiv => {
         displayDiv.style.width = `${width}px`;
         displayDiv.style.minWidth = `${width}px`;
         displayDiv.style.maxWidth = `${width}px`;
@@ -776,131 +911,3 @@ function setUniformTableWidth(width, containerElement) {
         displayDiv.style.flexGrow = '0';
     });
 }
-
-// --- Spracovanie načítania stránky a zmeny hashu URL ---
-document.addEventListener('DOMContentLoaded', async () => {
-    if (!getHTMLElements()) {
-        return;
-    }
-
-    await loadAllTournamentData();
-
-    // Pridať poslucháčov udalostí pre tlačidlá späť
-    if (backToCategoriesButton) backToCategoriesButton.addEventListener('click', goBackToCategories);
-    if (backToGroupButtonsButton) backToGroupButtonsButton.addEventListener('click', goBackToGroupView);
-
-    const hash = window.location.hash;
-    const categoryPrefix = '#category-';
-    const groupPrefix = '/group-';
-
-    // Ak existujú dáta (načítanie bolo úspešné)
-    if (allCategories.length > 0) {
-        displayCategoriesAsButtons(); // Toto naplní #categoryButtonsContainer a nastaví jeho display
-
-        if (hash && hash.startsWith(categoryPrefix)) {
-            const hashParts = hash.substring(categoryPrefix.length).split(groupPrefix);
-            const urlCategoryId = hashParts[0];
-            const urlGroupId = hashParts.length > 1 ? hashParts[1] : null;
-            const decodedCategoryId = decodeURIComponent(urlCategoryId);
-            const decodedGroupId = urlGroupId ? decodeURIComponent(urlGroupId) : null;
-
-            const categoryExists = allCategories.some(cat => cat.id === decodedCategoryId);
-
-            if (categoryExists) {
-                displayGroupsForCategory(decodedCategoryId);
-
-                if (decodedGroupId) {
-                    const groupExists = allGroups.some(group => group.id === decodedGroupId && group.categoryId === decodedCategoryId);
-                    if (groupExists) {
-                        displaySingleGroup(decodedGroupId);
-                    } else {
-                        console.warn(`Skupina "${decodedGroupId}" z URL sa nenašla v kategórii "${decodedCategoryId}". Zobrazujem prehľad skupín kategórie.`);
-                    }
-                } else {
-                    console.log(`V hashi je iba kategória "${decodedCategoryId}". Zobrazujem prehľad skupín.`);
-                }
-            } else {
-                console.warn(`Kategória "${decodedCategoryId}" z URL sa nenašla. Zobrazujem úvodné kategórie.`);
-            }
-        } else {
-            console.log("Žiadny platný hash. Zobrazujem úvodné kategórie.");
-        }
-    }
-});
-
-// Spracovanie zmeny hashu v URL
-window.addEventListener('hashchange', () => {
-    if (!getHTMLElements()) {
-        return;
-    }
-
-    if (categoryButtonsContainer) categoryButtonsContainer.style.display = 'flex';
-
-    const hash = window.location.hash;
-    const categoryPrefix = '#category-';
-    const groupPrefix = '/group-';
-
-    if (hash && hash.startsWith(categoryPrefix)) {
-        const hashParts = hash.substring(categoryPrefix.length).split(groupPrefix);
-        const urlCategoryId = hashParts[0];
-        const urlGroupId = hashParts.length > 1 ? hashParts[1] : null;
-        const decodedCategoryId = decodeURIComponent(urlCategoryId);
-        const decodedGroupId = urlGroupId ? decodeURIComponent(urlGroupId) : null;
-
-        const categoryExists = allCategories.some(cat => cat.id === decodedCategoryId);
-
-        if (categoryExists) {
-            const alreadyInTargetState = (currentCategoryId === decodedCategoryId) &&
-                                         (currentGroupId === decodedGroupId);
-            if (alreadyInTargetState) {
-                return;
-            }
-
-            currentCategoryId = decodedCategoryId;
-            currentGroupId = decodedGroupId;
-
-            if (decodedGroupId) {
-                const groupExists = allGroups.some(group => group.id === decodedGroupId && group.categoryId === decodedCategoryId);
-                if (groupExists) {
-                    displayGroupsForCategory(decodedCategoryId);
-                    displaySingleGroup(decodedGroupId);
-                } else {
-                    console.warn(`Skupina "${decodedGroupId}" z URL sa nenašla pri zmene hashu. Zobrazujem prehľad skupín kategórie "${decodedCategoryId}".`);
-                    displayGroupsForCategory(decodedCategoryId);
-                }
-            } else {
-                console.log(`V hashi je iba kategória "${decodedCategoryId}" pri zmene hashu. Zobrazujem prehľad skupín.`);
-                displayGroupsForCategory(decodedCategoryId);
-            }
-        } else {
-            console.warn(`Kategória "${decodedCategoryId}" z URL sa nenašla pri zmene hashu. Vraciam sa na úvod.`);
-            goBackToCategories();
-        }
-    } else {
-        console.log("Hash nezačína 'category-' alebo je prázdny pri zmene hashu. Vraciam sa na úvod.");
-        goBackToCategories();
-    }
-});
-
-// Spracovanie zmeny veľkosti okna
-window.addEventListener('resize', () => {
-    if (!getHTMLElements()) {
-        return;
-    }
-    if (currentCategoryId !== null) {
-        const isAllGroupsVisible = allGroupsContent && window.getComputedStyle(allGroupsContent).display !== 'none';
-        const isSingleGroupVisible = singleGroupContent && window.getComputedStyle(singleGroupContent).display !== 'none';
-
-        if (isAllGroupsVisible && allGroupsContainer) {
-            const uniformWidth = findMaxTableContentWidth(allGroupsContainer);
-            if (uniformWidth > 0) {
-                setUniformTableWidth(uniformWidth, allGroupsContainer);
-            }
-        } else if (isSingleGroupVisible && singleGroupContent) {
-            const uniformWidth = findMaxTableContentWidth(singleGroupContent);
-            if (uniformWidth > 0) {
-                setUniformTableWidth(uniformWidth, singleGroupContent);
-            }
-        }
-    }
-});
