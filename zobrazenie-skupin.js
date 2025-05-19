@@ -146,14 +146,6 @@ function showOnly(containerIdToShow) {
     if (allGroupsContent) allGroupsContent.style.display = 'none';
     if (singleGroupContent) singleGroupContent.style.display = 'none';
 
-    if (categoryButtonsContainer) {
-        if (containerIdToShow !== null) { // Ak sa zobrazuje nejaký obsah (nie iba kategórie)
-            categoryButtonsContainer.style.display = 'flex';
-        } else { // Ak sa zobrazujú iba kategórie
-            categoryButtonsContainer.style.display = 'flex'; // Aj tak ich chceme zobraziť
-        }
-    }
-         
     if (dynamicContentArea) {
         if (containerIdToShow === 'singleGroupContent') {
             dynamicContentArea.classList.add('single-group-active');
@@ -239,6 +231,7 @@ function displayCategoriesAsButtons() {
         return;
     }
 
+    if (categoryButtonsContainer) categoryButtonsContainer.style.display = 'flex';
     if (categoryTitleDisplay) categoryTitleDisplay.style.display = 'none';
     if (groupSelectionButtons) groupSelectionButtons.style.display = 'none';
     if (backToCategoriesButton) backToCategoriesButton.style.display = 'none';
@@ -329,6 +322,7 @@ function displayGroupsForCategory(categoryId) {
         return;
     }
 
+    if (categoryButtonsContainer) categoryButtonsContainer.style.display = 'flex';
     if (categoryTitleDisplay) categoryTitleDisplay.style.display = 'block';
     if (groupSelectionButtons) groupSelectionButtons.style.display = 'flex';
     if (backToCategoriesButton) backToCategoriesButton.style.display = 'none';
@@ -524,6 +518,7 @@ function displaySingleGroup(groupId) {
         return;
     }
 
+    if (categoryButtonsContainer) categoryButtonsContainer.style.display = 'flex';
     if (categoryTitleDisplay) categoryTitleDisplay.style.display = 'block';
     if (groupSelectionButtons) groupSelectionButtons.style.display = 'flex';
     if (backToCategoriesButton) backToCategoriesButton.style.display = 'none';
@@ -650,6 +645,7 @@ function goBackToCategories() {
         return;
     }
 
+    if (categoryButtonsContainer) categoryButtonsContainer.style.display = 'flex';
     if (categoryTitleDisplay) categoryTitleDisplay.style.display = 'none';
     if (groupSelectionButtons) groupSelectionButtons.style.display = 'none';
     if (backToCategoriesButton) backToCategoriesButton.style.display = 'none';
@@ -682,6 +678,7 @@ function goBackToGroupView() {
         return;
     }
 
+    if (categoryButtonsContainer) categoryButtonsContainer.style.display = 'flex';
     if (categoryTitleDisplay) categoryTitleDisplay.style.display = 'block';
     if (groupSelectionButtons) groupSelectionButtons.style.display = 'flex';
     if (backToCategoriesButton) backToCategoriesButton.style.display = 'none';
@@ -825,6 +822,8 @@ window.addEventListener('hashchange', () => {
     if (!getHTMLElements()) {
         return;
     }
+
+    if (categoryButtonsContainer) categoryButtonsContainer.style.display = 'flex';
 
     const hash = window.location.hash;
     const categoryPrefix = '#category-';
