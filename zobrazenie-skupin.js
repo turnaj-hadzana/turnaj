@@ -67,7 +67,6 @@ function getHTMLElements() {
         if (singleGroupContent) singleGroupContent.style.display = 'none';
         if (backToCategoriesButton) backToCategoriesButton.style.display = 'none';
         if (backToGroupButtonsButton) backToGroupButtonsButton.style.display = 'none';
-        console.error("Chýbajúce HTML elementy pre správnu funkčnosť aplikácie!");
         return false;
     }
     return true;
@@ -95,7 +94,6 @@ async function loadAllTournamentData() {
         const teamsSnapshot = await getDocs(clubsCollectionRef);
         allTeams = teamsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     } catch (error) {
-        console.error("Chyba pri načítaní dát turnaja:", error);
         if (dynamicContentArea && categoryButtonsContainer) {
             const errorDiv = document.createElement('div');
             errorDiv.innerHTML = '<p class="error-message">Nepodarilo sa načítať dáta turnaja. Prosím, skúste znova.</p>';
@@ -309,7 +307,6 @@ function displayGroupsForCategory(categoryId) {
 
     const selectedCategory = allCategories.find(cat => cat.id === categoryId);
     if (!selectedCategory) {
-        console.error(`Kategória "${categoryId}" sa nenašla.`);
         if (categoryTitleDisplay) categoryTitleDisplay.style.display = 'none';
         if (groupSelectionButtons) groupSelectionButtons.style.display = 'none';
         showOnly(null);
@@ -402,10 +399,9 @@ function displayGroupsForCategory(categoryId) {
 
                     teamItem.addEventListener('click', (event) => {
                         const clickedClubNameRaw = event.currentTarget.dataset.clubName;
-console.log("Clicked club name raw:", clickedClubNameRaw);
                         const cleanedClubName = encodeURIComponent(getCleanClubNameForUrl(clickedClubNameRaw, categoryNameForUrl).replace(/\s/g, '+'));
-console.log("Cleaned club name for URL:", cleanedClubName);
                         const url = `prihlasene-kluby.html?club=${cleanedClubName}&team=${cleanedTeamName}`;
+console.log("Generovaná URL:", url); // <--- TENTO RIADOK JE NOVÝ                  
                         window.location.href = url;
                     });
                     teamList.appendChild(teamItem);
@@ -453,7 +449,6 @@ console.log("Cleaned club name for URL:", cleanedClubName);
 function displaySingleGroup(groupId) {
     const group = allGroups.find(g => g.id === groupId);
     if (!group) {
-        console.error(`Skupina "${groupId}" sa nenašla.`);
         const hash = window.location.hash;
         const categoryPrefix = '#category-';
         const hashParts = hash.startsWith(categoryPrefix) ? hash.substring(categoryPrefix.length).split('/')[0] : null;
@@ -539,9 +534,8 @@ function displaySingleGroup(groupId) {
 
                 teamItem.addEventListener('click', (event) => {
                     const clickedClubNameRaw = event.currentTarget.dataset.clubName;
-console.log("Clicked club name raw:", clickedClubNameRaw);                         
                     const cleanedClubName = encodeURIComponent(getCleanClubNameForUrl(clickedClubNameRaw, categoryNameForUrl).replace(/\s/g, '+'));
-console.log("Cleaned club name for URL:", cleanedClubName);
+console.log("Generovaná URL:", url); // <--- TENTO RIADOK JE NOVÝ
                     const url = `prihlasene-kluby.html?club=${cleanedClubName}&team=${cleanedTeamName}`;
                     window.location.href = url;
                 });
@@ -750,16 +744,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                     if (groupExists) {
                         displaySingleGroup(decodedGroupId);
                     } else {
-                        console.warn(`Skupina "${decodedGroupId}" z URL sa nenašla v kategórii "${decodedCategoryId}". Zobrazujem prehľad skupín kategórie.`);
                     }
                 } else {
-                    console.log(`V hashi je iba kategória "${decodedCategoryId}". Zobrazujem prehľad skupín.`);
                 }
             } else {
-                console.warn(`Kategória "${decodedCategoryId}" z URL sa nenašla. Zobrazujem úvodné kategórie.`);
             }
         } else {
-            console.log("Žiadny platný hash. Zobrazujem úvodné kategórie.");
         }
     }
 });
@@ -800,19 +790,15 @@ window.addEventListener('hashchange', () => {
                     displayGroupsForCategory(decodedCategoryId);
                     displaySingleGroup(decodedGroupId);
                 } else {
-                    console.warn(`Skupina "${decodedGroupId}" z URL sa nenašla pri zmene hashu. Zobrazujem prehľad skupín kategórie "${decodedCategoryId}".`);
                     displayGroupsForCategory(decodedCategoryId);
                 }
             } else {
-                console.log(`V hashi je iba kategória "${decodedCategoryId}" pri zmene hashu. Zobrazujem prehľad skupín.`);
                 displayGroupsForCategory(decodedCategoryId);
             }
         } else {
-            console.warn(`Kategória "${decodedCategoryId}" z URL sa nenašla pri zmene hashu. Vraciam sa na úvod.`);
             goBackToCategories();
         }
     } else {
-        console.log("Hash nezačína 'category-' alebo je prázdny pri zmene hashu. Vraciam sa na úvod.");
         goBackToCategories();
     }
 });
