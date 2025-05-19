@@ -425,7 +425,7 @@ function displayGroupsForCategory(categoryId) {
                     const categoryForUrl = allCategories.find(cat => cat.id === currentCategoryId);
                     const groupForUrl = allGroups.find(g => g.id === group.id);
 
-                    const fullTeamName = `${categoryForUrl ? (categoryForUrl.name || categoryForUrl.id) : ''} - ${groupForUrl ? (groupForUrl.name || groupForUrl.id) : ''} - ${team.name || 'Neznámy tím'}`.trim();
+                    const fullTeamName = `${categoryForUrl ? (categoryForUrl.name || categoryForUrl.id) : ''} - ${team.name || 'Neznámy tím'}`.trim();
                     
                     // Bezpečné kódovanie pre URL
                     const cleanedClubName = encodeURIComponent(clubName.replace(/\s/g, '+'));
@@ -570,7 +570,7 @@ function displaySingleGroup(groupId) {
                 const categoryForUrl = allCategories.find(cat => cat.id === currentCategoryId);
                 const groupForUrl = allGroups.find(g => g.id === groupId);
 
-                const fullTeamName = `${categoryForUrl ? (categoryForUrl.name || categoryForUrl.id) : ''} - ${groupForUrl ? (groupForUrl.name || groupForUrl.id) : ''} - ${team.name || 'Neznámy tím'}`.trim();
+                const fullTeamName = `${categoryForUrl ? (categoryForUrl.name || categoryForUrl.id) : ''} - ${team.name || 'Neznámy tím'}`.trim();
                 
                 // Bezpečné kódovanie pre URL
                 const cleanedClubName = encodeURIComponent(clubName.replace(/\s/g, '+'));
