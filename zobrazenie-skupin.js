@@ -818,6 +818,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
+
 // Poslucháč udalostí pre zmenu hashu v URL (napr. pri použití tlačidiel Späť/Vpred v prehliadači)
 window.addEventListener('hashchange', () => {
     if (!getHTMLElements()) {
