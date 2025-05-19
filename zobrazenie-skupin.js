@@ -27,20 +27,6 @@ let allTeams = []; // Predpokladá sa, že toto pole obsahuje informácie o tím
 let currentCategoryId = null;
 let currentGroupId = null;
 
----
-
-### Pomocné funkcie
-
-```javascript
-/**
- * Pomocná funkcia na získanie "čistého" názvu klubu z názvu tímu pre URL parameter 'club'.
- * Odstráni koncové písmeno (napr. 'A', 'B') a prípadné prebytočné názvy kategórií,
- * ak sa nechtiac vyskytli v názve klubu.
- *
- * @param {string} rawClubNameFromData - Názov klubu, ako je v dátach (napr. "HC Tatran Stupava A").
- * @param {string} categoryNameFromData - Názov kategórie (napr. "U10 CH"), pre prípadné odstránenie z názvu klubu.
- * @returns {string} Vyčistený názov klubu pre URL (napr. "HC Tatran Stupava").
- */
 function getCleanClubNameForUrl(rawClubNameFromData, categoryNameFromData) {
     if (!rawClubNameFromData) return 'Neznámy klub';
 
@@ -69,10 +55,6 @@ function getCleanClubNameForUrl(rawClubNameFromData, categoryNameFromData) {
     return cleanedName.trim();
 }
 
-/**
- * Získava referencie na všetky potrebné HTML elementy.
- * @returns {boolean} True, ak boli všetky kľúčové elementy nájdené, inak false.
- */
 function getHTMLElements() {
     dynamicContentArea = document.getElementById('dynamicContentArea');
     backToCategoriesButton = document.getElementById('backToCategoriesButton');
@@ -112,9 +94,6 @@ function getHTMLElements() {
     return true;
 }
 
-/**
- * Načíta všetky potrebné dáta (kategórie, skupiny, tímy) z Firebase Firestore.
- */
 async function loadAllTournamentData() {
     try {
         // Načítanie kategórií
@@ -165,10 +144,6 @@ async function loadAllTournamentData() {
     }
 }
 
-/**
- * Zobrazí len jeden špecifikovaný kontajner s obsahom a skryje ostatné.
- * @param {string|null} containerIdToShow - ID kontajnera, ktorý sa má zobraziť ('allGroupsContent', 'singleGroupContent'), alebo null pre skrytie oboch.
- */
 function showOnly(containerIdToShow) {
     // Skryť obe hlavné obsahové oblasti na začiatku
     if (allGroupsContent) allGroupsContent.style.display = 'none';
@@ -211,18 +186,11 @@ function showOnly(containerIdToShow) {
     }
 }
 
-/**
- * Odstráni triedu 'active' zo všetkých tlačidiel kategórií.
- */
 function clearActiveCategoryButtons() {
     const categoryButtons = categoryButtonsContainer ? categoryButtonsContainer.querySelectorAll('.display-button') : [];
     categoryButtons.forEach(button => button.classList.remove('active'));
 }
 
-/**
- * Nastaví triedu 'active' pre špecifické tlačidlo kategórie.
- * @param {string} categoryId - ID kategórie, ktorej tlačidlo má byť aktívne.
- */
 function setActiveCategoryButton(categoryId) {
     clearActiveCategoryButtons();
     const categoryButton = categoryButtonsContainer ? categoryButtonsContainer.querySelector(`.display-button[data-category-id="${categoryId}"]`) : null;
@@ -231,9 +199,6 @@ function setActiveCategoryButton(categoryId) {
     }
 }
 
-/**
- * Odstráni triedu 'active' zo všetkých tlačidiel skupín a názvov skupín.
- */
 function clearActiveGroupButtons() {
     const groupButtons = groupSelectionButtons ? groupSelectionButtons.querySelectorAll('.display-button') : [];
     groupButtons.forEach(button => button.classList.remove('active'));
@@ -243,10 +208,6 @@ function clearActiveGroupButtons() {
     groupTitlesInAllView.forEach(title => title.classList.remove('active-title'));
 }
 
-/**
- * Nastaví triedu 'active' pre špecifické tlačidlo skupiny a jej názov v prehľade.
- * @param {string} groupId - ID skupiny, ktorej tlačidlo a názov má byť aktívny.
- */
 function setActiveGroupButton(groupId) {
     clearActiveGroupButtons();
     const groupButton = groupSelectionButtons ? groupSelectionButtons.querySelector(`.display-button[data-group-id="${groupId}"]`) : null;
@@ -267,15 +228,6 @@ function setActiveGroupButton(groupId) {
         });
     }
 }
-
----
-
-### Funkcie pre navigáciu a zobrazenie obsahu
-
-```javascript
-/**
- * Zobrazí úvodnú obrazovku s tlačidlami kategórií.
- */
 function displayCategoriesAsButtons() {
     currentCategoryId = null; // Resetuje aktuálne vybranú kategóriu
     currentGroupId = null;    // Resetuje aktuálne vybranú skupinu
@@ -328,12 +280,6 @@ function displayCategoriesAsButtons() {
         }
     });
 
-    /**
-     * Pomocná funkcia na vytvorenie divu pre skupinu kategórií s tlačidlami.
-     * @param {string} title - Názov skupiny kategórií (napr. "Chlapci").
-     * @param {Array<Object>} categories - Pole kategórií, ktoré patria do tejto skupiny.
-     * @returns {HTMLDivElement|null} Vytvorený div element, alebo null, ak nie sú žiadne kategórie.
-     */
     const createCategoryGroupDisplay = (title, categories) => {
         if (categories.length === 0) return null;
         const groupDiv = document.createElement('div');
@@ -379,10 +325,6 @@ function displayCategoriesAsButtons() {
     }
 }
 
-/**
- * Zobrazí prehľad všetkých skupín pre vybranú kategóriu.
- * @param {string} categoryId - ID kategórie, pre ktorú sa majú zobraziť skupiny.
- */
 function displayGroupsForCategory(categoryId) {
     currentCategoryId = categoryId; // Nastaví aktuálne vybranú kategóriu
     currentGroupId = null;        // Resetuje vybranú skupinu
@@ -583,10 +525,6 @@ function displayGroupsForCategory(categoryId) {
     }
 }
 
-/**
- * Zobrazí detail jednej skupiny.
- * @param {string} groupId - ID skupiny, ktorej detail sa má zobraziť.
- */
 function displaySingleGroup(groupId) {
     const group = allGroups.find(g => g.id === groupId);
     if (!group) {
@@ -743,9 +681,6 @@ function displaySingleGroup(groupId) {
     }
 }
 
-/**
- * Vráti sa na zobrazenie úvodných tlačidiel kategórií.
- */
 function goBackToCategories() {
     currentCategoryId = null; // Resetuje aktuálnu kategóriu
     currentGroupId = null;    // Resetuje aktuálnu skupinu
@@ -783,9 +718,6 @@ function goBackToCategories() {
     displayCategoriesAsButtons(); // Zobraziť úvodné tlačidlá kategórií
 }
 
-/**
- * Vráti sa na prehľad skupín v aktuálne vybranej kategórii.
- */
 function goBackToGroupView() {
     const categoryIdToReturnTo = currentCategoryId; // Uloží ID aktuálnej kategórie
     currentGroupId = null;                         // Resetuje aktuálnu skupinu
@@ -824,18 +756,6 @@ function goBackToGroupView() {
     // Zobraziť prehľad skupín pre danú kategóriu (znova vygeneruje)
     displayGroupsForCategory(categoryIdToReturnTo);
 }
-
----
-
-### Pomocné funkcie pre šírku tabuliek
-
-```javascript
-/**
- * Nájde maximálnu potrebnú šírku pre zobrazenie obsahu skupín (tabuliek)
- * v danom kontajneri. Používa sa na zabezpečenie jednotnej šírky stĺpcov.
- * @param {HTMLElement} containerElement - HTML element kontajnera (.groups-container alebo singleGroupContent).
- * @returns {number} Maximálna šírka v pixeloch.
- */
 function findMaxTableContentWidth(containerElement) {
     let maxWidth = 0;
     if (!containerElement) {
@@ -888,12 +808,6 @@ function findMaxTableContentWidth(containerElement) {
     const safetyPadding = 20; // Pridá malý padding pre istotu
     return maxWidth > 0 ? maxWidth + safetyPadding : 0;
 }
-
-/**
- * Nastaví uniformnú šírku pre všetky zobrazenia skupín (tabuliek) v danom kontajneri.
- * @param {number} width - Šírka v pixeloch, na ktorú sa majú tabuľky nastaviť.
- * @param {HTMLElement} containerElement - HTML element kontajnera.
- */
 function setUniformTableWidth(width, containerElement) {
     if (width <= 0 || !containerElement) {
         return;
