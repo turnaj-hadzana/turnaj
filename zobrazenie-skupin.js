@@ -439,7 +439,7 @@ function displaySingleGroup(groupId) {
      );
      if (unassignedTeamsInCategory.length > 0) {
          if (singleGroupUnassignedDisplay) {
-             singleGroupUnassignedDisplay.innerHTML = ''; // Clear previous unassigned teams
+             singleGroupUnassignedDisplay.innerHTML = '';
              const unassignedDivContent = document.createElement('div');
              unassignedDivContent.classList.add('unassigned-teams-display');
              const unassignedTitle = document.createElement('h2');
