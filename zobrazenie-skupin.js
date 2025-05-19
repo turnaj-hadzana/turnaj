@@ -157,11 +157,6 @@ function showOnly(containerIdToShow) {
     }
 }
 
----
-
-### Funkcie pre správu aktívnych tried tlačidiel
-
-```javascript
 // Odstráni triedu 'active' zo všetkých tlačidiel kategórií
 function clearActiveCategoryButtons() {
     const categoryButtons = categoryButtonsContainer ? categoryButtonsContainer.querySelectorAll('.display-button') : [];
