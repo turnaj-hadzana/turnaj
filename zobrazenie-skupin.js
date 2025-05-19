@@ -204,11 +204,6 @@ function setActiveGroupButton(groupId) {
     }
 }
 
----
-
-### Funkcie pre navigáciu a zobrazenie obsahu
-
-```javascript
 // Zobrazí úvodný pohľad s tlačidlami kategórií
 function displayCategoriesAsButtons() {
     currentCategoryId = null;
@@ -705,11 +700,6 @@ function goBackToGroupView() {
     displayGroupsForCategory(categoryIdToReturnTo);
 }
 
----
-
-### Pomocné funkcie pre šírku tabuliek (zostali nezmenené)
-
-```javascript
 // Tieto funkcie sa pravdepodobne týkajú štylovania flexboxom, aj keď hovoríš o "tabuľkách"
 // Môžu byť relevantné, ak .group-display simuluje tabuľky
 function findMaxTableContentWidth(containerElement) {
@@ -777,11 +767,6 @@ function setUniformTableWidth(width, containerElement) {
     });
 }
 
----
-
-### Spracovanie načítania stránky a zmeny hashu URL
-
-```javascript
 // Spracovanie načítania stránky
 document.addEventListener('DOMContentLoaded', async () => {
     if (!getHTMLElements()) {
