@@ -49,7 +49,7 @@ function getCleanClubNameForUrl(rawClubNameFromData, categoryNameFromData, teamN
         const categoryRegex = new RegExp(categoryRegexPattern, 'i');
         cleanedName = cleanedName.replace(categoryRegex, '').trim();
     }
-    
+
     return cleanedName.trim();
 }
 
@@ -63,7 +63,7 @@ function getHTMLElements() {
     groupSelectionButtons = document.getElementById('groupSelectionButtons');
     allGroupsContent = document.getElementById('allGroupsContent');
     singleGroupContent = document.getElementById('singleGroupContent');
-    
+
     // Uistite sa, že podriadené elementy existujú predtým, než sa k nim pokúsite pristupovať
     allGroupsContainer = allGroupsContent ? allGroupsContent.querySelector('.groups-container') : null;
     allGroupsUnassignedDisplay = allGroupsContent ? allGroupsContent.querySelector('.unassigned-teams-display') : null;
@@ -75,7 +75,7 @@ function getHTMLElements() {
                             allGroupsContent && singleGroupContent &&
                             allGroupsContainer && allGroupsUnassignedDisplay &&
                             singleGroupDisplayBlock && singleGroupUnassignedDisplay;
-    
+
     if (!elementsFound) {
         if (dynamicContentArea) dynamicContentArea.innerHTML = '<p>FATAL ERROR: Chyba pri inicializácii aplikácie. Chýbajú potrebné HTML elementy. Skontrolujte konzolu pre detaily.</p>';
         if (categoryButtonsContainer) categoryButtonsContainer.style.display = 'none';
@@ -231,6 +231,7 @@ function displayCategoriesAsButtons() {
         return;
     }
 
+    // Zabezpečíme, že tlačidlá kategórií sú viditeľné
     if (categoryButtonsContainer) categoryButtonsContainer.style.display = 'flex';
     if (categoryTitleDisplay) categoryTitleDisplay.style.display = 'none';
     if (groupSelectionButtons) groupSelectionButtons.style.display = 'none';
@@ -322,6 +323,7 @@ function displayGroupsForCategory(categoryId) {
         return;
     }
 
+    // Zabezpečíme, že tlačidlá kategórií sú viditeľné
     if (categoryButtonsContainer) categoryButtonsContainer.style.display = 'flex';
     if (categoryTitleDisplay) categoryTitleDisplay.style.display = 'block';
     if (groupSelectionButtons) groupSelectionButtons.style.display = 'flex';
@@ -431,15 +433,14 @@ function displayGroupsForCategory(categoryId) {
 
                     const categoryForUrl = allCategories.find(cat => cat.id === currentCategoryId);
                     const categoryNameForUrl = categoryForUrl ? (categoryForUrl.name || categoryForUrl.id) : '';
-                    
+
                     const fullTeamName = `${categoryNameForUrl} - ${team.name || 'Neznámy tím'}`.trim();
                     // *** TU SA POUŽIJE LEN NAHRADENIE MEDZIER ZA '+' ***
                     const cleanedTeamName = fullTeamName.replace(/\s/g, '+');
 
-
                     teamItem.addEventListener('click', (event) => {
                         const clickedClubNameRaw = event.currentTarget.dataset.clubName;
-                        
+
                         // *** TU SA POUŽIJE LEN NAHRADENIE MEDZIER ZA '+' ***
                         const cleanedClubName = getCleanClubNameForUrl(clickedClubNameRaw, categoryNameForUrl, team.name)
                             .replace(/\s/g, '+');
@@ -518,6 +519,7 @@ function displaySingleGroup(groupId) {
         return;
     }
 
+    // Zabezpečíme, že tlačidlá kategórií sú viditeľné
     if (categoryButtonsContainer) categoryButtonsContainer.style.display = 'flex';
     if (categoryTitleDisplay) categoryTitleDisplay.style.display = 'block';
     if (groupSelectionButtons) groupSelectionButtons.style.display = 'flex';
@@ -577,15 +579,14 @@ function displaySingleGroup(groupId) {
 
                 const categoryForUrl = allCategories.find(cat => cat.id === currentCategoryId);
                 const categoryNameForUrl = categoryForUrl ? (categoryForUrl.name || categoryForUrl.id) : '';
-                
+
                 const fullTeamName = `${categoryNameForUrl} - ${team.name || 'Neznámy tím'}`.trim();
                 // *** TU SA POUŽIJE LEN NAHRADENIE MEDZIER ZA '+' ***
                 const cleanedTeamName = fullTeamName.replace(/\s/g, '+');
 
-
                 teamItem.addEventListener('click', (event) => {
                     const clickedClubNameRaw = event.currentTarget.dataset.clubName;
-                    
+
                     // *** TU SA POUŽIJE LEN NAHRADENIE MEDZIER ZA '+' ***
                     const cleanedClubName = getCleanClubNameForUrl(clickedClubNameRaw, categoryNameForUrl, team.name)
                         .replace(/\s/g, '+');
@@ -784,7 +785,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const hashParts = hash.substring(categoryPrefix.length).split(groupPrefix);
             const urlCategoryId = hashParts[0];
             const urlGroupId = hashParts.length > 1 ? hashParts[1] : null;
-            
+
             // Dekódovanie hashu zostáva zachované
             const decodedCategoryId = decodeURIComponent(urlCategoryId);
             const decodedGroupId = urlGroupId ? decodeURIComponent(urlGroupId) : null;
@@ -833,7 +834,7 @@ window.addEventListener('hashchange', () => {
         const hashParts = hash.substring(categoryPrefix.length).split(groupPrefix);
         const urlCategoryId = hashParts[0];
         const urlGroupId = hashParts.length > 1 ? hashParts[1] : null;
-        
+
         // Dekódovanie hashu zostáva zachované
         const decodedCategoryId = decodeURIComponent(urlCategoryId);
         const decodedGroupId = urlGroupId ? decodeURIComponent(urlGroupId) : null;
