@@ -402,7 +402,9 @@ function displayGroupsForCategory(categoryId) {
 
                     teamItem.addEventListener('click', (event) => {
                         const clickedClubNameRaw = event.currentTarget.dataset.clubName;
+console.log("Clicked club name raw:", clickedClubNameRaw);
                         const cleanedClubName = encodeURIComponent(getCleanClubNameForUrl(clickedClubNameRaw, categoryNameForUrl).replace(/\s/g, '+'));
+console.log("Cleaned club name for URL:", cleanedClubName);
                         const url = `prihlasene-kluby.html?club=${cleanedClubName}&team=${cleanedTeamName}`;
                         window.location.href = url;
                     });
@@ -537,7 +539,9 @@ function displaySingleGroup(groupId) {
 
                 teamItem.addEventListener('click', (event) => {
                     const clickedClubNameRaw = event.currentTarget.dataset.clubName;
+console.log("Clicked club name raw:", clickedClubNameRaw);                         
                     const cleanedClubName = encodeURIComponent(getCleanClubNameForUrl(clickedClubNameRaw, categoryNameForUrl).replace(/\s/g, '+'));
+console.log("Cleaned club name for URL:", cleanedClubName);
                     const url = `prihlasene-kluby.html?club=${cleanedClubName}&team=${cleanedTeamName}`;
                     window.location.href = url;
                 });
