@@ -244,7 +244,6 @@ function displayCategoriesAsButtons() {
     clearActiveCategoryButtons();
     clearActiveGroupButtons();
 
-    // Vráti hash do pôvodného stavu (žiadny hash), ak je prítomný
     if (window.location.hash) {
         history.replaceState({}, document.title, window.location.pathname);
     }
@@ -340,8 +339,8 @@ function displayGroupsForCategory(categoryId) {
     setActiveCategoryButton(categoryId);
     clearActiveGroupButtons();
 
-    // Nastaví hash pre kategóriu (bez kódovania)
-    window.location.hash = 'category-' + categoryId;
+    // Kódovanie hashu zostáva zachované
+    window.location.hash = 'category-' + encodeURIComponent(categoryId);
 
     const selectedCategory = allCategories.find(cat => cat.id === categoryId);
     if (!selectedCategory) {
@@ -434,14 +433,14 @@ function displayGroupsForCategory(categoryId) {
                     const categoryNameForUrl = categoryForUrl ? (categoryForUrl.name || categoryForUrl.id) : '';
                     
                     const fullTeamName = `${categoryNameForUrl} - ${team.name || 'Neznámy tím'}`.trim();
-                    // --- NAHRADENIE MEDZIER ZA '+' ---
+                    // *** TU SA POUŽIJE LEN NAHRADENIE MEDZIER ZA '+' ***
                     const cleanedTeamName = fullTeamName.replace(/\s/g, '+');
 
 
                     teamItem.addEventListener('click', (event) => {
                         const clickedClubNameRaw = event.currentTarget.dataset.clubName;
                         
-                        // --- NAHRADENIE MEDZIER ZA '+' ---
+                        // *** TU SA POUŽIJE LEN NAHRADENIE MEDZIER ZA '+' ***
                         const cleanedClubName = getCleanClubNameForUrl(clickedClubNameRaw, categoryNameForUrl, team.name)
                             .replace(/\s/g, '+');
 
@@ -500,8 +499,9 @@ function displaySingleGroup(groupId) {
         const hash = window.location.hash;
         const categoryPrefix = '#category-';
         const hashParts = hash.startsWith(categoryPrefix) ? hash.substring(categoryPrefix.length).split('/')[0] : null;
-        const categoryIdFromHash = hashParts; // hash už nie je kódovaný
-        
+        // Dekódovanie hashu zostáva zachované
+        const categoryIdFromHash = hashParts ? decodeURIComponent(hashParts) : null;
+
         if (categoryIdFromHash && allCategories.some(cat => cat.id === categoryIdFromHash)) {
             displayGroupsForCategory(categoryIdFromHash);
         } else {
@@ -532,8 +532,8 @@ function displaySingleGroup(groupId) {
     setActiveCategoryButton(currentCategoryId);
     setActiveGroupButton(groupId);
 
-    // Nastaví hash pre detail skupiny (bez kódovania)
-    window.location.hash = `category-${currentCategoryId}/group-${groupId}`;
+    // Kódovanie hashu zostáva zachované
+    window.location.hash = `category-${encodeURIComponent(currentCategoryId)}/group-${encodeURIComponent(groupId)}`;
 
     const category = allCategories.find(cat => cat.id === currentCategoryId);
     if (category && categoryTitleDisplay) {
@@ -579,14 +579,14 @@ function displaySingleGroup(groupId) {
                 const categoryNameForUrl = categoryForUrl ? (categoryForUrl.name || categoryForUrl.id) : '';
                 
                 const fullTeamName = `${categoryNameForUrl} - ${team.name || 'Neznámy tím'}`.trim();
-                // --- NAHRADENIE MEDZIER ZA '+' ---
+                // *** TU SA POUŽIJE LEN NAHRADENIE MEDZIER ZA '+' ***
                 const cleanedTeamName = fullTeamName.replace(/\s/g, '+');
 
 
                 teamItem.addEventListener('click', (event) => {
                     const clickedClubNameRaw = event.currentTarget.dataset.clubName;
                     
-                    // --- NAHRADENIE MEDZIER ZA '+' ---
+                    // *** TU SA POUŽIJE LEN NAHRADENIE MEDZIER ZA '+' ***
                     const cleanedClubName = getCleanClubNameForUrl(clickedClubNameRaw, categoryNameForUrl, team.name)
                         .replace(/\s/g, '+');
 
@@ -656,7 +656,6 @@ function goBackToCategories() {
     clearActiveCategoryButtons();
     clearActiveGroupButtons();
 
-    // Vráti hash do pôvodného stavu (žiadny hash), ak je prítomný
     if (window.location.hash) {
         history.replaceState({}, document.title, window.location.pathname);
     }
@@ -693,8 +692,8 @@ function goBackToGroupView() {
     setActiveCategoryButton(categoryIdToReturnTo);
     clearActiveGroupButtons();
 
-    // Nastaví hash pre kategóriu (bez kódovania)
-    window.location.hash = 'category-' + categoryIdToReturnTo;
+    // Kódovanie hashu zostáva zachované
+    window.location.hash = 'category-' + encodeURIComponent(categoryIdToReturnTo);
 
     displayGroupsForCategory(categoryIdToReturnTo);
 }
@@ -786,9 +785,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             const urlCategoryId = hashParts[0];
             const urlGroupId = hashParts.length > 1 ? hashParts[1] : null;
             
-            // Hash nie je kódovaný, takže ho priamo použijeme
-            const decodedCategoryId = urlCategoryId; 
-            const decodedGroupId = urlGroupId;
+            // Dekódovanie hashu zostáva zachované
+            const decodedCategoryId = decodeURIComponent(urlCategoryId);
+            const decodedGroupId = urlGroupId ? decodeURIComponent(urlGroupId) : null;
 
             const categoryExists = allCategories.some(cat => cat.id === decodedCategoryId);
 
@@ -835,9 +834,9 @@ window.addEventListener('hashchange', () => {
         const urlCategoryId = hashParts[0];
         const urlGroupId = hashParts.length > 1 ? hashParts[1] : null;
         
-        // Hash nie je kódovaný, takže ho priamo použijeme
-        const decodedCategoryId = urlCategoryId;
-        const decodedGroupId = urlGroupId;
+        // Dekódovanie hashu zostáva zachované
+        const decodedCategoryId = decodeURIComponent(urlCategoryId);
+        const decodedGroupId = urlGroupId ? decodeURIComponent(urlGroupId) : null;
 
         const categoryExists = allCategories.some(cat => cat.id === decodedCategoryId);
 
