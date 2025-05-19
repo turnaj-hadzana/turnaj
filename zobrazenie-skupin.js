@@ -157,13 +157,12 @@ function showOnly(containerIdToShow) {
     }
 }
 
-// Odstráni triedu 'active' zo všetkých tlačidiel kategórií
+// --- Funkcie pre správu aktívnych tried tlačidiel ---
 function clearActiveCategoryButtons() {
     const categoryButtons = categoryButtonsContainer ? categoryButtonsContainer.querySelectorAll('.display-button') : [];
     categoryButtons.forEach(button => button.classList.remove('active'));
 }
 
-// Pridá triedu 'active' tlačidlu kategórie s daným ID
 function setActiveCategoryButton(categoryId) {
     clearActiveCategoryButtons();
     const categoryButton = categoryButtonsContainer ? categoryButtonsContainer.querySelector(`.display-button[data-category-id="${categoryId}"]`) : null;
@@ -172,7 +171,6 @@ function setActiveCategoryButton(categoryId) {
     }
 }
 
-// Odstráni triedu 'active' zo všetkých tlačidiel výberu skupiny
 function clearActiveGroupButtons() {
     const groupButtons = groupSelectionButtons ? groupSelectionButtons.querySelectorAll('.display-button') : [];
     groupButtons.forEach(button => button.classList.remove('active'));
@@ -182,7 +180,6 @@ function clearActiveGroupButtons() {
     groupTitlesInAllView.forEach(title => title.classList.remove('active-title'));
 }
 
-// Pridá triedu 'active' tlačidlu výberu skupiny s daným ID
 function setActiveGroupButton(groupId) {
     clearActiveGroupButtons();
     const groupButton = groupSelectionButtons ? groupSelectionButtons.querySelector(`.display-button[data-group-id="${groupId}"]`) : null;
@@ -204,7 +201,7 @@ function setActiveGroupButton(groupId) {
     }
 }
 
-// Zobrazí úvodný pohľad s tlačidlami kategórií
+// --- Funkcie pre navigáciu a zobrazenie obsahu ---
 function displayCategoriesAsButtons() {
     currentCategoryId = null;
     currentGroupId = null;
@@ -419,19 +416,26 @@ function displayGroupsForCategory(categoryId) {
                     teamItem.style.cursor = 'pointer'; // Vizuálna indikácia klikateľnosti
 
                     // Predpokladáme, že 'team' objekt má vlastnosť 'clubName'
+                    // Ak 'clubName' nie je priamo na 'team' objekte, musíš ho tu získať (napr. z allClubs cez team.clubId)
                     const clubName = team.clubName || 'Neznámy klub';
 
-                    // Získať aktuálnu kategóriu a skupinu pre kompletný názov tímu
-                    const categoryForUrl = allCategories.find(cat => cat.id === currentCategoryId);
-                    const groupForUrl = allGroups.find(g => g.id === group.id);
+                    // Uložiť názov klubu do data atribútu LI elementu
+                    teamItem.dataset.clubName = clubName; 
 
+                    // Získať aktuálnu kategóriu (bez názvu skupiny)
+                    const categoryForUrl = allCategories.find(cat => cat.id === currentCategoryId);
+                    
+                    // Zostavenie celého názvu tímu (iba kategória a názov tímu)
                     const fullTeamName = `${categoryForUrl ? (categoryForUrl.name || categoryForUrl.id) : ''} - ${team.name || 'Neznámy tím'}`.trim();
                     
                     // Bezpečné kódovanie pre URL
-                    const cleanedClubName = encodeURIComponent(clubName.replace(/\s/g, '+'));
                     const cleanedTeamName = encodeURIComponent(fullTeamName.replace(/\s/g, '+'));
 
-                    teamItem.addEventListener('click', () => {
+                    teamItem.addEventListener('click', (event) => { // Pridaný parameter 'event'
+                        // Získanie názvu klubu priamo z kliknutého LI elementu
+                        const clickedClubName = event.currentTarget.dataset.clubName;
+                        const cleanedClubName = encodeURIComponent(clickedClubName.replace(/\s/g, '+'));
+
                         const url = `prihlasene-kluby.html?club=${cleanedClubName}&team=${cleanedTeamName}`;
                         window.location.href = url;
                     });
@@ -465,7 +469,7 @@ function displayGroupsForCategory(categoryId) {
         unassignedList.classList.add('unassigned-team-list'); // Trieda pre UL nepriradených tímov
         unassignedTeamsInCategory.forEach(team => {
             const teamItem = document.createElement('li');
-            teamItem.classList.add('unassigned-team-list-item'); // Trieda pre LI nepriradených tímov
+            teamItem.classList.add('unassigned-team-list-item');
             teamItem.textContent = team.name || 'Neznámy tím';
             // Nepriradené tímy pravdepodobne nebudú klikateľné na presmerovanie, ale ak by mali byť, pridaj event listener
             unassignedList.appendChild(teamItem);
@@ -564,19 +568,26 @@ function displaySingleGroup(groupId) {
                 teamItem.style.cursor = 'pointer'; // Vizuálna indikácia klikateľnosti
 
                 // Predpokladáme, že 'team' objekt má vlastnosť 'clubName'
+                // Ak 'clubName' nie je priamo na 'team' objekte, musíš ho tu získať (napr. z allClubs cez team.clubId)
                 const clubName = team.clubName || 'Neznámy klub';
 
-                // Získať aktuálnu kategóriu a skupinu pre kompletný názov tímu
-                const categoryForUrl = allCategories.find(cat => cat.id === currentCategoryId);
-                const groupForUrl = allGroups.find(g => g.id === groupId);
+                // Uložiť názov klubu do data atribútu LI elementu
+                teamItem.dataset.clubName = clubName; 
 
+                // Získať aktuálnu kategóriu (bez názvu skupiny)
+                const categoryForUrl = allCategories.find(cat => cat.id === currentCategoryId);
+                
+                // Zostavenie celého názvu tímu (iba kategória a názov tímu)
                 const fullTeamName = `${categoryForUrl ? (categoryForUrl.name || categoryForUrl.id) : ''} - ${team.name || 'Neznámy tím'}`.trim();
                 
                 // Bezpečné kódovanie pre URL
-                const cleanedClubName = encodeURIComponent(clubName.replace(/\s/g, '+'));
                 const cleanedTeamName = encodeURIComponent(fullTeamName.replace(/\s/g, '+'));
 
-                teamItem.addEventListener('click', () => {
+                teamItem.addEventListener('click', (event) => { // Pridaný parameter 'event'
+                    // Získanie názvu klubu priamo z kliknutého LI elementu
+                    const clickedClubName = event.currentTarget.dataset.clubName;
+                    const cleanedClubName = encodeURIComponent(clickedClubName.replace(/\s/g, '+'));
+
                     const url = `prihlasene-kluby.html?club=${cleanedClubName}&team=${cleanedTeamName}`;
                     window.location.href = url;
                 });
@@ -700,8 +711,7 @@ function goBackToGroupView() {
     displayGroupsForCategory(categoryIdToReturnTo);
 }
 
-// Tieto funkcie sa pravdepodobne týkajú štylovania flexboxom, aj keď hovoríš o "tabuľkách"
-// Môžu byť relevantné, ak .group-display simuluje tabuľky
+// --- Pomocné funkcie pre šírku tabuliek (zostali nezmenené) ---
 function findMaxTableContentWidth(containerElement) {
     let maxWidth = 0;
     if (!containerElement) {
@@ -767,7 +777,7 @@ function setUniformTableWidth(width, containerElement) {
     });
 }
 
-// Spracovanie načítania stránky
+// --- Spracovanie načítania stránky a zmeny hashu URL ---
 document.addEventListener('DOMContentLoaded', async () => {
     if (!getHTMLElements()) {
         return;
