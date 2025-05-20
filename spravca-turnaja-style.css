@@ -521,8 +521,7 @@ main {
 
 .schedule-table-container {
     overflow-x: auto; /* Umožní horizontálny scroll pre veľké tabuľky */
-    max-width: 100%; /* Zabezpečí, že kontajner sa nepretiahne */
-    margin-top: 20px;
+    max-width: 70%; /* Zabezpečí, že kontajner sa nepretiahne */
     border: 1px solid #ddd;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
