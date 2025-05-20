@@ -1,4 +1,4 @@
-import { db, categoriesCollectionRef, groupsCollectionRef, clubsCollectionRef, openModal, closeModal, populateCategorySelect, populateGroupSelect, populateTeamNumberSelect, getDocs, doc, setDoc, addDoc, getDoc, query, where } from './spravca-turnaja-common.js'; // populateTeamNumberSelect už nebude potrebná na priame plnenie, ale ponecháme ju pre getTeamName
+import { db, categoriesCollectionRef, groupsCollectionRef, clubsCollectionRef, openModal, closeModal, populateCategorySelect, populateGroupSelect, populateTeamNumberSelect, getDocs, doc, setDoc, addDoc, getDoc, query, where } from './spravca-turnaja-common.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     const loggedInUsername = localStorage.getItem('username');
@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeMatchModalButton = document.getElementById('closeMatchModal');
     const matchForm = document.getElementById('matchForm');
     const matchIdInput = document.getElementById('matchId');
-//    const matchDescriptionInput = document.getElementById('matchDescription');
+    // const matchDescriptionInput = document.getElementById('matchDescription'); // TOTO BOLO ODSTRÁNENÉ
     const matchDateInput = document.getElementById('matchDate');
     const matchTimeInput = document.getElementById('matchTime');
     const matchLocationInput = document.getElementById('matchLocation');
@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const matchGroupSelect = document.getElementById('matchGroup');     // Pre hlavnú skupinu zápasu
     const matchModalTitle = document.getElementById('matchModalTitle');
 
-    // NOVÉ REFERENCIE PRE TÍMY (inputy pre poradové čísla)
+    // Referencie pre inputy poradových čísiel tímov
     const team1NumberInput = document.getElementById('team1NumberInput');
     const team2NumberInput = document.getElementById('team2NumberInput');
 
@@ -72,7 +72,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Event listener pre zmenu hlavnej skupiny zápasu
-    // Už nebude napĺňať inputy, tie sú manuálne zadávané
     matchGroupSelect.addEventListener('change', () => {
         // Logika tu už nemusí volať populateTeamNumberSelect
         // Môžeme prípadne nastaviť nejakú validáciu alebo reset
@@ -100,7 +99,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const groupName = groupDoc.exists() ? (groupDoc.data().name || groupId) : groupId;
 
             // Nájdeme tím (club) podľa čísla v danej skupine
-            // Používame parseInt(teamNumber) pretože input type="number" vracia string
             const q = query(
                 clubsCollectionRef,
                 where("categoryId", "==", categoryId),
@@ -158,7 +156,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const matchData = {
-            description: matchDescriptionInput.value,
+            // description: matchDescriptionInput.value, // TOTO BOLO ODSTRÁNENÉ
             date: matchDateInput.value,
             time: matchTimeInput.value,
             location: matchLocationInput.value,
