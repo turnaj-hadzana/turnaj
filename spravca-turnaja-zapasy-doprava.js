@@ -7,6 +7,9 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
+    // TENTO RIADOK ODSTRÁŇTE ALEBO ZAKOMENTUJTE!
+    // loadCategoriesTable(); 
+
     // Referencie na HTML elementy
     const categoriesContentSection = document.getElementById('categoriesContentSection');
     const addButton = document.getElementById('addButton');
@@ -26,14 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const team2NumberInput = document.getElementById('team2NumberInput');
 
 
-    // PÔVODNÉ NESPRÁVNE RIADKY, KTORÉ TREBA ODSTRÁNIŤ/ZAKOMENTOVAŤ:
-    // loadCategoriesTable(); // TÁTO FUNKCIA TU NEEXISTUJE
-
     // Zobrazenie správnej sekcie po načítaní
-    // Táto časť je už prítomná v HTML a nemala by spôsobovať problém, ale pre istotu
-    // ju môžeme zjednodušiť, alebo ju nechať, ak máte špecifický dôvod pre JS zobrazenie.
-    // Ak je sekcia predvolene skrytá a má byť zobrazená až JS kódom, tak to ponechajte.
-    // Ak je ale viditeľná priamo v HTML, tento blok je zbytočný alebo duplicitný.
     if (categoriesContentSection) {
         categoriesContentSection.style.display = 'block';
         const otherSections = document.querySelectorAll('main > section, main > div');
@@ -196,8 +192,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert('Nový zápas úspešne pridaný!');
             }
             closeModal(matchModal);
-            // Tu by ste mohli volať funkciu na obnovenie zoznamu zápasov na stránke
-            // napr. refreshMatchesList(); (ak ju budete implementovať)
         } catch (error) {
             console.error("Chyba pri ukladaní zápasu: ", error);
             alert("Chyba pri ukladaní zápasu. Pozrite konzolu pre detaily.");
