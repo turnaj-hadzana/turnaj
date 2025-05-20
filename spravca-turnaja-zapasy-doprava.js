@@ -143,7 +143,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     }
                     
                     // Vytvoríme jednu veľkú TD bunku pre každý deň a miesto
-                    const totalWidthForDay = colspan * 160; // 160px je šírka hodinového slotu z CSS
+                    const totalWidthForDay = colspan * 260; // 160px je šírka hodinového slotu z CSS
                     scheduleHtml += `<td colspan="${colspan}" style="position: relative; overflow: hidden; background-color: #f7f7f7;">`;
 
                     const matchesForLocationAndDate = allMatches.filter(match =>
