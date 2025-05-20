@@ -115,8 +115,6 @@ main {
     box-shadow: none;
     background-color: transparent;
     min-width: 0;
-    overflow-x: hidden; /* Zabezpečí, že main sám nebude mať horizontálny scrollbar */
-    /* overflow-y: auto; Ak tu chceš vertikálny scrollbar pre celý main obsah */
 }
 
 #groupsContent,
