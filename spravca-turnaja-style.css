@@ -471,9 +471,8 @@ td:last-child {
 
 /* Základná tabuľka rozvrhu */
 .match-schedule-table {
-    width: 100%;
+    width: 60%;
     border-collapse: collapse; /* Aby sa okraje buniek spojili */
-    min-width: 1200px; /* Nastavte túto hodnotu podľa počtu stĺpcov a požadovanej šírky, aby sa predišlo pretečeniu */
 }
 
 /* Základné štýly pre hlavičky a bunky */
