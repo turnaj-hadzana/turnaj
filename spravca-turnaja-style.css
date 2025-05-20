@@ -464,8 +464,7 @@ td:last-child {
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     background-color: #fff;
-    width: 100%; /* ZMENENÉ: Zabezpečí, že sa roztiahne na celú dostupnú šírku rodiča */
-    /* max-width: 100%; */ /* Ak chceš, aby neprekročil 100% šírky rodiča, môžeš pridať */
+    width: 60%;
 }
 
 /* Základná tabuľka rozvrhu */
