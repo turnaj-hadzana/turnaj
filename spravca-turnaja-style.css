@@ -479,7 +479,20 @@ td:last-child {
 }
 
 /* Základné štýly pre hlavičky a bunky */
-.match-schedule-table th,
+.match-schedule-table th {
+    border: 1px solid #e0e0e0;
+    padding: 0;
+    text-align: center;
+    vertical-align: top;
+    position: relative; /* Dôležité pre absolútne pozicionovanie zápasov */
+    min-width: 260px; /* Použite min-width, aby sa stĺpec mohol prispôsobiť, ale nie byť menší */
+    width: 260px; /* Nastavte pevnú šírku */
+    height: 80px; /* Stála výška riadku */
+    box-sizing: border-box;
+    overflow: hidden; /* Skryje pretekajúci obsah */
+    white-space: nowrap; /* Zabraňuje zalomeniu textu, aby sa dodržala šírka */
+}
+
 .match-schedule-table td {
     border: 1px solid #e0e0e0;
     padding: 0;
