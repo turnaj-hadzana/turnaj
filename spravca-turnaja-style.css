@@ -20,7 +20,7 @@ h1 {
 
 .content-wrapper {
     display: flex;
-    flex: 1; /* Umožní content-wrapperu vyplniť dostupný priestor */
+    flex: 1;
 }
 
 /* Ľavé menu */
@@ -30,7 +30,7 @@ h1 {
     color: white;
     padding-top: 20px;
     box-shadow: 2px 0 5px rgba(0,0,0,0.1);
-    flex-shrink: 0; /* Zabraňuje scvrkávaniu menu */
+    flex-shrink: 0;
 }
 
 .left-menu ul {
@@ -54,10 +54,10 @@ h1 {
 
 /* Hlavný obsah */
 main {
-    flex-grow: 1; /* Umožní hlavnému obsahu vyplniť zvyšný priestor */
+    flex-grow: 1;
     padding: 20px;
     background-color: #fdfdfd;
-    overflow-y: auto; /* Pre scroll, ak je obsah príliš dlhý */
+    overflow-y: auto;
 }
 
 .section-block {
@@ -94,13 +94,13 @@ main {
 .form-group input[type="time"],
 .form-group select,
 .form-group textarea {
-    width: calc(100% - 20px); /* Odpočíta padding */
+    width: calc(100% - 20px);
     padding: 10px;
     border: 1px solid #ccc;
     border-radius: 5px;
     font-size: 1em;
-    box-sizing: border-box; /* Zabezpečí, že padding a border sú zahrnuté vo width */
-    max-width: 400px; /* Obmedzenie šírky pre lepšiu čitateľnosť */
+    box-sizing: border-box;
+    max-width: 400px;
 }
 
 .form-group button {
@@ -153,32 +153,32 @@ main {
 
 /* Modálne okná */
 .modal {
-    display: none; /* Skryté predvolene */
-    position: fixed; /* Zostaň na mieste aj pri posúvaní */
-    z-index: 1000; /* Bude nad všetkým */
+    display: none;
+    position: fixed;
+    z-index: 1000;
     left: 0;
     top: 0;
-    width: 100%; /* Plná šírka */
-    height: 100%; /* Plná výška */
-    overflow: auto; /* Povoliť scroll, ak je obsah príliš veľký */
-    background-color: rgba(0,0,0,0.4); /* Čierne s priehľadnosťou */
-    display: flex; /* Použiť flexbox pre centrovanie */
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.4);
+    display: flex;
     justify-content: center;
     align-items: center;
 }
 
 .modal-content {
     background-color: #fefefe;
-    margin: auto; /* Centrovanie */
+    margin: auto;
     padding: 20px;
     border: 1px solid #888;
-    width: 80%; /* Šírka obsahu */
-    max-width: 600px; /* Maximálna šírka */
+    width: 80%;
+    max-width: 600px;
     border-radius: 8px;
     box-shadow: 0 4px 8px rgba(0,0,0,0.2);
     position: relative;
-    max-height: 90vh; /* Obmedziť výšku modálneho okna */
-    overflow-y: auto; /* Pridať scrollbar, ak je obsah príliš veľký */
+    max-height: 90vh;
+    overflow-y: auto;
 }
 
 .close-button {
@@ -241,7 +241,7 @@ main {
     box-shadow: 0 4px 8px rgba(0,0,0,0.2);
     cursor: pointer;
     transition: background-color 0.3s ease, transform 0.2s ease;
-    border: none; /* Odstránenie hranice tlačidla */
+    border: none;
 }
 
 .add-button:hover {
@@ -307,22 +307,24 @@ main {
 /*---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
 
 
-/* Container, ktorý umožňuje horizontálny scroll, ak je tabuľka príliš široká */
+/* Styly pre tabuľku rozvrhu zápasov - Horizontálne časové osi */
+
 .schedule-table-container {
-    overflow-x: auto;
+    overflow-x: auto; /* Dôležité pre horizontálny scroll */
     border: 1px solid #ddd;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     background-color: #fff;
-    width: 100%; 
+    width: 100%;
     margin: 0 auto;
 }
 
-/* Základná tabuľka rozvrhu */
 .match-schedule-table {
     width: 100%;
     border-collapse: collapse;
     table-layout: fixed; /* Dôležité: zabezpečí, že šírky stĺpcov budú kontrolované CSS */
+    min-width: 1600px; /* Nastavte minimálnu šírku tabuľky, aby sa zmestilo 24 hodín pohodlne */
+    /* Môžete vypočítať: (počet dní * 24 * šírka hodiny) + šírka pevného stĺpca */
 }
 
 /* Základné štýly pre hlavičky a bunky */
@@ -332,29 +334,30 @@ main {
     padding: 0;
     text-align: center;
     vertical-align: top;
-    position: relative; /* DÔLEŽITÉ: Rodič pre absolútne pozicionované zápasy */
-    height: 120px; /* Výška každej hodiny (bunky) */
+    position: relative; /* Kľúčové pre absolútne pozicionovanie udalostí */
+    height: 100px; /* Pevná výška pre riadok s udalosťami */
     box-sizing: border-box;
+    /* overflow: hidden; /* Zabraňuje pretečeniu obsahu z bunky, ak nie sú udalosti */
 }
 
-/* Štýly pre hlavičky */
+/* Hlavičky */
 .match-schedule-table th {
     background-color: #f0f0f0;
     font-weight: bold;
     color: #333;
-    position: sticky;
+    position: sticky; /* Fixácia hlavičiek pri scrollovaní */
     top: 0;
     z-index: 10;
     padding: 0;
 }
 
-/* Prvý stĺpec (Miesto / Čas) - pevný */
+/* Prvý stĺpec (Miesto) - pevný */
 .match-schedule-table .fixed-column {
     background-color: #007bff;
     color: white;
     font-size: 0.9em;
-    width: 160px; 
-    min-width: 160px; 
+    width: 150px; /* Šírka stĺpca s miestami */
+    min-width: 150px;
     position: sticky;
     left: 0;
     z-index: 11;
@@ -395,59 +398,68 @@ main {
     box-sizing: border-box;
 }
 
-/* Štýl pre každú hodinovú bunku v riadku s časmi */
+/* Štýl pre každú hodinovú značku v hlavičke */
 .schedule-hour-slot {
     flex-grow: 1;
     text-align: center;
     padding: 0 2px;
-    min-width: 80px; 
+    min-width: 40px; /* Približná šírka pre hodinovú značku, aby sa zmestila do stĺpca */
+    /* width: calc(100% / 24); /* Každá hodina zaberie 1/24 šírky rodiča (th) */
 }
 
 
-/* Štýly pre prázdne bunky */
-/* schedule-cell-wrapper */
-.match-schedule-table td {
-    background-color: #f7f7f7; /* Predvolené pozadie pre prázdne bunky */
-    /* Dôležité: Ak sú zápasy s absolútnym pozicionovaním, bunka sama o sebe môže vyzerať prázdna, ale sú v nej obsahy */
+/* Wrapper bunky pre celý deň */
+.schedule-day-cell-wrapper {
+    /* táto bunka reprezentuje celý deň */
+    position: relative; /* Dôležité pre pozicionovanie udalostí */
+    height: 100px; /* Pevná výška pre riadok s udalosťami */
+    overflow: hidden; /* Zabraňuje pretečeniu udalostí vertikálne, ak sú príliš vysoké */
+    background-image: linear-gradient(to right, #e0e0e0 1px, transparent 1px); /* Vertikálne čiary pre každú hodinu */
+    background-size: calc(100% / 24) 100%; /* Rozloženie čiar na 24 hodín */
+    background-position-x: 0; /* Začína od okraja */
+    background-color: #f7f7f7;
+}
+
+/* Placeholder pre prázdne dni */
+.no-match-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    color: #999;
+    font-style: italic;
+    font-size: 0.9em;
 }
 
 
-/* Štýly pre blok zápasu vo vnútri bunky */
-.schedule-cell-match {
-    background-color: #e0f2f7;
-    border: 1px solid #a7d9ed;
+/* Štýly pre blok udalosti (zápasu) v rámci časovej osi */
+.schedule-event-item {
+    background-color: #a7d9ed; /* Farba udalosti */
+    border: 1px solid #007bff;
     border-radius: 4px;
     padding: 2px;
     font-size: 0.75em;
     line-height: 1.1;
     text-align: left;
-    position: absolute; /* DÔLEŽITÉ: Pozicionuje sa vzhľadom na rodičovskú <td> */
-    left: 2px; /* Malý odstup od ľavého okraja bunky */
-    right: 2px; /* Malý odstup od pravého okraja bunky */
-    /* top a height sú nastavené inline v JS */
+    position: absolute; /* Absolútne pozicionovanie vzhľadom na .schedule-day-cell-wrapper */
+    top: 5px; /* Trocha miesta od vrchu bunky */
+    bottom: 5px; /* Trocha miesta od spodu, aby sa zmestili akčné tlačidlá */
+    box-sizing: border-box;
+    overflow: hidden; /* Skryje pretekajúci text */
+    z-index: 1; /* Zabezpečí, že udalosti sú nad pozadím */
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    padding-bottom: 25px; /* Priestor pre akčné tlačidlá */
-    box-sizing: border-box;
-    overflow: hidden; /* Zabraňuje pretečeniu obsahu, ak je príliš veľký */
-    z-index: 1; /* Zabezpečí, že zápasy budú nad pozadím bunky */
 }
 
-/* Pridaj z-index pre prekrytie, ak sa zápasy prekrývajú */
-.schedule-cell-match + .schedule-cell-match {
-    /* Ak sú zápasy, ktoré začínajú veľmi blízko seba a prekrývajú sa, 
-       toto im môže pomôcť vyzerať lepšie.
-       Možno budete potrebovať algoritmus na detekciu kolízií, ak je prekrývanie problém.
-    */
-    /* z-index: 2; /* Experimentujte s týmto, ak sa prekrývajú*/
-}
-
-
-/* Odstránenie predvolených marginov z p elementov vnútri zápasu */
-.schedule-cell-match p {
+/* Textové elementy v udalosti */
+.schedule-event-item p {
     margin: 0;
-    padding: 0 3px; 
+    padding: 0 3px;
+    white-space: nowrap; /* Zabraňuje zalomeniu riadkov */
+    overflow: hidden;
+    text-overflow: ellipsis; /* Pridá tri bodky, ak sa text nezmestí */
 }
 
 .schedule-cell-category {
@@ -458,7 +470,6 @@ main {
 .schedule-cell-teams {
     font-weight: bold;
     color: #333;
-    line-height: 1.2; 
 }
 
 .schedule-cell-club-names {
@@ -467,31 +478,37 @@ main {
     font-size: 0.9em;
 }
 
-/* Akčné tlačidlá vo vnútri bloku zápasu */
+.schedule-cell-time {
+    font-weight: bold;
+    color: #888;
+    margin-top: auto; /* Posunie čas na spodok textovej časti */
+}
+
+/* Akčné tlačidlá vo vnútri udalosti */
 .schedule-cell-actions {
-    position: absolute; 
-    bottom: 0; 
+    position: absolute;
+    bottom: 0;
     left: 0;
     right: 0;
     display: flex;
     justify-content: space-around;
-    gap: 2px; 
-    padding: 2px; 
-    background-color: rgba(255, 255, 255, 0.9); 
-    border-top: 1px solid #ccc; 
+    gap: 2px;
+    padding: 2px;
+    background-color: rgba(255, 255, 255, 0.9);
+    border-top: 1px solid #ccc;
     box-sizing: border-box;
 }
 
 .schedule-cell-actions button {
     flex-grow: 1;
-    padding: 2px 4px; 
+    padding: 2px 4px;
     border: none;
     border-radius: 3px;
     cursor: pointer;
-    font-size: 0.7em; 
-    white-space: nowrap; 
+    font-size: 0.7em;
+    white-space: nowrap;
     overflow: hidden;
-    text-overflow: ellipsis; 
+    text-overflow: ellipsis;
 }
 
 .schedule-cell-actions .edit-btn {
@@ -524,7 +541,7 @@ main {
     }
 
     .left-menu ul li {
-        flex: 1 1 auto; 
+        flex: 1 1 auto;
         text-align: center;
     }
 
@@ -547,12 +564,24 @@ main {
     }
 
     .match-schedule-table .fixed-column {
-        min-width: 120px; 
+        min-width: 100px; /* Ešte menšie pre mobil */
         font-size: 0.8em;
     }
 
+    .match-schedule-table {
+        min-width: 800px; /* Pre mobil môže byť menšia, ale stále dostatočne široká */
+    }
+
     .schedule-hour-slot {
-        min-width: 60px; 
-        font-size: 0.7em;
+        min-width: 30px; /* Menšie písmo a šírka pre mobil */
+        font-size: 0.6em;
+    }
+
+    .schedule-event-item {
+        font-size: 0.65em; /* Menšie písmo pre udalosti */
+    }
+
+    .schedule-cell-actions button {
+        font-size: 0.6em;
     }
 }
