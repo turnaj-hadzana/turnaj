@@ -222,7 +222,7 @@ document.addEventListener('DOMContentLoaded', async () => { // Pridané 'async'
                 where("categoryId", "==", categoryId),
                 where("groupId", "==", groupId),
                 // UISTITE SA, ŽE "orderNumber" JE SPRÁVNE POLE VO VAŠEJ KOLEKCII CLUBS A JEHO TYP JE NUMBER
-                where("orderNumber", "==", parseInt(teamNumber)) // Použite parseInt pre číslo
+                where("orderInGroup", "==", parseInt(teamNumber)) // Použite parseInt pre číslo
             );
             const clubsSnapshot = await getDocs(clubsQuery);
 
