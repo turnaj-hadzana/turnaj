@@ -624,7 +624,7 @@ td:last-child {
 .schedule-cell-match p {
     margin: 0;
     padding: 0 3px; /* Malý horizontálny padding pre text */
-    word-wrap: break-word; /* Pomáha s dlhými názvami */
+    overflow-wrap: break-word;
     min-width: 0; /* Dôležité pre flexbox, aby sa text mohol zmenšiť */
 }
 
