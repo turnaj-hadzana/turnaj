@@ -116,7 +116,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                     <div class="schedule-cell-match" data-id="${match.id}">
                                         <p class="schedule-cell-category">${match.categoryName || 'N/A'}${match.groupName ? ` (${match.groupName})` : ''}</p>
                                         <p class="schedule-cell-teams">${match.team1DisplayName}<br>${match.team2DisplayName}</p>
-                                        <p class="schedule-cell-club-names">(${match.team1ClubName}<br>${match.team2ClubName})</p>
+                                        <p class="schedule-cell-club-names">${match.team1ClubName}<br>${match.team2ClubName}</p>
                                         <div class="schedule-cell-actions">
                                             <button class="edit-btn" data-id="${match.id}">Upraviť</button>
                                             <button class="delete-btn" data-id="${match.id}">Vymazať</button>
