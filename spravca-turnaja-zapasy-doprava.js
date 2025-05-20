@@ -147,7 +147,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    async function editMatch(matchId) { /* ... (zostáva nezmenené) ... */
+    async function editMatch(matchId) {
         try {
             const matchDocRef = doc(matchesCollectionRef, matchId);
             const matchDoc = await getDoc(matchDocRef);
@@ -183,12 +183,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    async function deleteMatch(matchId) { /* ... (zostáva nezmenené) ... */
+    async function deleteMatch(matchId) {
         if (confirm('Naozaj chcete vymazať tento zápas?')) {
             try {
                 await deleteDoc(doc(matchesCollectionRef, matchId));
                 alert('Zápas úspešne vymazaný!');
-                displayMatchesAsSchedule(); // Obnovíme zoznam zápasov
+                displayMatchesAsSchedule(); // <--- ZMENENÉ!
             } catch (error) {
                 console.error("Chyba pri mazaní zápasu: ", error);
                 alert("Chyba pri mazaní zápasu. Pozrite konzolu pre detaily.");
@@ -198,7 +198,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 
     // --- Inicializácia po načítaní stránky ---
-    await displayMatchesAsSchedule(); // ZMENENÉ: voláme novú funkciu pre rozvrh
+    await displayMatchesAsSchedule(); // <--- ZMENENÉ!
 
 
     // Event listener pre tlačidlo "Pridať"
@@ -234,11 +234,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Event listener pre zatvorenie modálneho okna
     closeMatchModalButton.addEventListener('click', () => {
         closeModal(matchModal);
-        displayMatchesAsSchedule(); // ZMENENÉ: voláme novú funkciu
+        displayMatchesAsSchedule(); // <--- ZMENENÉ!
     });
 
     // Funkcia na získanie názvu tímu na základe ID (poradového čísla) a metadát
-    const getTeamName = async (categoryId, groupId, teamNumber) => { /* ... (zostáva nezmenené) ... */
+    const getTeamName = async (categoryId, groupId, teamNumber) => {
         if (!categoryId || !groupId || !teamNumber) {
             return { fullDisplayName: null, clubName: null };
         }
@@ -362,7 +362,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 alert('Nový zápas úspešne pridaný!');
             }
             closeModal(matchModal);
-            await displayMatchesAsSchedule(); // ZMENENÉ: voláme novú funkciu
+            await displayMatchesAsSchedule(); // <--- ZMENENÉ!
         } catch (error) {
             console.error("Chyba pri ukladaní zápasu: ", error);
             alert("Chyba pri ukladaní zápasu. Pozrite konzolu pre detaily.");
