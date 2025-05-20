@@ -463,7 +463,7 @@ td:last-child {
 .schedule-table-container {
     overflow-x: auto;
     max-width: 60%; /* Upravené, aby zaberalo celú dostupnú šírku */
-    margin-left: 200px; /* Zarovná na pravý okraj */
+    left: 200px; /* Zarovná na pravý okraj */
     margin-right: 0; /* Zabezpečí, že pravý okraj bude nulový */
     border: 1px solid #ddd;
     border-radius: 8px;
