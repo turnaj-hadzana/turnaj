@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const matchCategorySelect = document.getElementById('matchCategory');
     const matchGroupSelect = document.getElementById('matchGroup');
     const matchModalTitle = document.getElementById('matchModalTitle');
-    const matchesContainer = document.getElementById('matchesContainer');
+    const matchesContainer = document.getElementById('matchesContainer'); // Uistite sa, že máte tento element v HTML
 
     const team1NumberInput = document.getElementById('team1NumberInput');
     const team2NumberInput = document.getElementById('team2NumberInput');
@@ -41,6 +41,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         matchesContainer.innerHTML = '<p>Načítavam rozvrh zápasov...</p>';
         try {
+            // Zápasy zoradíme podľa miesta, dátumu a času pre ľahšie spracovanie
             const q = query(matchesCollectionRef, orderBy("location", "asc"), orderBy("date", "asc"), orderBy("time", "asc"));
             const querySnapshot = await getDocs(q);
 
@@ -54,7 +55,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Zozbieranie unikátnych miest, dátumov a časov
             const uniqueLocations = new Set();
             const uniqueDates = new Set();
-            const uniqueTimes = new Set();
+            const uniqueTimes = new Set(); // Všetky časy, ktoré sa vyskytujú v zápasoch
 
             allMatches.forEach(match => {
                 uniqueLocations.add(match.location);
@@ -62,12 +63,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                 uniqueTimes.add(match.time);
             });
 
+            // Zoradenie pre konzistentné zobrazenie
             const sortedLocations = Array.from(uniqueLocations).sort();
             const sortedDates = Array.from(uniqueDates).sort(); // YYYY-MM-DD reťazce sa správne zoradia
             const sortedTimes = Array.from(uniqueTimes).sort(); // HH:MM reťazce sa správne zoradia
 
             // Mapovanie zápasov pre rýchly prístup
-            const matchesMap = new Map(); // Kľúč: "location|date|time", Hodnota: [match1, match2, ...]
+            // Kľúč: "location|date|time", Hodnota: [match1, match2, ...] (pole, ak je viac zápasov v rovnakom slote)
+            const matchesMap = new Map();
             allMatches.forEach(match => {
                 const key = `${match.location}|${match.date}|${match.time}`;
                 if (!matchesMap.has(key)) {
@@ -84,7 +87,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             // Hlavičky pre dni a časy
             sortedDates.forEach(date => {
-                scheduleHtml += `<th colspan="${sortedTimes.length}">`;
+                scheduleHtml += `<th colspan="${sortedTimes.length}">`; // Každý dátum sa roztiahne cez všetky časy
                 scheduleHtml += `<div class="schedule-date-header">${date}</div>`;
                 scheduleHtml += '<div class="schedule-times-row">';
                 sortedTimes.forEach(time => {
@@ -103,10 +106,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 sortedDates.forEach(date => {
                     sortedTimes.forEach(time => {
                         const key = `${location}|${date}|${time}`;
-                        const cellMatches = matchesMap.get(key) || [];
+                        const cellMatches = matchesMap.get(key) || []; // Zápasy pre danú bunku
 
                         scheduleHtml += '<td>';
                         if (cellMatches.length > 0) {
+                            // Ak je v slote viac zápasov, zobrazíme ich všetky
                             cellMatches.forEach(match => {
                                 scheduleHtml += `
                                     <div class="schedule-cell-match" data-id="${match.id}">
@@ -147,6 +151,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    // Funkcie editMatch a deleteMatch zostávajú rovnaké, len budú volať displayMatchesAsSchedule()
     async function editMatch(matchId) {
         try {
             const matchDocRef = doc(matchesCollectionRef, matchId);
