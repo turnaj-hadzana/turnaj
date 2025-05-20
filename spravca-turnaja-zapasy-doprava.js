@@ -1,4 +1,4 @@
-import { db, categoriesCollectionRef, groupsCollectionRef, clubsCollectionRef, openModal, closeModal, populateCategorySelect, populateGroupSelect, populateTeamNumberSelect, getDocs, doc, setDoc, addDoc, getDoc, query, where } from './spravca-turnaja-common.js';
+import { db, categoriesCollectionRef, groupsCollectionRef, clubsCollectionRef, matchesCollectionRef, openModal, closeModal, populateCategorySelect, populateGroupSelect, populateTeamNumberSelect, getDocs, doc, setDoc, addDoc, getDoc, query, where } from './spravca-turnaja-common.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     const loggedInUsername = localStorage.getItem('username');
@@ -14,12 +14,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeMatchModalButton = document.getElementById('closeMatchModal');
     const matchForm = document.getElementById('matchForm');
     const matchIdInput = document.getElementById('matchId');
-    // const matchDescriptionInput = document.getElementById('matchDescription'); // TOTO BOLO ODSTRÁNENÉ
     const matchDateInput = document.getElementById('matchDate');
     const matchTimeInput = document.getElementById('matchTime');
     const matchLocationInput = document.getElementById('matchLocation');
-    const matchCategorySelect = document.getElementById('matchCategory'); // Pre hlavnú kategóriu zápasu
-    const matchGroupSelect = document.getElementById('matchGroup');     // Pre hlavnú skupinu zápasu
+    const matchCategorySelect = document.getElementById('matchCategory');
+    const matchGroupSelect = document.getElementById('matchGroup');
     const matchModalTitle = document.getElementById('matchModalTitle');
 
     // Referencie pre inputy poradových čísiel tímov
@@ -44,12 +43,10 @@ document.addEventListener('DOMContentLoaded', () => {
         matchIdInput.value = '';
         matchModalTitle.textContent = 'Pridať nový zápas / dopravu';
 
-        // Inicializácia selectov pre hlavnú kategóriu/skupinu zápasu
         populateCategorySelect(matchCategorySelect);
         matchGroupSelect.innerHTML = '<option value="">-- Vyberte skupinu --</option>';
         matchGroupSelect.disabled = true;
 
-        // Reset inputov pre poradové čísla tímov
         team1NumberInput.value = '';
         team2NumberInput.value = '';
         
@@ -65,7 +62,6 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             matchGroupSelect.innerHTML = '<option value="">-- Vyberte skupinu --</option>';
             matchGroupSelect.disabled = true;
-            // Ak sa zruší kategória, vyčisti aj poradové čísla tímov (inputy)
             team1NumberInput.value = '';
             team2NumberInput.value = '';
         }
@@ -74,8 +70,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Event listener pre zmenu hlavnej skupiny zápasu
     matchGroupSelect.addEventListener('change', () => {
         // Logika tu už nemusí volať populateTeamNumberSelect
-        // Môžeme prípadne nastaviť nejakú validáciu alebo reset
-        // ale inputy sú už vždy aktívne pre manuálne zadanie
     });
 
     // Event listener pre zatvorenie modálneho okna
@@ -106,7 +100,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 where("orderNumber", "==", parseInt(teamNumber))
             );
             const querySnapshot = await getDocs(q);
-            let teamName = `Tím ${teamNumber}`; // Predvolený názov ak nenájdeme konkrétny názov tímu
+            let teamName = `Tím ${teamNumber}`;
 
             if (!querySnapshot.empty) {
                 const teamDoc = querySnapshot.docs[0].data();
@@ -115,7 +109,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
             
-            // Konštruujeme výsledný názov tímu
             return `${categoryName} - ${groupName} - ${teamName}`;
         } catch (error) {
             console.error("Chyba pri získavaní názvu tímu: ", error);
@@ -128,15 +121,13 @@ document.addEventListener('DOMContentLoaded', () => {
     matchForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
-        // Kategória a skupina sa berú z hlavných selectov zápasu
         const matchCategory = matchCategorySelect.value;
         const matchGroup = matchGroupSelect.value;
         
-        // Hodnoty z inputov pre poradové čísla
         const team1Number = team1NumberInput.value;
         const team2Number = team2NumberInput.value;
 
-        // Základná validácia: Ak nie je vybraná kategória alebo skupina, alebo nie sú zadané čísla tímov
+        // Základná validácia
         if (!matchCategory || !matchGroup || !team1Number || !team2Number) {
             alert('Prosím, vyplňte všetky povinné polia (Kategória, Skupina, Poradové číslo tímu 1 a 2).');
             return;
@@ -145,9 +136,15 @@ document.addEventListener('DOMContentLoaded', () => {
         let team1Name = null;
         let team2Name = null;
 
-        // Získanie názvov tímov na základe vybraných ID z hlavnej kategórie/skupiny
-        team1Name = await getTeamName(matchCategory, matchGroup, team1Number);
-        team2Name = await getTeamName(matchCategory, matchGroup, team2Number);
+        // Získanie názvov tímov
+        try {
+            team1Name = await getTeamName(matchCategory, matchGroup, team1Number);
+            team2Name = await getTeamName(matchCategory, matchGroup, team2Number);
+        } catch (error) {
+            console.error("Chyba pri získavaní názvov tímov:", error);
+            alert("Vyskytla sa chyba pri získavaní názvov tímov. Skúste to znova.");
+            return;
+        }
         
         // Voliteľná validácia: Ak sa názov tímu nezískal (tím neexistuje)
         if (!team1Name || !team2Name) {
@@ -156,32 +153,46 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const matchData = {
-            // description: matchDescriptionInput.value, // TOTO BOLO ODSTRÁNENÉ
             date: matchDateInput.value,
             time: matchTimeInput.value,
             location: matchLocationInput.value,
-            categoryId: matchCategory, // Hlavná kategória zápasu
+            categoryId: matchCategory,
             categoryName: matchCategorySelect.options[matchCategorySelect.selectedIndex].text,
-            groupId: matchGroup || null, // Hlavná skupina zápasu
+            groupId: matchGroup || null,
             groupName: matchGroup ? matchGroupSelect.options[matchGroupSelect.selectedIndex].text : null,
             
-            // Ukladáme ID hlavnej kategórie/skupiny pre oba tímy
             team1Category: matchCategory,
             team1Group: matchGroup,
-            team1Number: team1Number,
+            team1Number: parseInt(team1Number), // Ulož ako číslo
             team1Name: team1Name,
             
             team2Category: matchCategory,
             team2Group: matchGroup,
-            team2Number: team2Number,
+            team2Number: parseInt(team2Number), // Ulož ako číslo
             team2Name: team2Name,
 
             createdAt: new Date()
         };
 
-        console.log('Dáta zápasu/dopravy na uloženie:', matchData);
+        console.log('Dáta zápasu na uloženie:', matchData);
 
-        closeModal(matchModal);
-        alert("Zápas/doprava by sa uložila! (Pozri konzolu)");
+        // --- Ukladanie do Firebase ---
+        try {
+            if (matchIdInput.value) {
+                // Ak existuje matchId, ide o úpravu existujúceho zápasu
+                await setDoc(doc(matchesCollectionRef, matchIdInput.value), matchData, { merge: true });
+                alert('Zápas úspešne aktualizovaný!');
+            } else {
+                // Ak matchId neexistuje, ide o pridanie nového zápasu
+                await addDoc(matchesCollectionRef, matchData);
+                alert('Nový zápas úspešne pridaný!');
+            }
+            closeModal(matchModal);
+            // Tu by ste mohli volať funkciu na obnovenie zoznamu zápasov na stránke
+            // napr. refreshMatchesList(); (ak ju budete implementovať)
+        } catch (error) {
+            console.error("Chyba pri ukladaní zápasu: ", error);
+            alert("Chyba pri ukladaní zápasu. Pozrite konzolu pre detaily.");
+        }
     });
 });
