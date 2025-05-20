@@ -25,8 +25,8 @@ let allClubs = [];
 let allCategories = [];
 let allGroups = [];
 
-// Key for sessionStorage to store the "return to" URL, including hash
-const REFERRING_PAGE_RETURN_URL_KEY = 'tournament_referring_page_return_url';
+// Key for sessionStorage to store the "return to" URL, including hash, *only* if coming from groups page
+const REFERRING_PAGE_FROM_GROUPS_KEY = 'tournament_referring_page_from_groups';
 
 async function loadAllData() {
     try {
@@ -161,6 +161,7 @@ function updateHeaderAndFooter() {
 
 
 function displayClubsSummaryTable() {
+    console.log('displayClubsSummaryTable: Zobrazujem prehľad klubov.');
     if (clubListSection) clubListSection.style.display = 'block';
     if (clubDetailSection) clubDetailSection.style.display = 'none';
     if (clubDetailTitleSpan) clubDetailTitleSpan.textContent = '';
@@ -259,11 +260,12 @@ function displayClubsSummaryTable() {
         row.dataset.baseName = baseName;
         row.style.cursor = 'pointer';
         row.addEventListener('click', () => {
+            // Push state to history when navigating to club details
             const url = new URL(window.location.href);
             url.searchParams.set('club', baseName);
-            url.searchParams.delete('team');
+            url.searchParams.delete('team'); // Ensure team param is cleared when viewing club summary
             history.pushState({ baseName: baseName }, '', url.toString());
-
+            console.log(`displayClubsSummaryTable: Pushing state for club summary. New URL: ${url.toString()}`);
             displaySubjectDetails(baseName);
         });
 
@@ -409,6 +411,7 @@ function highlightTeamButton(teamIdToHighlight) {
 }
 
 async function displaySubjectDetails(baseName, initialTeamId = null) {
+    console.log(`displaySubjectDetails: Zobrazujem detaily pre subjekt: ${baseName}, Tím ID: ${initialTeamId}`);
     if (clubListSection) clubListSection.style.display = 'none';
     if (clubDetailSection) clubDetailSection.style.display = 'block';
     if (clubDetailTitleSpan) clubDetailTitleSpan.textContent = baseName;
@@ -474,11 +477,12 @@ async function displaySubjectDetails(baseName, initialTeamId = null) {
             teamButton.dataset.teamId = team.id;
 
             teamButton.addEventListener('click', () => {
+                // Push state to history when navigating to specific team details
                 const url = new URL(window.location.href);
                 url.searchParams.set('club', baseName);
                 url.searchParams.set('team', team.id);
                 history.pushState({ baseName: baseName, teamId: team.id }, '', url.toString());
-
+                console.log(`displaySubjectDetails: Pushing state for team details. New URL: ${url.toString()}`);
                 displaySpecificTeamDetails(team.id);
             });
 
@@ -499,6 +503,7 @@ async function displaySubjectDetails(baseName, initialTeamId = null) {
 
 
 async function displaySpecificTeamDetails(teamId) {
+    console.log(`displaySpecificTeamDetails: Zobrazujem detaily pre Tím ID: ${teamId}`);
     if (selectedTeamDetailsDiv) selectedTeamDetailsDiv.style.display = 'block';
     if (selectedTeamNameSpan) selectedTeamNameSpan.textContent = 'Načítavam...';
     if (selectedTeamRealizacnyTimDiv) selectedTeamRealizacnyTimDiv.innerHTML = '<p>Tréner: Načítavam...</p><p>Vedúci družstva: Načítavam...</p>';
@@ -635,16 +640,31 @@ async function displaySpecificTeamDetails(teamId) {
 
 // MODIFIED goBackToList function
 function goBackToList() {
-    const storedReturnUrl = sessionStorage.getItem(REFERRING_PAGE_RETURN_URL_KEY);
-    console.log('goBackToList: Načítaná URL z sessionStorage:', storedReturnUrl);
+    const storedReturnUrl = sessionStorage.getItem(REFERRING_PAGE_FROM_GROUPS_KEY);
+    console.log('goBackToList: Načítaná URL z REFERRING_PAGE_FROM_GROUPS_KEY:', storedReturnUrl);
 
     if (storedReturnUrl && storedReturnUrl.includes('zobrazenie-skupin.html')) {
-        console.log('goBackToList: Presmerovávam na:', storedReturnUrl);
+        console.log('goBackToList: Presmerovávam na externú URL z groups:', storedReturnUrl);
         window.location.href = storedReturnUrl;
+        // Optionally, clear this specific session storage item after use if you want to avoid repeated use
+        // sessionStorage.removeItem(REFERRING_PAGE_FROM_GROUPS_KEY);
     } else {
-        console.log('goBackToList: Nenájdená URL zobrazenie-skupin.html v sessionStorage alebo žiadna uložená URL. Zobrazujem prehľad klubov.');
-        displayClubsSummaryTable();
-        history.replaceState({}, '', window.location.pathname);
+        // Fallback to history.back() for internal navigation within prihlasene-kluby.html
+        // If the current URL has parameters (meaning we're on a detail page), history.back()
+        // should take us to the previous state (the summary table).
+        // If we are already on the summary table, history.back() will go to the previous page in browser history.
+        if (window.location.search) {
+            console.log('goBackToList: Aktuálna URL má parametre, idem späť v histórii (interná navigácia).');
+            history.back(); // This will go to the previous state, which should be the summary table
+        } else {
+            // This case means we are already on the base prihlasene-kluby.html without params
+            // and there's no specific groups referrer.
+            // We just ensure the summary table is displayed.
+            console.log('goBackToList: Som na základnej prihlasene-kluby.html bez parametrov a žiadna externá URL. Zobrazujem prehľad.');
+            displayClubsSummaryTable();
+            // Optionally, clear the URL if it got params from external link but no groups referrer
+            history.replaceState({}, '', window.location.pathname);
+        }
     }
 }
 
@@ -670,33 +690,30 @@ function removeTransparentRows(container) {
 async function handleUrlState() {
     await loadAllData();
 
-    // Only set the return URL if coming from a referrer and it's not already set
-    // This ensures we capture the *initial* entry point relevant for the "back" button.
-    if (document.referrer && !sessionStorage.getItem(REFERRING_PAGE_RETURN_URL_KEY)) {
+    // Check if we arrived from 'zobrazenie-skupin.html' and store its full URL.
+    // This should only happen on the *initial* load of prihlasene-kluby.html from another page.
+    // If the user navigates internally within prihlasene-kluby.html, document.referrer will be prihlasene-kluby.html itself.
+    if (document.referrer && !sessionStorage.getItem(REFERRING_PAGE_FROM_GROUPS_KEY)) {
         const referrerUrl = new URL(document.referrer);
-
-        // Check if the referrer's pathname includes 'zobrazenie-skupin.html'
         if (referrerUrl.pathname.includes('zobrazenie-skupin.html')) {
-            // Store the complete referrer URL including hash (if present in document.referrer)
-            // document.referrer is a string and should already contain the hash if the browser sent it.
-            const urlToStore = document.referrer;
-            sessionStorage.setItem(REFERRING_PAGE_RETURN_URL_KEY, urlToStore);
-            console.log('handleUrlState: Ukladám referujúcu URL (zobrazenie-skupin.html):', urlToStore);
+            const urlToStore = document.referrer; // Store the full referrer URL including hash
+            sessionStorage.setItem(REFERRING_PAGE_FROM_GROUPS_KEY, urlToStore);
+            console.log('handleUrlState: Ukladám externú referujúcu URL (zobrazenie-skupin.html):', urlToStore);
         } else {
-            // If coming from another page (not groups) or directly,
-            // set the return URL to the base of prihlasene-kluby.html
-            const urlToStore = window.location.origin + window.location.pathname;
-            sessionStorage.setItem(REFERRING_PAGE_RETURN_URL_KEY, urlToStore);
-            console.log('handleUrlState: Ukladám referujúcu URL (základná):', urlToStore);
+            // If referrer is not groups page, ensure the groups referrer is cleared
+            // in case user manually navigated from groups and then to another page, etc.
+            sessionStorage.removeItem(REFERRING_PAGE_FROM_GROUPS_KEY);
+            console.log('handleUrlState: Referujúca stránka nie je zobrazenie-skupin.html. REFERRING_PAGE_FROM_GROUPS_KEY vymazaný.');
         }
-    } else if (!sessionStorage.getItem(REFERRING_PAGE_RETURN_URL_KEY)) {
-        // If no referrer (e.g., direct access, refresh) and not already set,
-        // default return URL to the base of prihlasene-kluby.html
-        const urlToStore = window.location.origin + window.location.pathname;
-        sessionStorage.setItem(REFERRING_PAGE_RETURN_URL_KEY, urlToStore);
-        console.log('handleUrlState: Ukladám referujúcu URL (default/žiadny referrer):', urlToStore);
-    } else {
-        console.log('handleUrlState: REFERRING_PAGE_RETURN_URL_KEY už je nastavený na:', sessionStorage.getItem(REFERRING_PAGE_RETURN_URL_KEY));
+    } else if (document.referrer && sessionStorage.getItem(REFERRING_PAGE_FROM_GROUPS_KEY)) {
+        // If referrer exists and groups key is already set, it means we are navigating internally
+        // or refreshed on prihlasene-kluby.html. Keep existing groups referrer.
+        console.log('handleUrlState: REFERRING_PAGE_FROM_GROUPS_KEY už je nastavený na:', sessionStorage.getItem(REFERRING_PAGE_FROM_GROUPS_KEY), '. Referrer je:', document.referrer);
+    } else if (!document.referrer && !sessionStorage.getItem(REFERRING_PAGE_FROM_GROUPS_KEY)) {
+        // Direct access to prihlasene-kluby.html (no referrer) and no stored groups referrer.
+        // Ensure no groups referrer is stored.
+        sessionStorage.removeItem(REFERRING_PAGE_FROM_GROUPS_KEY);
+        console.log('handleUrlState: Žiadny referrer a žiadny REFERRING_PAGE_FROM_GROUPS_KEY. Vymazaný.');
     }
 
 
@@ -705,6 +722,7 @@ async function handleUrlState() {
     const teamId = urlParams.get('team');
 
     if (teamId) {
+        console.log('handleUrlState: URL má parameter "team". Zobrazujem detail tímu.');
         const team = allClubs.find(c => c.id === teamId);
         if (team) {
             const baseName = getClubBaseName(team);
@@ -723,24 +741,28 @@ async function handleUrlState() {
             displayClubsSummaryTable();
         }
     } else if (clubBaseName) {
+        console.log('handleUrlState: URL má parameter "club". Zobrazujem detaily klubu.');
         const teamsForSubject = allClubs.filter(club => getClubBaseName(club) === clubBaseName);
 
         if (teamsForSubject.length > 0) {
-            const firstTeamId = teamsForSubject[0].id;
+            const firstTeamId = teamsForSubject[0].id; // Display first team in the list for the club
             const url = new URL(window.location.href);
             url.searchParams.set('club', clubBaseName);
+            // Ensure we set a team ID if there is only a clubBaseName to accurately display details.
+            // This will make sure that the next history entry for this view has both club and team.
             url.searchParams.set('team', firstTeamId);
             history.replaceState({ baseName: clubBaseName, teamId: firstTeamId }, '', url.toString());
-
-            displaySubjectDetails(clubBaseName, firstTeamId);
-
+            console.log(`handleUrlState: Presmerovanie na prvý tím subjektu. Nová URL: ${url.toString()}`);
+            displaySubjectDetails(clubBaseName, firstTeamId); // Pass firstTeamId to display a specific team
         } else {
             console.warn(`Subjekt "${clubBaseName}" sa nenašiel alebo nemá žiadne prihlásené tímy.`);
             history.replaceState(null, '', window.location.pathname);
             displayClubsSummaryTable();
         }
     } else {
+        console.log('handleUrlState: URL nemá žiadne relevantné parametre. Zobrazujem prehľad klubov.');
         displayClubsSummaryTable();
+        history.replaceState({}, '', window.location.pathname); // Clean up URL if no params from start
     }
 }
 
@@ -759,5 +781,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 window.addEventListener('popstate', () => {
+    console.log('Popstate event: História prehliadača sa zmenila.');
     handleUrlState();
 });
