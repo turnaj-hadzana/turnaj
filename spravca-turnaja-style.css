@@ -115,6 +115,8 @@ main {
     box-shadow: none;
     background-color: transparent;
     min-width: 0;
+    overflow-x: hidden; /* Zabezpečí, že main sám nebude mať horizontálny scrollbar */
+    /* overflow-y: auto; Ak tu chceš vertikálny scrollbar pre celý main obsah */
 }
 
 #groupsContent,
@@ -139,7 +141,8 @@ table {
     border-collapse: collapse;
     margin-top: 15px;
 }
-th, td {
+th,
+td {
     border: none;
     padding: 10px;
     text-align: left;
@@ -486,17 +489,18 @@ td:last-child {
     min-width: 260px; /* Použite min-width, aby sa stĺpec mohol prispôsobiť, ale nie byť menší */
     width: 260px; /* Nastavte pevnú šírku */
     box-sizing: border-box;
-    white-space: normal;
 }
 
 /* Špecifické štýly pre hlavičky (th) */
 .match-schedule-table th {
     height: 80px; /* Stála výška riadku pre hlavičky */
+    overflow: hidden; /* Skryje pretekajúci obsah - ponechané tu, ak je text hlavičky dlhý */
 }
 
 /* Špecifické štýly pre bunky (td) */
 .match-schedule-table td {
-    height: 170px; /* Stála výška riadku pre bunky */
+    height: 160px; /* Stála výška riadku pre bunky */
+    /* overflow: hidden; */ /* Odstránené, aby sa tlačidlá a obsah zápasu mohli zobraziť. Ak text stále preteká, je potrebné zvážiť zväčšenie height alebo riešenie v schedule-cell-content */
 }
 
 
@@ -517,9 +521,9 @@ td:last-child {
     background-color: #007bff;
     color: white;
     font-size: 0.9em;
-    width: 170px; /* Pevná šírka pre tento stĺpec */
-    min-width: 170px;
-    max-width: 170px;
+    width: 160px; /* Pevná šírka pre tento stĺpec */
+    min-width: 160px;
+    max-width: 160px;
     position: sticky;
     left: 0;
     z-index: 11;
