@@ -455,3 +455,54 @@ td:last-child {
     margin-top: 2px;
     font-weight: normal;
 }
+
+//---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+main {
+    flex-grow: 1;
+    padding: 0;
+    box-shadow: none;
+    background-color: transparent;
+    min-width: 0;
+    /* Odstránené max-height a overflow z main, ak chceš, aby scrollbar bol na vnútornej ploche */
+    /* Ak ich tu ponecháš, budú platiť pre celý main element */
+    overflow-x: hidden; /* Aby main nemal svoj vlastný X-scroll, ak ho bude mať vnútorná plocha */
+    overflow-y: hidden; /* Aby main nemal svoj vlastný Y-scroll, ak ho bude mať vnútorná plocha */
+}
+
+/* Pridané pre novú plochu s posuvom */
+.scrollable-area {
+    width: 100%; /* Rozšíri sa na celú šírku rodiča */
+    max-height: calc(100vh - 250px); /* Nastavte maximálnu výšku podľa potreby, odpočítajte výšku hlavičky, nadpisu atď. */
+    overflow-y: auto; /* Vertikálny posuv */
+    overflow-x: auto; /* Horizontálny posuv */
+    border: 1px solid #ddd; /* Voliteľné: pre vizuálne ohraničenie plochy */
+    padding: 10px; /* Voliteľné: pre odsadenie obsahu */
+    box-sizing: border-box; /* Zahrnie padding a border do celkovej šírky/výšky */
+    background-color: #fff; /* Voliteľné: pre vizuálne odlíšenie */
+    border-radius: 5px; /* Voliteľné: zaoblené rohy */
+}
+
+@media (max-width: 768px) {
+    .content-wrapper {
+        flex-direction: column;
+        padding: 0 10px;
+    }
+    .left-menu {
+        position: static;
+        margin-bottom: 20px;
+        width: 100%;
+        max-height: none;
+        overflow-y: visible;
+    }
+    main {
+        width: 100%;
+        max-height: none; /* Pre mobilné zobrazenie nechceme pevne omedzenú výšku */
+        overflow-y: visible; /* A ani vertikálny scroll, nech sa content rozpína */
+        overflow-x: visible; /* A ani horizontálny scroll */
+    }
+    .scrollable-area {
+        max-height: calc(100vh - 180px); /* Upravte pre mobilné zobrazenie */
+        /* Na mobiloch môžete chcieť iný spôsob, ako sa to správa, ale ponecháme scroll pre prípad */
+    }
