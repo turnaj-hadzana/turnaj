@@ -488,7 +488,7 @@ td:last-child {
     position: relative; /* Dôležité pre absolútne pozicionovanie zápasov */
     min-width: 160px; /* Použite min-width, aby sa stĺpec mohol prispôsobiť, ale nie byť menší */
     width: 160px; /* Nastavte pevnú šírku */
-    height: 100px; /* Stála výška riadku */
+    height: 150px; /* Stála výška riadku */
     box-sizing: border-box;
     overflow: hidden; /* Skryje pretekajúci obsah */
     white-space: nowrap; /* Zabraňuje zalomeniu textu, aby sa dodržala šírka */
