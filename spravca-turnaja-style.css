@@ -553,7 +553,7 @@ td:last-child {
     flex-grow: 1;
     text-align: center;
     padding: 0 2px;
-    min-width: 60px; /* Zabezpečí, aby bol čas viditeľný */
+    min-width: 160px; /* Zabezpečí, aby bol čas viditeľný */
 }
 
 /* Štýly pre prázdne bunky */
