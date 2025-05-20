@@ -48,8 +48,13 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="matchTime">Čas:</label>
-                    <input type="time" id="matchTime" required>
+                    <label for="matchStartTime">Čas začiatku:</label>
+                    <input type="time" id="matchStartTime" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="matchDuration">Dĺžka zápasu (minúty):</label>
+                    <input type="number" id="matchDuration" min="1" value="60" required>
                 </div>
 
                 <div class="form-group">
