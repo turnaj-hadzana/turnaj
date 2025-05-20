@@ -7,6 +7,211 @@
     <link rel="icon" href="favicon.ico" type="image/x-icon">    
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="spravca-turnaja-style.css">
+    <style>
+        /* Nové CSS pre fixované hlavičky a posuvné plátno */
+        .excel-like-container {
+            display: grid;
+            grid-template-columns: auto 1fr; /* Prvý stĺpec auto, zvyšok zaberá 1fr */
+            grid-template-rows: auto 1fr;   /* Prvý riadok auto, zvyšok zaberá 1fr */
+            overflow: hidden; /* Skryje pretečenie z celého kontajnera */
+            border: 1px solid #ccc;
+            background-color: #fff;
+            max-width: calc(100vw - 280px); /* Prispôsob šírku, aby sa zmestila vedľa menu */
+            height: calc(100vh - 150px); /* Prispôsob výšku, aby sa zmestila na obrazovku */
+            margin: 20px auto;
+        }
+
+        .excel-like-corner,
+        .excel-like-fixed-header,
+        .excel-like-fixed-column,
+        .excel-like-scrollable-content {
+            box-sizing: border-box;
+            border: 1px solid #ddd; /* Jemné okraje pre vizuálne oddelenie */
+            padding: 10px;
+            background-color: #f0f0f0; /* Pozadie pre hlavičky */
+        }
+
+        .excel-like-corner {
+            grid-column: 1;
+            grid-row: 1;
+            z-index: 3; /* Zabezpečí, že je nad ostatnými */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            text-align: center;
+            min-width: 150px; /* Šírka prvého stĺpca (Haly/Ubytovania) */
+        }
+
+        .excel-like-fixed-header {
+            grid-column: 2;
+            grid-row: 1;
+            overflow-x: hidden; /* Skryje pretečenie hlavičky, aby sa neposúvala horizontálne */
+            display: flex; /* Použijeme flexbox pre riadok hlavičiek */
+            z-index: 2;
+        }
+
+        .excel-like-fixed-header .header-cell {
+            min-width: 150px; /* Šírka bunky pre každý hrací deň */
+            padding: 10px;
+            border-left: 1px solid #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            white-space: nowrap; /* Zabráni zalomeniu textu */
+            flex-shrink: 0; /* Zabraňuje zmenšovaniu buniek */
+        }
+
+        .excel-like-fixed-column {
+            grid-column: 1;
+            grid-row: 2;
+            overflow-y: hidden; /* Skryje vertikálne pretečenie stĺpca */
+            z-index: 2;
+        }
+
+        .excel-like-fixed-column .column-cell {
+            height: 100px; /* Výška bunky pre halu/ubytovanie */
+            padding: 10px;
+            border-top: 1px solid #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+        
+        .excel-like-scrollable-content {
+            grid-column: 2;
+            grid-row: 2;
+            overflow: scroll; /* Posuvné v oboch smeroch */
+            -webkit-overflow-scrolling: touch; /* Pre plynulé posúvanie na dotykových zariadeniach */
+            background-color: #f9f9f9;
+            position: relative; /* Potrebné pre absolútne pozicované prvky (napr. pridávacie tlačidlá) */
+        }
+
+        .excel-like-content-grid {
+            display: grid;
+            /* Stĺpce a riadky budú dynamicky generované JS */
+            grid-auto-columns: minmax(150px, 1fr); /* Minimálna šírka bunky pre obsah */
+            grid-auto-rows: 100px; /* Výška bunky pre obsah */
+            min-width: 100%; /* Zabezpečí, že mriežka je aspoň tak široká ako kontajner */
+            min-height: 100%; /* Zabezpečí, že mriežka je aspoň tak vysoká ako kontajner */
+        }
+
+        .excel-like-content-cell {
+            border: 1px solid #eee;
+            padding: 5px;
+            position: relative; /* Pre umiestnenie "+" tlačidla */
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-size: 0.9em;
+            overflow: hidden; /* Ak by obsah pretiekol */
+            text-overflow: ellipsis; /* Pretečený text... */
+        }
+
+        .add-item-button {
+            background-color: #4CAF50; /* Zelené tlačidlo */
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            font-size: 1.5em;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: absolute;
+            bottom: 5px;
+            right: 5px;
+            z-index: 10; /* Aby bolo nad obsahom */
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            transition: background-color 0.2s ease;
+        }
+        .add-item-button:hover {
+            background-color: #45a049;
+        }
+
+        .match-item, .transport-item {
+            background-color: #e0f2f7;
+            border: 1px solid #b3e5fc;
+            padding: 3px 5px;
+            margin: 2px 0;
+            border-radius: 3px;
+            font-size: 0.8em;
+            width: 95%; /* Aby sa zmestil padding */
+            box-sizing: border-box;
+            cursor: pointer;
+            position: relative;
+        }
+        .match-item:hover, .transport-item:hover {
+            background-color: #bbdefb;
+        }
+
+        .match-item .edit-button, .transport-item .edit-button {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background: none;
+            border: none;
+            color: #777;
+            cursor: pointer;
+            font-size: 0.8em;
+            padding: 0;
+        }
+        .match-item .edit-button:hover, .transport-item .edit-button:hover {
+            color: #333;
+        }
+        
+        /* Modálne okno pre pridanie/úpravu udalosti */
+        .modal-form-item {
+            margin-bottom: 15px;
+        }
+        .modal-form-item label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .modal-form-item input[type="text"],
+        .modal-form-item input[type="time"],
+        .modal-form-item select,
+        .modal-form-item textarea {
+            width: calc(100% - 20px); /* Zohľadnenie paddingu */
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .modal-form-item textarea {
+            resize: vertical;
+            min-height: 60px;
+        }
+        .modal-form-item input[type="number"] {
+            width: 80px; /* Pre skóre */
+        }
+        .modal-form-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .modal-form-row > div {
+            flex: 1;
+        }
+        .modal-form-row .small-input {
+            width: 100px;
+        }
+
+        .score-input-group {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+    </style>
 </head>
 <body>
     <script type="module" src="auth.js"></script>
@@ -23,12 +228,206 @@
             </ul>
         </nav>
         <main>
-            <section id="categoriesContentSection" class="section-block">
+            <section id="matchesTransportSection" class="section-block">
                 <h2>Zápasy a doprava</h2>
+
+                <div class="filter-container">
+                    <div class="filter-group">
+                        <label for="categoryFilter">Kategória:</label>
+                        <select id="categoryFilter">
+                            <option value="">-- Všetky kategórie --</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="groupFilter">Skupina:</label>
+                        <select id="groupFilter" disabled>
+                            <option value="">-- Všetky skupiny --</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="gameDayFilter">Dátum:</label>
+                        <input type="date" id="gameDayFilter">
+                    </div>
+                    <button id="resetFiltersButton" class="action-button">Reset filtrov</button>
+                    <button id="addGameDayButton" class="action-button">Pridať hrací deň</button>
+                    <button id="addHallButton" class="action-button">Pridať halu</button>
+                    <button id="addAccommodationButton" class="action-button">Pridať ubytovanie</button>
+                </div>
+                
+                <div class="excel-like-container">
+                    <div class="excel-like-corner">Haly / Ubytovanie</div>
+                    <div class="excel-like-fixed-header" id="fixedHeader">
+                        </div>
+                    <div class="excel-like-fixed-column" id="fixedColumn">
+                        </div>
+                    <div class="excel-like-scrollable-content" id="scrollableContent">
+                        <div class="excel-like-content-grid" id="contentGrid">
+                            </div>
+                    </div>
+                </div>
             </section>
-             </main>
+        </main>
     </div>
-    <button id="addButton" class="add-button" title="Pridať">+</button>
+
+    <div id="eventModal" class="modal">
+        <div class="modal-content">
+            <span class="close event-modal-close">&times;</span>
+            <h2 id="eventModalTitle">Pridať udalosť</h2>
+            <form id="eventForm">
+                <input type="hidden" id="eventId">
+                <div class="modal-form-item">
+                    <label for="eventType">Typ udalosti:</label>
+                    <select id="eventType" required>
+                        <option value="">-- Vyberte typ --</option>
+                        <option value="match">Zápas</option>
+                        <option value="transport">Doprava</option>
+                        <option value="accommodation">Ubytovanie</option>
+                    </select>
+                </div>
+
+                <div class="modal-form-item">
+                    <label for="eventHallAccommodation">Hala / Ubytovanie:</label>
+                    <select id="eventHallAccommodation" required>
+                        <option value="">-- Vyberte halu / ubytovanie --</option>
+                    </select>
+                </div>
+
+                <div class="modal-form-item">
+                    <label for="eventGameDay">Hrací deň:</label>
+                    <select id="eventGameDay" required>
+                        <option value="">-- Vyberte hrací deň --</option>
+                    </select>
+                </div>
+
+                <div class="modal-form-item">
+                    <label for="eventTime">Čas:</label>
+                    <input type="time" id="eventTime" required>
+                </div>
+
+                <div id="matchFields" style="display: none;">
+                    <div class="modal-form-item">
+                        <label for="matchCategory">Kategória:</label>
+                        <select id="matchCategory" required>
+                            <option value="">-- Vyberte kategóriu --</option>
+                        </select>
+                    </div>
+                    <div class="modal-form-item">
+                        <label for="matchGroup">Skupina:</label>
+                        <select id="matchGroup" disabled required>
+                            <option value="">-- Vyberte skupinu --</option>
+                        </select>
+                    </div>
+                    <div class="modal-form-row">
+                        <div>
+                            <label for="matchTeam1">Tím 1:</label>
+                            <select id="matchTeam1" required>
+                                <option value="">-- Vyberte tím --</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="matchTeam2">Tím 2:</label>
+                            <select id="matchTeam2" required>
+                                <option value="">-- Vyberte tím --</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-form-row">
+                        <div class="score-input-group">
+                            <label for="matchScore1">Skóre Tímu 1:</label>
+                            <input type="number" id="matchScore1" min="0">
+                        </div>
+                        <div class="score-input-group">
+                            <label for="matchScore2">Skóre Tímu 2:</label>
+                            <input type="number" id="matchScore2" min="0">
+                        </div>
+                    </div>
+                </div>
+
+                <div id="transportFields" style="display: none;">
+                    <div class="modal-form-item">
+                        <label for="transportTeam">Tím:</label>
+                        <select id="transportTeam" required>
+                            <option value="">-- Vyberte tím --</option>
+                        </select>
+                    </div>
+                    <div class="modal-form-item">
+                        <label for="transportDriver">Vodič:</label>
+                        <input type="text" id="transportDriver">
+                    </div>
+                    <div class="modal-form-item">
+                        <label for="transportVehicleNo">Číslo vozidla:</label>
+                        <input type="text" id="transportVehicleNo">
+                    </div>
+                    <div class="modal-form-item">
+                        <label for="transportDescription">Popis dopravy (napr. príchod/odchod):</label>
+                        <textarea id="transportDescription"></textarea>
+                    </div>
+                </div>
+
+                <div id="accommodationFields" style="display: none;">
+                    <div class="modal-form-item">
+                        <label for="accommodationTeam">Tím:</label>
+                        <select id="accommodationTeam" required>
+                            <option value="">-- Vyberte tím --</option>
+                        </select>
+                    </div>
+                    <div class="modal-form-item">
+                        <label for="accommodationRoom">Číslo izby:</label>
+                        <input type="text" id="accommodationRoom">
+                    </div>
+                    <div class="modal-form-item">
+                        <label for="accommodationDescription">Popis ubytovania:</label>
+                        <textarea id="accommodationDescription"></textarea>
+                    </div>
+                </div>
+
+                <button type="submit">Uložiť udalosť</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="addHallModal" class="modal">
+        <div class="modal-content">
+            <span class="close add-hall-modal-close">&times;</span>
+            <h2>Pridať halu</h2>
+            <form id="addHallForm">
+                <div class="modal-form-item">
+                    <label for="hallNameInput">Názov haly:</label>
+                    <input type="text" id="hallNameInput" required>
+                </div>
+                <button type="submit">Pridať halu</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="addAccommodationModal" class="modal">
+        <div class="modal-content">
+            <span class="close add-accommodation-modal-close">&times;</span>
+            <h2>Pridať ubytovanie</h2>
+            <form id="addAccommodationForm">
+                <div class="modal-form-item">
+                    <label for="accommodationNameInput">Názov ubytovania:</label>
+                    <input type="text" id="accommodationNameInput" required>
+                </div>
+                <button type="submit">Pridať ubytovanie</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="addGameDayModal" class="modal">
+        <div class="modal-content">
+            <span class="close add-game-day-modal-close">&times;</span>
+            <h2>Pridať hrací deň</h2>
+            <form id="addGameDayForm">
+                <div class="modal-form-item">
+                    <label for="gameDayDateInput">Dátum hracieho dňa:</label>
+                    <input type="date" id="gameDayDateInput" required>
+                </div>
+                <button type="submit">Pridať hrací deň</button>
+            </form>
+        </div>
+    </div>
+
     <script type="module" src="spravca-turnaja-common.js"></script>
     <script type="module" src="spravca-turnaja-zapasy-doprava.js"></script>
 </body>
