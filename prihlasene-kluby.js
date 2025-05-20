@@ -670,21 +670,18 @@ async function handleUrlState() {
     await loadAllData();
 
     // Only set sessionStorage referrer if coming from another page and it's not already set
-    // This ensures it captures the *initial* entry point relevant for the "back" button.
     if (document.referrer && !sessionStorage.getItem(REFERRING_PAGE_KEY)) {
-        const referrerUrl = new URL(document.referrer); // Parse the referrer URL
+        const referrerUrl = new URL(document.referrer); 
 
-        // Check if the referrer's pathname includes 'zobrazenie-skupin.html'
-        // This will include the full path, query, and hash (if present in document.referrer)
         if (referrerUrl.pathname.includes('zobrazenie-skupin.html')) {
-            // Store the complete referrer URL as is, which should include hash if available
+            // Store the complete referrer URL as is, which should include hash if available in document.referrer
             sessionStorage.setItem(REFERRING_PAGE_KEY, document.referrer);
         } else if (referrerUrl.pathname.includes('prihlasene-kluby.html')) {
              // If coming from prihlasene-kluby.html (e.g., initial load without params),
              // set it to base prihlasene-kluby.html
              sessionStorage.setItem(REFERRING_PAGE_KEY, window.location.origin + window.location.pathname);
         }
-         referringPage = referrerUrl.pathname; // Still keep for internal reference if needed
+         referringPage = referrerUrl.pathname; 
     } else if (!sessionStorage.getItem(REFERRING_PAGE_KEY)) {
         // If no referrer (direct access) and not already set, default to current page's base URL
         sessionStorage.setItem(REFERRING_PAGE_KEY, window.location.origin + window.location.pathname);
