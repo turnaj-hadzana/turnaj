@@ -149,7 +149,7 @@ export async function populateGroupSelect(selectedCategoryId, selectElement, sel
     }
 }
 
-// NOVÁ FUNKCIA: populateTeamNumberSelect
+// ÚPRAVA TU: populateTeamNumberSelect
 export async function populateTeamNumberSelect(selectedCategoryId, selectedGroupId, selectElement, selectedTeamNumber = null) {
     if (!selectedCategoryId || !selectedGroupId || !selectElement) {
         selectElement.innerHTML = '<option value="">-- Vyberte kategóriu a skupinu --</option>';
@@ -161,8 +161,6 @@ export async function populateTeamNumberSelect(selectedCategoryId, selectedGroup
     selectElement.disabled = true;
 
     try {
-        // Tímy sú uložené v kolekcii 'clubs' (predpokladáme, že club je team)
-        // a majú referenciu na kategóriu a skupinu.
         const q = query(
             clubsCollectionRef,
             where("categoryId", "==", selectedCategoryId),
@@ -177,19 +175,19 @@ export async function populateTeamNumberSelect(selectedCategoryId, selectedGroup
             option.disabled = true;
             selectElement.appendChild(option);
         } else {
-            // Predpokladáme, že poradové číslo je v `orderNumber` alebo `id`
-            // Ak nemajú `orderNumber`, môžeme ich zoradiť podľa id a použiť index+1,
-            // alebo predpokladať, že `orderNumber` je súčasťou dát tímu.
-            // Pre jednoduchosť budeme teraz používať ich ID ako poradové číslo (alebo field 'orderNumber' ak existuje)
-            // Alebo jednoducho číslo 1, 2, 3 ... až po počet tímov v skupine (ideálnejšie)
-            // Zatiaľ budeme generovať čísla na základe nájdených dokumentov.
-            const teamNumbers = querySnapshot.docs.map(doc => doc.data().orderNumber || doc.data().teamNumber || doc.id); // Príklad: použi orderNumber alebo id
-            teamNumbers.sort((a, b) => a - b); // Zoraď ich numericky
+            // Predpokladáme, že poradové číslo je v `orderNumber` alebo `teamNumber`
+            const teamNumbers = querySnapshot.docs.map(doc => doc.data().orderNumber || doc.data().teamNumber || doc.id); 
+            teamNumbers.sort((a, b) => {
+                // Konverzia na čísla pre správne numerické zoradenie
+                const numA = parseInt(a);
+                const numB = parseInt(b);
+                return numA - numB;
+            });
 
             teamNumbers.forEach((teamNumber) => {
                 const option = document.createElement('option');
                 option.value = teamNumber; // Uložíme reálnu hodnotu (napr. ID dokumentu alebo číslo)
-                option.textContent = `Tím ${teamNumber}`; // Zobrazíme "Tím 1", "Tím 2" atď.
+                option.textContent = teamNumber; // *** ZMENA: Zobrazíme len samotné poradové číslo ***
                 selectElement.appendChild(option);
             });
 
