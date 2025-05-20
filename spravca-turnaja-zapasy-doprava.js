@@ -1,4 +1,4 @@
-import { db, categoriesCollectionRef, groupsCollectionRef, clubsCollectionRef, openModal, closeModal, populateCategorySelect, populateGroupSelect, populateTeamNumberSelect, getDocs, doc, setDoc, addDoc, getDoc, query, where } from './spravca-turnaja-common.js';
+import { db, categoriesCollectionRef, groupsCollectionRef, clubsCollectionRef, openModal, closeModal, populateCategorySelect, populateGroupSelect, populateTeamNumberSelect, getDocs, doc, setDoc, addDoc, getDoc, query, where } from './spravca-turnaja-common.js'; // populateTeamNumberSelect už nebude potrebná na priame plnenie, ale ponecháme ju pre getTeamName
 
 document.addEventListener('DOMContentLoaded', () => {
     const loggedInUsername = localStorage.getItem('username');
@@ -22,9 +22,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const matchGroupSelect = document.getElementById('matchGroup');     // Pre hlavnú skupinu zápasu
     const matchModalTitle = document.getElementById('matchModalTitle');
 
-    // NOVÉ REFERENCIE PRE TÍMY (len poradové čísla)
-    const team1NumberSelect = document.getElementById('team1NumberSelect');
-    const team2NumberSelect = document.getElementById('team2NumberSelect');
+    // NOVÉ REFERENCIE PRE TÍMY (inputy pre poradové čísla)
+    const team1NumberInput = document.getElementById('team1NumberInput');
+    const team2NumberInput = document.getElementById('team2NumberInput');
 
 
     // Zobrazenie správnej sekcie po načítaní
@@ -46,53 +46,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Inicializácia selectov pre hlavnú kategóriu/skupinu zápasu
         populateCategorySelect(matchCategorySelect);
-        matchGroupSelect.innerHTML = '<option value="">-- Vyberte skupinu (voliteľné) --</option>';
+        matchGroupSelect.innerHTML = '<option value="">-- Vyberte skupinu --</option>';
         matchGroupSelect.disabled = true;
 
-        // Vyčisti a zablokuj selecty pre poradové čísla tímov
-        team1NumberSelect.innerHTML = '<option value="">-- Vyberte poradové číslo --</option>';
-        team1NumberSelect.disabled = true;
-        team2NumberSelect.innerHTML = '<option value="">-- Vyberte poradové číslo --</option>';
-        team2NumberSelect.disabled = true;
+        // Reset inputov pre poradové čísla tímov
+        team1NumberInput.value = '';
+        team2NumberInput.value = '';
         
         openModal(matchModal);
     });
 
     // Event listener pre zmenu hlavnej kategórie zápasu
-    // Táto zmena bude plniť aj skupinu a následne čísla tímov
     matchCategorySelect.addEventListener('change', () => {
         const selectedCategoryId = matchCategorySelect.value;
         if (selectedCategoryId) {
             populateGroupSelect(selectedCategoryId, matchGroupSelect);
             matchGroupSelect.disabled = false;
         } else {
-            matchGroupSelect.innerHTML = '<option value="">-- Vyberte skupinu (voliteľné) --</option>';
+            matchGroupSelect.innerHTML = '<option value="">-- Vyberte skupinu --</option>';
             matchGroupSelect.disabled = true;
-            // Ak sa zruší kategória, vyčisti aj poradové čísla tímov
-            team1NumberSelect.innerHTML = '<option value="">-- Vyberte poradové číslo --</option>';
-            team1NumberSelect.disabled = true;
-            team2NumberSelect.innerHTML = '<option value="">-- Vyberte poradové číslo --</option>';
-            team2NumberSelect.disabled = true;
+            // Ak sa zruší kategória, vyčisti aj poradové čísla tímov (inputy)
+            team1NumberInput.value = '';
+            team2NumberInput.value = '';
         }
     });
 
     // Event listener pre zmenu hlavnej skupiny zápasu
-    // Táto zmena bude plniť selecty pre poradové čísla tímov
+    // Už nebude napĺňať inputy, tie sú manuálne zadávané
     matchGroupSelect.addEventListener('change', () => {
-        const selectedCategoryId = matchCategorySelect.value;
-        const selectedGroupId = matchGroupSelect.value;
-
-        if (selectedCategoryId && selectedGroupId) {
-            populateTeamNumberSelect(selectedCategoryId, selectedGroupId, team1NumberSelect);
-            populateTeamNumberSelect(selectedCategoryId, selectedGroupId, team2NumberSelect);
-            team1NumberSelect.disabled = false;
-            team2NumberSelect.disabled = false;
-        } else {
-            team1NumberSelect.innerHTML = '<option value="">-- Vyberte poradové číslo --</option>';
-            team1NumberSelect.disabled = true;
-            team2NumberSelect.innerHTML = '<option value="">-- Vyberte poradové číslo --</option>';
-            team2NumberSelect.disabled = true;
-        }
+        // Logika tu už nemusí volať populateTeamNumberSelect
+        // Môžeme prípadne nastaviť nejakú validáciu alebo reset
+        // ale inputy sú už vždy aktívne pre manuálne zadanie
     });
 
     // Event listener pre zatvorenie modálneho okna
@@ -116,11 +100,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const groupName = groupDoc.exists() ? (groupDoc.data().name || groupId) : groupId;
 
             // Nájdeme tím (club) podľa čísla v danej skupine
+            // Používame parseInt(teamNumber) pretože input type="number" vracia string
             const q = query(
                 clubsCollectionRef,
                 where("categoryId", "==", categoryId),
                 where("groupId", "==", groupId),
-                where("orderNumber", "==", parseInt(teamNumber)) // Používame orderNumber ako číslo
+                where("orderNumber", "==", parseInt(teamNumber))
             );
             const querySnapshot = await getDocs(q);
             let teamName = `Tím ${teamNumber}`; // Predvolený názov ak nenájdeme konkrétny názov tímu
@@ -149,18 +134,27 @@ document.addEventListener('DOMContentLoaded', () => {
         const matchCategory = matchCategorySelect.value;
         const matchGroup = matchGroupSelect.value;
         
-        const team1Number = team1NumberSelect.value;
-        const team2Number = team2NumberSelect.value;
+        // Hodnoty z inputov pre poradové čísla
+        const team1Number = team1NumberInput.value;
+        const team2Number = team2NumberInput.value;
+
+        // Základná validácia: Ak nie je vybraná kategória alebo skupina, alebo nie sú zadané čísla tímov
+        if (!matchCategory || !matchGroup || !team1Number || !team2Number) {
+            alert('Prosím, vyplňte všetky povinné polia (Kategória, Skupina, Poradové číslo tímu 1 a 2).');
+            return;
+        }
 
         let team1Name = null;
         let team2Name = null;
 
         // Získanie názvov tímov na základe vybraných ID z hlavnej kategórie/skupiny
-        if (matchCategory && matchGroup && team1Number) {
-            team1Name = await getTeamName(matchCategory, matchGroup, team1Number);
-        }
-        if (matchCategory && matchGroup && team2Number) {
-            team2Name = await getTeamName(matchCategory, matchGroup, team2Number);
+        team1Name = await getTeamName(matchCategory, matchGroup, team1Number);
+        team2Name = await getTeamName(matchCategory, matchGroup, team2Number);
+        
+        // Voliteľná validácia: Ak sa názov tímu nezískal (tím neexistuje)
+        if (!team1Name || !team2Name) {
+            alert('Jeden alebo oba tímy sa nenašli. Skontrolujte poradové čísla v danej kategórii a skupine.');
+            return;
         }
 
         const matchData = {
