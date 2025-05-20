@@ -629,7 +629,7 @@ td:last-child {
 .schedule-cell-club-names {
     font-style: italic;
     color: #666;
-    font-size: 0.9em;
+    font-size: 0.75em;
 }
 
 /* Akčné tlačidlá vo vnútri bloku zápasu */
@@ -646,6 +646,7 @@ td:last-child {
     flex-shrink: 0; /* Zabraňuje tlačidlám zmenšovať sa, ak je priestoru málo */
     margin-top: 5px; /* Malý margin nad tlačidlami, ak je content príliš krátky */
     align-items: center; /* Centruje obsah vertikálne */
+    font-size: 0.8em;
 }
 
 .schedule-cell-actions button {
@@ -658,6 +659,7 @@ td:last-child {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    font-size: 0.8em;
 }
 
 .schedule-cell-actions .edit-btn {
