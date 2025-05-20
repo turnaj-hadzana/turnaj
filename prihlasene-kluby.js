@@ -675,7 +675,8 @@ async function handleUrlState() {
         const referrerUrl = new URL(document.referrer);
         // We only care about the pathname for comparison
         if (referrerUrl.pathname.includes('zobrazenie-skupin.html')) {
-            sessionStorage.setItem(REFERRING_PAGE_KEY, referrerUrl.href); // Store full URL if it's groups page
+            // Store full URL including hash if it's groups page
+            sessionStorage.setItem(REFERRING_PAGE_KEY, referrerUrl.href + referrerUrl.hash);
         } else if (referrerUrl.pathname.includes('prihlasene-kluby.html')) {
              // If coming from prihlasene-kluby.html (e.g., initial load without params),
              // set it to base prihlasene-kluby.html
