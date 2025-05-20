@@ -307,8 +307,6 @@ main {
 /*---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
 
 
-/* Styly pre tabuľku rozvrhu zápasov */
-
 /* Container, ktorý umožňuje horizontálny scroll, ak je tabuľka príliš široká */
 .schedule-table-container {
     overflow-x: auto;
@@ -316,7 +314,7 @@ main {
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     background-color: #fff;
-    width: 100%; /* ZMENENÉ: Aby kontajner zabral celú šírku, ak je to možné */
+    width: 100%; 
     margin: 0 auto;
 }
 
@@ -334,8 +332,8 @@ main {
     padding: 0;
     text-align: center;
     vertical-align: top;
-    position: relative;
-    height: 120px; /* Zvýšená výška pre viac obsahu a lepšie zobrazenie */
+    position: relative; /* DÔLEŽITÉ: Rodič pre absolútne pozicionované zápasy */
+    height: 120px; /* Výška každej hodiny (bunky) */
     box-sizing: border-box;
 }
 
@@ -355,8 +353,8 @@ main {
     background-color: #007bff;
     color: white;
     font-size: 0.9em;
-    width: 160px; /* Možno mierne zväčšiť šírku, aby sa zmestilo viac textu */
-    min-width: 160px; /* Pevná šírka pre stĺpec s miestami */
+    width: 160px; 
+    min-width: 160px; 
     position: sticky;
     left: 0;
     z-index: 11;
@@ -402,22 +400,17 @@ main {
     flex-grow: 1;
     text-align: center;
     padding: 0 2px;
-    min-width: 80px; /* Nastaví minimálnu šírku pre každý časový slot */
+    min-width: 80px; 
 }
 
 
 /* Štýly pre prázdne bunky */
-.match-schedule-table td:empty {
-    background-color: #f7f7f7;
+/* schedule-cell-wrapper */
+.match-schedule-table td {
+    background-color: #f7f7f7; /* Predvolené pozadie pre prázdne bunky */
+    /* Dôležité: Ak sú zápasy s absolútnym pozicionovaním, bunka sama o sebe môže vyzerať prázdna, ale sú v nej obsahy */
 }
 
-/* Placeholder pre prázdne bunky */
-.no-match-placeholder {
-    display: block;
-    width: 100%;
-    height: 100%;
-    background-color: #f7f7f7;
-}
 
 /* Štýly pre blok zápasu vo vnútri bunky */
 .schedule-cell-match {
@@ -428,24 +421,33 @@ main {
     font-size: 0.75em;
     line-height: 1.1;
     text-align: left;
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    position: absolute; /* DÔLEŽITÉ: Pozicionuje sa vzhľadom na rodičovskú <td> */
+    left: 2px; /* Malý odstup od ľavého okraja bunky */
+    right: 2px; /* Malý odstup od pravého okraja bunky */
+    /* top a height sú nastavené inline v JS */
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     padding-bottom: 25px; /* Priestor pre akčné tlačidlá */
     box-sizing: border-box;
-    overflow-y: auto; /* Ak je text príliš dlhý, povolí scroll */
-    overflow-x: hidden;
+    overflow: hidden; /* Zabraňuje pretečeniu obsahu, ak je príliš veľký */
+    z-index: 1; /* Zabezpečí, že zápasy budú nad pozadím bunky */
 }
+
+/* Pridaj z-index pre prekrytie, ak sa zápasy prekrývajú */
+.schedule-cell-match + .schedule-cell-match {
+    /* Ak sú zápasy, ktoré začínajú veľmi blízko seba a prekrývajú sa, 
+       toto im môže pomôcť vyzerať lepšie.
+       Možno budete potrebovať algoritmus na detekciu kolízií, ak je prekrývanie problém.
+    */
+    /* z-index: 2; /* Experimentujte s týmto, ak sa prekrývajú*/
+}
+
 
 /* Odstránenie predvolených marginov z p elementov vnútri zápasu */
 .schedule-cell-match p {
     margin: 0;
-    padding: 0 3px; /* Malý horizontálny padding pre text */
+    padding: 0 3px; 
 }
 
 .schedule-cell-category {
@@ -456,7 +458,7 @@ main {
 .schedule-cell-teams {
     font-weight: bold;
     color: #333;
-    line-height: 1.2; /* Dôležité pre rozdelenie na dva riadky */
+    line-height: 1.2; 
 }
 
 .schedule-cell-club-names {
@@ -467,29 +469,29 @@ main {
 
 /* Akčné tlačidlá vo vnútri bloku zápasu */
 .schedule-cell-actions {
-    position: absolute; /* Absolútne pozicionovanie voči .schedule-cell-match */
-    bottom: 0; /* Na spodok bloku */
+    position: absolute; 
+    bottom: 0; 
     left: 0;
     right: 0;
     display: flex;
     justify-content: space-around;
-    gap: 2px; /* Medzera medzi tlačidlami */
-    padding: 2px; /* Malý padding okolo tlačidiel */
-    background-color: rgba(255, 255, 255, 0.9); /* Mierne priehľadné pozadie pre lepšiu čitateľnosť */
-    border-top: 1px solid #ccc; /* Oddeľovač od textu zápasu */
+    gap: 2px; 
+    padding: 2px; 
+    background-color: rgba(255, 255, 255, 0.9); 
+    border-top: 1px solid #ccc; 
     box-sizing: border-box;
 }
 
 .schedule-cell-actions button {
     flex-grow: 1;
-    padding: 2px 4px; /* Zmenšený padding tlačidiel */
+    padding: 2px 4px; 
     border: none;
     border-radius: 3px;
     cursor: pointer;
-    font-size: 0.7em; /* Menšie písmo pre tlačidlá */
-    white-space: nowrap; /* Zabraňuje zalomeniu textu tlačidla */
+    font-size: 0.7em; 
+    white-space: nowrap; 
     overflow: hidden;
-    text-overflow: ellipsis; /* Ak sa text nezmestí, pridá trojbodku */
+    text-overflow: ellipsis; 
 }
 
 .schedule-cell-actions .edit-btn {
@@ -522,7 +524,7 @@ main {
     }
 
     .left-menu ul li {
-        flex: 1 1 auto; /* Flexibilné položky pre menšie obrazovky */
+        flex: 1 1 auto; 
         text-align: center;
     }
 
@@ -545,12 +547,12 @@ main {
     }
 
     .match-schedule-table .fixed-column {
-        min-width: 120px; /* Zmenšiť pre mobilné zariadenia */
+        min-width: 120px; 
         font-size: 0.8em;
     }
 
     .schedule-hour-slot {
-        min-width: 60px; /* Zmenšiť pre mobilné zariadenia */
+        min-width: 60px; 
         font-size: 0.7em;
     }
 }
