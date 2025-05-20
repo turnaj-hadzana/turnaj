@@ -465,7 +465,7 @@ td:last-child {
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     background-color: #fff;
     width: 60%;
-    margin-left: auto;
+    margin-left: 0;
     margin-right: 0;
 }
 
