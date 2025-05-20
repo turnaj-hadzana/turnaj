@@ -114,7 +114,7 @@ main {
     box-shadow: none;
     background-color: transparent;
     min-width: 0;
-    overflow-x: hidden; /* Zmenené: Zabezpečí, že main sám nebude mať horizontálny scrollbar */
+    overflow-x: hidden; /* Zabezpečí, že main sám nebude mať horizontálny scrollbar */
     /* overflow-y: auto; Ak tu chceš vertikálny scrollbar pre celý main obsah */
 }
 
@@ -582,7 +582,8 @@ td:last-child {
     justify-content: space-between; /* Rozdelí priestor medzi obsahom a tlačidlami */
     padding-bottom: 25px; /* Priestor na spodku pre tlačidlá */
     box-sizing: border-box; /* Dôležité pre správnu prácu paddingu s absolute */
-    overflow: hidden; /* Skryje pretečenie obsahu */
+    overflow-y: auto; /* ZMENENÉ: Povolí vertikálne posúvanie, ak je obsah príliš dlhý */
+    overflow-x: hidden; /* Pridané: Zabezpečí, že v bunke nebude horizontálny scrollbar, ak nie je potrebný */
 }
 
 /* Odstránenie predvolených marginov z p elementov vnútri zápasu */
