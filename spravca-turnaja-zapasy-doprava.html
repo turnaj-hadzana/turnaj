@@ -69,19 +69,18 @@
 
                 <div class="form-group">
                     <label for="matchGroup">Skupina (pre zápas):</label>
-                    <select id="matchGroup" required></select> </div>
+                    <select id="matchGroup" required></select>
+                </div>
 
                 <h3>Tím 1</h3>
                 <div class="form-group">
-                    <label for="team1NumberSelect">Poradové číslo tímu 1:</label>
-                    <select id="team1NumberSelect"></select>
-                </div>
+                    <label for="team1NumberInput">Poradové číslo tímu 1:</label>
+                    <input type="number" id="team1NumberInput" min="1" required> </div>
 
                 <h3>Tím 2</h3>
                 <div class="form-group">
-                    <label for="team2NumberSelect">Poradové číslo tímu 2:</label>
-                    <select id="team2NumberSelect"></select>
-                </div>
+                    <label for="team2NumberInput">Poradové číslo tímu 2:</label>
+                    <input type="number" id="team2NumberInput" min="1" required> </div>
 
                 <button type="submit">Uložiť zápas</button>
             </form>
