@@ -63,17 +63,20 @@ document.addEventListener('DOMContentLoaded', async () => {
                 uniqueTimes.add(match.time);
             });
 
-            const matchesMap = new Map();
-
             // Zoradenie pre konzistentné zobrazenie
             const sortedLocations = Array.from(uniqueLocations).sort();
             const sortedDates = Array.from(uniqueDates).sort(); // YYYY-MM-DD reťazce sa správne zoradia
             const sortedTimes = Array.from(uniqueTimes).sort(); // HH:MM reťazce sa správne zoradia
 
-            // PRIDANÉ: Nový dateFormatter len pre dátum vo formáte dd. mm.
-            const headerDateFormatter = new Intl.DateTimeFormat('sk-SK', {
-                day: '2-digit',   // Dvojciferné číslo dňa (napr. 01, 15)
-                month: '2-digit'  // Dvojciferné číslo mesiaca (napr. 03, 12)
+            // Mapovanie zápasov pre rýchly prístup
+            // Kľúč: "location|date|time", Hodnota: [match1, match2, ...] (pole, ak je viac zápasov v rovnakom slote)
+            const matchesMap = new Map();
+            allMatches.forEach(match => {
+                const key = `${match.location}|${match.date}|${match.time}`;
+                if (!matchesMap.has(key)) {
+                    matchesMap.set(key, []);
+                }
+                matchesMap.get(key).push(match);
             });
 
             let scheduleHtml = '<div class="schedule-table-container">'; // Kontajner pre overflow-x
@@ -84,20 +87,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             // Hlavičky pre dni a časy
             sortedDates.forEach(date => {
-                // Konverzia dátumu na Date objekt a jeho formátovanie
-                const dateObj = new Date(date + 'T00:00:00'); // Pridávame 'T00:00:00', aby sa predišlo problémom s časovou zónou
-                let formattedHeaderDate = headerDateFormatter.format(dateObj); // Formátovanie pre hlavičku
-
-                // NOVÉ: Odstránenie poslednej bodky, ak existuje (pre presný formát "DD. MM.")
-                if (formattedHeaderDate.endsWith('.')) {
-                    formattedHeaderDate = formattedHeaderDate.slice(0, -1); // Odstráni posledný znak
-                }
-                // PRIDANÉ: Zabezpečenie medzery po bodke, ak by tam nebola (Intl.DateTimeFormat na sk-SK by ju mal dať, ale pre istotu)
-                formattedHeaderDate = formattedHeaderDate.replace('.', '. ');
-
-
                 scheduleHtml += `<th colspan="${sortedTimes.length}">`; // Každý dátum sa roztiahne cez všetky časy
-                scheduleHtml += `<div class="schedule-date-header">${formattedHeaderDate}</div>`; // Použitie naformátovaného dátumu
+                scheduleHtml += `<div class="schedule-date-header">${date}</div>`;
                 scheduleHtml += '<div class="schedule-times-row">';
                 sortedTimes.forEach(time => {
                     scheduleHtml += `<span>${time}</span>`;
@@ -106,8 +97,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 scheduleHtml += '</th>';
             });
             scheduleHtml += '</tr></thead><tbody>';
-
-            // ... (zvyšok funkcie displayMatchesAsSchedule zostáva nezmenený) ...
 
             // Generovanie riadkov tabuľky (pre každé miesto)
             sortedLocations.forEach(location => {
@@ -148,14 +137,20 @@ document.addEventListener('DOMContentLoaded', async () => {
             scheduleHtml += '</div>'; // Koniec schedule-table-container
             matchesContainer.innerHTML = scheduleHtml;
 
-            // ... (pridanie event listenerov po generovaní HTML zostáva nezmenené) ...
+            // Pridanie event listenerov po generovaní HTML
+            matchesContainer.querySelectorAll('.edit-btn').forEach(button => {
+                button.addEventListener('click', (event) => editMatch(event.target.dataset.id));
+            });
+            matchesContainer.querySelectorAll('.delete-btn').forEach(button => {
+                button.addEventListener('click', (event) => deleteMatch(event.target.dataset.id));
+            });
 
         } catch (error) {
             console.error("Chyba pri načítaní rozvrhu zápasov: ", error);
             matchesContainer.innerHTML = '<p>Chyba pri načítaní rozvrhu zápasov.</p>';
         }
     }
-    
+
     // Funkcie editMatch a deleteMatch zostávajú rovnaké, len budú volať displayMatchesAsSchedule()
     async function editMatch(matchId) {
         try {
