@@ -63,6 +63,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 uniqueTimes.add(match.time);
             });
 
+            const matchesMap = new Map();
+
             // Zoradenie pre konzistentné zobrazenie
             const sortedLocations = Array.from(uniqueLocations).sort();
             const sortedDates = Array.from(uniqueDates).sort(); // YYYY-MM-DD reťazce sa správne zoradia
