@@ -7,6 +7,7 @@
     <link rel="icon" href="favicon.ico" type="image/x-icon">    
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="spravca-turnaja-style.css">
+    <link rel="stylesheet" href="calendar-schedule-style.css"> 
 </head>
 <body>
     <script type="module" src="auth.js"></script>
@@ -23,67 +24,68 @@
             </ul>
         </nav>
         <main>
-            <section id="categoriesContentSection" class="section-block">
-                <h2>Zápasy a doprava</h2>
-                
-                <div id="matchesContainer" class="scrollable-area">
-                    <p>Žiadne zápasy ani informácie o doprave zatiaľ.</p>
+            <section id="matchesContentSection" class="section-block"> <h2>Zápasy a doprava - Kalendár</h2>
+                <div class="actions">
+                    <button id="addButton" class="add-button">Pridať zápas / dopravu</button>
+                    <label for="filterDateInput">Zobraziť pre deň:</label>
+                    <input type="date" id="filterDateInput">
+                    <button id="resetFilterButton">Zobraziť všetky dni</button>
                 </div>
-
+                
+                <div id="calendarContainer" class="calendar-container">
+                    <p>Načítavam kalendár zápasov...</p>
+                </div>
+                
             </section>
+
+            <div id="matchModal" class="modal">
+                <div class="modal-content">
+                    <span class="close" id="closeMatchModal">&times;</span>
+                    <h2 id="matchModalTitle">Pridať nový zápas / dopravu</h2>
+                    <form id="matchForm">
+                        <input type="hidden" id="matchId">
+                        <div class="form-group">
+                            <label for="matchDate">Dátum:</label>
+                            <input type="date" id="matchDate" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="matchTime">Čas začiatku:</label>
+                            <input type="time" id="matchTime" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="matchEndTime">Čas konca (voliteľné):</label>
+                            <input type="time" id="matchEndTime">
+                        </div>
+                        <div class="form-group">
+                            <label for="matchLocation">Miesto (názov haly):</label>
+                            <input type="text" id="matchLocation" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="matchCategory">Kategória:</label>
+                            <select id="matchCategory" required>
+                                <option value="">-- Vyberte kategóriu --</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="matchGroup">Skupina:</label>
+                            <select id="matchGroup" required disabled>
+                                <option value="">-- Vyberte skupinu --</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="team1NumberInput">Tím 1 (poradové číslo):</label>
+                            <input type="number" id="team1NumberInput" min="1" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="team2NumberInput">Tím 2 (poradové číslo):</label>
+                            <input type="number" id="team2NumberInput" min="1" required>
+                        </div>
+                        <button type="submit">Uložiť zápas</button>
+                    </form>
+                </div>
+            </div>
         </main>
     </div>
-    <button id="addButton" class="add-button" title="Pridať">+</button>
-
-    <div id="matchModal" class="modal">
-        <div class="modal-content">
-            <span class="close" id="closeMatchModal">&times;</span>
-            <h2 id="matchModalTitle">Pridať nový zápas / dopravu</h2>
-            <form id="matchForm">
-                <input type="hidden" id="matchId">
-
-                <div class="form-group">
-                    <label for="matchDate">Dátum:</label>
-                    <input type="date" id="matchDate" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="matchTime">Čas:</label>
-                    <input type="time" id="matchTime" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="matchLocation">Miesto:</label>
-                    <input type="text" id="matchLocation" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="matchCategory">Kategória (pre zápas):</label>
-                    <select id="matchCategory" required></select>
-                </div>
-
-                <div class="form-group">
-                    <label for="matchGroup">Skupina (pre zápas):</label>
-                    <select id="matchGroup" required></select>
-                </div>
-
-                <h3>Tím 1</h3>
-                <div class="form-group">
-                    <label for="team1NumberInput">Poradové číslo tímu 1:</label>
-                    <input type="number" id="team1NumberInput" min="1" required>
-                </div>
-
-                <h3>Tím 2</h3>
-                <div class="form-group">
-                    <label for="team2NumberInput">Poradové číslo tímu 2:</label>
-                    <input type="number" id="team2NumberInput" min="1" required>
-                </div>
-
-                <button type="submit">Uložiť zápas</button>
-            </form>
-        </div>
-    </div>
-
     <script type="module" src="spravca-turnaja-common.js"></script>
     <script type="module" src="spravca-turnaja-zapasy-doprava.js"></script>
 </body>
