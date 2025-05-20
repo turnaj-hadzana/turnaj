@@ -25,8 +25,8 @@ let allClubs = [];
 let allCategories = [];
 let allGroups = [];
 
-// Key for sessionStorage to store the "return to" URL, including hash, *only* if coming from groups page
-const REFERRING_PAGE_FROM_GROUPS_KEY = 'tournament_referring_page_from_groups';
+// Key for sessionStorage to store the "return to" URL, specifically from a "zobrazenie-skupin.html" link
+const REFERRING_PAGE_RETURN_URL_KEY = 'tournament_referring_page_return_url';
 
 async function loadAllData() {
     try {
@@ -638,32 +638,31 @@ async function displaySpecificTeamDetails(teamId) {
     }
 }
 
-// MODIFIED goBackToList function
 function goBackToList() {
-    const storedReturnUrl = sessionStorage.getItem(REFERRING_PAGE_FROM_GROUPS_KEY);
-    console.log('goBackToList: Načítaná URL z REFERRING_PAGE_FROM_GROUPS_KEY:', storedReturnUrl);
+    const storedReturnUrl = sessionStorage.getItem(REFERRING_PAGE_RETURN_URL_KEY);
+    console.log('goBackToList: Načítaná URL z sessionStorage:', storedReturnUrl);
 
-    if (storedReturnUrl && storedReturnUrl.includes('zobrazenie-skupin.html')) {
-        console.log('goBackToList: Presmerovávam na externú URL z groups:', storedReturnUrl);
+    if (storedReturnUrl) { // If there's any return URL stored
+        console.log('goBackToList: Presmerovávam na uloženú URL:', storedReturnUrl);
+        // Using window.location.href to fully navigate to the stored URL
         window.location.href = storedReturnUrl;
-        // Optionally, clear this specific session storage item after use if you want to avoid repeated use
-        // sessionStorage.removeItem(REFERRING_PAGE_FROM_GROUPS_KEY);
+        // Optionally, clear the stored URL after use if it's meant for a single return
+        // sessionStorage.removeItem(REFERRING_PAGE_RETURN_URL_KEY);
     } else {
-        // Fallback to history.back() for internal navigation within prihlasene-kluby.html
-        // If the current URL has parameters (meaning we're on a detail page), history.back()
-        // should take us to the previous state (the summary table).
-        // If we are already on the summary table, history.back() will go to the previous page in browser history.
+        // If no specific return URL is stored (meaning we came directly or navigated internally)
+        // Use history.back() for internal navigation within prihlasene-kluby.html
+        // or to go back to the previous page if on the main list.
         if (window.location.search) {
+            // If current URL has parameters, we are on a detail page, so go back one step in history
             console.log('goBackToList: Aktuálna URL má parametre, idem späť v histórii (interná navigácia).');
-            history.back(); // This will go to the previous state, which should be the summary table
+            history.back();
         } else {
-            // This case means we are already on the base prihlasene-kluby.html without params
-            // and there's no specific groups referrer.
-            // We just ensure the summary table is displayed.
-            console.log('goBackToList: Som na základnej prihlasene-kluby.html bez parametrov a žiadna externá URL. Zobrazujem prehľad.');
+            // If no parameters, we are already on the main prihlasene-kluby.html page,
+            // or we came directly and have no specific return URL.
+            // Ensure summary table is displayed and clean up URL.
+            console.log('goBackToList: Som na základnej prihlasene-kluby.html bez parametrov a žiadna externá URL. Zobrazujem prehľad klubov.');
             displayClubsSummaryTable();
-            // Optionally, clear the URL if it got params from external link but no groups referrer
-            history.replaceState({}, '', window.location.pathname);
+            history.replaceState({}, '', window.location.pathname); // Clear any lingering params
         }
     }
 }
@@ -686,40 +685,40 @@ function removeTransparentRows(container) {
 }
 
 
-// MODIFIED handleUrlState function
 async function handleUrlState() {
     await loadAllData();
-
-    // Check if we arrived from 'zobrazenie-skupin.html' and store its full URL.
-    // This should only happen on the *initial* load of prihlasene-kluby.html from another page.
-    // If the user navigates internally within prihlasene-kluby.html, document.referrer will be prihlasene-kluby.html itself.
-    if (document.referrer && !sessionStorage.getItem(REFERRING_PAGE_FROM_GROUPS_KEY)) {
-        const referrerUrl = new URL(document.referrer);
-        if (referrerUrl.pathname.includes('zobrazenie-skupin.html')) {
-            const urlToStore = document.referrer; // Store the full referrer URL including hash
-            sessionStorage.setItem(REFERRING_PAGE_FROM_GROUPS_KEY, urlToStore);
-            console.log('handleUrlState: Ukladám externú referujúcu URL (zobrazenie-skupin.html):', urlToStore);
-        } else {
-            // If referrer is not groups page, ensure the groups referrer is cleared
-            // in case user manually navigated from groups and then to another page, etc.
-            sessionStorage.removeItem(REFERRING_PAGE_FROM_GROUPS_KEY);
-            console.log('handleUrlState: Referujúca stránka nie je zobrazenie-skupin.html. REFERRING_PAGE_FROM_GROUPS_KEY vymazaný.');
-        }
-    } else if (document.referrer && sessionStorage.getItem(REFERRING_PAGE_FROM_GROUPS_KEY)) {
-        // If referrer exists and groups key is already set, it means we are navigating internally
-        // or refreshed on prihlasene-kluby.html. Keep existing groups referrer.
-        console.log('handleUrlState: REFERRING_PAGE_FROM_GROUPS_KEY už je nastavený na:', sessionStorage.getItem(REFERRING_PAGE_FROM_GROUPS_KEY), '. Referrer je:', document.referrer);
-    } else if (!document.referrer && !sessionStorage.getItem(REFERRING_PAGE_FROM_GROUPS_KEY)) {
-        // Direct access to prihlasene-kluby.html (no referrer) and no stored groups referrer.
-        // Ensure no groups referrer is stored.
-        sessionStorage.removeItem(REFERRING_PAGE_FROM_GROUPS_KEY);
-        console.log('handleUrlState: Žiadny referrer a žiadny REFERRING_PAGE_FROM_GROUPS_KEY. Vymazaný.');
-    }
-
 
     const urlParams = new URLSearchParams(window.location.search);
     const clubBaseName = urlParams.get('club');
     const teamId = urlParams.get('team');
+    const returnUrlParam = urlParams.get('return_url'); // Read the new parameter
+
+    // Prioritize saving the return_url if it exists and is from zobrazenie-skupin.html
+    if (returnUrlParam) {
+        try {
+            const decodedReturnUrl = decodeURIComponent(returnUrlParam);
+            const parsedReturnUrl = new URL(decodedReturnUrl);
+            if (parsedReturnUrl.pathname.includes('zobrazenie-skupin.html')) {
+                sessionStorage.setItem(REFERRING_PAGE_RETURN_URL_KEY, decodedReturnUrl);
+                console.log('handleUrlState: Ukladám externú URL z parametra (zobrazenie-skupin.html):', decodedReturnUrl);
+            } else {
+                // If return_url is present but not from zobrazenie-skupin.html, clear any old value.
+                sessionStorage.removeItem(REFERRING_PAGE_RETURN_URL_KEY);
+                console.log('handleUrlState: Parameter return_url nie je zo zobrazenie-skupin.html. REFERRING_PAGE_RETURN_URL_KEY vymazaný.');
+            }
+        } catch (e) {
+            console.error("Chyba pri parsovaní return_url:", e);
+            sessionStorage.removeItem(REFERRING_PAGE_RETURN_URL_KEY);
+        }
+    } else if (!sessionStorage.getItem(REFERRING_PAGE_RETURN_URL_KEY)) {
+        // If no return_url param is present, and no return URL is stored from a previous "groups" visit,
+        // then ensure the return URL is cleared. This is for direct access or internal navigation.
+        sessionStorage.removeItem(REFERRING_PAGE_RETURN_URL_KEY);
+        console.log('handleUrlState: Žiadny parameter return_url a žiadny REFERRING_PAGE_RETURN_URL_KEY. Vymazaný.');
+    } else {
+        console.log('handleUrlState: REFERRING_PAGE_RETURN_URL_KEY už je nastavený na:', sessionStorage.getItem(REFERRING_PAGE_RETURN_URL_KEY));
+    }
+
 
     if (teamId) {
         console.log('handleUrlState: URL má parameter "team". Zobrazujem detail tímu.');
@@ -745,15 +744,15 @@ async function handleUrlState() {
         const teamsForSubject = allClubs.filter(club => getClubBaseName(club) === clubBaseName);
 
         if (teamsForSubject.length > 0) {
-            const firstTeamId = teamsForSubject[0].id; // Display first team in the list for the club
+            const firstTeamId = teamsForSubject[0].id;
             const url = new URL(window.location.href);
             url.searchParams.set('club', clubBaseName);
-            // Ensure we set a team ID if there is only a clubBaseName to accurately display details.
-            // This will make sure that the next history entry for this view has both club and team.
             url.searchParams.set('team', firstTeamId);
+            // Crucially, remove the return_url parameter from the current URL if it was used for initial landing
+            url.searchParams.delete('return_url');
             history.replaceState({ baseName: clubBaseName, teamId: firstTeamId }, '', url.toString());
-            console.log(`handleUrlState: Presmerovanie na prvý tím subjektu. Nová URL: ${url.toString()}`);
-            displaySubjectDetails(clubBaseName, firstTeamId); // Pass firstTeamId to display a specific team
+            console.log(`handleUrlState: Presmerovanie na prvý tím subjektu. Nová URL (bez return_url parametra): ${url.toString()}`);
+            displaySubjectDetails(clubBaseName, firstTeamId);
         } else {
             console.warn(`Subjekt "${clubBaseName}" sa nenašiel alebo nemá žiadne prihlásené tímy.`);
             history.replaceState(null, '', window.location.pathname);
@@ -762,7 +761,15 @@ async function handleUrlState() {
     } else {
         console.log('handleUrlState: URL nemá žiadne relevantné parametre. Zobrazujem prehľad klubov.');
         displayClubsSummaryTable();
-        history.replaceState({}, '', window.location.pathname); // Clean up URL if no params from start
+        // Also remove return_url parameter if present when showing the main list
+        const currentUrl = new URL(window.location.href);
+        if (currentUrl.searchParams.has('return_url')) {
+            currentUrl.searchParams.delete('return_url');
+            history.replaceState({}, '', currentUrl.toString());
+            console.log(`handleUrlState: Vymazaný parameter return_url z URL. Nová URL: ${currentUrl.toString()}`);
+        } else {
+             history.replaceState({}, '', window.location.pathname); // Clean up URL to base if no params
+        }
     }
 }
 
