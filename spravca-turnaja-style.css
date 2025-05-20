@@ -1,406 +1,508 @@
-/* === Globálne štýly a layout === */
-body {
-    font-family: Arial, sans-serif;
-    margin: 0;
-    padding: 0;
-    background-color: #f4f4f4;
-    color: #333;
+.filter-container {
+    margin-bottom: 20px;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    align-items: flex-end;
 }
-
-h1 {
-    text-align: center;
-    color: #007bff;
-    padding: 20px 0;
-    background-color: #fff;
-    border-bottom: 1px solid #eee;
-    margin-top: 0;
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    flex-grow: 1;
+    flex-basis: 200px;
 }
-
+.filter-group label {
+    font-weight: bold;
+    font-size: 0.9em;
+    margin-bottom: 0;
+}
+.filter-group input[type="text"],
+.filter-group select {
+    padding: 8px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    font-size: 1em;
+    width: 100%;
+    box-sizing: border-box;
+}
+.filter-group select {
+    max-width: 300px;
+}
+@media (max-width: 600px) {
+    .filter-container {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .filter-group {
+        flex-basis: auto;
+    }
+    .filter-group select {
+        max-width: none;
+    }
+}
+#clubsFilterContainer {
+}
+#clubsFilterContainer label {
+}
+#clubsFilterContainer select {
+}
+body.modal-open .left-menu {
+    opacity: 0.5;
+    pointer-events: none;
+}
+body.modal-open .left-menu a {
+    cursor: default;
+}
+body.modal-open main {
+    opacity: 0.5;
+    pointer-events: none;
+    user-select: none;
+}
 .content-wrapper {
-    display: flex; /* Dôležité pre layout menu a obsahu */
-    min-height: calc(100vh - 80px); /* Prispôsobte výške hlavičky */
+    display: flex;
+    width: 100%;
+    margin: 20px 0;
+    padding: 0 20px;
+    box-sizing: border-box;
+    gap: 20px;
 }
-
 .left-menu {
-    width: 200px;
-    background-color: #333;
-    color: white;
-    padding: 20px 0;
-    box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+    background-color: #fff;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    position: sticky;
+    top: 90px;
+    align-self: flex-start;
+    max-height: calc(100vh - 110px);
+    overflow-y: auto;
+    z-index: 1002;
 }
-
 .left-menu ul {
     list-style: none;
     padding: 0;
     margin: 0;
 }
-
-.left-menu ul li a {
-    display: block;
-    padding: 10px 20px;
-    color: white;
+.left-menu li {
+    margin-bottom: 10px;
+}
+.left-menu a {
     text-decoration: none;
-    transition: background-color 0.3s ease;
-}
-
-.left-menu ul li a:hover,
-.left-menu ul li a.active {
-    background-color: #007bff;
-}
-
-main {
-    flex-grow: 1; /* Hlavný obsah zaberie zvyšný priestor */
-    padding: 20px;
-    background-color: #fff;
-    box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    margin: 20px; /* Pridá vonkajší margin okolo celého bloku main */
-    border-radius: 8px;
-    /* --- NOVÉ/UPRAVENÉ PRE ODSADENIE CELÉHO OBSAHU --- */
-    /* Ak chcete odsadiť od ľavého okraja (za menu) */
-    margin-left: 20px; /* Alebo špecifickú hodnotu, napr. 20px pre medzeru */
-    /* Môžete tiež použiť padding: */
-    /* padding-left: 20px; */
-    /* --- KONIEC NOVÉHO/UPRAVENÉHO --- */
-}
-
-.section-block {
-    margin-bottom: 30px;
-    padding: 20px;
-    border: 1px solid #eee;
-    border-radius: 8px;
-    background-color: #f9f9f9;
-}
-
-.section-block h2 {
     color: #007bff;
-    margin-top: 0;
-    margin-bottom: 20px;
-}
-
-/* === Formuláre a tabuľky === */
-.form-group {
-    margin-bottom: 15px;
-}
-
-.form-group label {
+    font-size: 1.1em;
     display: block;
-    margin-bottom: 5px;
-    font-weight: bold;
+    padding: 8px 5px;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+    white-space: nowrap;
+}
+.left-menu a:hover {
+    background-color: #e9ecef;
+    color: #0056b3;
+}
+.left-menu a:active {
+    color: #004085;
+}
+main {
+    flex-grow: 1;
+    padding: 0;
+    box-shadow: none;
+    background-color: transparent;
+    min-width: 0;
+    overflow-x: auto;
 }
 
-.form-group input[type="text"],
-.form-group input[type="number"],
-.form-group input[type="date"],
-.form-group input[type="time"],
-.form-group select {
-    width: calc(100% - 22px);
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
+#groupsContent,
+#clubsContent {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    padding: 0;
+    margin-bottom: 20px;
+    align-items: flex-start;
+    width: 100%;
+}
+#groupsContent .section-block,
+#clubsContent .section-block {
+    margin-bottom: 0;
+    flex: 1 1 300px;
+    min-width: 380px;
+    padding: 15px;
     box-sizing: border-box;
 }
-
-button[type="submit"], #addButton {
-    background-color: #007bff;
-    color: white;
-    padding: 10px 20px;
+table {
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+th,
+td {
     border: none;
+    padding: 10px;
+    text-align: left;
+    white-space: nowrap;
+}
+#categoryTable th, #clubsTable th, .category-group-table th, .group-clubs-table th, #createdTeamsTable th,
+#manageTeamsModal .group-clubs-table th, #clubModal .group-clubs-table th {
+    background-color: #f2f2f2;
+    color: #333;
+    font-weight: bold;
+    text-align: left;
+    padding: 12px 15px;
+    font-size: 0.9em;
+    white-space: nowrap;
+}
+#categoryTable td, #clubsTable td, .category-group-table td, .group-clubs-table td, #createdTeamsTable td,
+#manageTeamsModal .group-clubs-table td, #clubModal .group-clubs-table td {
+    text-align: left;
+    padding: 10px 15px;
+    font-size: 0.9em;
+    white-space: nowrap;
+}
+th {
+    background-color: #f2f2f2;
+    font-weight: bold;
+}
+tbody tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+tbody tr:hover {
+    background-color: #e9e9e9;
+}
+#createdTeamsTable th[data-filter-type]:hover {
+    cursor: pointer;
+    background-color: #e2e2e2;
+}
+td:last-child {
+    text-align: center;
+}
+.action-button {
+    padding: 5px 10px;
+    border: 1px solid #007bff;
     border-radius: 4px;
     cursor: pointer;
-    font-size: 1em;
-    transition: background-color 0.3s ease;
-    margin-top: 10px;
+    font-size: 0.9em;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
 }
-
-button[type="submit"]:hover, #addButton:hover {
+.action-button:not(.delete-button) {
+    background-color: #007bff;
+    color: white;
+}
+.action-button:not(.delete-button):hover {
     background-color: #0056b3;
+    border-color: #004085;
 }
-
-.edit-btn, .delete-btn {
-    padding: 5px 10px;
+.action-button:not(.delete-button):active {
+    background-color: #004085;
+    border-color: #002752;
+}
+.action-button.delete-button {
+    background-color: #dc3545;
+    color: white;
+    border-color: #c82333;
+}
+.action-button.delete-button:hover {
+    background-color: #c82333;
+    border-color: #bd2130;
+}
+.action-button.delete-button:active {
+    background-color: #bd2130;
+    border-color: #a71d2a;
+}
+#groupsContent .section-block h2 {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+#groupsContent .category-group-table td:first-child {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+#createdTeamsTable,
+.category-group-table,
+.group-clubs-table {
+    width: auto;
+    table-layout: auto;
+}
+.category-group-table td:last-child,
+.group-clubs-table td:last-child,
+#createdTeamsTable td:last-child {
+    white-space: nowrap;
+    padding: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+}
+.category-group-table th:last-child,
+.group-clubs-table th:last-child,
+#createdTeamsTable th:last-child {
+    width: 200px;
+    min-width: 200px;
+    white-space: nowrap;
+}
+#createdTeamsTable thead {
+}
+#createdTeamsTableHeader {
+}
+#teamCreationContentSection {
+}
+#teamCreationForm label,
+#teamCreationForm input,
+#teamCreationForm select {
+    display: block;
+    margin-bottom: 10px;
+}
+#teamCategoryCountContainer {
+    margin-top: 15px;
+    padding: 10px;
+    border: 1px solid #eee;
+    border-radius: 4px;
+    background-color: #fcfcfc;
+}
+.category-count-pair {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 10px;
+}
+.category-count-pair select {
+    flex-grow: 1;
+    max-width: 200px;
+    padding: 5px;
+}
+.category-count-pair input[type="number"] {
+    width: 60px;
+    padding: 5px;
+}
+.category-count-pair .remove-button {
+    padding: 5px;
+    background-color: #dc3545;
+    color: white;
     border: none;
     border-radius: 4px;
     cursor: pointer;
     font-size: 0.9em;
-    margin-left: 5px;
-    transition: background-color 0.3s ease;
 }
-
-.edit-btn {
-    background-color: #28a745;
-    color: white;
-}
-
-.edit-btn:hover {
-    background-color: #218838;
-}
-
-.delete-btn {
-    background-color: #dc3545;
-    color: white;
-}
-
-.delete-btn:hover {
+.category-count-pair .remove-button:hover {
     background-color: #c82333;
 }
-
-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 20px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-th, td {
-    border: 1px solid #ddd;
-    padding: 12px;
-    text-align: left;
-}
-
-th {
-    background-color: #007bff;
+.add-button {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background-color: #28a745;
     color: white;
-    font-weight: bold;
+    font-size: 2em;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: background-color 0.3s ease;
 }
-
-tr:nth-child(even) {
-    background-color: #f2f2f2;
+.add-button:hover {
+    background-color: #c46f50;
 }
-
-/* === Modálne okno === */
 .modal {
     display: none;
     position: fixed;
-    z-index: 1000;
+    z-index: 1001;
     left: 0;
     top: 0;
     width: 100%;
     height: 100%;
     overflow: auto;
-    background-color: rgba(0,0,0,0.4);
+    background-color: rgba(0, 0, 0, 0.4);
     justify-content: center;
     align-items: center;
 }
-
 .modal-content {
     background-color: #fefefe;
     margin: auto;
     padding: 20px;
     border: 1px solid #888;
-    width: 80%;
+    width: 90%;
     max-width: 600px;
     border-radius: 8px;
     position: relative;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
-
-.close-button {
+.modal-content h2 {
+    margin-top: 0;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+.modal-content form div {
+    margin-bottom: 15px;
+}
+.modal-content form label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+.modal-content form input[type="text"],
+.modal-content form input[type="number"],
+.modal-content form select {
+    width: calc(100% - 22px);
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+    font-size: 1em;
+}
+.modal-content form button[type="submit"] {
+    background-color: #007bff;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1em;
+    transition: background-color 0.3s ease;
+}
+.modal-content form button[type="submit"]:hover {
+    background-color: #0056b3;
+}
+.modal-content .close {
     color: #aaa;
     float: right;
     font-size: 28px;
     font-weight: bold;
     position: absolute;
-    right: 10px;
-    top: 5px;
+    top: 10px;
+    right: 15px;
+    cursor: pointer;
 }
-
-.close-button:hover,
-.close-button:focus {
+.modal-content .close:hover,
+.modal-content .close:focus {
     color: black;
     text-decoration: none;
-    cursor: pointer;
 }
-
-/* === Špecifické štýly pre rozvrh (zápasy a doprava) === */
-
-/* Container, ktorý umožňuje horizontálny scroll, ak je tabuľka príliš široká */
-.schedule-table-container {
-    overflow-x: auto; /* Dôležité pre horizontálny scroll */
-    max-width: 100%;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    background-color: #fff;
-    margin-top: 20px; /* Priestor od tlačidla "Pridať" */
+.modal-content .form-group {
+    margin-bottom: 15px;
 }
-
-/* Základná tabuľka rozvrhu */
-.match-schedule-table {
+@media (max-width: 768px) {
+    .content-wrapper {
+        flex-direction: column;
+        padding: 0 10px;
+    }
+    .left-menu {
+        position: static;
+        margin-bottom: 20px;
+        width: 100%;
+        max-height: none;
+        overflow-y: visible;
+    }
+    main {
+        width: 100%;
+    }
+    #groupsContent,
+    #clubsContent {
+        flex-direction: column;
+        gap: 10px;
+    }
+    #groupsContent .section-block,
+    #clubsContent .section-block {
+        min-width: 100%;
+    }
+    .modal-content {
+        width: 95%;
+    }
+    .modal-content form input[type="text"],
+    .modal-content form input[type="number"],
+    .modal-content form select {
+        width: calc(100% - 20px);
+    }
+    .category-count-pair {
+        flex-direction: column;
+        gap: 5px;
+        align-items: stretch;
+    }
+    .category-count-pair select,
+    .category-count-pair input[type="number"] {
+        max-width: none;
+        width: 100%;
+    }
+}
+#clubModal .modal-content #clubFormContent,
+#clubModal .modal-content #clubFilterContent {
     width: 100%;
-    border-collapse: collapse;
-    min-width: 1200px; /* Toto je dôležité! Ak je tabuľka širšia ako kontajner, vytvorí scroll */
 }
-
-/* Základné štýly pre hlavičky a bunky */
-.match-schedule-table th,
-.match-schedule-table td {
-    border: 1px solid #e0e0e0;
-    padding: 0; /* ZÁKLADNÝ PADDING NA NULU, aby sme ho mohli kontrolovať vo vnútri */
-    text-align: center;
-    vertical-align: top; /* Obsah bunky zarovnať na vrch */
-    position: relative; /* Dôležité pre absolútne pozicionovanie obsahu */
-    min-width: 80px; /* Minimálna šírka pre každú časovú bunku */
-    height: 90px; /* Dôležité: Pevná výška pre riadky, experimentujte s hodnotou */
-    box-sizing: border-box; /* Padding a border sa zahrnú do výšky/šírky */
-}
-
-/* Štýly pre hlavičky */
-.match-schedule-table th {
-    background-color: #f0f0f0;
-    font-weight: bold;
-    color: #333;
-    position: sticky; /* Aby sa hlavičky stĺpcov prilepili pri vertikálnom scrollovaní */
-    top: 0; /* Priľahne k hornému okraju */
-    z-index: 10; /* Nižší z-index ako fixed-column, ale vyšší ako bežné bunky */
-    padding: 0;
-}
-
-/* Prvý stĺpec (Miesto / Čas) - pevný */
-.match-schedule-table .fixed-column {
-    background-color: #007bff; /* Modrá farba pre fixný stĺpec */
-    color: white;
-    font-size: 0.9em;
-    width: 150px; /* Pevná šírka pre stĺpec s miestami */
-    min-width: 150px;
-    position: sticky; /* Kľúčová vlastnosť pre prilepenie */
-    left: 0; /* Priľahne k ľavému okraju */
-    z-index: 12; /* Vyšší z-index, aby prekrýval ostatné sticky hlavičky a bunky pri scrollovaní */
-    box-shadow: 2px 0 5px rgba(0,0,0,0.2); /* Výraznejší tieň pre vizuálne oddelenie */
-    padding: 5px;
-}
-
-.match-schedule-table .schedule-location-header {
-    background-color: #007bff;
-    color: white;
-    font-size: 1em;
-    padding: 5px;
-}
-
-
-/* Hlavička dátumu v hornom riadku */
-.schedule-date-header {
-    background-color: #5cb85c;
-    color: white;
-    padding: 5px 0;
-    margin: 0;
-    font-size: 1.1em;
-    width: 100%;
-    display: block;
+#filterSelect {
+    width: calc(100% - 16px);
+    padding: 8px;
     box-sizing: border-box;
-}
-
-/* Riadok s časmi pod dátumom */
-.schedule-times-row {
-    display: flex;
-    justify-content: space-around;
-    padding: 5px 0;
-    font-size: 0.85em;
-    color: #555;
-    background-color: #e6e6e6;
-    border-top: 1px solid #ddd;
-    margin: 0;
-    width: 100%;
-    box-sizing: border-box;
-    /* Tieto boli predtým upravené pre odsadenie v tabuľke, teraz sú vrátené na predvolené */
-    /* margin-left: 0; */
-    /* width: 100%; */
-}
-.schedule-times-row span {
-    flex-grow: 1;
-    text-align: center;
-    padding: 0 2px;
-}
-
-/* Štýly pre prázdne bunky */
-.match-schedule-table td:empty {
-    background-color: #f7f7f7;
-}
-
-/* Placeholder pre prázdne bunky */
-.no-match-placeholder {
-    display: block;
-    width: 100%;
-    height: 100%;
-    background-color: #f7f7f7;
-}
-
-/* Štýly pre blok zápasu vo vnútri bunky */
-.schedule-cell-match {
-    background-color: #e0f2f7;
-    border: 1px solid #a7d9ed;
+    border: 1px solid #ccc;
     border-radius: 4px;
-    padding: 2px;
-    font-size: 0.75em;
-    line-height: 1.1;
-    text-align: left;
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    padding-bottom: 25px;
-    box-sizing: border-box;
-    overflow: hidden;
+    font-size: 1em;
+}
+.applied-filter-value {
+    display: block;
+    font-size: 0.8em;
+    color: #555;
+    margin-top: 2px;
+    font-weight: normal;
 }
 
-/* Odstránenie predvolených marginov z p elementov vnútri zápasu */
-.schedule-cell-match p {
-    margin: 0;
-    padding: 0 3px;
-}
+//---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-.schedule-cell-category {
-    font-weight: bold;
-    color: #0056b3;
-}
 
-.schedule-cell-teams {
-    font-weight: bold;
-    color: #333;
-}
-
-.schedule-cell-club-names {
-    font-style: italic;
-    color: #666;
-    font-size: 0.9em;
-}
-
-/* Akčné tlačidlá vo vnútri bloku zápasu */
-.schedule-cell-actions {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    display: flex;
-    justify-content: space-around;
-    gap: 2px;
-    padding: 2px;
-    background-color: rgba(255, 255, 255, 0.9);
-    border-top: 1px solid #ccc;
-    box-sizing: border-box;
-}
-
-.schedule-cell-actions button {
+main {
     flex-grow: 1;
-    padding: 2px 4px;
-    border: none;
-    border-radius: 3px;
-    cursor: pointer;
-    font-size: 0.7em;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    padding: 0;
+    box-shadow: none;
+    background-color: transparent;
+    min-width: 0;
+    /* Odstránené max-height a overflow z main, ak chceš, aby scrollbar bol na vnútornej ploche */
+    /* Ak ich tu ponecháš, budú platiť pre celý main element */
+    overflow-x: hidden; /* Aby main nemal svoj vlastný X-scroll, ak ho bude mať vnútorná plocha */
+    overflow-y: hidden; /* Aby main nemal svoj vlastný Y-scroll, ak ho bude mať vnútorná plocha */
 }
 
-.schedule-cell-actions .edit-btn {
-    background-color: #28a745;
-    color: white;
+/* Pridané pre novú plochu s posuvom */
+.scrollable-area {
+    width: 100%; /* Rozšíri sa na celú šírku rodiča */
+    max-height: calc(100vh - 250px); /* Nastavte maximálnu výšku podľa potreby, odpočítajte výšku hlavičky, nadpisu atď. */
+    overflow-y: auto; /* Vertikálny posuv */
+    overflow-x: auto; /* Horizontálny posuv */
+    border: 1px solid #ddd; /* Voliteľné: pre vizuálne ohraničenie plochy */
+    padding: 10px; /* Voliteľné: pre odsadenie obsahu */
+    box-sizing: border-box; /* Zahrnie padding a border do celkovej šírky/výšky */
+    background-color: #fff; /* Voliteľné: pre vizuálne odlíšenie */
+    border-radius: 5px; /* Voliteľné: zaoblené rohy */
 }
 
-.schedule-cell-actions .delete-btn {
-    background-color: #dc3545;
-    color: white;
-}
+@media (max-width: 768px) {
+    .content-wrapper {
+        flex-direction: column;
+        padding: 0 10px;
+    }
+    .left-menu {
+        position: static;
+        margin-bottom: 20px;
+        width: 100%;
+        max-height: none;
+        overflow-y: visible;
+    }
+    main {
+        width: 100%;
+        max-height: none; /* Pre mobilné zobrazenie nechceme pevne omedzenú výšku */
+        overflow-y: visible; /* A ani vertikálny scroll, nech sa content rozpína */
+        overflow-x: visible; /* A ani horizontálny scroll */
+    }
+    .scrollable-area {
+        max-height: calc(100vh - 180px); /* Upravte pre mobilné zobrazenie */
+        /* Na mobiloch môžete chcieť iný spôsob, ako sa to správa, ale ponecháme scroll pre prípad */
+    }
