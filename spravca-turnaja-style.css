@@ -522,9 +522,9 @@ td:last-child {
     background-color: #007bff;
     color: white;
     font-size: 0.9em;
-    width: 260px; /* Pevná šírka pre tento stĺpec */
-    min-width: 260px;
-    max-width: 260px;
+    width: 160px; /* Pevná šírka pre tento stĺpec */
+    min-width: 160px;
+    max-width: 160px;
     position: sticky;
     left: 0;
     z-index: 11;
