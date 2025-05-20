@@ -181,9 +181,9 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('Dáta zápasu na uloženie:', matchData);
 
         // --- Ukladanie do Firebase ---
-        try {
+       try {
             if (matchIdInput.value) {
-                // Ak existuje matchId, ide o úpravu existujúceho zápasu
+                // Ak existuje matchId, ide o úprava existujúceho zápasu
                 await setDoc(doc(matchesCollectionRef, matchIdInput.value), matchData, { merge: true });
                 alert('Zápas úspešne aktualizovaný!');
             } else {
