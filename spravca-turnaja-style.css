@@ -462,7 +462,9 @@ td:last-child {
 /* Container, ktorý umožňuje horizontálny scroll, ak je tabuľka príliš široká */
 .schedule-table-container {
     overflow-x: auto;
-    max-width: 100%; /* Upravené, aby zaberalo celú dostupnú šírku */
+    max-width: 80%; /* Upravené, aby zaberalo celú dostupnú šírku */
+    margin-left: auto; /* Zarovná na pravý okraj */
+    margin-right: 0; /* Zabezpečí, že pravý okraj bude nulový */
     border: 1px solid #ddd;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
