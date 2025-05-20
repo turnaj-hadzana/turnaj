@@ -493,13 +493,11 @@ td:last-child {
 /* Špecifické štýly pre hlavičky (th) */
 .match-schedule-table th {
     height: 80px; /* Stála výška riadku pre hlavičky */
-    overflow: hidden; /* Skryje pretekajúci obsah - ponechané tu, ak je text hlavičky dlhý */
 }
 
 /* Špecifické štýly pre bunky (td) */
 .match-schedule-table td {
     height: 170px; /* Stála výška riadku pre bunky */
-     overflow: hidden;
 }
 
 
