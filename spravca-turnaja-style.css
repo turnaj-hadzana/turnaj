@@ -506,3 +506,195 @@ main {
         max-height: calc(100vh - 180px); /* Upravte pre mobilné zobrazenie */
         /* Na mobiloch môžete chcieť iný spôsob, ako sa to správa, ale ponecháme scroll pre prípad */
     }
+
+
+//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+/* Container, ktorý umožňuje horizontálny scroll, ak je tabuľka príliš široká */
+.schedule-table-container {
+    overflow-x: auto;
+    max-width: 100%; /* Upravené, aby zaberalo celú dostupnú šírku */
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    background-color: #fff;
+}
+
+/* Základná tabuľka rozvrhu */
+.match-schedule-table {
+    width: 100%;
+    border-collapse: collapse; /* Aby sa okraje buniek spojili */
+    min-width: 1200px; /* Nastavte túto hodnotu podľa počtu stĺpcov a požadovanej šírky, aby sa predišlo pretečeniu */
+}
+
+/* Základné štýly pre hlavičky a bunky */
+.match-schedule-table th,
+.match-schedule-table td {
+    border: 1px solid #e0e0e0;
+    padding: 0; /* ZÁKLADNÝ PADDING NA NULU, aby sme ho mohli kontrolovať vo vnútri */
+    text-align: center;
+    vertical-align: top; /* Obsah bunky zarovnať na vrch */
+    position: relative; /* Dôležité pre absolútne pozicionovanie obsahu */
+    min-width: 80px; /* Minimálna šírka pre každú časovú bunku */
+    height: 90px; /* Dôležité: Pevná výška pre riadky, experimentujte s hodnotou */
+    box-sizing: border-box; /* Padding a border sa zahrnú do výšky/šírky */
+}
+
+/* Štýly pre hlavičky */
+.match-schedule-table th {
+    background-color: #f0f0f0;
+    font-weight: bold;
+    color: #333;
+    position: sticky; /* Sticky hlavička pre stĺpce (scroll s tabuľkou) */
+    top: 0;
+    z-index: 10;
+    padding: 0; /* Aj pre hlavičky, aby sme mohli kontrolovať vnútorné divy */
+}
+
+/* Prvý stĺpec (Miesto / Čas) - pevný */
+.match-schedule-table .fixed-column {
+    background-color: #007bff; /* Modrá farba pre fixný stĺpec */
+    color: white;
+    font-size: 0.9em;
+    width: 150px; /* Pevná šírka pre stĺpec s miestami */
+    min-width: 150px;
+    position: sticky; /* Sticky pre prvý stĺpec */
+    left: 0;
+    z-index: 11; /* Vyšší z-index, aby prekrýval ostatné sticky hlavičky */
+    box-shadow: 2px 0 5px rgba(0,0,0,0.1); /* Tieň pre vizuálne oddelenie */
+    padding: 5px; /* Nechajte padding pre text miesta */
+}
+
+.match-schedule-table .schedule-location-header {
+    background-color: #007bff; /* Rovnaká farba ako fixed-column th */
+    color: white;
+    font-size: 1em;
+    padding: 5px; /* Nechajte padding pre text miesta */
+}
+
+
+/* Hlavička dátumu v hornom riadku */
+.schedule-date-header {
+    background-color: #5cb85c; /* Zelená farba pre dátum */
+    color: white;
+    padding: 5px 0;
+    margin: 0; /* Odstráni margin, aby sa prispôsobilo paddingu bunky */
+    font-size: 1.1em;
+    width: 100%; /* Zabezpečí vyplnenie priestoru */
+    display: block; /* Aby zaberalo celý riadok */
+    box-sizing: border-box;
+}
+
+/* Riadok s časmi pod dátumom */
+.schedule-times-row {
+    display: flex;
+    justify-content: space-around;
+    padding: 5px 0; /* Zmenšený padding */
+    font-size: 0.85em;
+    color: #555;
+    background-color: #e6e6e6; /* Svetlejšia farba pozadia pre časy */
+    border-top: 1px solid #ddd; /* Oddeľovač od dátumu */
+    margin: 0; /* Odstráni margin */
+    width: 100%;
+    box-sizing: border-box;
+}
+.schedule-times-row span {
+    flex-grow: 1;
+    text-align: center;
+    padding: 0 2px; /* Malý padding */
+}
+
+/* Štýly pre prázdne bunky */
+.match-schedule-table td:empty {
+    background-color: #f7f7f7; /* Svetlejšie pozadie pre prázdne bunky */
+}
+
+/* Placeholder pre prázdne bunky */
+.no-match-placeholder {
+    display: block;
+    width: 100%;
+    height: 100%; /* Zabezpečí, že prázdny placeholder zaberie celú výšku bunky */
+    background-color: #f7f7f7;
+}
+
+/* Štýly pre blok zápasu vo vnútri bunky */
+.schedule-cell-match {
+    background-color: #e0f2f7; /* Svetlá modrá pre zápas */
+    border: 1px solid #a7d9ed;
+    border-radius: 4px;
+    padding: 2px; /* ZMENŠENÝ PADDING OKOLO OBSAHU ZÁPASU */
+    font-size: 0.75em; /* Mierne zmenšené písmo pre informácie o zápase */
+    line-height: 1.1; /* TESNEJŠIE RIADKY TEXTU */
+    text-align: left;
+    position: absolute; /* Umiestni blok absolútne v rámci td */
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0; /* Rozťahuje blok zápasu, aby vyplnil celú bunku */
+    display: flex; /* Flexbox pre vnútorné usporiadanie */
+    flex-direction: column;
+    justify-content: space-between; /* Rozdelí priestor medzi obsahom a tlačidlami */
+    padding-bottom: 25px; /* Priestor na spodku pre tlačidlá */
+    box-sizing: border-box; /* Dôležité pre správnu prácu paddingu s absolute */
+    overflow: hidden; /* Skryje pretečenie obsahu */
+}
+
+/* Odstránenie predvolených marginov z p elementov vnútri zápasu */
+.schedule-cell-match p {
+    margin: 0;
+    padding: 0 3px; /* Malý horizontálny padding pre text */
+}
+
+.schedule-cell-category {
+    font-weight: bold;
+    color: #0056b3;
+}
+
+.schedule-cell-teams {
+    font-weight: bold;
+    color: #333;
+}
+
+.schedule-cell-club-names {
+    font-style: italic;
+    color: #666;
+    font-size: 0.9em;
+}
+
+/* Akčné tlačidlá vo vnútri bloku zápasu */
+.schedule-cell-actions {
+    position: absolute; /* Absolútne pozicionovanie voči .schedule-cell-match */
+    bottom: 0; /* Na spodok bloku */
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: space-around;
+    gap: 2px; /* Medzera medzi tlačidlami */
+    padding: 2px; /* Malý padding okolo tlačidiel */
+    background-color: rgba(255, 255, 255, 0.9); /* Mierne priehľadné pozadie pre lepšiu čitateľnosť */
+    border-top: 1px solid #ccc; /* Oddeľovač od textu zápasu */
+    box-sizing: border-box;
+}
+
+.schedule-cell-actions button {
+    flex-grow: 1;
+    padding: 2px 4px; /* Zmenšený padding tlačidiel */
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 0.7em; /* Mierne zmenšené písmo tlačidiel */
+    white-space: nowrap; /* Aby sa text tlačidla nerozdelil */
+    overflow: hidden;
+    text-overflow: ellipsis; /* Pridá tri bodky, ak sa text nezmestí */
+}
+
+.schedule-cell-actions .edit-btn {
+    background-color: #28a745; /* Zelená */
+    color: white;
+}
+
+.schedule-cell-actions .delete-btn {
+    background-color: #dc3545; /* Červená */
+    color: white;
+}
