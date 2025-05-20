@@ -205,7 +205,7 @@ if (categoryForm) {
                  }
                  const unassignedClubsQuery = query(clubsCollectionRef, where('categoryId', '==', oldCategoryName), where('groupId', '==', null));
                  const unassignedClubsSnapshot = await getDocs(unassignedClubsQuery);
-                  unassignedClubsSnapshot.forEach(doc => { // Toto 'doc' je iné (parameter callbacku), to je v poriadku
+                  unassignedClubsSnapshot.forEach(doc => {
                      batch.update(doc.ref, { categoryId: newCategoryName });
                   });
                 batch.delete(oldCategoryDocRef);
