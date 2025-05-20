@@ -200,15 +200,18 @@ document.addEventListener('DOMContentLoaded', async () => { // Pridané 'async'
 
     const getTeamName = async (categoryId, groupId, teamNumber) => {
         if (!categoryId || !groupId || !teamNumber) {
+            // Vrátime null alebo prázdny objekt, ak chýbajú vstupy
             return { fullDisplayName: null, clubName: null };
         }
 
         try {
             const categoryDoc = await getDoc(doc(categoriesCollectionRef, categoryId));
+            // Ak kategória neexistuje, použijeme ID kategórie (ako fallback)
             const categoryName = categoryDoc.exists() ? (categoryDoc.data().name || categoryId) : categoryId;
 
             const groupDoc = await getDoc(doc(groupsCollectionRef, groupId));
-            const groupData = groupDoc.exists() ? groupDoc.data() : null; // Získajte celé groupData
+            // Ak skupina neexistuje, použijeme ID skupiny (ako fallback)
+            const groupData = groupDoc.exists() ? groupDoc.data() : null;
             const groupName = groupData ? (groupData.name || groupId) : groupId; // Pôvodný názov skupiny
 
             const q = query(
@@ -219,46 +222,52 @@ document.addEventListener('DOMContentLoaded', async () => { // Pridané 'async'
             );
             const querySnapshot = await getDocs(q);
             
-            let clubName = `Tím ${teamNumber}`; 
+            let clubName = `Tím ${teamNumber}`; // Defaultný názov klubu, ak sa nenájde konkrétny klub v databáze
             if (!querySnapshot.empty) {
                 const teamDoc = querySnapshot.docs[0].data();
                 if (teamDoc.name) {
-                    clubName = teamDoc.name; 
+                    clubName = teamDoc.name; // Skutočný názov klubu z databázy
                 }
             }
             
-            // --- KĽÚČOVÁ ZMENA TU ---
-            // Odstránime "skupina " z názvu skupiny a získame len písmeno
-            let shortGroupName = '';
-            if (groupName) {
-                const match = groupName.match(/(?:skupina\s*)?([A-Z])/i); // Hľadá "skupina X" alebo len "X"
-                if (match && match[1]) {
-                    shortGroupName = match[1].toUpperCase(); // Získa 'A' z 'skupina A'
-                }
-            }
-            
-            // Odstránime " U" z categoryName (napr. "U12 CH" -> "U12CH")
-            // A ak je categoryName "U12 CH", chceme "U12CH". Ak "U12 Z", chceme "U12Z".
+            // --- KĽÚČOVÁ ZMENA SA DEJE TU ---
+            // 1. Spracovanie názvu kategórie (napr. "U12 CH" -> "U12CH")
             let shortCategoryName = categoryName;
             if (shortCategoryName) {
-                // Odstráni medzeru medzi UXX a CH/Z
-                shortCategoryName = shortCategoryName.replace(/U(\d+)\s([CHZ])/i, 'U$1$2');
+                // Odstráni medzeru medzi UXX a CH/Z/Zeny, a normalizuje
+                shortCategoryName = shortCategoryName.replace(/U(\d+)\s*([CHZ])/i, 'U$1$2').toUpperCase();
             }
 
-            const fullDisplayName = `${shortCategoryName} ${shortGroupName}${teamNumber}`; // Napr. "U12CH A1"
+            // 2. Spracovanie názvu skupiny (napr. "skupina A" -> "A")
+            let shortGroupName = '';
+            if (groupName) {
+                // Hľadá buď "skupina X" alebo len "X" a vezme X.
+                const match = groupName.match(/(?:skupina\s*)?([A-Z])/i); 
+                if (match && match[1]) {
+                    shortGroupName = match[1].toUpperCase(); 
+                }
+            }
+            
+            // 3. Zloženie nového formátu
+            const fullDisplayName = `${shortCategoryName} ${shortGroupName}${teamNumber}`; 
+            // Napríklad: Ak categoryName je "U12 CH", shortCategoryName bude "U12CH".
+            // Ak groupName je "skupina A", shortGroupName bude "A".
+            // Ak teamNumber je 1, výsledok bude "U12CH A1".
             // --- KONIEC KĽÚČOVEJ ZMENY ---
             
             return {
-                fullDisplayName: fullDisplayName, 
-                clubName: clubName 
+                fullDisplayName: fullDisplayName, // Toto bude napr. "U12CH A1"
+                clubName: clubName // Toto bude napr. "TJ Jednota Žilina"
             };
         } catch (error) {
             console.error("Chyba pri získavaní názvu tímu: ", error);
-            return { fullDisplayName: `Chyba Tímu ${teamNumber}`, clubName: `Chyba Tímu ${teamNumber}` };
+            // V prípade chyby vráťte rozumné defaultné hodnoty
+            return { fullDisplayName: `Chyba`, clubName: `Chyba` };
         }
     };
-
-    // Event listener pre odoslanie formulára
+    
+    
+// Event listener pre odoslanie formulára
     matchForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
