@@ -486,6 +486,7 @@ td:last-child {
     min-width: 260px; /* Použite min-width, aby sa stĺpec mohol prispôsobiť, ale nie byť menší */
     width: 260px; /* Nastavte pevnú šírku */
     box-sizing: border-box;
+    white-space: normal;
 }
 
 /* Špecifické štýly pre hlavičky (th) */
