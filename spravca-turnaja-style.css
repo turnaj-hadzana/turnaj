@@ -473,7 +473,6 @@ td:last-child {
     border-collapse: collapse;
     /* width: 100%;  ODSTRÁNIŤ TOTO */
     table-layout: fixed; /* Kľúčové pre vynútenie pevných šírok stĺpcov */
-    width: 2500px;
 }
 
 /* Základné štýly pre hlavičky a bunky */
