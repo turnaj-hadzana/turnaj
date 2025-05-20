@@ -465,6 +465,7 @@ td:last-child {
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     background-color: #fff;
     width: 60%;
+    left: 250px;
 }
 
 /* Základná tabuľka rozvrhu */
