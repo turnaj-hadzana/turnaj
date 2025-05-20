@@ -1,4 +1,5 @@
-import { db, categoriesCollectionRef, groupsCollectionRef, clubsCollectionRef, matchesCollectionRef, openModal, closeModal, populateCategorySelect, populateGroupSelect, populateTeamNumberSelect, getDocs, doc, setDoc, addDoc, getDoc, query, where, orderBy } from './spravca-turnaja-common.js';
+import { db, categoriesCollectionRef, groupsCollectionRef, clubsCollectionRef, matchesCollectionRef, openModal, closeModal, populateCategorySelect, populateGroupSelect, populateTeamNumberSelect, getDocs, doc, setDoc, addDoc, getDoc, query, where, orderBy, deleteDoc } from './spravca-turnaja-common.js';
+// ^^^^^^^^^^ UISTITE SA, ŽE deleteDoc JE TIEŽ IMPORTED
 
 document.addEventListener('DOMContentLoaded', async () => { // Pridané 'async'
     const loggedInUsername = localStorage.getItem('username');
@@ -60,7 +61,6 @@ document.addEventListener('DOMContentLoaded', async () => { // Pridané 'async'
                 const match = doc.data();
                 const matchId = doc.id;
 
-                // Predpokladáme, že date a time sú stringy z inputov (YYYY-MM-DD, HH:MM)
                 const formattedDate = match.date || 'N/A';
                 const formattedTime = match.time || 'N/A';
 
@@ -83,7 +83,6 @@ document.addEventListener('DOMContentLoaded', async () => { // Pridané 'async'
             matchesHtml += '</tbody></table>';
             matchesContainer.innerHTML = matchesHtml;
 
-            // Pridanie event listenerov pre tlačidlá Upraviť a Vymazať
             matchesContainer.querySelectorAll('.edit-btn').forEach(button => {
                 button.addEventListener('click', (event) => editMatch(event.target.dataset.id));
             });
@@ -97,7 +96,6 @@ document.addEventListener('DOMContentLoaded', async () => { // Pridané 'async'
         }
     }
 
-    // Funkcia na úpravu zápasu (zatiaľ len otvorí modal a naplní dáta)
     async function editMatch(matchId) {
         try {
             const matchDocRef = doc(matchesCollectionRef, matchId);
@@ -112,7 +110,6 @@ document.addEventListener('DOMContentLoaded', async () => { // Pridané 'async'
                 matchTimeInput.value = matchData.time || '';
                 matchLocationInput.value = matchData.location || '';
 
-                // Nastaviť kategóriu a skupinu a následne vybrať správne hodnoty
                 await populateCategorySelect(matchCategorySelect, matchData.categoryId);
                 if (matchData.categoryId) {
                     await populateGroupSelect(matchData.categoryId, matchGroupSelect, matchData.groupId);
@@ -135,7 +132,6 @@ document.addEventListener('DOMContentLoaded', async () => { // Pridané 'async'
         }
     }
 
-    // Funkcia na vymazanie zápasu
     async function deleteMatch(matchId) {
         if (confirm('Naozaj chcete vymazať tento zápas?')) {
             try {
@@ -151,7 +147,7 @@ document.addEventListener('DOMContentLoaded', async () => { // Pridané 'async'
 
 
     // --- Inicializácia po načítaní stránky ---
-    await displayMatches(); // Volanie funkcie na zobrazenie zápasov pri načítaní stránky
+    await displayMatches(); 
 
 
     // Event listener pre tlačidlo "Pridať"
@@ -187,10 +183,9 @@ document.addEventListener('DOMContentLoaded', async () => { // Pridané 'async'
     // Event listener pre zatvorenie modálneho okna
     closeMatchModalButton.addEventListener('click', () => {
         closeModal(matchModal);
-        displayMatches(); // Obnoví zoznam po zatvorení modálu (pre prípad, že nebola úprava/pridanie)
+        displayMatches(); 
     });
 
-    // Funkcia na získanie názvu tímu na základe ID (poradového čísla) a metadát
     const getTeamName = async (categoryId, groupId, teamNumber) => {
         if (!categoryId || !groupId || !teamNumber) {
             return null;
@@ -292,7 +287,7 @@ document.addEventListener('DOMContentLoaded', async () => { // Pridané 'async'
                 alert('Nový zápas úspešne pridaný!');
             }
             closeModal(matchModal);
-            await displayMatches(); // Kľúčové: Znovu načítať a zobraziť zápasy po úspešnom uložení
+            await displayMatches(); 
         } catch (error) {
             console.error("Chyba pri ukladaní zápasu: ", error);
             alert("Chyba pri ukladaní zápasu. Pozrite konzolu pre detaily.");
