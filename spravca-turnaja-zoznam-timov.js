@@ -270,12 +270,11 @@ async function openClubModal(identifier = null, mode = 'assign') {
         return;
     }
     resetClubModal();
-    // Remove previous listeners to prevent duplicates
     if (unassignedClubSelect) unassignedClubSelect.onchange = null;
     if (clubCategorySelect) clubCategorySelect.onchange = null;
     if (clubGroupSelect) clubGroupSelect.onchange = null;
     if (filterSelect) filterSelect.onchange = null;
-    if (clubNameInput) clubNameInput.removeEventListener('input', handleClubNameInput); // Remove existing listener
+    if (clubNameInput) clubNameInput.removeEventListener('input', handleClubNameInput);
     
     editingClubId = (mode === 'edit') ? identifier : null;
     currentClubModalMode = mode;
@@ -366,16 +365,12 @@ async function openClubModal(identifier = null, mode = 'assign') {
             clubNameField.style.display = 'block';
             clubAssignmentFields.style.display = 'block';
             unassignedClubField.style.display = 'none';
-
             if (unassignedClubSelect) unassignedClubSelect.disabled = true;
             if (clubCategorySelect) clubCategorySelect.disabled = false;
             if (clubGroupSelect) clubGroupSelect.disabled = false;
-            
-            // Add input listener for clubNameInput
             if (clubNameInput) {
                 clubNameInput.addEventListener('input', handleClubNameInput);
             }
-
             try {
                 const clubDocRef = doc(clubsCollectionRef, editingClubId);
                 const clubDoc = await getDoc(clubDocRef);
@@ -465,12 +460,9 @@ async function openClubModal(identifier = null, mode = 'assign') {
                 clubCategorySelect.disabled = true;
             }
             clubGroupSelect.innerHTML = '<option value="">-- Vyberte skupinu --</option>';
-
-            // Add input listener for clubNameInput
             if (clubNameInput) {
                 clubNameInput.addEventListener('input', handleClubNameInput);
             }
-
             if (clubCategorySelect) {
                 clubCategorySelect.onchange = () => {
                     const selectedCategoryId = clubCategorySelect.value;
@@ -619,17 +611,14 @@ async function openClubModal(identifier = null, mode = 'assign') {
     }
     openModal(clubModal);
 }
-
-// New function to handle input event for clubNameInput
 function handleClubNameInput(event) {
     const input = event.target;
     const originalValue = input.value;
-    const newValue = originalValue.replace(/\//g, '⁄'); // Replace all '/' with '⁄'
+    const newValue = originalValue.replace(/\//g, '⁄');
     if (originalValue !== newValue) {
         input.value = newValue;
     }
 }
-
 if (clubForm) {
     clubForm.addEventListener('submit', async (event) => {
         event.preventDefault();
