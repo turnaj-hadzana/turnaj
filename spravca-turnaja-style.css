@@ -114,7 +114,6 @@ main {
     box-shadow: none;
     background-color: transparent;
     min-width: 0;
-    overflow-x: auto;
 }
 
 #groupsContent,
