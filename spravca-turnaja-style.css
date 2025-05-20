@@ -465,15 +465,18 @@ td:last-child {
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     background-color: #fff;
-    width: 100%; /* Plná šírka pre kontajner */
-    margin: 20px 0; /* Pridaný margin pre lepšie vizuálne oddelenie */
+    width: 100%;
+    margin: 20px 0;
 }
 
 /* Základná tabuľka rozvrhu */
 .match-schedule-table {
-    width: 100%; /* Tabuľka sa roztiahne na šírku kontajnera */
     border-collapse: collapse;
-    min-width: fit-content; /* Tabuľka sa roztiahne podľa obsahu, ak je to potrebné */
+    /* Odstránené width: 100%; a min-width: fit-content; */
+    /* table-layout: fixed; - Toto je dôležité, ak chceme pevné šírky stĺpcov */
+    /* Vzhľadom na použitie colspan a dynamické generovanie štýlov pre TD,
+       nastavenie width priamo na TH/TD bude spoľahlivejšie.
+       Necháme table-layout auto, aby sa prispôsobilo. */
 }
 
 /* Základné štýly pre hlavičky a bunky */
@@ -484,9 +487,13 @@ td:last-child {
     text-align: center;
     vertical-align: top;
     position: relative; /* Dôležité pre absolútne pozicionovanie zápasov */
-    min-width: 160px; /* Šírka jedného hodinového stĺpca (možno bude potrebné doladiť) */
+    width: 160px; /* Pevná šírka pre každý hodinový stĺpec */
+    min-width: 160px; /* Zabezpečí, že sa bunka nezmenší pod túto hodnotu */
+    max-width: 160px; /* Zabezpečí, že sa bunka neroztiahne nad túto hodnotu */
     height: 100px; /* Stála výška riadku */
     box-sizing: border-box;
+    overflow: hidden; /* Skryje pretekajúci obsah */
+    white-space: nowrap; /* Zabraňuje zalomeniu textu, aby sa dodržala šírka */
 }
 
 /* Štýly pre hlavičky */
@@ -505,14 +512,16 @@ td:last-child {
     background-color: #007bff;
     color: white;
     font-size: 0.9em;
-    width: 150px;
+    width: 150px; /* Pevná šírka pre tento stĺpec */
     min-width: 150px;
+    max-width: 150px;
     position: sticky;
     left: 0;
     z-index: 11;
     box-shadow: 2px 0 5px rgba(0,0,0,0.1);
     padding: 5px;
     text-align: left;
+    white-space: normal; /* Povoliť zalomenie textu, ak je názov miesta dlhý */
 }
 
 .match-schedule-table .schedule-location-header {
@@ -550,10 +559,14 @@ td:last-child {
     box-sizing: border-box;
 }
 .schedule-times-row span {
-    flex-grow: 1;
+    width: 160px; /* Zodpovedá šírke td/th */
+    flex-shrink: 0; /* Zabrání zmenšeniu */
     text-align: center;
     padding: 0 2px;
-    min-width: 160px; /* Zabezpečí, aby bol čas viditeľný */
+    box-sizing: border-box;
+    white-space: nowrap; /* Zabezpečí, že čas zostane v jednom riadku */
+    overflow: hidden;
+    text-overflow: ellipsis; /* Ak je čas príliš dlhý (nemalo by sa stať) */
 }
 
 /* Štýly pre prázdne bunky */
@@ -578,17 +591,17 @@ td:last-child {
     font-size: 0.75em;
     line-height: 1.1;
     text-align: left;
-    position: absolute; /* Absolútne pozicionovanie */
+    position: absolute;
     top: 0;
-    height: 100%; /* Zabezpečí, že match blok vyplní celú výšku rodičovskej bunky */
+    height: 100%;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    padding-bottom: 25px; /* Priestor pre akčné tlačidlá */
+    /* padding-bottom: 25px; - Odstránené, aby sa tlačidlá mohli umiestniť na spodok bez ovplyvnenia výšky */
     box-sizing: border-box;
-    overflow-y: auto; /* Ak je obsah príliš dlhý */
+    overflow-y: auto;
     overflow-x: hidden;
-    z-index: 5; /* Aby bol nad prázdnymi bunkami */
+    z-index: 5;
     /* left a width budú nastavené JS dynamicky */
 }
 
@@ -627,6 +640,7 @@ td:last-child {
     background-color: rgba(255, 255, 255, 0.9);
     border-top: 1px solid #ccc;
     box-sizing: border-box;
+    height: 25px; /* Pevná výška pre oblasť s tlačidlami */
 }
 
 .schedule-cell-actions button {
