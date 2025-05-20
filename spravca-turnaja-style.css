@@ -471,10 +471,9 @@ td:last-child {
 
 /* Základná tabuľka rozvrhu */
 .match-schedule-table {
-    width: 100%;
+    width: 100%; /* Tabuľka sa roztiahne na šírku kontajnera */
     border-collapse: collapse;
-    /* Dôležité: Nepoužívajte pevnú šírku tu, aby sa dynamicky prispôsobovala */
-    min-width: 1000px; /* Minimálna šírka tabuľky, aby mala zmysel aj pre veľa stĺpcov */
+    min-width: fit-content; /* Tabuľka sa roztiahne podľa obsahu, ak je to potrebné */
 }
 
 /* Základné štýly pre hlavičky a bunky */
@@ -484,8 +483,8 @@ td:last-child {
     padding: 0;
     text-align: center;
     vertical-align: top;
-    position: relative;
-    min-width: 60px; /* Zmenšená minimálna šírka pre časovú bunku, aby sa zmestilo viac */
+    position: relative; /* Dôležité pre absolútne pozicionovanie zápasov */
+    min-width: 80px; /* Šírka jedného hodinového stĺpca (možno bude potrebné doladiť) */
     height: 100px; /* Stála výška riadku */
     box-sizing: border-box;
 }
@@ -513,6 +512,7 @@ td:last-child {
     z-index: 11;
     box-shadow: 2px 0 5px rgba(0,0,0,0.1);
     padding: 5px;
+    text-align: left;
 }
 
 .match-schedule-table .schedule-location-header {
@@ -520,6 +520,7 @@ td:last-child {
     color: white;
     font-size: 1em;
     padding: 5px;
+    white-space: normal; /* Povoliť zalomenie textu, ak je názov miesta dlhý */
 }
 
 /* Hlavička dátumu v hornom riadku */
@@ -532,6 +533,7 @@ td:last-child {
     width: 100%;
     display: block;
     box-sizing: border-box;
+    white-space: nowrap;
 }
 
 /* Riadok s časmi pod dátumom */
@@ -551,6 +553,7 @@ td:last-child {
     flex-grow: 1;
     text-align: center;
     padding: 0 2px;
+    min-width: 60px; /* Zabezpečí, aby bol čas viditeľný */
 }
 
 /* Štýly pre prázdne bunky */
@@ -575,19 +578,18 @@ td:last-child {
     font-size: 0.75em;
     line-height: 1.1;
     text-align: left;
-    position: absolute;
+    position: absolute; /* Absolútne pozicionovanie */
     top: 0;
-    left: 0;
-    height: 100%; /* Zabezpečí, že match blok vyplní celú výšku */
+    height: 100%; /* Zabezpečí, že match blok vyplní celú výšku rodičovskej bunky */
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    padding-bottom: 25px;
+    padding-bottom: 25px; /* Priestor pre akčné tlačidlá */
     box-sizing: border-box;
-    overflow-y: auto;
+    overflow-y: auto; /* Ak je obsah príliš dlhý */
     overflow-x: hidden;
     z-index: 5; /* Aby bol nad prázdnymi bunkami */
-    /* Dynamická šírka bude nastavená JS */
+    /* left a width budú nastavené JS dynamicky */
 }
 
 /* Odstránenie predvolených marginov z p elementov vnútri zápasu */
