@@ -26,7 +26,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const team2NumberInput = document.getElementById('team2NumberInput');
 
 
+    // PÔVODNÉ NESPRÁVNE RIADKY, KTORÉ TREBA ODSTRÁNIŤ/ZAKOMENTOVAŤ:
+    // loadCategoriesTable(); // TÁTO FUNKCIA TU NEEXISTUJE
+
     // Zobrazenie správnej sekcie po načítaní
+    // Táto časť je už prítomná v HTML a nemala by spôsobovať problém, ale pre istotu
+    // ju môžeme zjednodušiť, alebo ju nechať, ak máte špecifický dôvod pre JS zobrazenie.
+    // Ak je sekcia predvolene skrytá a má byť zobrazená až JS kódom, tak to ponechajte.
+    // Ak je ale viditeľná priamo v HTML, tento blok je zbytočný alebo duplicitný.
     if (categoriesContentSection) {
         categoriesContentSection.style.display = 'block';
         const otherSections = document.querySelectorAll('main > section, main > div');
@@ -36,6 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
 
     // Event listener pre tlačidlo "Pridať"
     addButton.addEventListener('click', () => {
@@ -163,12 +171,12 @@ document.addEventListener('DOMContentLoaded', () => {
             
             team1Category: matchCategory,
             team1Group: matchGroup,
-            team1Number: parseInt(team1Number), // Ulož ako číslo
+            team1Number: parseInt(team1Number),
             team1Name: team1Name,
             
             team2Category: matchCategory,
             team2Group: matchGroup,
-            team2Number: parseInt(team2Number), // Ulož ako číslo
+            team2Number: parseInt(team2Number),
             team2Name: team2Name,
 
             createdAt: new Date()
