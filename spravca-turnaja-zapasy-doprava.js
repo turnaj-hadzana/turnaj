@@ -64,14 +64,26 @@ document.addEventListener('DOMContentLoaded', async () => { // Pridané 'async'
                 const formattedDate = match.date || 'N/A';
                 const formattedTime = match.time || 'N/A';
 
+                // Získanie názvov tímov. Preferujeme team1ClubName, ak existuje, inak team1DisplayName
+                const team1Display = match.team1DisplayName || 'N/A';
+                const team1ClubName = match.team1ClubName || ''; // Môže byť prázdne, ak starý zápas
+                const team2Display = match.team2DisplayName || 'N/A';
+                const team2ClubName = match.team2ClubName || ''; // Môže byť prázdne, ak starý zápas
+
                 matchesHtml += `
                     <tr>
                         <td>${formattedDate}</td>
                         <td>${formattedTime}</td>
                         <td>${match.location || 'N/A'}</td>
                         <td>${match.categoryName || 'N/A'} ${match.groupName ? ` (${match.groupName})` : ''}</td>
-                        <td>${match.team1Name || 'N/A'}</td>
-                        <td>${match.team2Name || 'N/A'}</td>
+                        <td>
+                            ${team1Display}<br>
+                            ${team1ClubName ? `<small>(${team1ClubName})</small>` : ''}
+                        </td>
+                        <td>
+                            ${team2Display}<br>
+                            ${team2ClubName ? `<small>(${team2ClubName})</small>` : ''}
+                        </td>
                         <td>
                             <button class="edit-btn" data-id="${matchId}">Upraviť</button>
                             <button class="delete-btn" data-id="${matchId}">Vymazať</button>
@@ -79,7 +91,6 @@ document.addEventListener('DOMContentLoaded', async () => { // Pridané 'async'
                     </tr>
                 `;
             });
-
             matchesHtml += '</tbody></table>';
             matchesContainer.innerHTML = matchesHtml;
 
@@ -119,6 +130,7 @@ document.addEventListener('DOMContentLoaded', async () => { // Pridané 'async'
                     matchGroupSelect.disabled = true;
                 }
 
+                // Dôležité: Načítajte poradové čísla tímov, nie ich názvy pre formulár
                 team1NumberInput.value = matchData.team1Number || '';
                 team2NumberInput.value = matchData.team2Number || '';
 
@@ -188,7 +200,8 @@ document.addEventListener('DOMContentLoaded', async () => { // Pridané 'async'
 
     const getTeamName = async (categoryId, groupId, teamNumber) => {
         if (!categoryId || !groupId || !teamNumber) {
-            return null;
+            // Vrátime null alebo prázdny objekt, ak chýbajú vstupy
+            return { fullDisplayName: null, clubName: null };
         }
 
         try {
@@ -205,19 +218,24 @@ document.addEventListener('DOMContentLoaded', async () => { // Pridané 'async'
                 where("orderNumber", "==", parseInt(teamNumber))
             );
             const querySnapshot = await getDocs(q);
-            let teamName = `Tím ${teamNumber}`;
-
+            
+            let clubName = `Tím ${teamNumber}`; // Defaultný názov klubu, ak sa nenájde konkrétny
             if (!querySnapshot.empty) {
                 const teamDoc = querySnapshot.docs[0].data();
                 if (teamDoc.name) {
-                    teamName = teamDoc.name;
+                    clubName = teamDoc.name; // Skutočný názov klubu z databázy
                 }
             }
             
-            return `${categoryName} - ${groupName} - ${teamName}`;
+            const fullDisplayName = `${categoryName} - ${groupName} - Tím ${teamNumber}`; // Pôvodný formátovaný názov
+            
+            return {
+                fullDisplayName: fullDisplayName, // Názov ako "U12 CH - skupina A - Tím 1"
+                clubName: clubName // Skutočný názov klubu ako "TJ Jednota Žilina"
+            };
         } catch (error) {
             console.error("Chyba pri získavaní názvu tímu: ", error);
-            return `Chyba Tímu ${teamNumber}`;
+            return { fullDisplayName: `Chyba Tímu ${teamNumber}`, clubName: `Chyba Tímu ${teamNumber}` };
         }
     };
 
@@ -237,19 +255,21 @@ document.addEventListener('DOMContentLoaded', async () => { // Pridané 'async'
             return;
         }
 
-        let team1Name = null;
-        let team2Name = null;
+                let team1Result = null;
+        let team2Result = null;
 
+        // Získanie názvov tímov
         try {
-            team1Name = await getTeamName(matchCategory, matchGroup, team1Number);
-            team2Name = await getTeamName(matchCategory, matchGroup, team2Number);
+            team1Result = await getTeamName(matchCategory, matchGroup, team1Number);
+            team2Result = await getTeamName(matchCategory, matchGroup, team2Number);
         } catch (error) {
             console.error("Chyba pri získavaní názvov tímov:", error);
             alert("Vyskytla sa chyba pri získavaní názvov tímov. Skúste to znova.");
             return;
         }
         
-        if (!team1Name || !team2Name) {
+        // Voliteľná validácia: Ak sa názov tímu nezískal (tím neexistuje)
+        if (!team1Result || !team1Result.fullDisplayName || !team2Result || !team2Result.fullDisplayName) {
             alert('Jeden alebo oba tímy sa nenašli. Skontrolujte poradové čísla v danej kategórii a skupine.');
             return;
         }
@@ -266,16 +286,18 @@ document.addEventListener('DOMContentLoaded', async () => { // Pridané 'async'
             team1Category: matchCategory,
             team1Group: matchGroup,
             team1Number: parseInt(team1Number),
-            team1Name: team1Name,
+            team1DisplayName: team1Result.fullDisplayName, // Použijeme nový názov
+            team1ClubName: team1Result.clubName, // Nové pole pre skutočný názov klubu
             
             team2Category: matchCategory,
             team2Group: matchGroup,
             team2Number: parseInt(team2Number),
-            team2Name: team2Name,
+            team2DisplayName: team2Result.fullDisplayName, // Použijeme nový názov
+            team2ClubName: team2Result.clubName, // Nové pole pre skutočný názov klubu
 
             createdAt: new Date()
         };
-
+        
         console.log('Dáta zápasu na uloženie:', matchData);
 
         try {
