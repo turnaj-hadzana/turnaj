@@ -24,10 +24,11 @@ const selectedTeamSoupiskaHracovUl = document.getElementById('selectedTeamSoupis
 let allClubs = [];
 let allCategories = [];
 let allGroups = [];
-let referringPage = ''; // This will still store the initial referrer for display/debug purposes
+// Removed referringPage, as we will use sessionStorage for the exact URL
+// let referringPage = ''; 
 
-// NEW: Key for sessionStorage to store the "return to" URL
-const REFERRING_PAGE_KEY = 'tournament_referring_page';
+// Key for sessionStorage to store the "return to" URL, including hash
+const REFERRING_PAGE_RETURN_URL_KEY = 'tournament_referring_page_return_url';
 
 async function loadAllData() {
     try {
@@ -391,6 +392,7 @@ function cleanUpZeroRows() {
     }
 }
 
+
 function highlightTeamButton(teamIdToHighlight) {
     if (teamsInCategoryButtonsDiv) {
         teamsInCategoryButtonsDiv.querySelectorAll('button').forEach(btn => {
@@ -635,13 +637,13 @@ async function displaySpecificTeamDetails(teamId) {
 
 // MODIFIED goBackToList function
 function goBackToList() {
-    const storedReferringPage = sessionStorage.getItem(REFERRING_PAGE_KEY);
+    const storedReturnUrl = sessionStorage.getItem(REFERRING_PAGE_RETURN_URL_KEY);
 
-    if (storedReferringPage && storedReferringPage.includes('zobrazenie-skupin.html')) {
-        // If the stored referring page was 'zobrazenie-skupin.html', navigate directly to it
-        window.location.href = storedReferringPage; // Use window.location.href for direct navigation
+    if (storedReturnUrl && storedReturnUrl.includes('zobrazenie-skupin.html')) {
+        // If we have a specific stored URL from groups page, use it
+        window.location.href = storedReturnUrl;
     } else {
-        // Otherwise, go to the base URL for prihlasene-kluby.html
+        // Fallback to displaying the summary table and cleaning up current URL
         displayClubsSummaryTable();
         history.replaceState({}, '', window.location.pathname);
     }
@@ -669,24 +671,26 @@ function removeTransparentRows(container) {
 async function handleUrlState() {
     await loadAllData();
 
-    // Only set sessionStorage referrer if coming from another page and it's not already set
-    if (document.referrer && !sessionStorage.getItem(REFERRING_PAGE_KEY)) {
-        const referrerUrl = new URL(document.referrer); 
+    // Only set the return URL if coming from a referrer and it's not already set
+    // This ensures we capture the *initial* entry point relevant for the "back" button.
+    if (document.referrer && !sessionStorage.getItem(REFERRING_PAGE_RETURN_URL_KEY)) {
+        const referrerUrl = new URL(document.referrer);
 
+        // Check if the referrer's pathname includes 'zobrazenie-skupin.html'
         if (referrerUrl.pathname.includes('zobrazenie-skupin.html')) {
-            // Store the complete referrer URL as is, which should include hash if available in document.referrer
-            sessionStorage.setItem(REFERRING_PAGE_KEY, document.referrer);
-        } else if (referrerUrl.pathname.includes('prihlasene-kluby.html')) {
-             // If coming from prihlasene-kluby.html (e.g., initial load without params),
-             // set it to base prihlasene-kluby.html
-             sessionStorage.setItem(REFERRING_PAGE_KEY, window.location.origin + window.location.pathname);
+            // Store the complete referrer URL including hash (if present in document.referrer)
+            // document.referrer is a string and should already contain the hash if the browser sent it.
+            sessionStorage.setItem(REFERRING_PAGE_RETURN_URL_KEY, document.referrer);
+        } else {
+            // If coming from another page (not groups) or directly,
+            // set the return URL to the base of prihlasene-kluby.html
+            sessionStorage.setItem(REFERRING_PAGE_RETURN_URL_KEY, window.location.origin + window.location.pathname);
         }
-         referringPage = referrerUrl.pathname; 
-    } else if (!sessionStorage.getItem(REFERRING_PAGE_KEY)) {
-        // If no referrer (direct access) and not already set, default to current page's base URL
-        sessionStorage.setItem(REFERRING_PAGE_KEY, window.location.origin + window.location.pathname);
+    } else if (!sessionStorage.getItem(REFERRING_PAGE_RETURN_URL_KEY)) {
+        // If no referrer (e.g., direct access, refresh) and not already set,
+        // default return URL to the base of prihlasene-kluby.html
+        sessionStorage.setItem(REFERRING_PAGE_RETURN_URL_KEY, window.location.origin + window.location.pathname);
     }
-
 
     const urlParams = new URLSearchParams(window.location.search);
     const clubBaseName = urlParams.get('club');
