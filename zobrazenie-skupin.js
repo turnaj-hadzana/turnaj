@@ -768,7 +768,6 @@ function setUniformTableWidth(width, containerElement) {
 
 // Spracovanie načítania stránky a zmeny hashu URL
 document.addEventListener('DOMContentLoaded', async () => {
-    // ... Váš existujúci kód pre getHTMLElements, loadAllTournamentData, atď. ...
     if (!getHTMLElements()) {
         return;
     }
@@ -778,19 +777,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (backToCategoriesButton) backToCategoriesButton.addEventListener('click', goBackToCategories);
     if (backToGroupButtonsButton) backToGroupButtonsButton.addEventListener('click', goBackToGroupView);
-
-    // --- NOVÁ ČASŤ PRE PRIDANIE ODKAZU NA PRIHLASENE-KLUBY.HTML ---
-    const goToClubsOverviewButton = document.getElementById('goToClubsOverviewButton'); // Získaj referenciu na tlačidlo
-    if (goToClubsOverviewButton) {
-        goToClubsOverviewButton.addEventListener('click', (event) => {
-            event.preventDefault(); // Zabraň štandardnému presmerovaniu odkazu
-            const currentUrlWithHash = window.location.href; // Získa celú URL vrátane hashu
-            const encodedUrl = encodeURIComponent(currentUrlWithHash); // Zakóduj URL pre použitie v query parametri
-            window.location.href = `prihlasene-kluby.html?return_url=${encodedUrl}`; // Presmeruj s novým parametrom
-            console.log(`zobrazenie-skupin.js: Presmerovávam na prihlasene-kluby.html s return_url: ${window.location.href}`);
-        });
-    }
-    // --- KONIEC NOVEJ ČASTI ---
 
     // Vždy najskôr zobraz kategórie
     displayCategoriesAsButtons();
@@ -804,7 +790,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const hashParts = hash.substring(categoryPrefix.length).split(groupPrefix);
         const urlCategoryId = hashParts[0];
         const urlGroupId = hashParts.length > 1 ? hashParts[1] : null;
-
+        
         const decodedCategoryId = decodeURIComponent(urlCategoryId);
         const decodedGroupId = urlGroupId ? decodeURIComponent(urlGroupId) : null;
 
@@ -833,6 +819,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // V tomto prípade nemusíme nič volať, displayCategoriesAsButtons() už bola volaná
     }
 });
+
 // Poslucháč udalostí pre zmenu hashu v URL (napr. pri použití tlačidiel Späť/Vpred v prehliadači)
 window.addEventListener('hashchange', () => {
     if (!getHTMLElements()) {
