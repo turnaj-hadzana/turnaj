@@ -14,8 +14,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const matchForm = document.getElementById('matchForm');
     const matchIdInput = document.getElementById('matchId');
     const matchDateInput = document.getElementById('matchDate');
-    const matchStartTimeInput = document.getElementById('matchStartTime');
-    const matchDurationInput = document.getElementById('matchDuration');
+    const matchStartTimeInput = document.getElementById('matchStartTime'); // Zmenené ID z matchTime
+    const matchDurationInput = document.getElementById('matchDuration'); // Nový input
     const matchLocationInput = document.getElementById('matchLocation');
     const matchCategorySelect = document.getElementById('matchCategory');
     const matchGroupSelect = document.getElementById('matchGroup');
@@ -58,7 +58,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const uniqueLocations = new Set();
             const uniqueDates = new Set();
             allMatches.forEach(match => {
-                uniqueLocations.add(match.location); // Pridajte miesta
+                uniqueLocations.add(match.location);
                 uniqueDates.add(match.date);
             });
 
@@ -69,21 +69,24 @@ document.addEventListener('DOMContentLoaded', async () => {
             const dailyTimeRanges = new Map(); // Map<date, {minHour, maxHour}>
             allMatches.forEach(match => {
                 const date = match.date;
-                const startHour = parseInt(match.startTime.split(':')[0]);
-                
-                // Vypočítame čas konca zápasu
                 const [startH, startM] = match.startTime.split(':').map(Number);
-                const startDateObj = new Date(`2000-01-01T${startH}:${startM}:00`); // Použijeme fiktívny dátum pre výpočet
-                startDateObj.setMinutes(startDateObj.getMinutes() + match.duration);
-                const endHour = startDateObj.getHours();
-                
+                const duration = match.duration;
+
+                const startTimeInMinutes = startH * 60 + startM;
+                const endTimeInMinutes = startTimeInMinutes + duration;
+
+                // maxHour by mala byť najbližšia celá hodina PRED koncom zápasu.
+                // Ak zápas končí 8:00, maxHour by mala byť 8.
+                // Ak zápas končí 8:01, maxHour by mala byť 9.
+                let actualEndHour = Math.ceil(endTimeInMinutes / 60);
+
                 if (!dailyTimeRanges.has(date)) {
-                    dailyTimeRanges.set(date, { minHour: 23, maxHour: 0 }); // Inicializácia s extrémnymi hodnotami
+                    dailyTimeRanges.set(date, { minHour: startH, maxHour: actualEndHour });
+                } else {
+                    const range = dailyTimeRanges.get(date);
+                    range.minHour = Math.min(range.minHour, startH);
+                    range.maxHour = Math.max(range.maxHour, actualEndHour);
                 }
-                const range = dailyTimeRanges.get(date);
-                range.minHour = Math.min(range.minHour, startHour);
-                // Ak zápas presahuje do nasledujúceho dňa (napr. 23:00 - 2:00), maxHour musí byť väčšia ako 23
-                range.maxHour = Math.max(range.maxHour, endHour === 0 && startHour < 12 ? 24 : endHour); // 0 je ďalší deň ráno, 24 je koniec dňa
             });
 
             let scheduleHtml = '<div class="schedule-table-container">';
@@ -95,7 +98,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const range = dailyTimeRanges.get(date);
                 let hoursForDate = [];
                 if (range) {
-                    for (let h = range.minHour; h <= range.maxHour; h++) {
+                    // ZMENA: Používame < range.maxHour pre správny počet hodinových slotov
+                    for (let h = range.minHour; h < range.maxHour; h++) { 
                         hoursForDate.push(h);
                     }
                 }
@@ -106,12 +110,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                     scheduleHtml += `<div class="schedule-date-header">${date}</div>`;
                     scheduleHtml += '<div class="schedule-times-row">';
                     hoursForDate.forEach(hour => {
-                        scheduleHtml += `<span>${String(hour % 24).padStart(2, '0')}:00</span>`; // Použijeme modulo 24, ak je hodina 24
+                        scheduleHtml += `<span>${String(hour % 24).padStart(2, '0')}:00</span>`;
                     });
                     scheduleHtml += '</div>';
                     scheduleHtml += '</th>';
                 } else {
-                    // Ak pre daný dátum nie sú žiadne časy (nemali by nastať, ak sú zápasy), pridáme prázdnu hlavičku
                     scheduleHtml += `<th><div class="schedule-date-header">${date}</div><div class="schedule-times-row"><span></span></div></th>`;
                 }
             });
@@ -126,23 +129,21 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const range = dailyTimeRanges.get(date);
                     let hoursForDate = [];
                     if (range) {
-                        for (let h = range.minHour; h <= range.maxHour; h++) {
+                        // ZMENA: Používame < range.maxHour pre správny počet hodinových slotov
+                        for (let h = range.minHour; h < range.maxHour; h++) { 
                             hoursForDate.push(h);
                         }
                     }
                     const colspan = hoursForDate.length;
 
-                    // Ak je colspan 0 (žiadne hodiny pre daný deň), pridáme jednu prázdnu bunku
+                    // Ak je colspan 0, pridáme jednu prázdnu bunku (ak pre daný deň a miesto nie sú žiadne zápasy)
                     if (colspan === 0) {
                         scheduleHtml += `<td><span class="no-match-placeholder"></span></td>`;
                         return;
                     }
                     
-                    // Vytvoríme jednu veľkú TD bunku pre každý deň a miesto, ktorá bude slúžiť ako kontajner pre zápasy
-                    // Šírka tejto bunky bude súčet šírok všetkých hodinových stĺpcov pre daný deň
-                    // Každý hodinový stĺpec má šírku 160px (podľa CSS)
+                    // Vytvoríme jednu veľkú TD bunku pre každý deň a miesto
                     const totalWidthForDay = colspan * 160; // 160px je šírka hodinového slotu z CSS
-
                     scheduleHtml += `<td colspan="${colspan}" style="position: relative; overflow: hidden; background-color: #f7f7f7;">`;
 
                     const matchesForLocationAndDate = allMatches.filter(match =>
@@ -151,17 +152,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                     matchesForLocationAndDate.forEach(match => {
                         const [startH, startM] = match.startTime.split(':').map(Number);
-                        
-                        // Celkový počet minút od začiatku prvého slotu v danom dni
-                        const minutesFromDayStart = (startH - range.minHour) * 60 + startM;
-                        
-                        // Dĺžka zápasu v minútach
                         const durationInMinutes = match.duration;
 
+                        // Celkový počet minút od začiatku prvého slotu v danom dni
+                        const minutesFromDayStart = (startH - range.minHour) * 60 + startM;
+
                         // Výpočet left a width v percentách celkovej šírky tohto dňa
-                        // 1 hodina = 60 minút. totalHoursInDay = rozsah v hodinách
                         const totalDayMinutes = (range.maxHour - range.minHour) * 60;
-                        if (totalDayMinutes <= 0) return; // Zabrániť deleniu nulou
+                        if (totalDayMinutes <= 0) {
+                            console.warn(`Total day minutes is zero or negative for date ${date} and location ${location}. This might indicate an issue with range.minHour or range.maxHour.`);
+                            return; // Zabrániť deleniu nulou
+                        }
 
                         const leftPercentage = (minutesFromDayStart / totalDayMinutes) * 100;
                         const widthPercentage = (durationInMinutes / totalDayMinutes) * 100;
@@ -219,7 +220,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 matchDateInput.value = matchData.date || '';
                 matchStartTimeInput.value = matchData.startTime || '';
-                matchDurationInput.value = matchData.duration || 60;
+                matchDurationInput.value = matchData.duration || 60; // Načítanie duration
                 matchLocationInput.value = matchData.location || '';
 
                 await populateCategorySelect(matchCategorySelect, matchData.categoryId);
@@ -270,7 +271,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         team1NumberInput.value = '';
         team2NumberInput.value = '';
-        matchDurationInput.value = 60; // Predvolená hodnota
+        matchDurationInput.value = 60; // Predvolená hodnota pri pridávaní
 
         openModal(matchModal);
     });
@@ -384,7 +385,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const matchData = {
             date: matchDateInput.value,
             startTime: matchStartTimeInput.value,
-            duration: parseInt(matchDurationInput.value),
+            duration: parseInt(matchDurationInput.value), // UISTITE SA, ŽE SA TOTO UKLADÁ!
             location: matchLocationInput.value,
             categoryId: matchCategory,
             categoryName: matchCategorySelect.options[matchCategorySelect.selectedIndex].text,
