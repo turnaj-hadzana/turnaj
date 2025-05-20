@@ -38,24 +38,51 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Pomocná funkcia na získanie celých hodinových slotov pre daný rozsah časov
     function getHourlySlots(startTime, endTime) {
         const slots = [];
-        let currentHour = parseInt(startTime.split(':')[0]);
-        const endHour = parseInt(endTime.split(':')[0]);
+        let startHour = parseInt(startTime.split(':')[0]);
+        let endHour = parseInt(endTime.split(':')[0]);
+        let startMin = parseInt(startTime.split(':')[1]);
+        let endMin = parseInt(endTime.split(':')[1]);
+
+        // Ak zápas začína napr. 12:01, posun sa na 12:00
+        if (startMin > 0) {
+            // Ak chceme, aby sa slot začal od 12:00 ak je 12:01, nemusíme meniť startHour
+            // Ak chceme začať od 13:00, ak 12:01, tak by bolo: startHour = (startMin > 0) ? startHour + 1 : startHour;
+        }
 
         // Ak koniec je po polnoci (napr. 00:30 nasledujúceho dňa), prispôsobíme endHour
-        // Predpokladáme, že rozsah neprekročí 24 hodín (jeden deň)
-        if (endTime === "00:00" && startTime !== "00:00") { // Ak koniec je presne 00:00
-            if (currentHour !== 0) { // Ak začiatok nie je 00:00, ideme do 23:00, potom 00:00 by mal byť ďalší deň
-                // Netreba specialne osetrovat, endHour bude len "00", ale loop pojde kym je <= endHour
-            }
+        // Zjednodušujeme na rozsah v rámci jedného dňa.
+        if (endHour < startHour) { // Napr. začína 23:00 a končí 01:00 (nasledujúci deň)
+            endHour += 24; // Pre zjednodušenie výpočtov v jednom bloku
         }
-
-
-        // Pridaj všetky celé hodiny v rozsahu
+        
+        // Pridaj všetky celé hodiny v rozsahu (vrátane začiatku a konca)
+        let currentHour = startHour;
         while (currentHour <= endHour) {
-            slots.push(`${String(currentHour).padStart(2, '0')}:00`);
+            // Zabezpečíme, že sa neopakujú hodiny, ak je rozsah malý (napr. 10:00-10:30)
+            if (slots.length === 0 || parseInt(slots[slots.length - 1].split(':')[0]) !== currentHour) {
+                slots.push(`${String(currentHour % 24).padStart(2, '0')}:00`);
+            }
             currentHour++;
         }
-        return slots;
+        // Ak sa celá hodina začiatku alebo konca nezhoduje s presným časom a nebola zahrnutá, pridaj ju
+        // Toto je hlavne pre vizuálne delenie stĺpcov
+        const firstSlotHour = parseInt(slots[0].split(':')[0]);
+        const lastSlotHour = parseInt(slots[slots.length - 1].split(':')[0]);
+        
+        if (parseInt(startTime.split(':')[0]) < firstSlotHour) {
+            slots.unshift(`${String(parseInt(startTime.split(':')[0])).padStart(2, '0')}:00`);
+        }
+        if (parseInt(endTime.split(':')[0]) > lastSlotHour) {
+            slots.push(`${String(parseInt(endTime.split(':')[0])).padStart(2, '0')}:00`);
+        }
+        
+        return slots.sort(); // Zabezpečíme zoradenie
+    }
+
+    // Pomocná funkcia na konverziu času (HH:MM) na minúty od polnoci
+    function timeToMinutes(timeStr) {
+        const [hours, minutes] = timeStr.split(':').map(Number);
+        return hours * 60 + minutes;
     }
 
     // --- Funkcia na načítanie a zobrazenie zápasov ako rozvrh (miesto vs. čas/deň) ---
@@ -92,15 +119,22 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             sortedDates.forEach(date => {
                 let dailyMinTime = "23:59";
-                let dailyMaxTime = "00:00";
+                let dailyMaxTime = "00:00"; // Toto je "nasledujúca" polnoc, nie 00:00 predchádzajúceho dňa
 
                 // Nájdeme celkový min/max čas pre daný dátum
-                allMatches.filter(m => m.date === date).forEach(m => {
-                    if (m.time < dailyMinTime) dailyMinTime = m.time;
-                    if (m.time > dailyMaxTime) dailyMaxTime = m.time;
-                });
+                // Ak 00:00 je koniec dňa, môže byť aj 24:00 (pre zjednodušenie rozsahu)
+                let tempMatches = allMatches.filter(m => m.date === date);
 
-                if (dailyMinTime !== "23:59" && dailyMaxTime !== "00:00") {
+                if (tempMatches.length > 0) {
+                    tempMatches.forEach(m => {
+                        if (m.time < dailyMinTime) dailyMinTime = m.time;
+                        if (m.time > dailyMaxTime) dailyMaxTime = m.time;
+                    });
+                }
+
+
+                // Ak sú zápasy, zisti presný rozsah hodín
+                if (tempMatches.length > 0) {
                     dateHourlySlots.set(date, getHourlySlots(dailyMinTime, dailyMaxTime));
                 } else {
                     dateHourlySlots.set(date, []); // Žiadne zápasy pre tento dátum
@@ -145,41 +179,66 @@ document.addEventListener('DOMContentLoaded', async () => {
                     }
 
                     hourlySlotsForDate.forEach(hourSlot => {
+                        const cellHour = parseInt(hourSlot.split(':')[0]);
                         const cellMatches = [];
-                        // Nájdi všetky zápasy, ktoré spadajú do tejto celej hodiny
-                        allMatches.forEach(match => {
-                            if (match.location === location && match.date === date) {
-                                const matchHour = parseInt(match.time.split(':')[0]);
-                                const slotHour = parseInt(hourSlot.split(':')[0]);
-                                
-                                // Pridaj zápas do bunky, ak jeho hodina spadá do aktuálneho hodinového slotu
-                                if (matchHour === slotHour) {
-                                    cellMatches.push(match);
-                                }
-                            }
+
+                        // Filter zápasov pre danú bunku (miesto, dátum, hodina)
+                        allMatches.filter(match => 
+                            match.location === location && 
+                            match.date === date && 
+                            parseInt(match.time.split(':')[0]) === cellHour
+                        ).forEach(match => {
+                            cellMatches.push(match);
                         });
 
-                        scheduleHtml += '<td>';
-                        if (cellMatches.length > 0) {
-                            // Ak je v slote viac zápasov, zobrazíme ich všetky
-                            cellMatches.forEach(match => {
-                                scheduleHtml += `
-                                    <div class="schedule-cell-match" data-id="${match.id}">
-                                        <p class="schedule-cell-category">${match.categoryName || 'N/A'}${match.groupName ? ` (${match.groupName})` : ''}</p>
-                                        <p class="schedule-cell-teams">
-                                            ${match.team1DisplayName}<br>
-                                            ${match.team2DisplayName}
-                                        </p>
-                                        <p class="schedule-cell-club-names">(${match.team1ClubName} vs. ${match.team2ClubName})</p>
-                                        <div class="schedule-cell-actions">
-                                            <button class="edit-btn" data-id="${match.id}">Upraviť</button>
-                                            <button class="delete-btn" data-id="${match.id}">Vymazať</button>
-                                        </div>
+                        scheduleHtml += '<td class="schedule-cell-wrapper">'; // Nový wrapper pre relatívne pozicionovanie
+                        
+                        // Získame referenciu na min/max čas pre DANÝ DEŇ (aby sme vedeli škálovať)
+                        const dailySlots = dateHourlySlots.get(date);
+                        let dailyStartMinutes = timeToMinutes(dailySlots[0]); // Začiatok prvého slotu pre daný deň
+                        let dailyEndMinutes = timeToMinutes(dailySlots[dailySlots.length - 1]) + 60; // Koniec posledného slotu (celá hodina)
+                        if (dailyEndMinutes === 60) dailyEndMinutes = 24 * 60; // Ak je to len 00:00, považujeme to za koniec dňa
+
+                        // Dĺžka celého rozsahu v minútach pre tento deň
+                        const dailyRangeMinutes = dailyEndMinutes - dailyStartMinutes;
+                        
+                        // Konkrétna hodina (časový úsek 60 minút) pre túto bunku
+                        const currentHourStartMinutes = timeToMinutes(hourSlot);
+
+                        cellMatches.forEach(match => {
+                            const matchStartMinutes = timeToMinutes(match.time);
+                            // Predpokladaná dĺžka zápasu v minútach (môžeš pridať do dát zápasu)
+                            const matchDurationMinutes = 45; // Predvolená dĺžka zápasu (napr. 45 minút)
+
+                            // Vypočítaj pozíciu (top) a výšku zápasu v percentách
+                            // Pomer minút zápasu k minútam celej hodiny (60)
+                            const positionWithinHourPercent = ((matchStartMinutes % 60) / 60) * 100;
+                            const heightPercent = (matchDurationMinutes / 60) * 100;
+
+                            // Ak chceme pozicionovať zápas v rámci CELEJ bunky (nie len hodiny)
+                            // const totalMatchDurationMinutes = timeToMinutes(match.time) + matchDurationMinutes - dailyStartMinutes;
+                            // const topPositionPercent = ((matchStartMinutes - dailyStartMinutes) / dailyRangeMinutes) * 100;
+                            // const heightPercent = (matchDurationMinutes / dailyRangeMinutes) * 100;
+
+                            scheduleHtml += `
+                                <div class="schedule-cell-match" 
+                                     data-id="${match.id}" 
+                                     style="top: ${positionWithinHourPercent}%; height: ${heightPercent}%;">
+                                    <p class="schedule-cell-category">${match.categoryName || 'N/A'}${match.groupName ? ` (${match.groupName})` : ''}</p>
+                                    <p class="schedule-cell-teams">
+                                        ${match.team1DisplayName}<br>
+                                        ${match.team2DisplayName}
+                                    </p>
+                                    <p class="schedule-cell-club-names">(${match.team1ClubName} vs. ${match.team2ClubName})</p>
+                                    <div class="schedule-cell-actions">
+                                        <button class="edit-btn" data-id="${match.id}">Upraviť</button>
+                                        <button class="delete-btn" data-id="${match.id}">Vymazať</button>
                                     </div>
-                                `;
-                            });
-                        } else {
-                            scheduleHtml += '<span class="no-match-placeholder"></span>'; // Prázdna bunka
+                                </div>
+                            `;
+                        });
+                        if (cellMatches.length === 0) {
+                             scheduleHtml += '<span class="no-match-placeholder"></span>'; // Prázdna bunka ak tam nie je zápas
                         }
                         scheduleHtml += '</td>';
                     });
@@ -293,8 +352,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Event listener pre zatvorenie modálneho okna
     closeMatchModalButton.addEventListener('click', () => {
         closeModal(matchModal);
-        // Ak nechceš, aby sa rozvrh načítal pri každom zatvorení, odstráň nasledujúci riadok
-        // Ale je to dobrá prax pre aktualizáciu po úprave/pridaní inde
         displayMatchesAsSchedule(); 
     });
 
@@ -423,7 +480,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 alert('Nový zápas úspešne pridaný!');
             }
             closeModal(matchModal);
-            await displayMatchesAsSchedule(); // Aktualizovať rozvrh po uložení
+            await displayMatchesAsSchedule(); 
         } catch (error) {
             console.error("Chyba pri ukladaní zápasu: ", error);
             alert("Chyba pri ukladaní zápasu. Pozrite konzolu pre detaily.");
