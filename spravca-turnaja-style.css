@@ -80,8 +80,9 @@ body.modal-open main {
     top: 90px;
     align-self: flex-start;
     max-height: calc(100vh - 110px);
-    overflow-y: auto;
+    overflow-y: hidden;
     z-index: 1002;
+    flex-shrink: 0;
 }
 .left-menu ul {
     list-style: none;
