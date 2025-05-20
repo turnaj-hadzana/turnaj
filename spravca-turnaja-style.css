@@ -484,7 +484,7 @@ td:last-child {
     text-align: center;
     vertical-align: top;
     position: relative; /* Dôležité pre absolútne pozicionovanie zápasov */
-    min-width: 80px; /* Šírka jedného hodinového stĺpca (možno bude potrebné doladiť) */
+    min-width: 160px; /* Šírka jedného hodinového stĺpca (možno bude potrebné doladiť) */
     height: 100px; /* Stála výška riadku */
     box-sizing: border-box;
 }
