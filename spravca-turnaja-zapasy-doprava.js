@@ -242,8 +242,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         team1NumberInput.value = '';
         team2NumberInput.value = '';
-
-        openModal(matchModal);
     });
 
     // Event listener pre zmenu hlavnej kategórie zápasu
