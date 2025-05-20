@@ -114,6 +114,8 @@ main {
     box-shadow: none;
     background-color: transparent;
     min-width: 0;
+    overflow-x: hidden; /* Zmenené: Zabezpečí, že main sám nebude mať horizontálny scrollbar */
+    /* overflow-y: auto; Ak tu chceš vertikálny scrollbar pre celý main obsah */
 }
 
 #groupsContent,
@@ -452,7 +454,7 @@ td:last-child {
     font-weight: normal;
 }
 
-//---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+/*---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
 
 
 /* Container, ktorý umožňuje horizontálny scroll, ak je tabuľka príliš široká */
@@ -462,11 +464,13 @@ td:last-child {
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     background-color: #fff;
+    width: 100%; /* ZMENENÉ: Zabezpečí, že sa roztiahne na celú dostupnú šírku rodiča */
+    /* max-width: 100%; */ /* Ak chceš, aby neprekročil 100% šírky rodiča, môžeš pridať */
 }
 
 /* Základná tabuľka rozvrhu */
 .match-schedule-table {
-    width: 60%;
+    width: 100%; /* ZMENENÉ: Zabezpečí, že sa tabuľka roztiahne v rámci posuvného kontajnera */
     border-collapse: collapse; /* Aby sa okraje buniek spojili */
 }
 
@@ -502,7 +506,7 @@ td:last-child {
     width: 150px; /* Pevná šírka pre stĺpec s miestami */
     min-width: 150px;
     position: sticky; /* Sticky pre prvý stĺpec */
-    left: 100px;
+    left: 0; /* ZMENENÉ: Kľúčová zmena pre správne zarovnanie */
     z-index: 11; /* Vyšší z-index, aby prekrýval ostatné sticky hlavičky */
     box-shadow: 2px 0 5px rgba(0,0,0,0.1); /* Tieň pre vizuálne oddelenie */
     padding: 5px; /* Nechajte padding pre text miesta */
@@ -514,7 +518,6 @@ td:last-child {
     font-size: 1em;
     padding: 5px; /* Nechajte padding pre text miesta */
 }
-
 
 /* Hlavička dátumu v hornom riadku */
 .schedule-date-header {
