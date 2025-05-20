@@ -510,7 +510,7 @@ td:last-child {
     width: 150px; /* Pevná šírka pre stĺpec s miestami */
     min-width: 150px;
     position: sticky; /* Sticky pre prvý stĺpec */
-    left: 0;
+    left: 100px;
     z-index: 11; /* Vyšší z-index, aby prekrýval ostatné sticky hlavičky */
     box-shadow: 2px 0 5px rgba(0,0,0,0.1); /* Tieň pre vizuálne oddelenie */
     padding: 5px; /* Nechajte padding pre text miesta */
