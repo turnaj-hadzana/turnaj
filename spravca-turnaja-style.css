@@ -465,18 +465,17 @@ td:last-child {
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     background-color: #fff;
-    width: 100%;
-    margin: 20px 0;
+    /* width: 36%;  ODSTRÁNIŤ TOTO */
+    /* margin: 0 auto; ODSTRÁNIŤ TOTO */
+    width: 100%; /* Tabuľka vyplní dostupnú šírku rodiča main, ktorý je flex-grow: 1 */
+    margin: 20px 0; /* Pre lepšie vizuálne oddelenie */
 }
 
 /* Základná tabuľka rozvrhu */
 .match-schedule-table {
     border-collapse: collapse;
-    /* Odstránené width: 100%; a min-width: fit-content; */
-    /* table-layout: fixed; - Toto je dôležité, ak chceme pevné šírky stĺpcov */
-    /* Vzhľadom na použitie colspan a dynamické generovanie štýlov pre TD,
-       nastavenie width priamo na TH/TD bude spoľahlivejšie.
-       Necháme table-layout auto, aby sa prispôsobilo. */
+    /* width: 100%;  ODSTRÁNIŤ TOTO */
+    table-layout: fixed; /* Kľúčové pre vynútenie pevných šírok stĺpcov */
 }
 
 /* Základné štýly pre hlavičky a bunky */
@@ -487,9 +486,8 @@ td:last-child {
     text-align: center;
     vertical-align: top;
     position: relative; /* Dôležité pre absolútne pozicionovanie zápasov */
-    width: 160px; /* Pevná šírka pre každý hodinový stĺpec */
-    min-width: 160px; /* Zabezpečí, že sa bunka nezmenší pod túto hodnotu */
-    max-width: 160px; /* Zabezpečí, že sa bunka neroztiahne nad túto hodnotu */
+    min-width: 160px; /* Použite min-width, aby sa stĺpec mohol prispôsobiť, ale nie byť menší */
+    width: 160px; /* Nastavte pevnú šírku */
     height: 100px; /* Stála výška riadku */
     box-sizing: border-box;
     overflow: hidden; /* Skryje pretekajúci obsah */
