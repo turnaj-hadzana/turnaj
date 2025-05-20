@@ -486,7 +486,7 @@ td:last-child {
     text-align: center;
     vertical-align: top; /* Obsah bunky zarovnať na vrch */
     position: relative; /* Dôležité pre absolútne pozicionovanie obsahu */
-    min-width: 80px; /* Minimálna šírka pre každú časovú bunku */
+    min-width: 100px; /* Minimálna šírka pre každú časovú bunku */
     height: 90px; /* Dôležité: Pevná výška pre riadky, experimentujte s hodnotou */
     box-sizing: border-box; /* Padding a border sa zahrnú do výšky/šírky */
 }
