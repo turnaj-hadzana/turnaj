@@ -582,31 +582,38 @@ td:last-child {
 
 /* Štýly pre blok zápasu vo vnútri bunky */
 .schedule-cell-match {
-    background-color: #e0f2f7;
-    border: 1px solid #a7d9ed;
-    border-radius: 4px;
-    padding: 2px;
-    font-size: 0.75em;
-    line-height: 1.1;
-    text-align: left;
     position: absolute;
     top: 0;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    /* padding-bottom: 25px; - Odstránené, aby sa tlačidlá mohli umiestniť na spodok bez ovplyvnenia výšky */
+    /* left a width sú nastavené JS dynamicky */
+    height: 100%; /* Zaberá celú výšku rodičovskej TD */
+    background-color: #e0f7fa; /* Svetlo modrá */
+    border: 1px solid #00bcd4; /* Tyrkysová */
+    border-radius: 4px;
+    padding: 5px; /* Ponechajte padding pre celú bunku */
+    margin: 2px 0;
     box-sizing: border-box;
-    overflow-y: auto;
-    overflow-x: hidden;
+    display: flex;
+    flex-direction: column; /* Položky sú usporiadané vertikálne */
+    justify-content: space-between; /* Obsah hore, tlačidlá dole */
     z-index: 5;
-    /* left a width budú nastavené JS dynamicky */
+    /* overflow: hidden;  <-- ODSTRÁNIL SOM TOTO, aby sa posuvník na schedule-cell-content mohol zobraziť, ak je to potrebné */
+}
+
+.schedule-cell-content {
+    flex-grow: 1; /* Rozšíri sa a zaberie všetok dostupný priestor */
+    overflow-y: auto; /* PRIDANÉ: Posuvník len pre tento obsah, ak je príliš dlhý */
+    overflow-x: hidden; /* Zabráni horizontálnemu posuvníku */
+    padding-bottom: 5px; /* Malý padding nad tlačidlami, ak je content dlhý */
+    box-sizing: border-box; /* Zabezpečí, že padding nepridá k výške, ak je nastavená výška */
+    min-height: 0; /* Dôležité pre flexbox, aby sa obsah mohol zmenšiť a scrollbar sa zobrazil */
 }
 
 /* Odstránenie predvolených marginov z p elementov vnútri zápasu */
 .schedule-cell-match p {
     margin: 0;
-    padding: 0 3px;
+    padding: 0 3px; /* Malý horizontálny padding pre text */
+    word-wrap: break-word; /* Pomáha s dlhými názvami */
+    min-width: 0; /* Dôležité pre flexbox, aby sa text mohol zmenšiť */
 }
 
 .schedule-cell-category {
@@ -627,10 +634,8 @@ td:last-child {
 
 /* Akčné tlačidlá vo vnútri bloku zápasu */
 .schedule-cell-actions {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
+    /* position: absolute;  <-- TOTO JE KĽÚČOVÉ: ODSTRÁNIŤ */
+    /* bottom: 0; left: 0; right: 0;  <-- Tieto vlastnosti sú už zbytočné bez absolute */
     display: flex;
     justify-content: space-around;
     gap: 2px;
@@ -638,7 +643,9 @@ td:last-child {
     background-color: rgba(255, 255, 255, 0.9);
     border-top: 1px solid #ccc;
     box-sizing: border-box;
-    height: 25px; /* Pevná výška pre oblasť s tlačidlami */
+    flex-shrink: 0; /* Zabraňuje tlačidlám zmenšovať sa, ak je priestoru málo */
+    margin-top: 5px; /* Malý margin nad tlačidlami, ak je content príliš krátky */
+    align-items: center; /* Centruje obsah vertikálne */
 }
 
 .schedule-cell-actions button {
