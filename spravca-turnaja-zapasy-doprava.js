@@ -17,9 +17,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const matchTimeInput = document.getElementById('matchTime');
     const matchLocationInput = document.getElementById('matchLocation');
     const matchCategorySelect = document.getElementById('matchCategory');
-    const matchGroupSelect = document = document.getElementById('matchGroup');
+    const matchGroupSelect = document.getElementById('matchGroup');
     const matchModalTitle = document.getElementById('matchModalTitle');
-    const matchesContainer = document.getElementById('matchesContainer');
+    const matchesContainer = document.getElementById('matchesContainer'); // Uistite sa, že máte tento element v HTML
 
     const team1NumberInput = document.getElementById('team1NumberInput');
     const team2NumberInput = document.getElementById('team2NumberInput');
@@ -35,27 +35,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // Pomocná funkcia na získanie všetkých celých hodinových slotov pre daný deň (00:00 - 23:00)
-    function getAllDayHourlySlots() {
-        const slots = [];
-        for (let i = 0; i < 24; i++) { // Od 00:00 do 23:00
-            slots.push(`${String(i).padStart(2, '0')}:00`);
-        }
-        return slots;
-    }
-
-    // Pomocná funkcia na konverziu času (HH:MM) na minúty od začiatku hodiny
-    function getMinutesIntoHour(timeStr) {
-        const [, minutes] = timeStr.split(':').map(Number);
-        return minutes;
-    }
-
     // --- Funkcia na načítanie a zobrazenie zápasov ako rozvrh (miesto vs. čas/deň) ---
     async function displayMatchesAsSchedule() {
         if (!matchesContainer) return;
 
         matchesContainer.innerHTML = '<p>Načítavam rozvrh zápasov...</p>';
         try {
+            // Zápasy zoradíme podľa miesta, dátumu a času pre ľahšie spracovanie
             const q = query(matchesCollectionRef, orderBy("location", "asc"), orderBy("date", "asc"), orderBy("time", "asc"));
             const querySnapshot = await getDocs(q);
 
@@ -66,95 +52,83 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             const allMatches = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
+            // Zozbieranie unikátnych miest, dátumov a časov
             const uniqueLocations = new Set();
             const uniqueDates = new Set();
+            const uniqueTimes = new Set(); // Všetky časy, ktoré sa vyskytujú v zápasoch
+
             allMatches.forEach(match => {
                 uniqueLocations.add(match.location);
                 uniqueDates.add(match.date);
+                uniqueTimes.add(match.time);
             });
 
+            // Zoradenie pre konzistentné zobrazenie
             const sortedLocations = Array.from(uniqueLocations).sort();
-            const sortedDates = Array.from(uniqueDates).sort();
+            const sortedDates = Array.from(uniqueDates).sort(); // YYYY-MM-DD reťazce sa správne zoradia
+            const sortedTimes = Array.from(uniqueTimes).sort(); // HH:MM reťazce sa správne zoradia
 
-            // Celodenné hodinové sloty, ktoré sa použijú pre všetky dni
-            const hourlySlots = getAllDayHourlySlots();
+            // Mapovanie zápasov pre rýchly prístup
+            // Kľúč: "location|date|time", Hodnota: [match1, match2, ...] (pole, ak je viac zápasov v rovnakom slote)
+            const matchesMap = new Map();
+            allMatches.forEach(match => {
+                const key = `${match.location}|${match.date}|${match.time}`;
+                if (!matchesMap.has(key)) {
+                    matchesMap.set(key, []);
+                }
+                matchesMap.get(key).push(match);
+            });
 
-            let scheduleHtml = '<div class="schedule-table-container">';
+            let scheduleHtml = '<div class="schedule-table-container">'; // Kontajner pre overflow-x
+
+            // Generovanie hlavičky tabuľky
             scheduleHtml += '<table class="match-schedule-table"><thead><tr>';
+            scheduleHtml += '<th class="fixed-column">Miesto / Čas</th>'; // Prvý stĺpec pre miesta
 
-            // Prvý stĺpec hlavičky: Miesto
-            scheduleHtml += '<th class="fixed-column">Miesto</th>';
-
-            // Hlavičky pre dátumy
+            // Hlavičky pre dni a časy
             sortedDates.forEach(date => {
-                scheduleHtml += `<th colspan="${hourlySlots.length}">`; // colspan = počet hodín (24)
+                scheduleHtml += `<th colspan="${sortedTimes.length}">`; // Každý dátum sa roztiahne cez všetky časy
                 scheduleHtml += `<div class="schedule-date-header">${date}</div>`;
-                // Časové značky pod dátumom pre každý hodinový slot
                 scheduleHtml += '<div class="schedule-times-row">';
-                hourlySlots.forEach(time => {
-                    scheduleHtml += `<span class="schedule-hour-slot">${time}</span>`;
+                sortedTimes.forEach(time => {
+                    scheduleHtml += `<span>${time}</span>`;
                 });
                 scheduleHtml += '</div>';
                 scheduleHtml += '</th>';
             });
             scheduleHtml += '</tr></thead><tbody>';
 
-            // Generovanie riadkov pre každé miesto
+            // Generovanie riadkov tabuľky (pre každé miesto)
             sortedLocations.forEach(location => {
                 scheduleHtml += '<tr>';
                 scheduleHtml += `<th class="fixed-column schedule-location-header">${location}</th>`; // Hlavička riadka (miesto)
 
                 sortedDates.forEach(date => {
-                    // Pre každý dátum vytvoríme jeden "časový riadok" (<td> bunku),
-                    // ktorý bude vizuálne predstavovať celý deň pre dané miesto.
-                    scheduleHtml += '<td class="schedule-day-cell-wrapper">'; // Nová trieda pre wrapper dňa
-                    
-                    // Nájdi všetky zápasy pre toto miesto a dátum
-                    const dayMatches = allMatches.filter(match => 
-                        match.location === location && 
-                        match.date === date
-                    );
+                    sortedTimes.forEach(time => {
+                        const key = `${location}|${date}|${time}`;
+                        const cellMatches = matchesMap.get(key) || []; // Zápasy pre danú bunku
 
-                    dayMatches.forEach(match => {
-                        const matchStartMinutes = getMinutesIntoHour(match.time);
-                        const matchHour = parseInt(match.time.split(':')[0]);
-                        const matchDurationMinutes = 45; // Predvolená dĺžka zápasu v minútach. Zváž pridanie do dát zápasu.
-
-                        // Pozícia zápasu v rámci 24-hodinového rozpätia bunky
-                        // Každá hodina je 1/24 celkovej šírky bunky
-                        // Zápas sa pozicionuje v rámci svojej hodiny (left offset) a má šírku podľa trvania
-                        
-                        // Celková šírka bunky dňa je 100%
-                        // Šírka jednej hodiny je (100 / 24)%
-                        // Pozícia v rámci celej bunky:
-                        const totalDayMinutes = 24 * 60; // 1440 minút v celom dni
-                        const matchStartTotalMinutes = (matchHour * 60) + matchStartMinutes;
-                        const leftPositionPercent = (matchStartTotalMinutes / totalDayMinutes) * 100;
-                        const widthPercent = (matchDurationMinutes / totalDayMinutes) * 100;
-
-
-                        scheduleHtml += `
-                            <div class="schedule-event-item" 
-                                 data-id="${match.id}" 
-                                 style="left: ${leftPositionPercent}%; width: ${widthPercent}%;">
-                                <p class="schedule-cell-category">${match.categoryName || 'N/A'}${match.groupName ? ` (${match.groupName})` : ''}</p>
-                                <p class="schedule-cell-teams">
-                                    ${match.team1DisplayName} vs ${match.team2DisplayName}
-                                </p>
-                                <p class="schedule-cell-club-names">(${match.team1ClubName} vs. ${match.team2ClubName})</p>
-                                <p class="schedule-cell-time">${match.time}</p>
-                                <div class="schedule-cell-actions">
-                                    <button class="edit-btn" data-id="${match.id}">Upraviť</button>
-                                    <button class="delete-btn" data-id="${match.id}">Vymazať</button>
-                                </div>
-                            </div>
-                        `;
+                        scheduleHtml += '<td>';
+                        if (cellMatches.length > 0) {
+                            // Ak je v slote viac zápasov, zobrazíme ich všetky
+                            cellMatches.forEach(match => {
+                                scheduleHtml += `
+                                    <div class="schedule-cell-match" data-id="${match.id}">
+                                        <p class="schedule-cell-category">${match.categoryName || 'N/A'}${match.groupName ? ` (${match.groupName})` : ''}</p>
+                                        <p class="schedule-cell-teams">${match.team1DisplayName}<br>${match.team2DisplayName}</p>
+                                        <p class="schedule-cell-club-names">${match.team1ClubName}<br>${match.team2ClubName}</p>
+                                        <div class="schedule-cell-actions">
+                                            <button class="edit-btn" data-id="${match.id}">Upraviť</button>
+                                            <button class="delete-btn" data-id="${match.id}">Vymazať</button>
+                                        </div>
+                                    </div>
+                                `;
+                            });
+                        } else {
+                            scheduleHtml += '<span class="no-match-placeholder"></span>'; // Prázdna bunka
+                        }
+                        scheduleHtml += '</td>';
                     });
-                    // Ak nie sú zápasy pre daný deň na danom mieste
-                    if (dayMatches.length === 0) {
-                        scheduleHtml += '<span class="no-match-placeholder"></span>';
-                    }
-                    scheduleHtml += '</td>';
                 });
                 scheduleHtml += '</tr>';
             });
@@ -177,7 +151,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Funkcie editMatch a deleteMatch (bez zmien)
+    // Funkcie editMatch a deleteMatch zostávajú rovnaké, len budú volať displayMatchesAsSchedule()
     async function editMatch(matchId) {
         try {
             const matchDocRef = doc(matchesCollectionRef, matchId);
@@ -219,7 +193,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             try {
                 await deleteDoc(doc(matchesCollectionRef, matchId));
                 alert('Zápas úspešne vymazaný!');
-                displayMatchesAsSchedule(); // Aktualizovať rozvrh
+                displayMatchesAsSchedule(); // <--- ZMENENÉ!
             } catch (error) {
                 console.error("Chyba pri mazaní zápasu: ", error);
                 alert("Chyba pri mazaní zápasu. Pozrite konzolu pre detaily.");
@@ -227,8 +201,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+
     // --- Inicializácia po načítaní stránky ---
-    await displayMatchesAsSchedule();
+    await displayMatchesAsSchedule(); // <--- ZMENENÉ!
+
 
     // Event listener pre tlačidlo "Pridať"
     addButton.addEventListener('click', () => {
@@ -242,6 +218,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         team1NumberInput.value = '';
         team2NumberInput.value = '';
+
+        openModal(matchModal);
     });
 
     // Event listener pre zmenu hlavnej kategórie zápasu
@@ -261,21 +239,25 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Event listener pre zatvorenie modálneho okna
     closeMatchModalButton.addEventListener('click', () => {
         closeModal(matchModal);
-        displayMatchesAsSchedule(); 
+        displayMatchesAsSchedule(); // <--- ZMENENÉ!
     });
 
-    // Funkcia na získanie názvu tímu (bez zmien)
+    // Funkcia na získanie názvu tímu na základe ID (poradového čísla) a metadát
     const getTeamName = async (categoryId, groupId, teamNumber) => {
         if (!categoryId || !groupId || !teamNumber) {
             return { fullDisplayName: null, clubName: null };
         }
+
         try {
             const categoryDoc = await getDoc(doc(categoriesCollectionRef, categoryId));
             const categoryName = categoryDoc.exists() ? (categoryDoc.data().name || categoryId) : categoryId;
+
             const groupDoc = await getDoc(doc(groupsCollectionRef, groupId));
             const groupData = groupDoc.exists() ? groupDoc.data() : null;
             const groupName = groupData ? (groupData.name || groupId) : groupId;
+
             let clubName = `Tím ${teamNumber}`;
+
             const clubsQuery = query(
                 clubsCollectionRef,
                 where("categoryId", "==", categoryId),
@@ -283,6 +265,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 where("orderInGroup", "==", parseInt(teamNumber))
             );
             const clubsSnapshot = await getDocs(clubsQuery);
+
             if (!clubsSnapshot.empty) {
                 const teamDocData = clubsSnapshot.docs[0].data();
                 if (teamDocData.name) {
@@ -291,10 +274,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             } else {
                 console.warn(`Tím s číslom ${teamNumber} v kategórii ${categoryId} a skupine ${groupId} sa nenašiel. Používam fallback: "${clubName}"`);
             }
+
             let shortCategoryName = categoryName;
             if (shortCategoryName) {
                 shortCategoryName = shortCategoryName.replace(/U(\d+)\s*([CHZ])/i, 'U$1$2').toUpperCase();
             }
+
             let shortGroupName = '';
             if (groupName) {
                 const match = groupName.match(/(?:skupina\s*)?([A-Z])/i);
@@ -302,7 +287,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                     shortGroupName = match[1].toUpperCase();
                 }
             }
+
             const fullDisplayName = `${shortCategoryName} ${shortGroupName}${teamNumber}`;
+
             return {
                 fullDisplayName: fullDisplayName,
                 clubName: clubName
@@ -313,7 +300,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
-    // Event listener pre odoslanie formulára (bez zmien)
+    // Event listener pre odoslanie formulára
     matchForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
@@ -380,7 +367,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 alert('Nový zápas úspešne pridaný!');
             }
             closeModal(matchModal);
-            await displayMatchesAsSchedule();
+            await displayMatchesAsSchedule(); // <--- ZMENENÉ!
         } catch (error) {
             console.error("Chyba pri ukladaní zápasu: ", error);
             alert("Chyba pri ukladaní zápasu. Pozrite konzolu pre detaily.");
