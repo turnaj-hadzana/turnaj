@@ -211,4 +211,4 @@ export async function populateTeamNumberSelect(selectedCategoryId, selectedGroup
 }
 
 
-export { db, query, where, getDocs, getDoc, setDoc, deleteDoc, updateDoc, writeBatch, addDoc, doc };
+export { db, query, where, getDocs, getDoc, setDoc, deleteDoc, updateDoc, writeBatch, addDoc, doc, orderBy };
