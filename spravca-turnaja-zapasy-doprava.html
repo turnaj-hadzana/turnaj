@@ -28,11 +28,65 @@
                 
                 <div id="matchesContainer" class="scrollable-area">
                     <p>Žiadne zápasy ani informácie o doprave zatiaľ.</p>
-                    </div>
-                </section>
+                </div>
+
+            </section>
         </main>
     </div>
     <button id="addButton" class="add-button" title="Pridať">+</button>
+
+    <div id="matchModal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="closeMatchModal">&times;</span>
+            <h2 id="matchModalTitle">Pridať nový zápas / dopravu</h2>
+            <form id="matchForm">
+                <input type="hidden" id="matchId">
+
+                <div class="form-group">
+                    <label for="matchDescription">Popis:</label>
+                    <input type="text" id="matchDescription" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="matchDate">Dátum:</label>
+                    <input type="date" id="matchDate" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="matchTime">Čas:</label>
+                    <input type="time" id="matchTime" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="matchLocation">Miesto:</label>
+                    <input type="text" id="matchLocation" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="matchCategory">Kategória:</label>
+                    <select id="matchCategory" required></select>
+                </div>
+
+                <div class="form-group">
+                    <label for="matchGroup">Skupina (voliteľné):</label>
+                    <select id="matchGroup"></select>
+                </div>
+
+                <div class="form-group">
+                    <label for="matchTeam1">Tím 1:</label>
+                    <input type="text" id="matchTeam1">
+                </div>
+
+                <div class="form-group">
+                    <label for="matchTeam2">Tím 2:</label>
+                    <input type="text" id="matchTeam2">
+                </div>
+
+                <button type="submit">Uložiť zápas</button>
+            </form>
+        </div>
+    </div>
+
     <script type="module" src="spravca-turnaja-common.js"></script>
     <script type="module" src="spravca-turnaja-zapasy-doprava.js"></script>
 </body>
