@@ -78,6 +78,7 @@ function getHTMLElements() {
     
     if (!elementsFound) {
         if (dynamicContentArea) dynamicContentArea.innerHTML = '<p>FATAL ERROR: Chyba pri inicializácii aplikácie. Chýbajú potrebné HTML elementy. Skontrolujte konzolu pre detaily.</p>';
+        if (categoryButtonsContainer) categoryButtonsContainer.style.display = 'none';
         if (categoryTitleDisplay) categoryTitleDisplay.style.display = 'none';
         if (groupSelectionButtons) groupSelectionButtons.style.display = 'none';
         if (allGroupsContent) allGroupsContent.style.display = 'none';
@@ -129,6 +130,8 @@ async function loadAllTournamentData() {
         } else if (dynamicContentArea) {
             dynamicContentArea.innerHTML = '<p class="error-message">Nepodarilo sa načítať dáta turnaja. Prosím, skúste znova.</p>';
         }
+        // Tu zmeníme správanie, ak sa nepodarí načítať dáta, stále zobrazíme kategórie, ale budú prázdne
+        // if (categoryButtonsContainer) categoryButtonsContainer.style.display = 'none'; // Odkomentované
         if (categoryTitleDisplay) categoryTitleDisplay.style.display = 'none';
         if (groupSelectionButtons) groupSelectionButtons.style.display = 'none';
         if (allGroupsContent) allGroupsContent.style.display = 'none';
@@ -242,9 +245,10 @@ function displayCategoriesAsButtons() {
     clearActiveCategoryButtons();
     clearActiveGroupButtons();
 
-    if (window.location.hash) {
-        history.replaceState({}, document.title, window.location.pathname);
-    }
+    // Ak je hash, necháme ho, spracuje sa neskôr v DOMContentLoaded
+    // if (window.location.hash) {
+    //     history.replaceState({}, document.title, window.location.pathname);
+    // }
 
     if (allCategories.length === 0) {
         if (categoryButtonsContainer) categoryButtonsContainer.innerHTML = '<p>Zatiaľ nie sú pridané žiadne kategórie.</p>';
@@ -768,30 +772,35 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
+    // Prednačítanie dát
     await loadAllTournamentData();
 
     if (backToCategoriesButton) backToCategoriesButton.addEventListener('click', goBackToCategories);
     if (backToGroupButtonsButton) backToGroupButtonsButton.addEventListener('click', goBackToGroupView);
 
+    // Vždy najskôr zobraz kategórie
+    displayCategoriesAsButtons();
+
+    // Až potom spracuj hash, ak existuje a je platný
     const hash = window.location.hash;
     const categoryPrefix = '#category-';
     const groupPrefix = '/group-';
 
-    if (allCategories.length > 0) {
-        if (hash && hash.startsWith(categoryPrefix)) {
-            const hashParts = hash.substring(categoryPrefix.length).split(groupPrefix);
-            const urlCategoryId = hashParts[0];
-            const urlGroupId = hashParts.length > 1 ? hashParts[1] : null;
-            
-            // Dekódovanie hashu zostáva zachované
-            const decodedCategoryId = decodeURIComponent(urlCategoryId);
-            const decodedGroupId = urlGroupId ? decodeURIComponent(urlGroupId) : null;
+    if (hash && hash.startsWith(categoryPrefix)) {
+        const hashParts = hash.substring(categoryPrefix.length).split(groupPrefix);
+        const urlCategoryId = hashParts[0];
+        const urlGroupId = hashParts.length > 1 ? hashParts[1] : null;
+        
+        const decodedCategoryId = decodeURIComponent(urlCategoryId);
+        const decodedGroupId = urlGroupId ? decodeURIComponent(urlGroupId) : null;
 
-            const categoryExists = allCategories.some(cat => cat.id === decodedCategoryId);
+        const categoryExists = allCategories.some(cat => cat.id === decodedCategoryId);
 
-            if (categoryExists) {
+        if (categoryExists) {
+            // Použijeme setTimeout, aby sa zmeny aplikovali AŽ po dokončení počiatočného renderovania
+            // (teda po zobrazení kategórií)
+            setTimeout(() => {
                 displayGroupsForCategory(decodedCategoryId);
-
                 if (decodedGroupId) {
                     const groupExists = allGroups.some(group => group.id === decodedGroupId && group.categoryId === decodedCategoryId);
                     if (groupExists) {
@@ -799,19 +808,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                     } else {
                         console.warn(`Skupina "${decodedGroupId}" z URL sa nenašla v kategórii "${decodedCategoryId}". Zobrazujem prehľad skupín kategórie.`);
                     }
-                } else {
-                    console.log(`V hashi je iba kategória "${decodedCategoryId}". Zobrazujem prehľad skupín.`);
                 }
-            } else {
-                console.warn(`Kategória "${decodedCategoryId}" z URL sa nenašla. Zobrazujem úvodné kategórie.`);
-                displayCategoriesAsButtons();
-            }
+            }, 50); // Krátke oneskorenie, napr. 50ms, môže byť upravené
         } else {
-            console.log("Žiadny platný hash. Zobrazujem úvodné kategórie.");
-            displayCategoriesAsButtons();
+            console.warn(`Kategória "${decodedCategoryId}" z URL sa nenašla. Zostávam na úvodných kategóriách.`);
+            // V tomto prípade nemusíme nič volať, displayCategoriesAsButtons() už bola volaná
         }
     } else {
-        displayCategoriesAsButtons();
+        console.log("Žiadny platný hash alebo hash nezačína 'category-'. Zostávam na úvodných kategóriách.");
+        // V tomto prípade nemusíme nič volať, displayCategoriesAsButtons() už bola volaná
     }
 });
 
@@ -842,7 +847,7 @@ window.addEventListener('hashchange', () => {
             const alreadyInTargetState = (currentCategoryId === decodedCategoryId) &&
                                          (currentGroupId === decodedGroupId);
             if (alreadyInTargetState) {
-                return;
+                return; // Ak sme už v požadovanom stave, nič nerobíme
             }
 
             currentCategoryId = decodedCategoryId;
