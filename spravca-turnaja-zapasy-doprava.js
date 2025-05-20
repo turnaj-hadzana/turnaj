@@ -1,17 +1,12 @@
 import { db, categoriesCollectionRef, groupsCollectionRef, clubsCollectionRef, matchesCollectionRef, openModal, closeModal, populateCategorySelect, populateGroupSelect, populateTeamNumberSelect, getDocs, doc, setDoc, addDoc, getDoc, query, where, orderBy, deleteDoc } from './spravca-turnaja-common.js';
-// ^^^^^^^^^^ UISTITE SA, ŽE deleteDoc JE TIEŽ IMPORTED
 
-document.addEventListener('DOMContentLoaded', async () => { // Pridané 'async'
+document.addEventListener('DOMContentLoaded', async () => {
     const loggedInUsername = localStorage.getItem('username');
     if (!loggedInUsername || loggedInUsername !== 'admin') {
         window.location.href = 'login.html';
         return;
     }
 
-    // TENTO RIADOK JE PRÍČINOU PROBLÉMOV. MUSÍ BYŤ ODSTRÁNENÝ!
-    // loadCategoriesTable(); 
-
-    // Referencie na HTML elementy
     const categoriesContentSection = document.getElementById('categoriesContentSection');
     const addButton = document.getElementById('addButton');
     const matchModal = document.getElementById('matchModal');
@@ -24,13 +19,12 @@ document.addEventListener('DOMContentLoaded', async () => { // Pridané 'async'
     const matchCategorySelect = document.getElementById('matchCategory');
     const matchGroupSelect = document.getElementById('matchGroup');
     const matchModalTitle = document.getElementById('matchModalTitle');
-    const matchesContainer = document.getElementById('matchesContainer'); // Nová referencia
+    const matchesContainer = document.getElementById('matchesContainer');
 
     const team1NumberInput = document.getElementById('team1NumberInput');
     const team2NumberInput = document.getElementById('team2NumberInput');
 
 
-    // Zobrazenie správnej sekcie po načítaní
     if (categoriesContentSection) {
         categoriesContentSection.style.display = 'block';
         const otherSections = document.querySelectorAll('main > section, main > div');
@@ -41,13 +35,13 @@ document.addEventListener('DOMContentLoaded', async () => { // Pridané 'async'
         });
     }
 
-    // --- Funkcia na načítanie a zobrazenie zápasov ---
-    async function displayMatches() {
+    // --- Funkcia na načítanie a zobrazenie zápasov ako rozvrh (miesto vs. čas/deň) ---
+    async function displayMatchesAsSchedule() {
         if (!matchesContainer) return;
 
-        matchesContainer.innerHTML = '<p>Načítavam zápasy...</p>';
+        matchesContainer.innerHTML = '<p>Načítavam rozvrh zápasov...</p>';
         try {
-            const q = query(matchesCollectionRef, orderBy("date", "asc"), orderBy("time", "asc"));
+            const q = query(matchesCollectionRef, orderBy("location", "asc"), orderBy("date", "asc"), orderBy("time", "asc"));
             const querySnapshot = await getDocs(q);
 
             if (querySnapshot.empty) {
@@ -55,46 +49,91 @@ document.addEventListener('DOMContentLoaded', async () => { // Pridané 'async'
                 return;
             }
 
-            let matchesHtml = '<table><thead><tr><th>Dátum</th><th>Čas</th><th>Miesto</th><th>Kategória/Skupina</th><th>Tím 1</th><th>Tím 2</th><th>Akcie</th></tr></thead><tbody>';
+            const allMatches = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-            querySnapshot.docs.forEach(doc => {
-                const match = doc.data();
-                const matchId = doc.id;
+            // Zozbieranie unikátnych miest, dátumov a časov
+            const uniqueLocations = new Set();
+            const uniqueDates = new Set();
+            const uniqueTimes = new Set();
 
-                const formattedDate = match.date || 'N/A';
-                const formattedTime = match.time || 'N/A';
-
-                const team1Display = match.team1DisplayName || `Tím ${match.team1Number || '?'}`; // Použijeme display name
-                const team1ClubName = match.team1ClubName || ''; // Skutočný názov tímu
-                
-                const team2Display = match.team2DisplayName || `Tím ${match.team2Number || '?'}`;
-                const team2ClubName = match.team2ClubName || ''; 
-
-                matchesHtml += `
-                    <tr>
-                        <td>${formattedDate}</td>
-                        <td>${formattedTime}</td>
-                        <td>${match.location || 'N/A'}</td>
-                        <td>${match.categoryName || 'N/A'} ${match.groupName ? ` (${match.groupName})` : ''}</td>
-                        <td>
-                            ${team1Display}<br>
-                            ${team1ClubName ? `<small>(${team1ClubName})</small>` : ''}
-                        </td>
-                        <td>
-                            ${team2Display}<br>
-                            ${team2ClubName ? `<small>(${team2ClubName})</small>` : ''}
-                        </td>
-                        <td>
-                            <button class="edit-btn" data-id="${matchId}">Upraviť</button>
-                            <button class="delete-btn" data-id="${matchId}">Vymazať</button>
-                        </td>
-                    </tr>
-                `;
+            allMatches.forEach(match => {
+                uniqueLocations.add(match.location);
+                uniqueDates.add(match.date);
+                uniqueTimes.add(match.time);
             });
-            
-            matchesHtml += '</tbody></table>';
-            matchesContainer.innerHTML = matchesHtml;
 
+            const sortedLocations = Array.from(uniqueLocations).sort();
+            const sortedDates = Array.from(uniqueDates).sort(); // YYYY-MM-DD reťazce sa správne zoradia
+            const sortedTimes = Array.from(uniqueTimes).sort(); // HH:MM reťazce sa správne zoradia
+
+            // Mapovanie zápasov pre rýchly prístup
+            const matchesMap = new Map(); // Kľúč: "location|date|time", Hodnota: [match1, match2, ...]
+            allMatches.forEach(match => {
+                const key = `${match.location}|${match.date}|${match.time}`;
+                if (!matchesMap.has(key)) {
+                    matchesMap.set(key, []);
+                }
+                matchesMap.get(key).push(match);
+            });
+
+            let scheduleHtml = '<div class="schedule-table-container">'; // Kontajner pre overflow-x
+
+            // Generovanie hlavičky tabuľky
+            scheduleHtml += '<table class="match-schedule-table"><thead><tr>';
+            scheduleHtml += '<th class="fixed-column">Miesto / Čas</th>'; // Prvý stĺpec pre miesta
+
+            // Hlavičky pre dni a časy
+            sortedDates.forEach(date => {
+                scheduleHtml += `<th colspan="${sortedTimes.length}">`;
+                scheduleHtml += `<div class="schedule-date-header">${date}</div>`;
+                scheduleHtml += '<div class="schedule-times-row">';
+                sortedTimes.forEach(time => {
+                    scheduleHtml += `<span>${time}</span>`;
+                });
+                scheduleHtml += '</div>';
+                scheduleHtml += '</th>';
+            });
+            scheduleHtml += '</tr></thead><tbody>';
+
+            // Generovanie riadkov tabuľky (pre každé miesto)
+            sortedLocations.forEach(location => {
+                scheduleHtml += '<tr>';
+                scheduleHtml += `<th class="fixed-column schedule-location-header">${location}</th>`; // Hlavička riadka (miesto)
+
+                sortedDates.forEach(date => {
+                    sortedTimes.forEach(time => {
+                        const key = `${location}|${date}|${time}`;
+                        const cellMatches = matchesMap.get(key) || [];
+
+                        scheduleHtml += '<td>';
+                        if (cellMatches.length > 0) {
+                            cellMatches.forEach(match => {
+                                scheduleHtml += `
+                                    <div class="schedule-cell-match" data-id="${match.id}">
+                                        <p class="schedule-cell-category">${match.categoryName || 'N/A'}${match.groupName ? ` (${match.groupName})` : ''}</p>
+                                        <p class="schedule-cell-teams">${match.team1DisplayName} vs. ${match.team2DisplayName}</p>
+                                        <p class="schedule-cell-club-names">(${match.team1ClubName} vs. ${match.team2ClubName})</p>
+                                        <div class="schedule-cell-actions">
+                                            <button class="edit-btn" data-id="${match.id}">Upraviť</button>
+                                            <button class="delete-btn" data-id="${match.id}">Vymazať</button>
+                                        </div>
+                                    </div>
+                                `;
+                            });
+                        } else {
+                            scheduleHtml += '<span class="no-match-placeholder"></span>'; // Prázdna bunka
+                        }
+                        scheduleHtml += '</td>';
+                    });
+                });
+                scheduleHtml += '</tr>';
+            });
+
+            scheduleHtml += '</tbody></table>';
+            scheduleHtml += '</div>'; // Koniec schedule-table-container
+            matchesContainer.innerHTML = scheduleHtml;
+
+            // Pridanie event listenerov po generovaní HTML
             matchesContainer.querySelectorAll('.edit-btn').forEach(button => {
                 button.addEventListener('click', (event) => editMatch(event.target.dataset.id));
             });
@@ -103,12 +142,12 @@ document.addEventListener('DOMContentLoaded', async () => { // Pridané 'async'
             });
 
         } catch (error) {
-            console.error("Chyba pri načítaní zápasov: ", error);
-            matchesContainer.innerHTML = '<p>Chyba pri načítaní zápasov.</p>';
+            console.error("Chyba pri načítaní rozvrhu zápasov: ", error);
+            matchesContainer.innerHTML = '<p>Chyba pri načítaní rozvrhu zápasov.</p>';
         }
     }
 
-    async function editMatch(matchId) {
+    async function editMatch(matchId) { /* ... (zostáva nezmenené) ... */
         try {
             const matchDocRef = doc(matchesCollectionRef, matchId);
             const matchDoc = await getDoc(matchDocRef);
@@ -131,7 +170,6 @@ document.addEventListener('DOMContentLoaded', async () => { // Pridané 'async'
                     matchGroupSelect.disabled = true;
                 }
 
-                // Dôležité: Načítajte poradové čísla tímov, nie ich názvy pre formulár
                 team1NumberInput.value = matchData.team1Number || '';
                 team2NumberInput.value = matchData.team2Number || '';
 
@@ -145,12 +183,12 @@ document.addEventListener('DOMContentLoaded', async () => { // Pridané 'async'
         }
     }
 
-    async function deleteMatch(matchId) {
+    async function deleteMatch(matchId) { /* ... (zostáva nezmenené) ... */
         if (confirm('Naozaj chcete vymazať tento zápas?')) {
             try {
                 await deleteDoc(doc(matchesCollectionRef, matchId));
                 alert('Zápas úspešne vymazaný!');
-                displayMatches(); // Obnovíme zoznam zápasov
+                displayMatchesAsSchedule(); // Obnovíme zoznam zápasov
             } catch (error) {
                 console.error("Chyba pri mazaní zápasu: ", error);
                 alert("Chyba pri mazaní zápasu. Pozrite konzolu pre detaily.");
@@ -160,7 +198,7 @@ document.addEventListener('DOMContentLoaded', async () => { // Pridané 'async'
 
 
     // --- Inicializácia po načítaní stránky ---
-    await displayMatches(); 
+    await displayMatchesAsSchedule(); // ZMENENÉ: voláme novú funkciu pre rozvrh
 
 
     // Event listener pre tlačidlo "Pridať"
@@ -175,7 +213,7 @@ document.addEventListener('DOMContentLoaded', async () => { // Pridané 'async'
 
         team1NumberInput.value = '';
         team2NumberInput.value = '';
-        
+
         openModal(matchModal);
     });
 
@@ -196,11 +234,11 @@ document.addEventListener('DOMContentLoaded', async () => { // Pridané 'async'
     // Event listener pre zatvorenie modálneho okna
     closeMatchModalButton.addEventListener('click', () => {
         closeModal(matchModal);
-        displayMatches(); 
+        displayMatchesAsSchedule(); // ZMENENÉ: voláme novú funkciu
     });
 
-// Funkcia na získanie názvu tímu na základe ID (poradového čísla) a metadát
-    const getTeamName = async (categoryId, groupId, teamNumber) => {
+    // Funkcia na získanie názvu tímu na základe ID (poradového čísla) a metadát
+    const getTeamName = async (categoryId, groupId, teamNumber) => { /* ... (zostáva nezmenené) ... */
         if (!categoryId || !groupId || !teamNumber) {
             return { fullDisplayName: null, clubName: null };
         }
@@ -213,38 +251,30 @@ document.addEventListener('DOMContentLoaded', async () => { // Pridané 'async'
             const groupData = groupDoc.exists() ? groupDoc.data() : null;
             const groupName = groupData ? (groupData.name || groupId) : groupId;
 
-            // --- KĽÚČOVÁ ČASŤ PRE ZÍSKANIE SKUTOČNÉHO NÁZVU TÍMU ---
-            let clubName = `Tím ${teamNumber}`; // Defaultná hodnota, ak sa klub nenájde
+            let clubName = `Tím ${teamNumber}`;
 
-            // Dotaz na kolekciu 'clubs'
             const clubsQuery = query(
                 clubsCollectionRef,
                 where("categoryId", "==", categoryId),
                 where("groupId", "==", groupId),
-                // UISTITE SA, ŽE "orderNumber" JE SPRÁVNE POLE VO VAŠEJ KOLEKCII CLUBS A JEHO TYP JE NUMBER
-                where("orderInGroup", "==", parseInt(teamNumber)) // Použite parseInt pre číslo
+                where("orderInGroup", "==", parseInt(teamNumber))
             );
             const clubsSnapshot = await getDocs(clubsQuery);
 
             if (!clubsSnapshot.empty) {
-                // Našli sme aspoň jeden tím zodpovedajúci kritériám
-                const teamDocData = clubsSnapshot.docs[0].data(); // Vezmeme prvý nájdený tím
+                const teamDocData = clubsSnapshot.docs[0].data();
                 if (teamDocData.name) {
-                    clubName = teamDocData.name; // Nastavíme skutočný názov tímu
+                    clubName = teamDocData.name;
                 }
             } else {
                 console.warn(`Tím s číslom ${teamNumber} v kategórii ${categoryId} a skupine ${groupId} sa nenašiel. Používam fallback: "${clubName}"`);
             }
-            // --- KONIEC KĽÚČOVEJ ČASTI ---
 
-
-            // Spracovanie názvu kategórie (napr. "U12 CH" -> "U12CH")
             let shortCategoryName = categoryName;
             if (shortCategoryName) {
                 shortCategoryName = shortCategoryName.replace(/U(\d+)\s*([CHZ])/i, 'U$1$2').toUpperCase();
             }
 
-            // Spracovanie názvu skupiny (napr. "skupina A" -> "A")
             let shortGroupName = '';
             if (groupName) {
                 const match = groupName.match(/(?:skupina\s*)?([A-Z])/i);
@@ -252,26 +282,26 @@ document.addEventListener('DOMContentLoaded', async () => { // Pridané 'async'
                     shortGroupName = match[1].toUpperCase();
                 }
             }
-            
+
             const fullDisplayName = `${shortCategoryName} ${shortGroupName}${teamNumber}`;
-            
+
             return {
-                fullDisplayName: fullDisplayName, // Názov ako "U12CH A1"
-                clubName: clubName // Skutočný názov klubu ako "TJ Jednota Žilina"
+                fullDisplayName: fullDisplayName,
+                clubName: clubName
             };
         } catch (error) {
             console.error("Chyba pri získavaní názvu tímu: ", error);
             return { fullDisplayName: `Chyba`, clubName: `Chyba` };
         }
-    };    
-    
-// Event listener pre odoslanie formulára
+    };
+
+    // Event listener pre odoslanie formulára
     matchForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
         const matchCategory = matchCategorySelect.value;
         const matchGroup = matchGroupSelect.value;
-        
+
         const team1Number = team1NumberInput.value;
         const team2Number = team2NumberInput.value;
 
@@ -280,10 +310,9 @@ document.addEventListener('DOMContentLoaded', async () => { // Pridané 'async'
             return;
         }
 
-                let team1Result = null;
+        let team1Result = null;
         let team2Result = null;
 
-        // Získanie názvov tímov
         try {
             team1Result = await getTeamName(matchCategory, matchGroup, team1Number);
             team2Result = await getTeamName(matchCategory, matchGroup, team2Number);
@@ -292,8 +321,7 @@ document.addEventListener('DOMContentLoaded', async () => { // Pridané 'async'
             alert("Vyskytla sa chyba pri získavaní názvov tímov. Skúste to znova.");
             return;
         }
-        
-        // Voliteľná validácia: Ak sa názov tímu nezískal (tím neexistuje)
+
         if (!team1Result || !team1Result.fullDisplayName || !team2Result || !team2Result.fullDisplayName) {
             alert('Jeden alebo oba tímy sa nenašli. Skontrolujte poradové čísla v danej kategórii a skupine.');
             return;
@@ -307,22 +335,22 @@ document.addEventListener('DOMContentLoaded', async () => { // Pridané 'async'
             categoryName: matchCategorySelect.options[matchCategorySelect.selectedIndex].text,
             groupId: matchGroup || null,
             groupName: matchGroup ? matchGroupSelect.options[matchGroupSelect.selectedIndex].text : null,
-            
+
             team1Category: matchCategory,
             team1Group: matchGroup,
             team1Number: parseInt(team1Number),
-            team1DisplayName: team1Result.fullDisplayName, // Použijeme nový názov
-            team1ClubName: team1Result.clubName, // Nové pole pre skutočný názov klubu
-            
+            team1DisplayName: team1Result.fullDisplayName,
+            team1ClubName: team1Result.clubName,
+
             team2Category: matchCategory,
             team2Group: matchGroup,
             team2Number: parseInt(team2Number),
-            team2DisplayName: team2Result.fullDisplayName, // Použijeme nový názov
-            team2ClubName: team2Result.clubName, // Nové pole pre skutočný názov klubu
+            team2DisplayName: team2Result.fullDisplayName,
+            team2ClubName: team2Result.clubName,
 
             createdAt: new Date()
         };
-        
+
         console.log('Dáta zápasu na uloženie:', matchData);
 
         try {
@@ -334,7 +362,7 @@ document.addEventListener('DOMContentLoaded', async () => { // Pridané 'async'
                 alert('Nový zápas úspešne pridaný!');
             }
             closeModal(matchModal);
-            await displayMatches(); 
+            await displayMatchesAsSchedule(); // ZMENENÉ: voláme novú funkciu
         } catch (error) {
             console.error("Chyba pri ukladaní zápasu: ", error);
             alert("Chyba pri ukladaní zápasu. Pozrite konzolu pre detaily.");
