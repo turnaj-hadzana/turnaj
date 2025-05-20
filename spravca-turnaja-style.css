@@ -405,9 +405,6 @@ td:last-child {
         max-height: none;
         overflow-y: visible;
     }
-    main {
-        width: 100%;
-    }
     #groupsContent,
     #clubsContent {
         flex-direction: column;
