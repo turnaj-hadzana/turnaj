@@ -2,10 +2,10 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase
 import { getFirestore, collection, doc, setDoc, getDoc, getDocs, deleteDoc, query, where, addDoc, updateDoc, writeBatch } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js';
 
 const firebaseConfig = {
-    apiKey: "AIzaSyD0h0rQZiIGi0-UDb4-YU_JihRGpIlfz40",
+    apiKey: "AIzaSyD0h0rQZiIGi0-UDb4-YU_JihRGiIlfz40", // Použite váš skutočný API kľúč
     authDomain: "turnaj-a28c5.firebaseapp.com",
     projectId: "turnaj-a28c5",
-    storageBucket: "turnaj-a28c5.firebaseapp.com",
+    storageBucket: "turnaj-a28c5.appspot.com",
     messagingSenderId: "13732191148",
     appId: "1:13732191148:web:5ad78eaef2ad452a10f809"
 };
@@ -16,6 +16,9 @@ const db = getFirestore(app);
 export const categoriesCollectionRef = collection(db, 'tournamentData', 'mainTournamentData', 'categories');
 export const groupsCollectionRef = collection(db, 'tournamentData', 'mainTournamentData', 'groups');
 export const clubsCollectionRef = collection(db, 'tournamentData', 'mainTournamentData', 'clubs');
+// NOVÁ REFERENCIA NA KOLEKCIU ZÁPASOV
+export const matchesCollectionRef = collection(db, 'tournamentData', 'mainTournamentData', 'matches');
+
 
 let openModalCount = 0;
 
@@ -149,7 +152,7 @@ export async function populateGroupSelect(selectedCategoryId, selectElement, sel
     }
 }
 
-// ÚPRAVA TU: populateTeamNumberSelect
+// Zostáva aj keď sa select už nepoužíva, kvôli getTeamName()
 export async function populateTeamNumberSelect(selectedCategoryId, selectedGroupId, selectElement, selectedTeamNumber = null) {
     if (!selectedCategoryId || !selectedGroupId || !selectElement) {
         selectElement.innerHTML = '<option value="">-- Vyberte kategóriu a skupinu --</option>';
@@ -175,10 +178,8 @@ export async function populateTeamNumberSelect(selectedCategoryId, selectedGroup
             option.disabled = true;
             selectElement.appendChild(option);
         } else {
-            // Predpokladáme, že poradové číslo je v `orderNumber` alebo `teamNumber`
             const teamNumbers = querySnapshot.docs.map(doc => doc.data().orderNumber || doc.data().teamNumber || doc.id); 
             teamNumbers.sort((a, b) => {
-                // Konverzia na čísla pre správne numerické zoradenie
                 const numA = parseInt(a);
                 const numB = parseInt(b);
                 return numA - numB;
@@ -186,8 +187,8 @@ export async function populateTeamNumberSelect(selectedCategoryId, selectedGroup
 
             teamNumbers.forEach((teamNumber) => {
                 const option = document.createElement('option');
-                option.value = teamNumber; // Uložíme reálnu hodnotu (napr. ID dokumentu alebo číslo)
-                option.textContent = teamNumber; // *** ZMENA: Zobrazíme len samotné poradové číslo ***
+                option.value = teamNumber;
+                option.textContent = teamNumber;
                 selectElement.appendChild(option);
             });
 
