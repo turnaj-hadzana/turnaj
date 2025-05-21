@@ -696,7 +696,7 @@ td:last-child {
     fill: #5cb85c; /* Zelená farba pre autobus, ako na obrázku */
     stroke: #449d44; /* Tmavšia zelená pre okraj */
     stroke-width: 1;
-    opacity: 0.8; /* Mierna priehľadnosť, ak je to potrebné */
+    opacity: 0.5; /* Mierna priehľadnosť, ak je to potrebné */
 }
 
 /* NOVÉ: Štýly pre text v SVG autobuse */
