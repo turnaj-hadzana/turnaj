@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Modálne okno pre hrací deň
     const playingDayModal = document.getElementById('playingDayModal');
     const closePlayingDayModalButton = document.getElementById('closePlayingDayModal');
-    const playingDayForm = document = document.getElementById('playingDayForm');
+    const playingDayForm = document.getElementById('playingDayForm'); // OPRAVENÉ: Odstránené 'document ='
     const playingDayDateInput = document.getElementById('playingDayDate');
 
     // Modálne okno pre športovú halu
