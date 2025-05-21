@@ -536,7 +536,7 @@ td:last-child {
     position: relative; /* Dôležité pre vytvorenie nového stacking kontextu */
     z-index: 6; /* Nastavené na nižší z-index ako busOverlayContainer */
     /*min-height: fit-content;*/
-    height: 75vh;
+    height: 70vh;
     max-height: none;
     overflow-y: auto;    
 }
