@@ -103,11 +103,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                         hoursForDate.push(h);
                     }
                 }
+
+                const displayDateObj = new Date(dateRaw);
+                const displayDay = String(displayDateObj.getDate()).padStart(2, '0');
+                const displayMonth = String(displayDateObj.getMonth() + 1).padStart(2, '0');
+                const formattedDisplayDate = `${displayDay}. ${displayMonth}.`;
                 
                 const colspan = hoursForDate.length;
                 if (colspan > 0) {
                     scheduleHtml += `<th colspan="${colspan}">`;
-                    scheduleHtml += `<div class="schedule-date-header">${date}</div>`;
+                    scheduleHtml += `<div class="schedule-date-header">${formattedDisplayDate}</div>`;
+//                    scheduleHtml += `<div class="schedule-date-header">${date}</div>`;
                     scheduleHtml += '<div class="schedule-times-row">';
                     hoursForDate.forEach(hour => {
                         scheduleHtml += `<span>${String(hour % 24).padStart(2, '0')}:00</span>`;
@@ -115,7 +121,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     scheduleHtml += '</div>';
                     scheduleHtml += '</th>';
                 } else {
-                    scheduleHtml += `<th><div class="schedule-date-header">${date}</div><div class="schedule-times-row"><span></span></div></th>`;
+                    scheduleHtml += `<th><div class="schedule-date-header">${formattedDisplayDate}</div><div class="schedule-times-row"><span></span></div></th>`;
+//                    scheduleHtml += `<th><div class="schedule-date-header">${date}</div><div class="schedule-times-row"><span></span></div></th>`;
                 }
             });
             scheduleHtml += '</tr></thead><tbody>';
