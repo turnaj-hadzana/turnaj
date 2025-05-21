@@ -504,7 +504,7 @@ td:last-child {
 
 /* Špecifické štýly pre bunky (td) */
 .match-schedule-table td {
-    height: 160px; /* Stála výška riadku pre bunky */
+    height: 120px; /* Stála výška riadku pre bunky */
     /* overflow: hidden; */ /* Odstránené, aby sa tlačidlá a obsah zápasu mohli zobraziť. Ak text stále preteká, je potrebné zvážiť zväčšenie height alebo riešenie v schedule-cell-content */
 }
 
