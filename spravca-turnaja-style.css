@@ -864,3 +864,6 @@ td:last-child {
 .add-options-dropdown button:active {
     background-color: #004085;
 }
+.hall-address {
+    font-size: 0.85em;
+}
