@@ -1,4 +1,4 @@
-import { db, categoriesCollectionRef, groupsCollectionRef, clubsCollectionRef, matchesCollectionRef, playingDaysCollectionRef, sportHallsCollectionRef, busesCollectionRef, openModal, closeModal, populateCategorySelect, populateGroupSelect, getDocs, doc, setDoc, addDoc, getDoc, query, where, orderBy, deleteDoc, writeBatch } from './spravca-turnaja-common.js';
+import { db, categoriesCollectionRef, groupsCollectionRef, clubsCollectionRef, matchesCollectionRef, playingDaysCollectionRef, sportHallsCollectionRef, busesCollectionRef, settingsCollectionRef, openModal, closeModal, populateCategorySelect, populateGroupSelect, getDocs, doc, setDoc, addDoc, getDoc, query, where, orderBy, deleteDoc, writeBatch } from './spravca-turnaja-common.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     const loggedInUsername = localStorage.getItem('username');
@@ -1351,6 +1351,24 @@ document.addEventListener('DOMContentLoaded', async () => {
         let occupiedSlots = [];
 
         try {
+            // Načítaj nastavenia počiatočných časov z Firestore
+            const settingsDocRef = doc(settingsCollectionRef, 'matchTimeSettings');
+            const settingsDoc = await getDoc(settingsDocRef);
+            let firstDayStartHour = 12; // Predvolené 12:00
+            let otherDaysStartHour = 8; // Predvolené 08:00
+
+            if (settingsDoc.exists()) {
+                const settingsData = settingsDoc.data();
+                if (settingsData.firstDayStartTime) {
+                    const [h] = settingsData.firstDayStartTime.split(':').map(Number);
+                    firstDayStartHour = h;
+                }
+                if (settingsData.otherDaysStartTime) {
+                    const [h] = settingsData.otherDaysStartTime.split(':').map(Number);
+                    otherDaysStartHour = h;
+                }
+            }
+
             // Určenie počiatočného času na základe dňa turnaja
             const playingDaysSnapshot = await getDocs(query(playingDaysCollectionRef, orderBy("date", "asc")));
             const sortedPlayingDays = playingDaysSnapshot.docs.map(doc => doc.data().date);
@@ -1358,9 +1376,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             let earliestAvailableMinutes;
             if (selectedDateIndex === 0) { // Prvý deň
-                earliestAvailableMinutes = 12 * 60; // 12:00
+                earliestAvailableMinutes = firstDayStartHour * 60;
             } else { // Druhý, tretí a ďalšie dni
-                earliestAvailableMinutes = 8 * 60; // 08:00
+                earliestAvailableMinutes = otherDaysStartHour * 60;
             }
 
             // Načítaj zápasy pre vybraný dátum a halu
