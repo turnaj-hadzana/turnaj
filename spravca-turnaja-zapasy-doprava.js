@@ -23,6 +23,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const matchLocationSelect = document.getElementById('matchLocationSelect');
     const matchStartTimeInput = document.getElementById('matchStartTime');
     const matchDurationInput = document.getElementById('matchDuration');
+    const matchBufferTimeInput = document.getElementById('matchBufferTime'); // NOVÉ: Input pre ochranné pásmo
     const matchCategorySelect = document.getElementById('matchCategory');
     const matchGroupSelect = document.getElementById('matchGroup');
     const matchModalTitle = document.getElementById('matchModalTitle');
@@ -129,10 +130,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             allMatches.forEach(match => {
                 const date = match.date;
                 const [startH, startM] = match.startTime.split(':').map(Number);
-                const duration = match.duration;
+                // Pri výpočte rozsahu pre zobrazenie zohľadníme aj ochranné pásmo
+                const durationWithBuffer = (match.duration || 0) + (match.bufferTime || 0);
 
                 const startTimeInMinutes = startH * 60 + startM;
-                const endTimeInMinutes = startTimeInMinutes + duration;
+                const endTimeInMinutes = startTimeInMinutes + durationWithBuffer;
 
                 let actualEndHour = Math.ceil(endTimeInMinutes / 60);
 
@@ -222,15 +224,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                     matchesForLocationAndDate.forEach(match => {
                         const [startH, startM] = match.startTime.split(':').map(Number);
                         const durationInMinutes = match.duration;
+                        const bufferInMinutes = match.bufferTime || 0; // Získanie ochranného pásma
 
                         const absoluteStartMin = startH * 60 + startM;
-                        const absoluteEndMin = absoluteStartMin + durationInMinutes;
+                        const absoluteEndMin = absoluteStartMin + durationInMinutes + bufferInMinutes; // Zohľadnenie ochranného pásma
 
                         const firstHourInDay = range.minHour;
                         const relativeStartMin = absoluteStartMin - (firstHourInDay * 60);
 
                         const leftPx = relativeStartMin * PIXELS_PER_MINUTE;
-                        const widthPx = durationInMinutes * PIXELS_PER_MINUTE;
+                        const widthPx = (durationInMinutes + bufferInMinutes) * PIXELS_PER_MINUTE; // Šírka zohľadňuje aj ochranné pásmo
 
                         let topPx = 0;
 
@@ -393,6 +396,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 matchStartTimeInput.value = matchData.startTime || '';
                 matchDurationInput.value = matchData.duration || 60;
+                matchBufferTimeInput.value = matchData.bufferTime || 5; // NOVÉ: Načítanie ochranného pásma
 
                 await populateCategorySelect(matchCategorySelect, matchData.categoryId);
                 if (matchData.categoryId) {
@@ -469,6 +473,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         team1NumberInput.value = '';
         team2NumberInput.value = '';
         matchDurationInput.value = '';
+        matchBufferTimeInput.value = 5; // NOVÉ: Predvolená hodnota 5 minút pre ochranné pásmo
         openModal(matchModal);
         addOptions.classList.remove('show'); // Skryť dropdown po výbere
     });
@@ -575,12 +580,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         const matchLocation = matchLocationSelect.value;
         const matchStartTime = matchStartTimeInput.value;
         const matchDuration = parseInt(matchDurationInput.value);
+        const matchBufferTime = parseInt(matchBufferTimeInput.value); // NOVÉ: Získanie hodnoty ochranného pásma
 
 
         const currentMatchId = matchIdInput.value;
 
-        if (!matchCategory || !matchGroup || isNaN(team1Number) || isNaN(team2Number) || !matchDate || !matchLocation || !matchStartTime || isNaN(matchDuration)) {
-            alert('Prosím, vyplňte všetky povinné polia (Kategória, Skupina, Poradové číslo tímu 1 a 2, Dátum, Miesto, Čas začiatku, Trvanie).');
+        if (!matchCategory || !matchGroup || isNaN(team1Number) || isNaN(team2Number) || !matchDate || !matchLocation || !matchStartTime || isNaN(matchDuration) || isNaN(matchBufferTime)) {
+            alert('Prosím, vyplňte všetky povinné polia (Kategória, Skupina, Poradové číslo tímu 1 a 2, Dátum, Miesto, Čas začiatku, Trvanie, Ochranné pásmo).');
             return;
         }
 
@@ -606,10 +612,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        // --- NOVÁ KONTROLA: Prekrývanie časov v rovnakej hale a deň ---
+        // --- KONTROLA: Prekrývanie časov v rovnakej hale a deň (vrátane ochranného pásma) ---
         const [newStartHour, newStartMinute] = matchStartTime.split(':').map(Number);
         const newMatchStartInMinutes = newStartHour * 60 + newStartMinute;
-        const newMatchEndInMinutes = newMatchStartInMinutes + matchDuration;
+        // NOVÉ: Koniec zápasu vrátane jeho trvania a ochranného pásma
+        const newMatchEndInMinutesWithBuffer = newMatchStartInMinutes + matchDuration + matchBufferTime; 
 
         try {
             const existingMatchesQuery = query(
@@ -633,10 +640,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 const [existingStartHour, existingStartMinute] = existingMatch.startTime.split(':').map(Number);
                 const existingMatchStartInMinutes = existingStartHour * 60 + existingStartMinute;
-                const existingMatchEndInMinutes = existingMatchStartInMinutes + existingMatch.duration;
+                // NOVÉ: Koniec existujúceho zápasu vrátane jeho trvania a ochranného pásma
+                const existingMatchEndInMinutesWithBuffer = existingMatchStartInMinutes + (existingMatch.duration || 0) + (existingMatch.bufferTime || 0);
 
                 // Kontrola prekrývania: (nový začína pred existujúcim koncom A nový končí po existujúcom začiatku)
-                if (newMatchStartInMinutes < existingMatchEndInMinutes && newMatchEndInMinutes > existingMatchStartInMinutes) {
+                if (newMatchStartInMinutes < existingMatchEndInMinutesWithBuffer && newMatchEndInMinutesWithBuffer > existingMatchStartInMinutes) {
                     overlapFound = true;
                     overlappingMatchDetails = existingMatch;
                     return; // Nájdené prekrývanie, nie je potrebné ďalej kontrolovať
@@ -644,16 +652,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
 
             if (overlapFound) {
-                // Formátovanie koncového času pre existujúci zápas v správe
+                // Formátovanie koncového času pre existujúci zápas v správe (len samotný zápas, nie s bufferom)
                 const [existingStartHour, existingStartMinute] = overlappingMatchDetails.startTime.split(':').map(Number);
                 const existingMatchEndTimeObj = new Date(); // Použijeme aktuálny dátum, len pre čas
-                existingMatchEndTimeObj.setHours(existingStartHour, existingStartMinute + overlappingMatchDetails.duration, 0, 0);
+                existingMatchEndTimeObj.setHours(existingStartHour, existingStartMinute + (overlappingMatchDetails.duration || 0), 0, 0);
                 const formattedExistingEndTime = existingMatchEndTimeObj.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit'});
 
                 alert(`Zápas sa prekrýva s existujúcim zápasom v hale "${matchLocation}" dňa ${matchDate}:\n\n` +
                       `Existujúci zápas: ${overlappingMatchDetails.startTime} - ${formattedExistingEndTime}\n` +
                       `Tímy: ${overlappingMatchDetails.team1DisplayName} vs ${overlappingMatchDetails.team2DisplayName}\n\n` +
-                      `Prosím, upravte čas začiatku alebo trvanie nového zápasu.`);
+                      `Prosím, upravte čas začiatku alebo trvanie nového zápasu, alebo ochranné pásmo.`);
                 return; // Zastaviť vykonávanie, neuložiť zápas
             }
         } catch (error) {
@@ -661,7 +669,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             alert("Vyskytla sa chyba pri kontrole prekrývania zápasov. Skúste to znova.");
             return;
         }
-        // --- KONIEC NOVEJ KONTROLY ---
+        // --- KONIEC KONTROLY PREKRÝVANIA ---
 
 
         // --- KONTROLA: Tímy v rovnakej kategórii a skupine nemôžu hrať proti sebe viackrát ---
@@ -722,6 +730,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             date: matchDate,
             startTime: matchStartTime,
             duration: matchDuration,
+            bufferTime: matchBufferTime, // NOVÉ: Uloženie ochranného pásma
             location: matchLocation,
             categoryId: matchCategory,
             categoryName: matchCategorySelect.options[matchCategorySelect.selectedIndex].text,
@@ -801,7 +810,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         e.preventDefault();
         const name = hallNameInput.value.trim();
         const address = hallAddressInput.value.trim();
-        const googleMapsUrl = hallGoogleMapsUrlInput.value.trim();
+        const googleMapsUrl = hallGoogleMapsUrlInput.trim(); // Trimmed here
 
         if (!name || !address || !googleMapsUrl) {
             alert('Prosím, vyplňte všetky polia (Názov haly, Adresa, Odkaz na Google Maps).');
@@ -809,7 +818,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         try {
-            new URL(googleMapsUrl);
+            new URL(googleMapsUrl); // Validate URL format
         } catch (_) {
             alert('Odkaz na Google Maps musí byť platná URL adresa.');
             return;
