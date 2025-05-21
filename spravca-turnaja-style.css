@@ -682,7 +682,7 @@ td:last-child {
     box-shadow: none;
     padding: 0;
     margin: 0; /* Uistite sa, že nemá margin, aby neovplyvňoval pozíciu SVG */
-    z-index: 2; /* Zvýšený z-index, aby bol nad zápasmi */
+    z-index: 7; /* Zvýšený z-index, aby bol nad zápasmi */
     cursor: pointer;
 }
 
