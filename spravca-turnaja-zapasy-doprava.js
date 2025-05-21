@@ -145,7 +145,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const CELL_WIDTH_PX = 260;
                     const MINUTES_PER_CELL = 60;
                     const PIXELS_PER_MINUTE = CELL_WIDTH_PX / MINUTES_PER_CELL;
-                    const CELL_HEIGHT_PX = 170; // Pre referenciu, ak by sa to malo dynamicky riadiť
+                    const ITEM_HEIGHT_PX = 160;
 
                     matchesForLocationAndDate.sort((a, b) => {
                         const [aH, aM] = a.startTime.split(':').map(Number);
@@ -153,8 +153,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         return (aH * 60 + aM) - (bH * 60 + bM);
                     });
 
-                    // Objekt na sledovanie obsadených vertikálnych "dráh" (tracks) v rámci bunky
-                    const tracks = []; // Pole objektov { startMin, endMin, topPx }
+                    const tracks = [];
 
                     matchesForLocationAndDate.forEach(match => {
                         const [startH, startM] = match.startTime.split(':').map(Number);
@@ -170,13 +169,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                         const widthPx = durationInMinutes * PIXELS_PER_MINUTE;
 
                         let topPx = 0;
-                        const ITEM_HEIGHT_PX = 160; // Približná výška zápasu (140px bunka + padding/margin)
 
-                        // Nájdenie prvej voľnej "dráhy" (track)
                         let foundTrack = false;
                         for (let i = 0; i < tracks.length; i++) {
                             const track = tracks[i];
-                            // Ak sa aktuálny zápas neprekrýva s žiadnym zápasom v tejto "dráhe"
                             if (absoluteStartMin >= track.endMin || absoluteEndMin <= track.startMin) {
                                 topPx = track.topPx;
                                 track.startMin = Math.min(track.startMin, absoluteStartMin);
@@ -187,11 +183,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                         }
 
                         if (!foundTrack) {
-                            // Ak nebola nájdená voľná "dráha", vytvoríme novú
                             topPx = tracks.length * ITEM_HEIGHT_PX;
                             tracks.push({ startMin: absoluteStartMin, endMin: absoluteEndMin, topPx: topPx });
                         }
-
 
                         const matchEndTime = new Date();
                         matchEndTime.setHours(startH, startM + durationInMinutes, 0, 0);
@@ -278,7 +272,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 alert('Zápas úspešne vymazaný!');
                 displayMatchesAsSchedule();
             } catch (error) {
-            console.error("Chyba pri mazaní zápasu: ", error);
+                console.error("Chyba pri mazaní zápasu: ", error);
                 alert("Chyba pri mazaní zápasu. Pozrite konzolu pre detaily.");
             }
         }
@@ -334,7 +328,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const groupName = groupData ? (groupData.name || groupId) : groupId;
 
             let clubName = `Tím ${teamNumber}`;
-            let clubId = null;
+            let clubId = null; 
 
             const clubsQuery = query(
                 clubsCollectionRef,
@@ -418,10 +412,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         // --- KONTROLA: Tímy v rovnakej kategórii a skupine nemôžu hrať proti sebe viackrát ---
+        let existingMatchId = null; // Uchovávame ID existujúceho duplikátu
         try {
-            // Skontrolujeme v oboch smeroch (Tím 1 vs Tím 2 A Tím 2 vs Tím 1)
-            console.log("Kontrola duplicity pre kategóriu:", matchCategory, "skupinu:", matchGroup, "tímy:", team1Number, team2Number);
-            console.log("currentMatchId:", currentMatchId);
             const q1 = query(
                 matchesCollectionRef,
                 where("categoryId", "==", matchCategory),
@@ -439,27 +431,36 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             const snapshot1 = await getDocs(q1);
             const snapshot2 = await getDocs(q2);
-            
-            console.log("Snapshot 1 isEmpty:", snapshot1.empty, "Počet dokumentov:", snapshot1.docs.length);
-            snapshot1.docs.forEach(doc => console.log("  Doc 1 ID:", doc.id, "Data:", doc.data()));
-            console.log("Snapshot 2 isEmpty:", snapshot2.empty, "Počet dokumentov:", snapshot2.docs.length);
-            snapshot2.docs.forEach(doc => console.log("  Doc 2 ID:", doc.id, "Data:", doc.data()));
-            
-            let alreadyPlayed = false;
-            // Filter pre existujúce zápasy, aby sa vylúčil aktuálny upravovaný zápas
-            if (snapshot1.docs.some(doc => doc.id !== currentMatchId) || snapshot2.docs.some(doc => doc.id !== currentMatchId)) {
-                alreadyPlayed = true;
+
+            // Hľadáme existujúci zápas, ktorý NIE JE ten, ktorý práve upravujeme
+            const foundDoc1 = snapshot1.docs.find(doc => doc.id !== currentMatchId);
+            const foundDoc2 = snapshot2.docs.find(doc => doc.id !== currentMatchId);
+
+            if (foundDoc1) {
+                existingMatchId = foundDoc1.id;
+            } else if (foundDoc2) {
+                existingMatchId = foundDoc2.id;
             }
 
-            if (alreadyPlayed) {
-                alert('Tieto dva tímy už proti sebe hrali v tejto kategórii a skupine. Nemôžu hrať znova.');
-                return;
+            if (existingMatchId) {
+                const confirmDelete = confirm(
+                    `Zápas medzi tímami ${team1Result.fullDisplayName} a ${team2Result.fullDisplayName} už existuje v tejto kategórii a skupine. ` +
+                    `Chcete existujúci zápas odstrániť a nahradiť ho novým?`
+                );
+                if (confirmDelete) {
+                    await deleteDoc(doc(matchesCollectionRef, existingMatchId));
+                    console.log(`Existujúci zápas ${existingMatchId} bol odstránený.`);
+                } else {
+                    alert('Operácia zrušená. Zápas nebol pridaný ani odstránený.');
+                    closeModal(matchModal);
+                    return; // Zastavíme submit, ak používateľ nechce odstrániť existujúci zápas
+                }
             }
 
         } catch (error) {
-            console.error("Chyba pri kontrole predchádzajúcich zápasov:", error);
-            alert("Vyskytla sa chyba pri kontrole predchádzajúcich zápasov. Skúste to znova.");
-            return;
+            console.error("Chyba pri kontrole alebo mazaní existujúceho zápasu:", error);
+            alert("Vyskytla sa chyba pri kontrole alebo mazaní existujúceho zápasu. Skúste to znova.");
+            return; // Zastavíme submit pri chybe
         }
         // --- KONIEC KONTROLY ---
 
