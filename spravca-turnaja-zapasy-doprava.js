@@ -107,7 +107,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const displayDateObj = new Date(dateRaw);
                 const displayDay = String(displayDateObj.getDate()).padStart(2, '0');
                 const displayMonth = String(displayDateObj.getMonth() + 1).padStart(2, '0');
-                const formattedDisplayDate = `${displayDay}. ${displayMonth}.`;
+                const displayYear = String(displayDateObj.getFullYear());
+                const formattedDisplayDate = `${displayDay}. ${displayMonth}. ${displayYear}`;
                 
                 const colspan = hoursForDate.length;
                 if (colspan > 0) {
