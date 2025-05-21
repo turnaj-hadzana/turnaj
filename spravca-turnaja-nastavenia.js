@@ -67,7 +67,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             categoriesSnapshot.docs.forEach(categoryDoc => { // Prechádzame dokumentmi priamo
                 const categoryId = categoryDoc.id;
-                const categoryName = categoryDoc.data().name;
+                // Upravené: Ak categoryDoc.data().name je undefined, použije sa categoryId
+                const categoryName = categoryDoc.data().name || categoryId; 
                 console.log(`Spracovávam kategóriu: ID=${categoryId}, Názov=${categoryName}`);
 
                 const categoryData = existingCategorySettings[categoryId] || { duration: 60, bufferTime: 5 }; // Predvolené hodnoty
