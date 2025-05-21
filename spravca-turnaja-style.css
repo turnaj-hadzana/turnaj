@@ -652,9 +652,8 @@ td:last-child {
 .schedule-cell-club-names {
     font-style: italic;
     color: #666;
-    font-size: 0.75em;
+    font-size: 0.5em;
     white-space: normal;
-    line-height: 1.4;
 }
 
 /* Akčné tlačidlá vo vnútri bloku zápasu */
