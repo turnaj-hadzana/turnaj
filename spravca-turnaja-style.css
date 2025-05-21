@@ -654,7 +654,7 @@ td:last-child {
     color: #666;
     font-size: 0.75em;
     white-space: normal;
-    margin-top: 5px;
+    line-height: 1.4;
 }
 
 /* Akčné tlačidlá vo vnútri bloku zápasu */
