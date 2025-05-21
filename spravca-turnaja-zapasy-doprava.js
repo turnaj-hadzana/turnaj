@@ -24,9 +24,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const matchTeamBSelect = document.getElementById('matchTeamBSelect');
     const matchCategorySelect = document.getElementById('matchCategorySelect');
     const matchGroupSelect = document.getElementById('matchGroupSelect');
-    const matchDateInput = document.getElementById('matchDateInput');
+    const matchDateSelect = document.getElementById('matchDateSelect'); // Zmenené z matchDateInput
     const matchTimeInput = document.getElementById('matchTimeInput');
-    const matchSportHallSelect = document.getElementById('matchSportHallSelect');
+    const matchLocationSelect = document.getElementById('matchLocationSelect'); // Zmenené z matchSportHallSelect
     const matchRefereesInput = document.getElementById('matchRefereesInput');
     const matchNotesInput = document.getElementById('matchNotesInput');
     const deleteMatchButtonModal = document.getElementById('deleteMatchButtonModal');
@@ -183,41 +183,51 @@ document.addEventListener('DOMContentLoaded', async () => {
         await populateCategorySelect(matchCategorySelect);
         await populateGroupSelect(matchGroupSelect);
         await populateTeamsSelect(matchTeamASelect, matchTeamBSelect);
-        await populateSportHallSelect(matchSportHallSelect);
+        await populatePlayingDaySelect(matchDateSelect); // Naplnenie hracích dní do selectu
+        await populateSportHallSelect(matchLocationSelect); // Naplnenie hál do selectu
         openModal(matchModal);
         addOptions.classList.remove('show'); // Skryť dropdown po otvorení modalu
     });
 
     // Event listener pre zmenu dátumu alebo haly v modálnom okne zápasu
-    matchDateInput.addEventListener('change', async () => {
-        const selectedDate = matchDateInput.value;
-        const selectedHallId = matchSportHallSelect.value;
-        if (selectedDate && selectedHallId) {
-            const settings = await getTournamentSettings();
-            const availableTime = await findEarliestAvailableTime(selectedDate, selectedHallId, settings);
-            if (availableTime) {
-                matchTimeInput.value = availableTime;
-            } else {
-                matchTimeInput.value = ''; // Vyprázdniť, ak sa nenašiel žiadny slot
-                console.warn("Pre vybraný dátum a halu sa nenašiel žiadny dostupný časový slot.");
+    if (matchDateSelect) { // Zmenené z matchDateInput
+        matchDateSelect.addEventListener('change', async () => {
+            const selectedDate = matchDateSelect.value; // Zmenené z matchDateInput
+            const selectedHallId = matchLocationSelect.value; // Zmenené z matchSportHallSelect
+            if (selectedDate && selectedHallId) {
+                const settings = await getTournamentSettings();
+                const availableTime = await findEarliestAvailableTime(selectedDate, selectedHallId, settings);
+                if (availableTime) {
+                    matchTimeInput.value = availableTime;
+                } else {
+                    matchTimeInput.value = ''; // Vyprázdniť, ak sa nenašiel žiadny slot
+                    console.warn("Pre vybraný dátum a halu sa nenašiel žiadny dostupný časový slot.");
+                }
             }
-        }
-    });
+        });
+    } else {
+        console.error("Element with ID 'matchDateSelect' not found in the DOM. Automatic time setting will not work.");
+    }
 
-    matchSportHallSelect.addEventListener('change', async () => {
-        const selectedDate = matchDateInput.value;
-        const selectedHallId = matchSportHallSelect.value;
-        if (selectedDate && selectedHallId) {
-            const settings = await getTournamentSettings();
-            const availableTime = await findEarliestAvailableTime(selectedDate, selectedHallId, settings);
-            if (availableTime) {
-                matchTimeInput.value = availableTime;
-            } else {
-                matchTimeInput.value = ''; // Vyprázdniť, ak sa nenašiel žiadny slot
-                console.warn("Pre vybraný dátum a halu sa nenašiel žiadny dostupný časový slot.");
+
+    if (matchLocationSelect) { // Zmenené z matchSportHallSelect
+        matchLocationSelect.addEventListener('change', async () => {
+            const selectedDate = matchDateSelect.value; // Zmenené z matchDateInput
+            const selectedHallId = matchLocationSelect.value; // Zmenené z matchSportHallSelect
+            if (selectedDate && selectedHallId) {
+                const settings = await getTournamentSettings();
+                const availableTime = await findEarliestAvailableTime(selectedDate, selectedHallId, settings);
+                if (availableTime) {
+                    matchTimeInput.value = availableTime;
+                } else {
+                    matchTimeInput.value = ''; // Vyprázdniť, ak sa nenašiel žiadny slot
+                    console.warn("Pre vybraný dátum a halu sa nenašiel žiadny dostupný časový slot.");
+                }
             }
-        }
-    });
+        });
+    } else {
+        console.error("Element with ID 'matchLocationSelect' not found in the DOM. Automatic time setting will not work.");
+    }
 
 
     // Funkcia na načítanie tímov pre select boxy
@@ -570,10 +580,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 await populateTeamsSelect(matchTeamASelect, matchTeamBSelect); // Naplnenie tímov
                 matchTeamASelect.value = data.teamAId;
                 matchTeamBSelect.value = data.teamBId;
-                matchDateInput.value = data.date;
+                await populatePlayingDaySelect(matchDateSelect); // Naplnenie hracích dní
+                matchDateSelect.value = data.date; // Nastavenie vybraného dátumu
                 matchTimeInput.value = data.time;
-                await populateSportHallSelect(matchSportHallSelect); // Naplnenie hál
-                matchSportHallSelect.value = data.sportHallId;
+                await populateSportHallSelect(matchLocationSelect); // Naplnenie hál
+                matchLocationSelect.value = data.sportHallId; // Nastavenie vybranej haly
                 matchRefereesInput.value = data.referees || '';
                 matchNotesInput.value = data.notes || '';
                 deleteMatchButtonModal.style.display = 'inline-block';
@@ -696,9 +707,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         const teamBId = matchTeamBSelect.value;
         const categoryId = matchCategorySelect.value;
         const groupId = matchGroupSelect.value;
-        const date = matchDateInput.value;
+        const date = matchDateSelect.value; // Zmenené z matchDateInput
         const time = matchTimeInput.value;
-        const sportHallId = matchSportHallSelect.value;
+        const sportHallId = matchLocationSelect.value; // Zmenené z matchSportHallSelect
         const referees = matchRefereesInput.value.trim();
         const notes = matchNotesInput.value.trim();
 
