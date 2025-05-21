@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Modálne okno pre hrací deň
     const playingDayModal = document.getElementById('playingDayModal');
     const closePlayingDayModalButton = document.getElementById('closePlayingDayModal');
-    const playingDayForm = document.getElementById('playingDayForm');
+    const playingDayForm = document = document.getElementById('playingDayForm');
     const playingDayDateInput = document.getElementById('playingDayDate');
 
     // Modálne okno pre športovú halu
@@ -250,6 +250,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const hallData = existingSportHallsData.find(hall => hall.name === locationName);
                 const hallAddress = hallData ? hallData.address : 'Adresa neznáma';
                 const hallGoogleMapsUrl = hallData ? hallData.googleMapsUrl : '#'; // Fallback na '#'
+
+                // Skontrolujeme, či pre danú lokalitu existujú nejaké udalosti v rámci ZOBRAZENÝCH DÁTUMOV
+                const hasEventsForLocation = allEvents.some(event => {
+                    const isLocationMatch = (event.type === 'match' && event.location === locationName) ||
+                                            (event.type === 'bus' && (event.startLocation === locationName || event.endLocation === locationName));
+                    const isDateIncluded = sortedDates.includes(event.date);
+                    return isLocationMatch && isDateIncluded;
+                });
+
+                if (!hasEventsForLocation) {
+                    return; // Preskočíme vykreslenie riadku, ak pre túto lokalitu nie sú žiadne udalosti v zobrazených dátumoch
+                }
 
                 scheduleHtml += '<tr>';
                 scheduleHtml += `<th class="fixed-column schedule-location-header delete-location-header" data-location="${locationName}" title="Kliknutím vymažete športovú halu ${locationName} a všetky jej zápasy">
@@ -812,7 +824,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         matchBufferTimeInput.value = 5; // Predvolená hodnota 5 minút pre ochranné pásmo
         deleteMatchButtonModal.style.display = 'none'; // Skryť tlačidlo Vymazať pri pridávaní
         openModal(matchModal);
-        addOptions.classList.remove('show'); // Skryť dropdown po výbere
         // Zavolaj funkciu pre nastavenie najskoršieho času po otvorení modalu
         setEarliestAvailableMatchTime();
     });
