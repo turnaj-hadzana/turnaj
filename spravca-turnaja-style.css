@@ -811,32 +811,73 @@ td:last-child {
 
 
 
+/* Kontajner pre tlačidlo "+" a jeho možnosti */
+#controlsContainer {
+    position: fixed; /* Zabezpečí, že sa bude fixovať v rohu obrazovky */
+    top: 30px; /* Vzdialenosť od horného okraja */
+    left: 30px; /* Vzdialenosť od ľavého okraja */
+    z-index: 1000; /* Zabezpečí, že je nad ostatným obsahom */
+    width: 60px; /* Šírka kontajnera rovná šírke tlačidla */
+    height: 60px; /* Výška kontajnera rovná výške tlačidla */
+}
+
+/* Tlačidlo "+" */
+#addButton {
+    width: 60px;
+    height: 60px;
+    background-color: #4CAF50;
+    color: white;
+    font-size: 2.5em;
+    border: none;
+    border-radius: 50%;
+    display: flex; /* Pre centrovanie '+' */
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    z-index: 1001;
+    position: relative; /* Dôležité pre z-index */
+}
+
+#addButton:hover {
+    background-color: #45a049;
+    transform: scale(1.05);
+}
+
+/* Dropdown možnosti */
 #addOptions.add-options-dropdown {
     position: absolute; /* Absolútne pozicovanie vzhľadom na #controlsContainer */
-    /* ZMENA: Pre zobrazenie VĽAVO HORE od tlačidla */
-    bottom: 10%; /* Spodný okraj dropdownu sa zarovná s horným okrajom tlačidla */
+    bottom: 100%; /* <<-- OPRAVENÉ: Toto umiestni spodný okraj dropdownu na horný okraj rodiča */
     margin-bottom: 15px; /* Vytvorí medzeru medzi dropdownom a tlačidlom */
     right: 0; /* Pravý okraj dropdownu sa zarovná s pravým okrajom tlačidla */
     
-    z-index: 1000; /* Zabezpečí, že dropdown je pod "+" ale nad ostatným obsahom */
-    display: none; /* Predvolene skryté pomocou CSS */
-    flex-direction: column; /* Aby boli tlačidlá pod sebou */
-    gap: 8px;
-    min-width: 180px;
-    opacity: 0; /* Pre animáciu */
-    transform: translateY(10px); /* Pre animáciu: objaví sa posunutím zhora nadol */
-    transition: opacity 0.2s ease-out, transform 0.2s ease-out; /* Animácia zobrazenia */
-    pointer-events: none; /* Zabraňuje interakcii, keď je skryté */
+    /* Vlastnosti pre odstránenie obdĺžnika */
+    /* background-color: white; */ /* Odstránené pozadie */
+    /* border: 1px solid #ddd; */ /* Odstránený rámik */
+    border-radius: 5px; /* Ponechané, ak chcete zaoblené rohy tlačidiel */
+    /* box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); */ /* Odstránený tieň */
+    padding: 0; /* Odstránený vnútorný priestor */
+    
+    z-index: 1000;
+    display: none;
+    flex-direction: column;
+    gap: 8px; /* Medzera medzi tlačidlami zostane */
+    min-width: 180px; /* Minimálna šírka pre text */
+    width: max-content; /* Prispôsobí šírku obsahu */
+    opacity: 0;
+    transform: translateY(10px); /* Pre animáciu zhora nadol */
+    transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+    pointer-events: none;
 }
 
 /* Pravidlo pre zobrazenie dropdownu pomocou JS */
 #addOptions.add-options-dropdown.show {
-    display: flex; /* Zobrazí ako flex pre layout interných tlačidiel */
+    display: flex;
     opacity: 1;
-    transform: translateY(0); /* Návrat na pôvodnú pozíciu pri zobrazení */
+    transform: translateY(0);
     pointer-events: auto;
 }
-
 
 /* Tlačidlá vo vnútri dropdownu */
 #addOptions.add-options-dropdown button {
@@ -849,21 +890,12 @@ td:last-child {
     transition: background-color 0.2s ease;
     text-align: left;
     font-size: 0.9em;
-    white-space: nowrap; /* Zabraňuje zalomeniu textu tlačidla */
+    white-space: nowrap;
+    /* width: 100%; - ODSTRÁNENÉ, aby sa nerozťahovali */
 }
 
 #addOptions.add-options-dropdown button:hover {
     background-color: #0056b3;
 }
 
-/* Ostatné CSS z predchádzajúcej odpovede (pre klikateľné hlavičky) */
-.delete-date-header,
-.delete-location-header {
-    cursor: pointer;
-    transition: background-color 0.2s ease-in-out;
-}
-
-.delete-date-header:hover,
-.delete-location-header:hover {
-    background-color: #ffe0e0;
-}
+/* Ostatné CSS... */
