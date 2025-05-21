@@ -8,70 +8,142 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
-    // Získanie referencií na DOM elementy
+    // Získanie referencií na DOM elementy a pridanie kontrol na null
     const categoriesContentSection = document.getElementById('categoriesContentSection');
+    if (!categoriesContentSection) { console.error("Element s ID 'categoriesContentSection' nebol nájdený."); return; }
+
     const addButton = document.getElementById('addButton');
+    if (!addButton) { console.error("Element s ID 'addButton' nebol nájdený."); return; }
+
     const addOptions = document.getElementById('addOptions');
+    if (!addOptions) { console.error("Element s ID 'addOptions' nebol nájdený."); return; }
+
     const addPlayingDayButton = document.getElementById('addPlayingDayButton');
+    if (!addPlayingDayButton) { console.error("Element s ID 'addPlayingDayButton' nebol nájdený."); return; }
+
     const addSportHallButton = document.getElementById('addSportHallButton');
+    if (!addSportHallButton) { console.error("Element s ID 'addSportHallButton' nebol nájdený."); return; }
+
     const addMatchButton = document.getElementById('addMatchButton');
+    if (!addMatchButton) { console.error("Element s ID 'addMatchButton' nebol nájdený."); return; }
+
     const addBusButton = document.getElementById('addBusButton');
+    if (!addBusButton) { console.error("Element s ID 'addBusButton' nebol nájdený."); return; }
 
     // Modálne okno pre zápas
     const matchModal = document.getElementById('matchModal');
+    if (!matchModal) { console.error("Element s ID 'matchModal' nebol nájdený."); return; }
+
     const closeMatchModalButton = document.getElementById('closeMatchModal');
+    if (!closeMatchModalButton) { console.error("Element s ID 'closeMatchModal' nebol nájdený."); return; }
+
     const matchForm = document.getElementById('matchForm');
+    if (!matchForm) { console.error("Element s ID 'matchForm' nebol nájdený."); return; }
+
     const matchIdInput = document.getElementById('matchId');
+    if (!matchIdInput) { console.error("Element s ID 'matchId' nebol nájdený."); return; }
+
     const matchCategorySelect = document.getElementById('matchCategorySelect');
+    if (!matchCategorySelect) { console.error("Element s ID 'matchCategorySelect' nebol nájdený."); return; }
+
     const matchGroupSelect = document.getElementById('matchGroupSelect');
+    if (!matchGroupSelect) { console.error("Element s ID 'matchGroupSelect' nebol nájdený."); return; }
+
     const matchHomeTeamSelect = document.getElementById('matchHomeTeamSelect');
+    if (!matchHomeTeamSelect) { console.error("Element s ID 'matchHomeTeamSelect' nebol nájdený."); return; }
+
     const matchAwayTeamSelect = document.getElementById('matchAwayTeamSelect');
+    if (!matchAwayTeamSelect) { console.error("Element s ID 'matchAwayTeamSelect' nebol nájdený."); return; }
+
     const matchHallSelect = document.getElementById('matchHallSelect');
+    if (!matchHallSelect) { console.error("Element s ID 'matchHallSelect' nebol nájdený. Toto je pravdepodobný zdroj chyby."); return; }
+
     const matchPlayingDaySelect = document.getElementById('matchPlayingDaySelect');
+    if (!matchPlayingDaySelect) { console.error("Element s ID 'matchPlayingDaySelect' nebol nájdený."); return; }
+
     const matchStartTimeInput = document.getElementById('matchStartTimeInput');
+    if (!matchStartTimeInput) { console.error("Element s ID 'matchStartTimeInput' nebol nájdený."); return; }
+
     const matchResultInput = document.getElementById('matchResultInput');
+    if (!matchResultInput) { console.error("Element s ID 'matchResultInput' nebol nájdený."); return; }
+
     const deleteMatchButtonModal = document.getElementById('deleteMatchButtonModal');
+    if (!deleteMatchButtonModal) { console.error("Element s ID 'deleteMatchButtonModal' nebol nájdený."); return; }
 
     // Modálne okno pre hrací deň
     const playingDayModal = document.getElementById('playingDayModal');
+    if (!playingDayModal) { console.error("Element s ID 'playingDayModal' nebol nájdený."); return; }
     const closePlayingDayModalButton = document.getElementById('closePlayingDayModal');
+    if (!closePlayingDayModalButton) { console.error("Element s ID 'closePlayingDayModal' nebol nájdený."); return; }
     const playingDayForm = document.getElementById('playingDayForm');
+    if (!playingDayForm) { console.error("Element s ID 'playingDayForm' nebol nájdený."); return; }
     const playingDayIdInput = document.getElementById('playingDayId');
+    if (!playingDayIdInput) { console.error("Element s ID 'playingDayId' nebol nájdený."); return; }
     const playingDayDateInput = document.getElementById('playingDayDateInput');
+    if (!playingDayDateInput) { console.error("Element s ID 'playingDayDateInput' nebol nájdený."); return; }
     const playingDayNotesInput = document.getElementById('playingDayNotesInput');
+    if (!playingDayNotesInput) { console.error("Element s ID 'playingDayNotesInput' nebol nájdený."); return; }
     const deletePlayingDayButtonModal = document.getElementById('deletePlayingDayButtonModal');
+    if (!deletePlayingDayButtonModal) { console.error("Element s ID 'deletePlayingDayButtonModal' nebol nájdený."); return; }
 
     // Modálne okno pre športovú halu
     const sportHallModal = document.getElementById('sportHallModal');
+    if (!sportHallModal) { console.error("Element s ID 'sportHallModal' nebol nájdený."); return; }
     const closeSportHallModalButton = document.getElementById('closeSportHallModal');
+    if (!closeSportHallModalButton) { console.error("Element s ID 'closeSportHallModal' nebol nájdený."); return; }
     const sportHallForm = document.getElementById('sportHallForm');
+    if (!sportHallForm) { console.error("Element s ID 'sportHallForm' nebol nájdený."); return; }
     const sportHallIdInput = document.getElementById('sportHallId');
+    if (!sportHallIdInput) { console.error("Element s ID 'sportHallId' nebol nájdený."); return; }
     const hallNameInput = document.getElementById('hallNameInput');
+    if (!hallNameInput) { console.error("Element s ID 'hallNameInput' nebol nájdený."); return; }
     const hallAddressInput = document.getElementById('hallAddressInput');
+    if (!hallAddressInput) { console.error("Element s ID 'hallAddressInput' nebol nájdený."); return; }
     const hallGoogleMapsUrlInput = document.getElementById('hallGoogleMapsUrlInput');
+    if (!hallGoogleMapsUrlInput) { console.error("Element s ID 'hallGoogleMapsUrlInput' nebol nájdený."); return; }
     const deleteSportHallButtonModal = document.getElementById('deleteSportHallButtonModal');
+    if (!deleteSportHallButtonModal) { console.error("Element s ID 'deleteSportHallButtonModal' nebol nájdený."); return; }
 
     // Modálne okno pre autobus
     const busModal = document.getElementById('busModal');
+    if (!busModal) { console.error("Element s ID 'busModal' nebol nájdený."); return; }
     const closeBusModalButton = document.getElementById('closeBusModal');
+    if (!closeBusModalButton) { console.error("Element s ID 'closeBusModal' nebol nájdený."); return; }
     const busForm = document.getElementById('busForm');
+    if (!busForm) { console.error("Element s ID 'busForm' nebol nájdený."); return; }
     const busIdInput = document.getElementById('busId');
+    if (!busIdInput) { console.error("Element s ID 'busId' nebol nájdený."); return; }
     const busPlayingDaySelect = document.getElementById('busPlayingDaySelect');
+    if (!busPlayingDaySelect) { console.error("Element s ID 'busPlayingDaySelect' nebol nájdený."); return; }
     const busTypeSelect = document.getElementById('busTypeSelect');
+    if (!busTypeSelect) { console.error("Element s ID 'busTypeSelect' nebol nájdený."); return; }
     const busStartLocationSelect = document.getElementById('busStartLocationSelect');
+    if (!busStartLocationSelect) { console.error("Element s ID 'busStartLocationSelect' nebol nájdený."); return; }
     const busStartTimeInput = document.getElementById('busStartTimeInput');
+    if (!busStartTimeInput) { console.error("Element s ID 'busStartTimeInput' nebol nájdený."); return; }
     const busEndLocationSelect = document.getElementById('busEndLocationSelect');
+    if (!busEndLocationSelect) { console.error("Element s ID 'busEndLocationSelect' nebol nájdený."); return; }
     const busEndTimeInput = document.getElementById('busEndTimeInput');
+    if (!busEndTimeInput) { console.error("Element s ID 'busEndTimeInput' nebol nájdený."); return; }
     const busNotesInput = document.getElementById('busNotesInput');
+    if (!busNotesInput) { console.error("Element s ID 'busNotesInput' nebol nájdený."); return; }
     const deleteBusButtonModal = document.getElementById('deleteBusButtonModal');
+    if (!deleteBusButtonModal) { console.error("Element s ID 'deleteBusButtonModal' nebol nájdený."); return; }
 
     // Filtre
     const filterCategorySelect = document.getElementById('filterCategorySelect');
+    if (!filterCategorySelect) { console.error("Element s ID 'filterCategorySelect' nebol nájdený."); return; }
     const filterGroupSelect = document.getElementById('filterGroupSelect');
+    if (!filterGroupSelect) { console.error("Element s ID 'filterGroupSelect' nebol nájdený."); return; }
     const filterTeamSelect = document.getElementById('filterTeamSelect');
+    if (!filterTeamSelect) { console.error("Element s ID 'filterTeamSelect' nebol nájdený."); return; }
     const filterDateInput = document.getElementById('filterDateInput');
+    if (!filterDateInput) { console.error("Element s ID 'filterDateInput' nebol nájdený."); return; }
     const filterHallSelect = document.getElementById('filterHallSelect');
+    if (!filterHallSelect) { console.error("Element s ID 'filterHallSelect' nebol nájdený."); return; }
     const clearFiltersButton = document.getElementById('clearFiltersButton');
+    if (!clearFiltersButton) { console.error("Element s ID 'clearFiltersButton' nebol nájdený."); return; }
+
 
     // Konštanta pre ID dokumentu nastavení
     const SETTINGS_DOC_ID = 'matchTimeSettings';
@@ -213,6 +285,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Funkcia na populáciu select boxu pre tímy
     async function populateTeamSelect(selectElement, categoryId, excludeTeamId = null) {
+        if (!selectElement) { console.error("Chyba: selectElement je null v populateTeamSelect."); return; }
         selectElement.innerHTML = '<option value="">-- Vyberte tím --</option>';
         if (!categoryId) return;
 
@@ -231,6 +304,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Funkcia na populáciu select boxu pre haly
     async function populateHallSelect(selectElement) {
+        if (!selectElement) { console.error("Chyba: selectElement je null v populateHallSelect."); return; }
         selectElement.innerHTML = '<option value="">-- Vyberte halu --</option>';
         const querySnapshot = await getDocs(sportHallsCollectionRef);
         querySnapshot.forEach((doc) => {
@@ -244,6 +318,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Funkcia na populáciu select boxu pre hracie dni
     async function populatePlayingDaySelect(selectElement) {
+        if (!selectElement) { console.error("Chyba: selectElement je null v populatePlayingDaySelect."); return; }
         selectElement.innerHTML = '<option value="">-- Vyberte hrací deň --</option>';
         const q = query(playingDaysCollectionRef, orderBy("date"));
         const querySnapshot = await getDocs(q);
@@ -258,6 +333,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Funkcia na populáciu select boxu pre typ autobusu (ak je pevne daný, inak z databázy)
     async function populateBusTypeSelect(selectElement) {
+        if (!selectElement) { console.error("Chyba: selectElement je null v populateBusTypeSelect."); return; }
         selectElement.innerHTML = '<option value="">-- Vyberte typ autobusu --</option>';
         const busTypes = ["Malý autobus", "Stredný autobus", "Veľký autobus"]; // Príklad pevných typov
         busTypes.forEach(type => {
@@ -270,6 +346,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Funkcia na populáciu select boxu pre miesta (haly) pre autobus
     async function populateHallSelectForBus(selectElement) {
+        if (!selectElement) { console.error("Chyba: selectElement je null v populateHallSelectForBus."); return; }
         selectElement.innerHTML = '<option value="">-- Vyberte miesto (halu) --</option>';
         const querySnapshot = await getDocs(sportHallsCollectionRef);
         querySnapshot.forEach((doc) => {
@@ -284,6 +361,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Funkcia na zobrazenie zápasov ako rozvrhu
     async function displayMatchesAsSchedule() {
         const scheduleContainer = document.getElementById('scheduleContainer');
+        if (!scheduleContainer) { console.error("Element s ID 'scheduleContainer' nebol nájdený."); return; }
         scheduleContainer.innerHTML = ''; // Vyčisti existujúci rozvrh
 
         const filterCategoryId = filterCategorySelect.value;
@@ -314,7 +392,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         if (filterHallId) {
             matchesQuery = query(matchesQuery, where("hallId", "==", filterHallId));
-            sportHallsQuery = query(sportHallsCollectionRef, where(documentId(), "==", filterHallId));
+            // Pre where(documentId(), "==", filterHallId) je potrebné importovať documentId z firestore/lite, ale to by vyžadovalo zmenu importu
+            // Zjednodušenie: ak filterHallId, tak filtrujeme sportHallsSnapshot v JS
+            sportHallsQuery = query(sportHallsCollectionRef); // Načítame všetky a filtrujeme potom
         }
 
         const [matchesSnapshot, playingDaysSnapshot, sportHallsSnapshot, categoriesSnapshot, groupsSnapshot, clubsSnapshot, busesSnapshot] = await Promise.all([
@@ -329,7 +409,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const matches = matchesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         const playingDays = playingDaysSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        const sportHalls = sportHallsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        let sportHalls = sportHallsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        // Ak je filterHallId, filtruj haly po načítaní
+        if (filterHallId) {
+            sportHalls = sportHalls.filter(hall => hall.id === filterHallId);
+        }
+
         const categoriesMap = new Map(categoriesSnapshot.docs.map(doc => [doc.id, doc.data().name]));
         const groupsMap = new Map(groupsSnapshot.docs.map(doc => [doc.id, doc.data().name]));
         const clubsMap = new Map(clubsSnapshot.docs.map(doc => [doc.id, doc.data().name]));
@@ -374,6 +459,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             <tbody></tbody>
         `;
         const scheduleTableBody = scheduleTable.querySelector('tbody');
+        if (!scheduleTableBody) { console.error("Element <tbody> v scheduleTable nebol nájdený."); return; }
+
 
         filteredMatches.forEach(match => {
             const row = document.createElement('tr');
@@ -400,6 +487,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Zobrazenie hracích dní
         const playingDaysContainer = document.getElementById('playingDaysContainer');
+        if (!playingDaysContainer) { console.error("Element s ID 'playingDaysContainer' nebol nájdený."); return; }
         playingDaysContainer.innerHTML = '<h2>Hracie dni</h2>';
         if (playingDays.length === 0) {
             playingDaysContainer.innerHTML += '<p>Žiadne hracie dni neboli pridané.</p>';
@@ -422,6 +510,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Zobrazenie športových hál
         const sportHallsContainer = document.getElementById('sportHallsContainer');
+        if (!sportHallsContainer) { console.error("Element s ID 'sportHallsContainer' nebol nájdený."); return; }
         sportHallsContainer.innerHTML = '<h2>Športové haly</h2>';
         if (sportHalls.length === 0) {
             sportHallsContainer.innerHTML += '<p>Žiadne športové haly neboli pridané.</p>';
@@ -444,6 +533,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Zobrazenie autobusov
         const busesContainer = document.getElementById('busesContainer');
+        if (!busesContainer) { console.error("Element s ID 'busesContainer' nebol nájdený."); return; }
         busesContainer.innerHTML = '<h2>Autobusy</h2>';
         if (buses.length === 0) {
             busesContainer.innerHTML += '<p>Žiadne autobusy neboli pridané.</p>';
@@ -568,9 +658,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         deleteMatchButtonModal.style.display = 'none';
         // Reset a populácia pre nové pridanie
         await populateCategorySelect(matchCategorySelect);
-        matchGroupSelect.innerHTML = '<option value="">-- Vyberte skupinu --</option>';
-        matchHomeTeamSelect.innerHTML = '<option value="">-- Vyberte tím --</option>';
-        matchAwayTeamSelect.innerHTML = '<option value="">-- Vyberte tím --</option>';
+        if (matchGroupSelect) matchGroupSelect.innerHTML = '<option value="">-- Vyberte skupinu --</option>';
+        if (matchHomeTeamSelect) matchHomeTeamSelect.innerHTML = '<option value="">-- Vyberte tím --</option>';
+        if (matchAwayTeamSelect) matchAwayTeamSelect.innerHTML = '<option value="">-- Vyberte tím --</option>';
         await populatePlayingDaySelect(matchPlayingDaySelect);
         await populateHallSelect(matchHallSelect);
 
