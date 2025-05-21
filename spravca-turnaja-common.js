@@ -41,19 +41,31 @@ export function closeModal(modalElement) {
 export async function populateCategorySelect(selectElement, selectedCategoryId = '') {
     selectElement.innerHTML = '<option value="">-- Vyberte kategóriu --</option>';
     try {
-        const querySnapshot = await getDocs(categoriesCollectionRef);
+        const q = query(categoriesCollectionRef, orderBy("categoryId", "asc")); // <-- TU JE PROBLÉM
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+            console.log("Žiadne kategórie sa nenašli.");
+            return;
+        }
+
         querySnapshot.forEach((doc) => {
             const category = doc.data();
             const option = document.createElement('option');
             option.value = doc.id;
-            option.textContent = category.name;
+            option.textContent = category.categoryId; // <-- A TU JE DRUHÝ PROBLÉM
+            if (selectedCategoryId && doc.id === selectedCategoryId) {
+                option.selected = true;
+            }
             selectElement.appendChild(option);
         });
-        if (selectedCategoryId) {
-            selectElement.value = selectedCategoryId;
-        }
     } catch (error) {
         console.error("Chyba pri načítaní kategórií: ", error);
+        const option = document.createElement('option');
+        option.value = '';
+        option.textContent = '-- Chyba pri načítaní --';
+        option.disabled = true;
+        selectElement.appendChild(option);
     }
 }
 
