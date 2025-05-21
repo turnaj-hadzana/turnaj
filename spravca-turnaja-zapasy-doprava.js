@@ -458,6 +458,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                             clubNamesHtml += `${team2ClubNameDisplay}`;
                         }
 
+                        // Wrap clubNamesHtml in a span with inline style to ensure it's not bold
+                        const finalClubNamesHtml = clubNamesHtml ? `<span style="font-weight: normal;">${clubNamesHtml}</span>` : '';
+
                         scheduleHtml += `
                             <div class="schedule-cell-match"
                                 data-id="${match.id}" data-type="${match.type}"
@@ -468,7 +471,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                     <p class="schedule-cell-teams">
                                         ${match.team1DisplayName}<br>
                                         ${match.team2DisplayName}<br>
-                                        ${clubNamesHtml}
+                                        ${finalClubNamesHtml}
                                     </p>
                                 </div>
                             </div>
