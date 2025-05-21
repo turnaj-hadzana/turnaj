@@ -802,6 +802,10 @@ td:last-child {
     opacity: 0.7;
     cursor: pointer; 
 }
+.schedule-cell-bus-svg-container{
+    z-index: 7;
+}
+
 
 
 
