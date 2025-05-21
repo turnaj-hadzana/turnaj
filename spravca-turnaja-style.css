@@ -534,7 +534,7 @@ td:last-child {
     margin: 20px 0px 20px 0px;
     position: relative; /* Dôležité pre vytvorenie nového stacking kontextu */
     z-index: 6; /* Nastavené na nižší z-index ako busOverlayContainer */
-    min-height: fit-content
+    min-height: fit-content;
 }
 
 /* Základná tabuľka rozvrhu */
