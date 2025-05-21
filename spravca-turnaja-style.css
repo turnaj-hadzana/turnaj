@@ -704,7 +704,7 @@ td:last-child {
 .schedule-bus-route-text,
 .schedule-bus-time-text,
 .schedule-bus-notes-text {
-    fill: white; /* Farba textu na autobuse */
+    fill: black; /* Farba textu na autobuse */
     font-size: 12px; /* Základné písmo */
     font-weight: bold;
     pointer-events: none; /* Aby text neblokoval kliknutie na polygón */
