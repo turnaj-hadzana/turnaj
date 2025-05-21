@@ -112,7 +112,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function displayMatchesAsSchedule() {
         if (!matchesContainer) return;
 
-        matchesContainer.innerHTML = '<p>Načítavam rozvrh zápasov...</p>';
+        matchesContainer.innerHTML = '<p>Načítavam logistiku turnaja...</p>';
         try {
             const q = query(matchesCollectionRef, orderBy("date", "asc"), orderBy("location", "asc"), orderBy("startTime", "asc"));
             const querySnapshot = await getDocs(q);
