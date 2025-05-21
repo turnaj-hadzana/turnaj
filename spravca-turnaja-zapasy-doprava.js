@@ -259,7 +259,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 scheduleHtml += '<tr>';
                 scheduleHtml += `<th class="fixed-column schedule-location-header delete-location-header" data-location="${locationName}" title="Kliknutím vymažete športovú halu ${locationName} a všetky jej zápasy">
                     <div class="hall-name">${locationName}</div>
-                    <div class="hall-address" style="font-size: 0.85em;">
+                    <div class="hall-address">
                         <a href="${hallGoogleMapsUrl}" target="_blank" rel="noopener noreferrer">${hallAddress}</a>
                     </div>
                 </th>`;
