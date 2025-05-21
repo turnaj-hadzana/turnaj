@@ -629,7 +629,7 @@ td:last-child {
     box-sizing: border-box;
 }
 .schedule-times-row span {
-    width: 260px; /* Zodpovedá šírke td/th */
+    width: 300px; /* Zodpovedá šírke td/th */
     flex-shrink: 0; /* Zabrání zmenšeniu */
     text-align: center;
     padding: 0 2px;
