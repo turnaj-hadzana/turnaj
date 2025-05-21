@@ -814,15 +814,10 @@ td:last-child {
 #addOptions.add-options-dropdown {
     position: absolute; /* Absolútne pozicovanie vzhľadom na #controlsContainer */
     /* ZMENA: Pre zobrazenie VĽAVO HORE od tlačidla */
-    bottom: 100%; /* Spodný okraj dropdownu sa zarovná s horným okrajom tlačidla */
+    bottom: 10%; /* Spodný okraj dropdownu sa zarovná s horným okrajom tlačidla */
     margin-bottom: 15px; /* Vytvorí medzeru medzi dropdownom a tlačidlom */
     right: 0; /* Pravý okraj dropdownu sa zarovná s pravým okrajom tlačidla */
     
-    background-color: white;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    padding: 10px;
     z-index: 1000; /* Zabezpečí, že dropdown je pod "+" ale nad ostatným obsahom */
     display: none; /* Predvolene skryté pomocou CSS */
     flex-direction: column; /* Aby boli tlačidlá pod sebou */
