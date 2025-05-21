@@ -804,3 +804,71 @@ td:last-child {
 .delete-date-btn:hover, .delete-location-btn:hover {
     opacity: 1;
 }
+
+
+
+
+
+
+
+#addOptions.add-options-dropdown {
+    position: absolute; /* Absolútne pozicovanie vzhľadom na #controlsContainer */
+    /* ZMENA: Pre zobrazenie VĽAVO HORE od tlačidla */
+    bottom: 100%; /* Spodný okraj dropdownu sa zarovná s horným okrajom tlačidla */
+    margin-bottom: 15px; /* Vytvorí medzeru medzi dropdownom a tlačidlom */
+    right: 0; /* Pravý okraj dropdownu sa zarovná s pravým okrajom tlačidla */
+    
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    padding: 10px;
+    z-index: 1000; /* Zabezpečí, že dropdown je pod "+" ale nad ostatným obsahom */
+    display: none; /* Predvolene skryté pomocou CSS */
+    flex-direction: column; /* Aby boli tlačidlá pod sebou */
+    gap: 8px;
+    min-width: 180px;
+    opacity: 0; /* Pre animáciu */
+    transform: translateY(10px); /* Pre animáciu: objaví sa posunutím zhora nadol */
+    transition: opacity 0.2s ease-out, transform 0.2s ease-out; /* Animácia zobrazenia */
+    pointer-events: none; /* Zabraňuje interakcii, keď je skryté */
+}
+
+/* Pravidlo pre zobrazenie dropdownu pomocou JS */
+#addOptions.add-options-dropdown.show {
+    display: flex; /* Zobrazí ako flex pre layout interných tlačidiel */
+    opacity: 1;
+    transform: translateY(0); /* Návrat na pôvodnú pozíciu pri zobrazení */
+    pointer-events: auto;
+}
+
+
+/* Tlačidlá vo vnútri dropdownu */
+#addOptions.add-options-dropdown button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    text-align: left;
+    font-size: 0.9em;
+    white-space: nowrap; /* Zabraňuje zalomeniu textu tlačidla */
+}
+
+#addOptions.add-options-dropdown button:hover {
+    background-color: #0056b3;
+}
+
+/* Ostatné CSS z predchádzajúcej odpovede (pre klikateľné hlavičky) */
+.delete-date-header,
+.delete-location-header {
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+}
+
+.delete-date-header:hover,
+.delete-location-header:hover {
+    background-color: #ffe0e0;
+}
