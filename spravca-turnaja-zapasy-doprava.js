@@ -1,4 +1,4 @@
-import { db, categoriesCollectionRef, groupsCollectionRef, clubsCollectionRef, matchesCollectionRef, playingDaysCollectionRef, sportHallsCollectionRef, busesCollectionRef, openModal, closeModal, populateCategorySelect, populateGroupSelect, getDocs, doc, setDoc, addDoc, getDoc, query, where, orderBy, deleteDoc, writeBatch } from './spravca-turnaja-common.js';
+import { db, categoriesCollectionRef, groupsCollectionRef, clubsCollectionRef, matchesCollectionRef, playingDaysCollectionRef, sportHallsCollectionRef, busesCollectionRef, openModal, closeModal, populateCategorySelect, populateGroupSelect, getDocs, doc, setDoc, addDoc, getDoc, query, where, orderBy, deleteDoc, writeBatch, settingsCollectionRef } from './spravca-turnaja-common.js'; // Pridaný import settingsCollectionRef
 
 document.addEventListener('DOMContentLoaded', async () => {
     const loggedInUsername = localStorage.getItem('username');
@@ -62,6 +62,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const busNotesInput = document.getElementById('busNotesInput');
     const deleteBusButtonModal = document.getElementById('deleteBusButtonModal'); // NOVÉ: Tlačidlo Vymazať v modale
 
+    // Konštantné ID dokumentu pre nastavenia (musí byť rovnaké ako v spravca-turnaja-nastavenia.js)
+    const SETTINGS_DOC_ID = 'matchTimeSettings';
+
 
     if (categoriesContentSection) {
         categoriesContentSection.style.display = 'block';
@@ -117,6 +120,101 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     // --- Koniec funkcií pre plnenie select boxov ---
 
+    /**
+     * Nájsť prvý dostupný časový slot pre zápas na základe vybraného dátumu, miesta, trvania a ochranného pásma.
+     * Nastaví nájdený čas do inputu matchStartTimeInput.
+     */
+    async function findFirstAvailableTime() {
+        const selectedDate = matchDateSelect.value;
+        const selectedLocation = matchLocationSelect.value;
+        const duration = parseInt(matchDurationInput.value) || 60; // Predvolené trvanie 60 minút
+        const bufferTime = parseInt(matchBufferTimeInput.value) || 5; // Predvolené ochranné pásmo 5 minút
+
+        // Ak nie sú vybrané dátum alebo miesto, nemôžeme hľadať voľný slot
+        if (!selectedDate || !selectedLocation) {
+            matchStartTimeInput.value = ''; 
+            return;
+        }
+
+        try {
+            // Načítame nastavenia časov začiatku hracích dní
+            const settingsDocRef = doc(settingsCollectionRef, SETTINGS_DOC_ID);
+            const settingsDoc = await getDoc(settingsDocRef);
+            let firstDayStartTime = '08:00'; // Predvolené hodnoty
+            let otherDaysStartTime = '08:00';
+
+            if (settingsDoc.exists()) {
+                const data = settingsDoc.data();
+                firstDayStartTime = data.firstDayStartTime || '08:00';
+                otherDaysStartTime = data.otherDaysStartTime || '08:00';
+            }
+
+            // Zistíme, či je vybraný dátum prvým hracím dňom
+            const playingDaysSnapshot = await getDocs(query(playingDaysCollectionRef, orderBy("date", "asc")));
+            const sortedPlayingDays = playingDaysSnapshot.docs.map(d => d.data().date).sort();
+            const isFirstPlayingDay = sortedPlayingDays.length > 0 && selectedDate === sortedPlayingDays[0];
+
+            let [startH, startM] = (isFirstPlayingDay ? firstDayStartTime : otherDaysStartTime).split(':').map(Number);
+            const endSearchHour = 22; // Končíme hľadať o 22:00
+            const intervalMinutes = 1; // Kontrolujeme každú minútu
+
+            // Načítame všetky existujúce zápasy pre vybraný dátum a miesto
+            const existingMatchesQuery = query(
+                matchesCollectionRef,
+                where("date", "==", selectedDate),
+                where("location", "==", selectedLocation)
+            );
+            const existingMatchesSnapshot = await getDocs(existingMatchesQuery);
+            const existingEvents = existingMatchesSnapshot.docs.map(doc => {
+                const data = doc.data();
+                const [eventStartH, eventStartM] = data.startTime.split(':').map(Number);
+                const startInMinutes = eventStartH * 60 + eventStartM;
+                // Koniec existujúceho zápasu vrátane jeho trvania a ochranného pásma
+                const endInMinutes = startInMinutes + (data.duration || 0) + (data.bufferTime || 0);
+                return { start: startInMinutes, end: endInMinutes };
+            });
+
+            // Zotriedime existujúce udalosti podľa času začiatku pre efektívnejšiu kontrolu prekrývania
+            existingEvents.sort((a, b) => a.start - b.start);
+
+            // Prechádzame potenciálnymi časovými slotmi
+            for (let hour = startH; hour <= endSearchHour; hour++) {
+                // Ak je to prvá hodina, začíname od minúty definovanej v nastaveniach, inak od 0
+                const currentMinuteStart = (hour === startH) ? startM : 0; 
+                for (let minute = currentMinuteStart; minute < 60; minute += intervalMinutes) {
+                    const potentialStartInMinutes = hour * 60 + minute;
+                    // Vypočítame koniec potenciálneho slotu vrátane trvania a ochranného pásma
+                    const potentialEndInMinutes = potentialStartInMinutes + duration + bufferTime;
+
+                    let overlap = false;
+                    // Skontrolujeme, či sa potenciálny slot prekrýva s nejakým existujúcim zápasom
+                    for (const existingEvent of existingEvents) {
+                        // Podmienka prekrývania: (začiatok nového < koniec existujúceho && koniec nového > začiatku existujúceho)
+                        if (potentialStartInMinutes < existingEvent.end && potentialEndInMinutes > existingEvent.start) {
+                            overlap = true;
+                            break; // Prekrývanie nájdené, prejdeme na ďalší potenciálny slot
+                        }
+                    }
+
+                    // Ak sa nenašlo prekrývanie, našli sme voľný slot
+                    if (!overlap) {
+                        const formattedHour = String(hour).padStart(2, '0');
+                        const formattedMinute = String(minute).padStart(2, '0');
+                        matchStartTimeInput.value = `${formattedHour}:${formattedMinute}`;
+                        return; // Ukončíme funkciu po nastavení času
+                    }
+                }
+            }
+
+            // Ak sa nenašiel žiadny voľný slot v definovanom rozsahu
+            matchStartTimeInput.value = ''; 
+            console.warn("Nenašiel sa žiadny voľný časový slot pre zápas v daný deň a hale v rozsahu 08:00 - 22:00.");
+
+        } catch (error) {
+            console.error("Chyba pri hľadaní prvého dostupného času: ", error);
+            matchStartTimeInput.value = '';
+        }
+    }
 
     // --- Funkcia na načítanie a zobrazenie zápasov a autobusov ako rozvrh ---
     async function displayMatchesAsSchedule() {
@@ -792,11 +890,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         matchGroupSelect.disabled = true;
         team1NumberInput.value = '';
         team2NumberInput.value = '';
-        matchDurationInput.value = '';
+        matchDurationInput.value = 60; // Predvolená hodnota 60 minút
         matchBufferTimeInput.value = 5; // Predvolená hodnota 5 minút pre ochranné pásmo
         deleteMatchButtonModal.style.display = 'none'; // Skryť tlačidlo Vymazať pri pridávaní
         openModal(matchModal);
         addOptions.classList.remove('show'); // Skryť dropdown po výbere
+        await findFirstAvailableTime(); // Zavoláme po otvorení modalu a nastavení predvolených hodnôt
     });
 
     // NOVÉ: Event listener pre tlačidlo Pridať autobus
@@ -846,6 +945,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             team2NumberInput.value = '';
         }
     });
+
+    // Event listenery pre automatické nastavenie času zápasu
+    matchDateSelect.addEventListener('change', findFirstAvailableTime);
+    matchLocationSelect.addEventListener('change', findFirstAvailableTime);
+    matchDurationInput.addEventListener('change', findFirstAvailableTime);
+    matchBufferTimeInput.addEventListener('change', findFirstAvailableTime);
+
 
     const getTeamName = async (categoryId, groupId, teamNumber) => {
         if (!categoryId || !groupId || !teamNumber) {
