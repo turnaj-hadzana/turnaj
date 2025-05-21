@@ -92,7 +92,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     /**
      * Nájde prvý dostupný časový slot pre zápas v danej hale a deň.
-     * @param {string} selectedDateString - Vybraný dátum vo formáte YYYY-MM-DD.
+     * @param {string} selectedDateString - Vybraný dátum vo formáteYYYY-MM-DD.
      * @param {string} selectedHallId - ID vybranej športovej haly.
      * @param {object} settings - Objekt s nastaveniami turnaja (firstDayStartTime, otherDaysStartTime).
      * @returns {string|null} Prvý dostupný čas vo formáte HH:MM alebo null, ak sa nenájde.
@@ -176,24 +176,31 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 
     // Event listener pre zobrazenie modálneho okna pre zápas
-    addMatchButton.addEventListener('click', async () => {
-        matchForm.reset();
-        matchIdInput.value = '';
-        deleteMatchButtonModal.style.display = 'none';
-        await populateCategorySelect(matchCategorySelect);
-        await populateGroupSelect(matchGroupSelect);
-        await populateTeamsSelect(matchTeamASelect, matchTeamBSelect);
-        await populatePlayingDaySelect(matchDateSelect); // Naplnenie hracích dní do selectu
-        await populateSportHallSelect(matchLocationSelect); // Naplnenie hál do selectu
-        openModal(matchModal);
-        addOptions.classList.remove('show'); // Skryť dropdown po otvorení modalu
-    });
+    if (addMatchButton) {
+        addMatchButton.addEventListener('click', async () => {
+            matchForm.reset();
+            matchIdInput.value = '';
+            deleteMatchButtonModal.style.display = 'none';
+            await populateCategorySelect(matchCategorySelect);
+            await populateGroupSelect(matchGroupSelect);
+            await populateTeamsSelect(matchTeamASelect, matchTeamBSelect);
+            await populatePlayingDaySelect(matchDateSelect); // Naplnenie hracích dní do selectu
+            await populateSportHallSelect(matchLocationSelect); // Naplnenie hál do selectu
+            openModal(matchModal);
+            if (addOptions) { // Kontrola, či addOptions existuje
+                addOptions.classList.remove('show'); // Skryť dropdown po otvorení modalu
+            }
+        });
+    } else {
+        console.error("Element with ID 'addMatchButton' not found in the DOM.");
+    }
+
 
     // Event listener pre zmenu dátumu alebo haly v modálnom okne zápasu
-    if (matchDateSelect) { // Zmenené z matchDateInput
+    if (matchDateSelect) {
         matchDateSelect.addEventListener('change', async () => {
-            const selectedDate = matchDateSelect.value; // Zmenené z matchDateInput
-            const selectedHallId = matchLocationSelect.value; // Zmenené z matchSportHallSelect
+            const selectedDate = matchDateSelect.value;
+            const selectedHallId = matchLocationSelect.value;
             if (selectedDate && selectedHallId) {
                 const settings = await getTournamentSettings();
                 const availableTime = await findEarliestAvailableTime(selectedDate, selectedHallId, settings);
@@ -210,10 +217,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
 
-    if (matchLocationSelect) { // Zmenené z matchSportHallSelect
+    if (matchLocationSelect) {
         matchLocationSelect.addEventListener('change', async () => {
-            const selectedDate = matchDateSelect.value; // Zmenené z matchDateInput
-            const selectedHallId = matchLocationSelect.value; // Zmenené z matchSportHallSelect
+            const selectedDate = matchDateSelect.value;
+            const selectedHallId = matchLocationSelect.value;
             if (selectedDate && selectedHallId) {
                 const settings = await getTournamentSettings();
                 const availableTime = await findEarliestAvailableTime(selectedDate, selectedHallId, settings);
@@ -292,6 +299,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Funkcia pre zobrazenie rozvrhu zápasov, hracích dní a hál
     async function displayMatchesAsSchedule() {
+        if (!categoriesContentSection) {
+            console.error("Element with ID 'categoriesContentSection' not found. Cannot display schedule.");
+            return;
+        }
         categoriesContentSection.innerHTML = ''; // Vyčisti obsah pred zobrazením
 
         try {
@@ -652,332 +663,411 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 
     // Event listenery pre zatváranie modálnych okien
-    closeMatchModalButton.addEventListener('click', () => closeModal(matchModal));
-    closePlayingDayModalButton.addEventListener('click', () => closeModal(playingDayModal));
-    closeSportHallModalButton.addEventListener('click', () => closeModal(sportHallModal));
-    closeBusModalButton.addEventListener('click', () => closeModal(busModal));
+    if (closeMatchModalButton) {
+        closeMatchModalButton.addEventListener('click', () => closeModal(matchModal));
+    } else {
+        console.warn("Element with ID 'closeMatchModalButton' not found.");
+    }
+    if (closePlayingDayModalButton) {
+        closePlayingDayModalButton.addEventListener('click', () => closeModal(playingDayModal));
+    } else {
+        console.warn("Element with ID 'closePlayingDayModalButton' not found.");
+    }
+    if (closeSportHallModalButton) {
+        closeSportHallModalButton.addEventListener('click', () => closeModal(sportHallModal));
+    } else {
+        console.warn("Element with ID 'closeSportHallModalButton' not found.");
+    }
+    if (closeBusModalButton) {
+        closeBusModalButton.addEventListener('click', () => closeModal(busModal));
+    } else {
+        console.warn("Element with ID 'closeBusModalButton' not found.");
+    }
 
 
     // Event listener pre tlačidlo Pridať
-    addButton.addEventListener('click', () => {
-        addOptions.classList.toggle('show');
-    });
+    if (addButton) {
+        addButton.addEventListener('click', () => {
+            if (addOptions) { // Kontrola, či addOptions existuje
+                addOptions.classList.toggle('show');
+            }
+        });
+    } else {
+        console.error("Element with ID 'addButton' not found in the DOM.");
+    }
+
 
     // Skryť dropdown, ak sa klikne mimo neho
     document.addEventListener('click', (e) => {
-        if (!addButton.contains(e.target) && !addOptions.contains(e.target)) {
-            addOptions.classList.remove('show');
+        if (addButton && addOptions) { // Kontrola, či addButton a addOptions existujú
+            if (!addButton.contains(e.target) && !addOptions.contains(e.target)) {
+                addOptions.classList.remove('show');
+            }
         }
     });
 
     // Event listenery pre tlačidlá v dropdown menu
-    addPlayingDayButton.addEventListener('click', () => {
-        playingDayForm.reset();
-        playingDayIdInput.value = '';
-        deletePlayingDayButtonModal.style.display = 'none';
-        openModal(playingDayModal);
-        addOptions.classList.remove('show'); // Skryť dropdown po otvorení modalu
-    });
+    if (addPlayingDayButton) {
+        addPlayingDayButton.addEventListener('click', () => {
+            playingDayForm.reset();
+            playingDayIdInput.value = '';
+            deletePlayingDayButtonModal.style.display = 'none';
+            openModal(playingDayModal);
+            if (addOptions) { // Kontrola, či addOptions existuje
+                addOptions.classList.remove('show'); // Skryť dropdown po otvorení modalu
+            }
+        });
+    } else {
+        console.error("Element with ID 'addPlayingDayButton' not found in the DOM.");
+    }
 
-    addSportHallButton.addEventListener('click', () => {
-        sportHallForm.reset();
-        sportHallIdInput.value = '';
-        deleteHallButtonModal.style.display = 'none';
-        openModal(sportHallModal);
-        addOptions.classList.remove('show'); // Skryť dropdown po otvorení modalu
-    });
+    if (addSportHallButton) {
+        addSportHallButton.addEventListener('click', () => {
+            sportHallForm.reset();
+            sportHallIdInput.value = '';
+            deleteHallButtonModal.style.display = 'none';
+            openModal(sportHallModal);
+            if (addOptions) { // Kontrola, či addOptions existuje
+                addOptions.classList.remove('show'); // Skryť dropdown po otvorení modalu
+            }
+        });
+    } else {
+        console.error("Element with ID 'addSportHallButton' not found in the DOM.");
+    }
 
-    addBusButton.addEventListener('click', async () => {
-        busForm.reset();
-        busIdInput.value = '';
-        deleteBusButtonModal.style.display = 'none';
-        await populateSportHallSelect(busStartLocationSelect);
-        await populateSportHallSelect(busEndLocationSelect);
-        openModal(busModal);
-        addOptions.classList.remove('show'); // Skryť dropdown po otvorení modalu
-    });
+    if (addBusButton) {
+        addBusButton.addEventListener('click', async () => {
+            busForm.reset();
+            busIdInput.value = '';
+            deleteBusButtonModal.style.display = 'none';
+            await populateSportHallSelect(busStartLocationSelect);
+            await populateSportHallSelect(busEndLocationSelect);
+            openModal(busModal);
+            if (addOptions) { // Kontrola, či addOptions existuje
+                addOptions.classList.remove('show'); // Skryť dropdown po otvorení modalu
+            }
+        });
+    } else {
+        console.error("Element with ID 'addBusButton' not found in the DOM.");
+    }
 
 
     // Event listener pre odoslanie formulára zápasu
-    matchForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
+    if (matchForm) {
+        matchForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
 
-        const id = matchIdInput.value;
-        const teamAId = matchTeamASelect.value;
-        const teamBId = matchTeamBSelect.value;
-        const categoryId = matchCategorySelect.value;
-        const groupId = matchGroupSelect.value;
-        const date = matchDateSelect.value; // Zmenené z matchDateInput
-        const time = matchTimeInput.value;
-        const sportHallId = matchLocationSelect.value; // Zmenené z matchSportHallSelect
-        const referees = matchRefereesInput.value.trim();
-        const notes = matchNotesInput.value.trim();
+            const id = matchIdInput.value;
+            const teamAId = matchTeamASelect.value;
+            const teamBId = matchTeamBSelect.value;
+            const categoryId = matchCategorySelect.value;
+            const groupId = matchGroupSelect.value;
+            const date = matchDateSelect.value;
+            const time = matchTimeInput.value;
+            const sportHallId = matchLocationSelect.value;
+            const referees = matchRefereesInput.value.trim();
+            const notes = matchNotesInput.value.trim();
 
-        if (!teamAId || !teamBId || !categoryId || !groupId || !date || !time || !sportHallId) {
-            alert('Prosím, vyplňte všetky povinné polia (Tím A, Tím B, Kategória, Skupina, Dátum, Čas, Športová hala).');
-            return;
-        }
-
-        if (teamAId === teamBId) {
-            alert('Tímy A a B nemôžu byť rovnaké.');
-            return;
-        }
-
-        try {
-            const matchData = {
-                teamAId,
-                teamBId,
-                categoryId,
-                groupId,
-                date,
-                time,
-                sportHallId,
-                referees,
-                notes,
-                updatedAt: new Date()
-            };
-
-            if (id) {
-                // Úprava existujúceho zápasu
-                await setDoc(doc(matchesCollectionRef, id), matchData, { merge: true });
-                alert('Zápas úspešne aktualizovaný!');
-            } else {
-                // Pridanie nového zápasu
-                await addDoc(matchesCollectionRef, {
-                    ...matchData,
-                    createdAt: new Date()
-                });
-                alert('Zápas úspešne pridaný!');
+            if (!teamAId || !teamBId || !categoryId || !groupId || !date || !time || !sportHallId) {
+                alert('Prosím, vyplňte všetky povinné polia (Tím A, Tím B, Kategória, Skupina, Dátum, Čas, Športová hala).');
+                return;
             }
-            closeModal(matchModal);
-            await displayMatchesAsSchedule(); // Aktualizovať rozvrh
-        } catch (error) {
-            console.error("Chyba pri ukladaní zápasu: ", error);
-            alert("Chyba pri ukladaní zápasu. Pozrite konzolu pre detaily.");
-        }
-    });
+
+            if (teamAId === teamBId) {
+                alert('Tímy A a B nemôžu byť rovnaké.');
+                return;
+            }
+
+            try {
+                const matchData = {
+                    teamAId,
+                    teamBId,
+                    categoryId,
+                    groupId,
+                    date,
+                    time,
+                    sportHallId,
+                    referees,
+                    notes,
+                    updatedAt: new Date()
+                };
+
+                if (id) {
+                    // Úprava existujúceho zápasu
+                    await setDoc(doc(matchesCollectionRef, id), matchData, { merge: true });
+                    alert('Zápas úspešne aktualizovaný!');
+                } else {
+                    // Pridanie nového zápasu
+                    await addDoc(matchesCollectionRef, {
+                        ...matchData,
+                        createdAt: new Date()
+                    });
+                    alert('Zápas úspešne pridaný!');
+                }
+                closeModal(matchModal);
+                await displayMatchesAsSchedule(); // Aktualizovať rozvrh
+            } catch (error) {
+                console.error("Chyba pri ukladaní zápasu: ", error);
+                alert("Chyba pri ukladaní zápasu. Pozrite konzolu pre detaily.");
+            }
+        });
+    } else {
+        console.error("Element with ID 'matchForm' not found in the DOM.");
+    }
+
 
     // Event listener pre tlačidlo vymazať v modálnom okne zápasu
-    deleteMatchButtonModal.addEventListener('click', async () => {
-        const id = matchIdInput.value;
-        if (id && confirm('Naozaj chcete vymazať tento zápas?')) {
-            try {
-                await deleteDoc(doc(matchesCollectionRef, id));
-                alert('Zápas úspešne vymazaný!');
-                closeModal(matchModal);
-                await displayMatchesAsSchedule();
-            } catch (error) {
-                console.error("Chyba pri mazaní zápasu: ", error);
-                alert("Chyba pri mazaní zápasu. Pozrite konzolu pre detaily.");
+    if (deleteMatchButtonModal) {
+        deleteMatchButtonModal.addEventListener('click', async () => {
+            const id = matchIdInput.value;
+            if (id && confirm('Naozaj chcete vymazať tento zápas?')) {
+                try {
+                    await deleteDoc(doc(matchesCollectionRef, id));
+                    alert('Zápas úspešne vymazaný!');
+                    closeModal(matchModal);
+                    await displayMatchesAsSchedule();
+                } catch (error) {
+                    console.error("Chyba pri mazaní zápasu: ", error);
+                    alert("Chyba pri mazaní zápasu. Pozrite konzolu pre detaily.");
+                }
             }
-        }
-    });
+        });
+    } else {
+        console.warn("Element with ID 'deleteMatchButtonModal' not found.");
+    }
 
 
     // Event listener pre odoslanie formulára hracieho dňa
-    playingDayForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const id = playingDayIdInput.value;
-        const date = playingDayDateInput.value;
-        const notes = playingDayNotesInput.value.trim();
+    if (playingDayForm) {
+        playingDayForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = playingDayIdInput.value;
+            const date = playingDayDateInput.value;
+            const notes = playingDayNotesInput.value.trim();
 
-        if (!date) {
-            alert('Prosím, vyplňte dátum hracieho dňa.');
-            return;
-        }
+            if (!date) {
+                alert('Prosím, vyplňte dátum hracieho dňa.');
+                return;
+            }
 
-        try {
-            // Kontrola, či už hrací deň s týmto dátumom existuje (iba pri pridávaní)
-            if (!id) {
-                const q = query(playingDaysCollectionRef, where("date", "==", date));
-                const querySnapshot = await getDocs(q);
-                if (!querySnapshot.empty) {
-                    alert('Hrací deň s týmto dátumom už existuje!');
-                    return;
+            try {
+                // Kontrola, či už hrací deň s týmto dátumom existuje (iba pri pridávaní)
+                if (!id) {
+                    const q = query(playingDaysCollectionRef, where("date", "==", date));
+                    const querySnapshot = await getDocs(q);
+                    if (!querySnapshot.empty) {
+                        alert('Hrací deň s týmto dátumom už existuje!');
+                        return;
+                    }
                 }
-            }
 
-            const playingDayData = {
-                date: date,
-                notes: notes,
-                updatedAt: new Date()
-            };
+                const playingDayData = {
+                    date: date,
+                    notes: notes,
+                    updatedAt: new Date()
+                };
 
-            if (id) {
-                await setDoc(doc(playingDaysCollectionRef, id), playingDayData, { merge: true });
-                alert('Hrací deň úspešne aktualizovaný!');
-            } else {
-                await addDoc(playingDaysCollectionRef, {
-                    ...playingDayData,
-                    createdAt: new Date()
-                });
-                alert('Hrací deň úspešne pridaný!');
+                if (id) {
+                    await setDoc(doc(playingDaysCollectionRef, id), playingDayData, { merge: true });
+                    alert('Hrací deň úspešne aktualizovaný!');
+                } else {
+                    await addDoc(playingDaysCollectionRef, {
+                        ...playingDayData,
+                        createdAt: new Date()
+                    });
+                    alert('Hrací deň úspešne pridaný!');
+                }
+                closeModal(playingDayModal);
+                await displayMatchesAsSchedule(); // Aktualizovať rozvrh
+            } catch (error) {
+                console.error("Chyba pri ukladaní hracieho dňa: ", error);
+                alert("Chyba pri ukladaní hracieho dňa. Pozrite konzolu pre detaily.");
             }
-            closeModal(playingDayModal);
-            await displayMatchesAsSchedule(); // Aktualizovať rozvrh
-        } catch (error) {
-            console.error("Chyba pri ukladaní hracieho dňa: ", error);
-            alert("Chyba pri ukladaní hracieho dňa. Pozrite konzolu pre detaily.");
-        }
-    });
+        });
+    } else {
+        console.error("Element with ID 'playingDayForm' not found in the DOM.");
+    }
+
 
     // Event listener pre tlačidlo vymazať v modálnom okne hracieho dňa
-    deletePlayingDayButtonModal.addEventListener('click', async () => {
-        const id = playingDayIdInput.value;
-        if (id && confirm('Naozaj chcete vymazať tento hrací deň?')) {
-            try {
-                await deleteDoc(doc(playingDaysCollectionRef, id));
-                alert('Hrací deň úspešne vymazaný!');
-                closeModal(playingDayModal);
-                await displayMatchesAsSchedule();
-            } catch (error) {
-                console.error("Chyba pri mazaní hracieho dňa: ", error);
-                alert("Chyba pri mazaní hracieho dňa. Pozrite konzolu pre detaily.");
+    if (deletePlayingDayButtonModal) {
+        deletePlayingDayButtonModal.addEventListener('click', async () => {
+            const id = playingDayIdInput.value;
+            if (id && confirm('Naozaj chcete vymazať tento hrací deň?')) {
+                try {
+                    await deleteDoc(doc(playingDaysCollectionRef, id));
+                    alert('Hrací deň úspešne vymazaný!');
+                    closeModal(playingDayModal);
+                    await displayMatchesAsSchedule();
+                } catch (error) {
+                    console.error("Chyba pri mazaní hracieho dňa: ", error);
+                    alert("Chyba pri mazaní hracieho dňa. Pozrite konzolu pre detaily.");
+                }
             }
-        }
-    });
+        });
+    } else {
+        console.warn("Element with ID 'deletePlayingDayButtonModal' not found.");
+    }
 
 
     // Event listener pre odoslanie formulára športovej haly
-    sportHallForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const id = sportHallIdInput.value;
-        const name = hallNameInput.value.trim();
-        const address = hallAddressInput.value.trim();
-        const googleMapsUrl = hallGoogleMapsUrlInput.value.trim();
+    if (sportHallForm) {
+        sportHallForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = sportHallIdInput.value;
+            const name = hallNameInput.value.trim();
+            const address = hallAddressInput.value.trim();
+            const googleMapsUrl = hallGoogleMapsUrlInput.value.trim();
 
-        if (!name || !address || !googleMapsUrl) {
-            alert('Prosím, vyplňte všetky polia (Názov haly, Adresa, Odkaz na Google Maps).');
-            return;
-        }
+            if (!name || !address || !googleMapsUrl) {
+                alert('Prosím, vyplňte všetky polia (Názov haly, Adresa, Odkaz na Google Maps).');
+                return;
+            }
 
-        try {
-            new URL(googleMapsUrl); // Validate URL format
-        } catch (_) {
-            alert('Odkaz na Google Maps musí byť platná URL adresa.');
-            return;
-        }
+            try {
+                new URL(googleMapsUrl); // Validate URL format
+            } catch (_) {
+                alert('Odkaz na Google Maps musí byť platná URL adresa.');
+                return;
+            }
 
-        try {
-            // Kontrola, či už športová hala s týmto názvom existuje (iba pri pridávaní)
-            if (!id) {
-                const q = query(sportHallsCollectionRef, where("name", "==", name));
-                const querySnapshot = await getDocs(q);
-                if (!querySnapshot.empty) {
-                    alert('Športová hala s týmto názvom už existuje!');
-                    return;
+            try {
+                // Kontrola, či už športová hala s týmto názvom existuje (iba pri pridávaní)
+                if (!id) {
+                    const q = query(sportHallsCollectionRef, where("name", "==", name));
+                    const querySnapshot = await getDocs(q);
+                    if (!querySnapshot.empty) {
+                        alert('Športová hala s týmto názvom už existuje!');
+                        return;
+                    }
                 }
-            }
 
-            const sportHallData = {
-                name: name,
-                address: address,
-                googleMapsUrl: googleMapsUrl,
-                updatedAt: new Date()
-            };
+                const sportHallData = {
+                    name: name,
+                    address: address,
+                    googleMapsUrl: googleMapsUrl,
+                    updatedAt: new Date()
+                };
 
-            if (id) {
-                await setDoc(doc(sportHallsCollectionRef, id), sportHallData, { merge: true });
-                alert('Športová hala úspešne aktualizovaná!');
-            } else {
-                await addDoc(sportHallsCollectionRef, {
-                    ...sportHallData,
-                    createdAt: new Date()
-                });
-                alert('Športová hala úspešne pridaná!');
+                if (id) {
+                    await setDoc(doc(sportHallsCollectionRef, id), sportHallData, { merge: true });
+                    alert('Športová hala úspešne aktualizovaná!');
+                } else {
+                    await addDoc(sportHallsCollectionRef, {
+                        ...sportHallData,
+                        createdAt: new Date()
+                    });
+                    alert('Športová hala úspešne pridaná!');
+                }
+                closeModal(sportHallModal);
+                await displayMatchesAsSchedule(); // Aktualizovať rozvrh
+            } catch (error) {
+                console.error("Chyba pri ukladaní športovej haly: ", error);
+                alert("Chyba pri ukladaní športovej haly. Pozrite konzolu pre detaily.");
             }
-            closeModal(sportHallModal);
-            await displayMatchesAsSchedule(); // Aktualizovať rozvrh
-        } catch (error) {
-            console.error("Chyba pri ukladaní športovej haly: ", error);
-            alert("Chyba pri ukladaní športovej haly. Pozrite konzolu pre detaily.");
-        }
-    });
+        });
+    } else {
+        console.error("Element with ID 'sportHallForm' not found in the DOM.");
+    }
+
 
     // Event listener pre tlačidlo vymazať v modálnom okne športovej haly
-    deleteHallButtonModal.addEventListener('click', async () => {
-        const id = sportHallIdInput.value;
-        if (id && confirm('Naozaj chcete vymazať túto športovú halu?')) {
-            try {
-                await deleteDoc(doc(sportHallsCollectionRef, id));
-                alert('Športová hala úspešne vymazaná!');
-                closeModal(sportHallModal);
-                await displayMatchesAsSchedule();
-            } catch (error) {
-                console.error("Chyba pri mazaní športovej haly: ", error);
-                alert("Chyba pri mazaní športovej haly. Pozrite konzolu pre detaily.");
+    if (deleteHallButtonModal) {
+        deleteHallButtonModal.addEventListener('click', async () => {
+            const id = sportHallIdInput.value;
+            if (id && confirm('Naozaj chcete vymazať túto športovú halu?')) {
+                try {
+                    await deleteDoc(doc(sportHallsCollectionRef, id));
+                    alert('Športová hala úspešne vymazaná!');
+                    closeModal(sportHallModal);
+                    await displayMatchesAsSchedule();
+                } catch (error) {
+                    console.error("Chyba pri mazaní športovej haly: ", error);
+                    alert("Chyba pri mazaní športovej haly. Pozrite konzolu pre detaily.");
+                }
             }
-        }
-    });
+        });
+    } else {
+        console.warn("Element with ID 'deleteHallButtonModal' not found.");
+    }
 
 
     // Event listener pre odoslanie formulára autobusu
-    busForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const id = busIdInput.value;
-        const busNumber = busNumberInput.value.trim();
-        const capacity = parseInt(busCapacityInput.value, 10);
-        const startLocationId = busStartLocationSelect.value;
-        const startTime = busStartTimeInput.value;
-        const endLocationId = busEndLocationSelect.value;
-        const endTime = busEndTimeInput.value;
-        const notes = busNotesInput.value.trim();
+    if (busForm) {
+        busForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = busIdInput.value;
+            const busNumber = busNumberInput.value.trim();
+            const capacity = parseInt(busCapacityInput.value, 10);
+            const startLocationId = busStartLocationSelect.value;
+            const startTime = busStartTimeInput.value;
+            const endLocationId = busEndLocationSelect.value;
+            const endTime = busEndTimeInput.value;
+            const notes = busNotesInput.value.trim();
 
-        if (!busNumber || isNaN(capacity) || !startLocationId || !startTime || !endLocationId || !endTime) {
-            alert('Prosím, vyplňte všetky povinné polia (Číslo autobusu, Kapacita, Miesto začiatku, Čas začiatku, Miesto príchodu, Čas príchodu).');
-            return;
-        }
-
-        if (startLocationId === endLocationId) {
-            alert('Miesto začiatku a miesto príchodu nemôžu byť rovnaké.');
-            return;
-        }
-
-        try {
-            const busData = {
-                busNumber: busNumber,
-                capacity: capacity,
-                startLocationId: startLocationId,
-                startTime: startTime,
-                endLocationId: endLocationId,
-                endTime: endTime,
-                notes: notes,
-                updatedAt: new Date()
-            };
-
-            if (id) {
-                await setDoc(doc(busesCollectionRef, id), busData, { merge: true });
-                alert('Autobus úspešne aktualizovaný!');
-            } else {
-                await addDoc(busesCollectionRef, {
-                    ...busData,
-                    createdAt: new Date()
-                });
-                alert('Autobus úspešne pridaný!');
+            if (!busNumber || isNaN(capacity) || !startLocationId || !startTime || !endLocationId || !endTime) {
+                alert('Prosím, vyplňte všetky povinné polia (Číslo autobusu, Kapacita, Miesto začiatku, Čas začiatku, Miesto príchodu, Čas príchodu).');
+                return;
             }
-            closeModal(busModal);
-            await displayMatchesAsSchedule(); // Aktualizovať rozvrh
-        } catch (error) {
-            console.error("Chyba pri ukladaní autobusu: ", error);
-            alert("Chyba pri ukladaní autobusu. Pozrite konzolu pre detaily.");
-        }
-    });
+
+            if (startLocationId === endLocationId) {
+                alert('Miesto začiatku a miesto príchodu nemôžu byť rovnaké.');
+                return;
+            }
+
+            try {
+                const busData = {
+                    busNumber: busNumber,
+                    capacity: capacity,
+                    startLocationId: startLocationId,
+                    startTime: startTime,
+                    endLocationId: endLocationId,
+                    endTime: endTime,
+                    notes: notes,
+                    updatedAt: new Date()
+                };
+
+                if (id) {
+                    await setDoc(doc(busesCollectionRef, id), busData, { merge: true });
+                    alert('Autobus úspešne aktualizovaný!');
+                } else {
+                    await addDoc(busesCollectionRef, {
+                        ...busData,
+                        createdAt: new Date()
+                    });
+                    alert('Autobus úspešne pridaný!');
+                }
+                closeModal(busModal);
+                await displayMatchesAsSchedule(); // Aktualizovať rozvrh
+            } catch (error) {
+                console.error("Chyba pri ukladaní autobusu: ", error);
+                alert("Chyba pri ukladaní autobusu. Pozrite konzolu pre detaily.");
+            }
+        });
+    } else {
+        console.error("Element with ID 'busForm' not found in the DOM.");
+    }
+
 
     // Event listener pre tlačidlo vymazať v modálnom okne autobusu
-    deleteBusButtonModal.addEventListener('click', async () => {
-        const id = busIdInput.value;
-        if (id && confirm('Naozaj chcete vymazať tento autobus?')) {
-            try {
-                await deleteDoc(doc(busesCollectionRef, id));
-                alert('Autobus úspešne vymazaný!');
-                closeModal(busModal);
-                await displayMatchesAsSchedule();
-            } catch (error) {
-                console.error("Chyba pri mazaní autobusu: ", error);
-                alert("Chyba pri mazaní autobusu. Pozrite konzolu pre detaily.");
+    if (deleteBusButtonModal) {
+        deleteBusButtonModal.addEventListener('click', async () => {
+            const id = busIdInput.value;
+            if (id && confirm('Naozaj chcete vymazať tento autobus?')) {
+                try {
+                    await deleteDoc(doc(busesCollectionRef, id));
+                    alert('Autobus úspešne vymazaný!');
+                    closeModal(busModal);
+                    await displayMatchesAsSchedule();
+                } catch (error) {
+                    console.error("Chyba pri mazaní autobusu: ", error);
+                    alert("Chyba pri mazaní autobusu. Pozrite konzolu pre detaily.");
+                }
             }
-        }
-    });
+        });
+    } else {
+        console.warn("Element with ID 'deleteBusButtonModal' not found.");
+    }
 
 
     // Inicializácia: Zobraz rozvrh pri načítaní stránky
