@@ -266,6 +266,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                         matchEndTime.setHours(startH, startM + durationInMinutes, 0, 0);
                         const formattedEndTime = matchEndTime.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' });
 
+                        // NOVÉ: Pridanie vizuálneho bloku pre ochranné pásmo PRED blokom zápasu, aby ho mohol prekryť
+                        if (bufferInMinutes > 0) {
+                            scheduleHtml += `
+                                <div class="schedule-cell-buffer"
+                                    style="left: ${bufferBlockLeftPx}px; width: ${bufferBlockWidthPx}px; top: ${topPx}px; height: ${ITEM_HEIGHT_PX}px; background-color: #ffcccc; border: 1px dashed #ff9999; z-index: 6;">
+                                    <p style="font-size: 0.6em; color: #cc0000; text-align: center; margin-top: 5px;">Pásmo</p>
+                                </div>
+                            `;
+                        }
+
                         scheduleHtml += `
                             <div class="schedule-cell-match"
                                 data-id="${match.id}"
@@ -280,16 +290,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 </div>
                             </div>
                         `;
-
-                        // NOVÉ: Pridanie vizuálneho bloku pre ochranné pásmo
-                        if (bufferInMinutes > 0) {
-                            scheduleHtml += `
-                                <div class="schedule-cell-buffer"
-                                    style="left: ${bufferBlockLeftPx}px; width: ${bufferBlockWidthPx}px; top: ${topPx}px; height: ${ITEM_HEIGHT_PX}px; background-color: #ffcccc; border: 1px dashed #ff9999; z-index: 4;">
-                                    <p style="font-size: 0.6em; color: #cc0000; text-align: center; margin-top: 5px;">Pásmo</p>
-                                </div>
-                            `;
-                        }
                     });
                     scheduleHtml += '</td>';
                 });
@@ -533,7 +533,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const categoryName = categoryDoc.exists() ? (categoryDoc.data().name || categoryId) : categoryId;
 
             const groupDoc = await getDoc(doc(groupsCollectionRef, groupId));
-            const groupData = groupDoc.exists() ? groupData.data() : null;
+            const groupData = groupDoc.exists() ? groupDoc.data() : null;
             const groupName = groupData ? (groupData.name || groupId) : groupId;
 
             let clubName = `Tím ${teamNumber}`;
