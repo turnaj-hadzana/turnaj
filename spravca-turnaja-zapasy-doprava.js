@@ -752,7 +752,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             const categoryName = categoryDoc.exists() ? (categoryDoc.data().name || categoryId) : categoryId;
 
             const groupDoc = await getDoc(doc(groupsCollectionRef, groupId));
-            const groupData = groupDoc.exists() ? groupData.data() : null;
+            let groupData = null; // Inicializácia groupData
+            if (groupDoc.exists()) {
+                groupData = groupDoc.data(); // Priradenie dát, ak dokument existuje
+            }
             const groupName = groupData ? (groupData.name || groupId) : groupId;
 
             let clubName = `Tím ${teamNumber}`;
