@@ -73,7 +73,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // --- NOVÉ FUNKCIE PRE PLNENIE SELECT BODOV (už upravené v predošlej odpovedi) ---
+    // --- Funkcie pre plnenie select boxov ---
     async function populatePlayingDaysSelect(selectElement, selectedDate = '') {
         selectElement.innerHTML = '<option value="">-- Vyberte dátum --</option>';
         try {
@@ -115,7 +115,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.error("Chyba pri načítaní športových hál: ", error);
         }
     }
-    // --- KONIEC NOVÝCH FUNKCIÍ ---
+    // --- Koniec funkcií pre plnenie select boxov ---
 
 
     // --- Funkcia na načítanie a zobrazenie zápasov a autobusov ako rozvrh ---
@@ -280,7 +280,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                         let eventClass = '';
                         let contentHtml = '';
                         let dataId = event.id;
-                        // Odstránené editFunction a deleteFunction pre inline tlačidlá
 
                         if (event.type === 'match') {
                             const [startH, startM] = event.startTime.split(':').map(Number);
@@ -310,20 +309,56 @@ document.addEventListener('DOMContentLoaded', async () => {
                             }
                             durationOrRouteTime = absoluteEndMin - absoluteStartMin; // Dĺžka trasy
 
-                            eventClass = 'schedule-cell-bus-svg-container'; // Používame nový SVG kontajner
+                            eventClass = 'schedule-cell-bus-svg-container'; // Použijeme tento kontajner pre SVG
+
+                            // Výpočet pozície a šírky pre vonkajší div
+                            const eventBlockLeftPx = (absoluteStartMin - (firstHourInDay * 60)) * PIXELS_PER_MINUTE;
+                            const eventBlockWidthPx = durationOrRouteTime * PIXELS_PER_MINUTE;
+
+                            // Definícia sklonu a odsadenia pre polygón vo vnútri SVG viewBoxu
+                            const paddingY = 10; // Odsadenie od vrchu/spodku bunky
+                            const slantY = 20; // Vertikálny sklon horných/dolných čiar
+
+                            // Body polygónu relatívne k SVG viewBoxu (0 až eventBlockWidthPx, 0 až ITEM_HEIGHT_PX)
+                            const points = `
+                                0,${paddingY}
+                                ${eventBlockWidthPx},${paddingY + slantY}
+                                ${eventBlockWidthPx},${ITEM_HEIGHT_PX - paddingY + slantY}
+                                0,${ITEM_HEIGHT_PX - paddingY}
+                            `.trim();
+
+                            // Výpočet pozície textu (centrovaný v polygóne)
+                            const textX = eventBlockWidthPx / 2;
+                            const textY = ITEM_HEIGHT_PX / 2;
+
+                            const busEndTime = new Date();
+                            busEndTime.setHours(endH, endM, 0, 0);
+                            const formattedEndTime = busEndTime.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' });
+
                             contentHtml = `
-                                <svg width="100%" height="100%" viewBox="0 0 ${CELL_WIDTH_PX * colspan} ${ITEM_HEIGHT_PX}">
-                                    <polygon class="schedule-bus-polygon" points="
-                                        ${(absoluteStartMin - (firstHourInDay * 60)) * PIXELS_PER_MINUTE}, 0
-                                        ${(absoluteEndMin - (firstHourInDay * 60)) * PIXELS_PER_MINUTE}, 0
-                                        ${(absoluteEndMin - (firstHourInDay * 60)) * PIXELS_PER_MINUTE}, ${ITEM_HEIGHT_PX}
-                                        ${(absoluteStartMin - (firstHourInDay * 60)) * PIXELS_PER_MINUTE}, ${ITEM_HEIGHT_PX}
-                                    " data-id="${dataId}" data-type="${event.type}"></polygon>
-                                    <text class="schedule-bus-text" 
-                                          x="${((absoluteStartMin - (firstHourInDay * 60)) * PIXELS_PER_MINUTE + (absoluteEndMin - (firstHourInDay * 60)) * PIXELS_PER_MINUTE) / 2}" 
-                                          y="${ITEM_HEIGHT_PX / 2}">
+                                <svg class="bus-svg" width="100%" height="100%" viewBox="0 0 ${eventBlockWidthPx} ${ITEM_HEIGHT_PX}">
+                                    <polygon class="schedule-bus-polygon" points="${points}"></polygon>
+                                    <text class="schedule-bus-text"
+                                          x="${textX}" y="${textY - 20}"
+                                          text-anchor="middle" dominant-baseline="middle">
                                         ${event.busName}
                                     </text>
+                                    <text class="schedule-bus-route-text"
+                                          x="${textX}" y="${textY}"
+                                          text-anchor="middle" dominant-baseline="middle">
+                                        ${event.startLocation} &rarr; ${event.endLocation}
+                                    </text>
+                                    <text class="schedule-bus-time-text"
+                                          x="${textX}" y="${textY + 20}"
+                                          text-anchor="middle" dominant-baseline="middle">
+                                        ${event.startTime} - ${formattedEndTime}
+                                    </text>
+                                    ${event.notes ? `
+                                    <text class="schedule-bus-notes-text"
+                                          x="${textX}" y="${textY + 40}"
+                                          text-anchor="middle" dominant-baseline="middle">
+                                        ${event.notes}
+                                    </text>` : ''}
                                 </svg>
                             `;
                         } else {
@@ -338,15 +373,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                         let eventBlockLeftPx;
                         let eventBlockWidthPx;
 
-                        if (event.type === 'match') {
-                            eventBlockLeftPx = relativeStartMin * PIXELS_PER_MINUTE;
-                            eventBlockWidthPx = durationOrRouteTime * PIXELS_PER_MINUTE;
-                        } else if (event.type === 'bus') {
-                            // Pre autobus už nepočítame šírku a pozíciu pre div, ale pre SVG
-                            // SVG kontajner zaberá celú šírku bunky, a polygon sa vykreslí v ňom
-                            eventBlockLeftPx = 0; // SVG kontajner je vľavo v bunke
-                            eventBlockWidthPx = CELL_WIDTH_PX * colspan; // SVG kontajner zaberá celú šírku colspan bunky
-                        }
+                        // Výpočet pozície a šírky pre zápasy aj autobusy na základe ich skutočného časového rozsahu
+                        eventBlockLeftPx = relativeStartMin * PIXELS_PER_MINUTE;
+                        eventBlockWidthPx = durationOrRouteTime * PIXELS_PER_MINUTE;
 
 
                         // Pozícia a šírka ochranného pásma (začína presne po zápase)
@@ -386,27 +415,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                         }
 
                         // Potom pridáme blok samotnej udalosti (zápas alebo autobus)
-                        // Pre autobusy už nebudeme mať schedule-cell-content ani schedule-cell-actions v tomto div-e
-                        // Akčné tlačidlá pre autobusy budú pridané samostatne a prepojené s SVG polygónom
-                        if (event.type === 'match') {
-                            scheduleHtml += `
-                                <div class="${eventClass}"
-                                    data-id="${dataId}" data-type="${event.type}"
-                                    style="position: absolute; left: ${eventBlockLeftPx}px; width: ${eventBlockWidthPx}px; top: ${topPx}px; height: ${ITEM_HEIGHT_PX}px;">
-                                    <div class="schedule-cell-content">
-                                        ${contentHtml}
-                                    </div>
-                                    </div>
-                            `;
-                        } else if (event.type === 'bus') {
-                            scheduleHtml += `
-                                <div class="${eventClass}"
-                                    data-id="${dataId}" data-type="${event.type}"
-                                    style="position: absolute; left: ${eventBlockLeftPx}px; width: ${eventBlockWidthPx}px; top: ${topPx}px; height: ${ITEM_HEIGHT_PX}px;">
+                        scheduleHtml += `
+                            <div class="${eventClass}"
+                                data-id="${dataId}" data-type="${event.type}"
+                                style="position: absolute; left: ${eventBlockLeftPx}px; width: ${eventBlockWidthPx}px; top: ${topPx}px; height: ${ITEM_HEIGHT_PX}px;">
+                                <div class="schedule-cell-content">
                                     ${contentHtml}
                                 </div>
-                                `;
-                        }
+                            </div>
+                        `;
                     });
                     scheduleHtml += '</td>';
                 });
@@ -425,9 +442,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 });
             });
 
-            matchesContainer.querySelectorAll('.schedule-bus-polygon').forEach(element => {
+            matchesContainer.querySelectorAll('.schedule-cell-bus-svg-container').forEach(element => { // Zmenený selektor na .schedule-cell-bus-svg-container
                 element.addEventListener('click', (event) => {
-                    const id = event.currentTarget.dataset.id; // Použiť currentTarget pre polygon
+                    const id = event.currentTarget.dataset.id; // Použiť currentTarget pre div
                     editBus(id);
                 });
             });
@@ -447,8 +464,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                         const locationToDelete = header.dataset.location;
                         deleteSportHall(locationToDelete);
                     }
-                });
-            });
+                }
+            );
+        });
 
         } catch (error) {
             console.error("Chyba pri načítaní rozvrhu zápasov: ", error);
@@ -525,7 +543,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 });
 
                 const busesEndQuery = query(busesCollectionRef, where("endLocation", "==", hallNameToDelete));
-                const busesEndSnapshot = await getDocs(busesEndQuery);
+                const busesEndSnapshot = await await getDocs(busesEndQuery);
                 busesEndSnapshot.docs.forEach(busDoc => {
                     // Ak je autobusová linka rovnaká ako tá, ktorá už bola vymazaná cez startLocation,
                     // batch.delete sa o to postará, ale pre istotu môžeme pridať kontrolu
