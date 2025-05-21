@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const busDateSelect = document.getElementById('busDateSelect');
     const busStartLocationSelect = document.getElementById('busStartLocationSelect');
     const busStartTimeInput = document.getElementById('busStartTimeInput');
-    const busEndLocationSelect = document.getElementById('busEndLocationSelect');
+    const busEndLocationSelect = document = document.getElementById('busEndLocationSelect');
     const busEndTimeInput = document.getElementById('busEndTimeInput');
     const busNotesInput = document.getElementById('busNotesInput');
     const deleteBusButtonModal = document.getElementById('deleteBusButtonModal'); // NOVÉ: Tlačidlo Vymazať v modale
@@ -560,7 +560,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
             matchesContainer.querySelectorAll('.delete-location-header').forEach(header => {
                 header.addEventListener('click', (event) => {
-                    if (event.target === header || event.target.closest('.delete-location-header') === header) {
+                    // Check if the clicked element is the link or inside the link
+                    if (event.target.tagName === 'A' || event.target.closest('.hall-address')) {
+                        return; // Do nothing if the link was clicked
+                    }
+                    // If it's not the link, and the click is on the header itself or the hall name div, proceed with deletion
+                    if (event.target === header || event.target.closest('.hall-name') === header.querySelector('.hall-name')) {
                         const locationToDelete = header.dataset.location;
                         deleteSportHall(locationToDelete);
                     }
