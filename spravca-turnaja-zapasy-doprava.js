@@ -341,7 +341,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Nastavíme šírku a výšku na 100% rodiča a pointer-events na none predvolene
 
 // Vytvor a nastav overlay kontajner
-const busOverlayContainer = document.createElement('div');
 busOverlayContainer.id = 'busOverlayContainer';
 
 // Nový štýl s obmedzenou výškou
