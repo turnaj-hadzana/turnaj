@@ -64,15 +64,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             const q = query(matchesCollectionRef, orderBy("date", "asc"), orderBy("location", "asc"), orderBy("startTime", "asc"));
             const querySnapshot = await getDocs(q);
 
-            if (querySnapshot.empty) {
-                matchesContainer.innerHTML = '<p>Žiadne zápasy ani informácie o doprave zatiaľ.</p>';
-                return;
-            }
+            // Získame aj hracie dni a športové haly pre hlavičky tabuľky
+            const playingDaysSnapshot = await getDocs(query(playingDaysCollectionRef, orderBy("date", "asc")));
+            const sportHallsSnapshot = await getDocs(query(sportHallsCollectionRef, orderBy("name", "asc")));
 
             const allMatches = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const existingPlayingDays = playingDaysSnapshot.docs.map(doc => doc.data().date);
+            const existingSportHalls = sportHallsSnapshot.docs.map(doc => doc.data().name);
 
-            const uniqueLocations = new Set();
-            const uniqueDates = new Set();
+            // Spojíme existujúce entity s tými, ktoré sú v zápasoch, aby sme nič neprehliadli
+            const uniqueLocations = new Set([...existingSportHalls]);
+            const uniqueDates = new Set([...existingPlayingDays]);
+
             allMatches.forEach(match => {
                 uniqueLocations.add(match.location);
                 uniqueDates.add(match.date);
@@ -588,7 +591,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
             alert('Hrací deň úspešne pridaný!');
             closeModal(playingDayModal);
-            // displayMatchesAsSchedule(); // Môžete zvážiť, či chcete po pridaní hracieho dňa aktualizovať rozvrh
+            // Tu pridáme volanie funkcie pre zobrazenie rozvrhu
+            await displayMatchesAsSchedule(); // <--- PRIDANÁ TÁTO ČIARA
         } catch (error) {
             console.error("Chyba pri ukladaní hracieho dňa: ", error);
             alert("Chyba pri ukladaní hracieho dňa. Pozrite konzolu pre detaily.");
@@ -633,7 +637,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
             alert('Športová hala úspešne pridaná!');
             closeModal(sportHallModal);
-            // displayMatchesAsSchedule(); // Môžete zvážiť, či chcete po pridaní haly aktualizovať rozvrh
+            // Tu pridáme volanie funkcie pre zobrazenie rozvrhu
+            await displayMatchesAsSchedule(); // <--- PRIDANÁ TÁTO ČIARA
         } catch (error) {
             console.error("Chyba pri ukladaní športovej haly: ", error);
             alert("Chyba pri ukladaní športovej haly. Pozrite konzolu pre detaily.");
