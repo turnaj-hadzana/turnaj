@@ -433,7 +433,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     busLeftPx = dateHours[0].left + ((startTimeInMinutes - (dateHours[0].hour * 60)) * PIXELS_PER_MINUTE);
                 }
 
-                const busWidthPx = (durationInMinutes * PIXELS_PER_MINUTE) / 2; // Polovičná šírka autobusu
+                // Zmenšená šírka autobusu o polovicu
+                const busWidthPx = (durationInMinutes * PIXELS_PER_MINUTE) / 4; 
                 const slantOffset = 30; 
 
                 const svgWidth = busWidthPx + Math.abs(slantOffset);
