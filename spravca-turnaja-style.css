@@ -216,7 +216,7 @@ td:last-child {
     border-color: #a71d2a;
 }
 .section-block h2 {
-    text-align: center; 
+    text-align: center;
     margin-bottom: 20px;
 }
 #groupsContent .section-block h2 {
@@ -320,6 +320,50 @@ td:last-child {
 .add-button:hover {
     background-color: #c46f50;
 }
+
+/* Nové štýly pre menu s tlačidlami */
+.add-button-menu {
+    position: fixed;
+    bottom: 80px; /* 20px od spodku + 50px výška tlačidla + 10px medzera */
+    right: 20px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    padding: 10px;
+    display: none; /* Predvolene skryté, JS ho zobrazí */
+    flex-direction: column;
+    gap: 10px;
+    z-index: 1001; /* Vyšší z-index ako hlavné tlačidlo */
+    width: 200px; /* Nastavená šírka menu */
+}
+
+.add-button-menu.show {
+    display: flex; /* Trieda pre zobrazenie menu cez JS */
+}
+
+.add-button-menu button {
+    background-color: #007bff;
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+    text-align: left;
+    transition: background-color 0.2s ease;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.add-button-menu button:hover {
+    background-color: #0056b3;
+}
+
+.add-button-menu button:active {
+    background-color: #004085;
+}
+
 .modal {
     display: none;
     position: fixed;
@@ -438,6 +482,10 @@ td:last-child {
         max-width: none;
         width: 100%;
     }
+    /* Pre mobilné zariadenia prispôsobíme aj umiestnenie menu, ak je potrebné */
+    .add-button-menu {
+        bottom: 70px; /* Upravená pozícia pre menšie obrazovky */
+    }
 }
 #clubModal .modal-content #clubFormContent,
 #clubModal .modal-content #clubFilterContent {
@@ -478,7 +526,7 @@ td:last-child {
 /* Základná tabuľka rozvrhu */
 .match-schedule-table {
     border-collapse: collapse;
-/*    width: 2500px;*/
+/*    width: 2500px;*/
     table-layout: fixed; /* Kľúčové pre vynútenie pevných šírok stĺpcov */
     min-width: fit-content;
 }
@@ -491,8 +539,8 @@ td:last-child {
     text-align: center;
     vertical-align: top;
     position: relative; /* Dôležité pre absolútne pozicionovanie zápasov */
-/*    min-width: 260px; /* Použite min-width, aby sa stĺpec mohol prispôsobiť, ale nie byť menší */
-/*    width: 260px; /* Nastavte pevnú šírku */
+/*    min-width: 260px; /* Použite min-width, aby sa stĺpec mohol prispôsobiť, ale nie byť menší */
+/*    width: 260px; /* Nastavte pevnú šírku */
     box-sizing: border-box;
 }
 
