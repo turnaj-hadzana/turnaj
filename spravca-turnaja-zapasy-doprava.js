@@ -227,25 +227,31 @@ document.addEventListener('DOMContentLoaded', async () => {
                         const bufferInMinutes = match.bufferTime || 0; // Získanie ochranného pásma
 
                         const absoluteStartMin = startH * 60 + startM;
-                        const absoluteEndMin = absoluteStartMin + durationInMinutes + bufferInMinutes; // Zohľadnenie ochranného pásma
+                        // Dôležité: Pre výpočet prekrývania pre stopy (tracks) použijeme celkovú dĺžku vrátane bufferu
+                        const absoluteEndMinForTracks = absoluteStartMin + durationInMinutes + bufferInMinutes; 
 
                         const firstHourInDay = range.minHour;
                         const relativeStartMin = absoluteStartMin - (firstHourInDay * 60);
 
-                        const leftPx = relativeStartMin * PIXELS_PER_MINUTE;
-                        const widthPx = (durationInMinutes + bufferInMinutes) * PIXELS_PER_MINUTE; // Šírka zohľadňuje aj ochranné pásmo
+                        const matchBlockLeftPx = relativeStartMin * PIXELS_PER_MINUTE;
+                        const matchBlockWidthPx = durationInMinutes * PIXELS_PER_MINUTE; // Šírka len pre samotný zápas
+
+                        const bufferBlockLeftPx = matchBlockLeftPx + matchBlockWidthPx;
+                        const bufferBlockWidthPx = bufferInMinutes * PIXELS_PER_MINUTE; // Šírka pre ochranné pásmo
+
 
                         let topPx = 0;
 
                         let foundTrack = false;
                         for (let i = 0; i < tracks.length; i++) {
                             const track = tracks[i];
-                            const doesOverlap = (absoluteStartMin < track.endMin && absoluteEndMin > track.startMin);
+                            // Kontrola prekrývania pre stopy musí zohľadňovať aj ochranné pásmo
+                            const doesOverlap = (absoluteStartMin < track.endMin && absoluteEndMinForTracks > track.startMin);
                             
                             if (!doesOverlap) {
                                 topPx = track.topPx;
                                 track.startMin = Math.min(track.startMin, absoluteStartMin);
-                                track.endMin = Math.max(track.endMin, absoluteEndMin);
+                                track.endMin = Math.max(track.endMin, absoluteEndMinForTracks); // Aktualizujeme endMin s bufferom
                                 foundTrack = true;
                                 break;
                             }
@@ -253,7 +259,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                         if (!foundTrack) {
                             topPx = tracks.length * ITEM_HEIGHT_PX;
-                            tracks.push({ startMin: absoluteStartMin, endMin: absoluteEndMin, topPx: topPx });
+                            tracks.push({ startMin: absoluteStartMin, endMin: absoluteEndMinForTracks, topPx: topPx }); // Uložíme endMin s bufferom
                         }
 
                         const matchEndTime = new Date();
@@ -263,7 +269,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         scheduleHtml += `
                             <div class="schedule-cell-match"
                                 data-id="${match.id}"
-                                style="left: ${leftPx}px; width: ${widthPx}px; top: ${topPx}px; height: ${ITEM_HEIGHT_PX}px;">
+                                style="left: ${matchBlockLeftPx}px; width: ${matchBlockWidthPx}px; top: ${topPx}px; height: ${ITEM_HEIGHT_PX}px; z-index: 5;">
                                 <p class="schedule-cell-time">${match.startTime} - ${formattedEndTime}</p>
                                 <p class="schedule-cell-category">${match.categoryName || 'N/A'}${match.groupName ? ` ${match.groupName}` : ''}</p>
                                 <p class="schedule-cell-teams">${match.team1DisplayName}<br>${match.team2DisplayName}</p>
@@ -274,6 +280,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 </div>
                             </div>
                         `;
+
+                        // NOVÉ: Pridanie vizuálneho bloku pre ochranné pásmo
+                        if (bufferInMinutes > 0) {
+                            scheduleHtml += `
+                                <div class="schedule-cell-buffer"
+                                    style="left: ${bufferBlockLeftPx}px; width: ${bufferBlockWidthPx}px; top: ${topPx}px; height: ${ITEM_HEIGHT_PX}px; background-color: #ffcccc; border: 1px dashed #ff9999; z-index: 4;">
+                                    <p style="font-size: 0.6em; color: #cc0000; text-align: center; margin-top: 5px;">Pásmo</p>
+                                </div>
+                            `;
+                        }
                     });
                     scheduleHtml += '</td>';
                 });
@@ -517,7 +533,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const categoryName = categoryDoc.exists() ? (categoryDoc.data().name || categoryId) : categoryId;
 
             const groupDoc = await getDoc(doc(groupsCollectionRef, groupId));
-            const groupData = groupDoc.exists() ? groupDoc.data() : null;
+            const groupData = groupDoc.exists() ? groupData.data() : null;
             const groupName = groupData ? (groupData.name || groupId) : groupId;
 
             let clubName = `Tím ${teamNumber}`;
