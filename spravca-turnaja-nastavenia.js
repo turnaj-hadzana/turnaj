@@ -1,4 +1,7 @@
-import { db, settingsCollectionRef, categoriesCollectionRef, getDoc, setDoc, doc, getDocs, query, orderBy } from './spravca-turnaja-common.js';
+import { db, settingsCollectionRef, categoriesCollectionRef, getDoc, setDoc, doc, getDocs, query, orderBy } from './spravca-turnaja-common.js'; // categoriesCollectionRef je opäť importovaný
+
+// Odstránená lokálna definícia appId a localCategoriesCollectionRef,
+// pretože budeme používať categoriesCollectionRef importovaný z common.js
 
 document.addEventListener('DOMContentLoaded', async () => {
     const loggedInUsername = localStorage.getItem('username');
@@ -51,8 +54,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             console.log("Pokúšam sa načítať kategórie z Firestore...");
             // Logujeme celú cestu ku kolekcii, aby sme videli, čo sa hľadá
-            console.log(`Cesta ku kolekcii kategórií: ${categoriesCollectionRef.path}`);
+            // Teraz categoriesCollectionRef pochádza priamo z common.js
+            console.log(`Cesta ku kolekcii kategórií (z common.js): ${categoriesCollectionRef.path}`); 
             
+            // Používame referenciu importovanú z common.js
             const categoriesSnapshot = await getDocs(query(categoriesCollectionRef, orderBy("name", "asc")));
             
             console.log(`Načítaných kategórií: ${categoriesSnapshot.docs.length}`);
