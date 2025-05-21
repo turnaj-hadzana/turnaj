@@ -65,11 +65,22 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const day = doc.data();
                 const option = document.createElement('option');
                 option.value = day.date; // Uložíme dátum ako hodnotu
-                option.textContent = day.date; // Zobrazíme dátum
+                
+                // PÔVODNÝ KÓD:
+                // option.textContent = day.date; // Zobrazíme dátum
+
+                // ZMENENÝ KÓD PRE FORMÁT "dd. mm. yyyy"
+                const dateObj = new Date(day.date);
+                const formattedDate = `${String(dateObj.getDate()).padStart(2, '0')}. ${String(dateObj.getMonth() + 1).padStart(2, '0')}. ${dateObj.getFullYear()}`;
+                option.textContent = formattedDate; // Zobrazíme naformátovaný dátum
+                
                 selectElement.appendChild(option);
             });
             if (selectedDate) {
-                selectElement.value = selectedDate;
+                // Keďže selectedDate je vo formáte 'YYYY-MM-DD', musíme ho porovnať s day.date
+                // Ak chceme, aby sa predvybral správny dátum z naformátovaných možností, musíme nájsť zodpovedajúcu možnosť
+                // alebo jednoducho ponechať selectElement.value = selectedDate; ak hodnoty option.value sú stále YYYY-MM-DD
+                selectElement.value = selectedDate; 
             }
         } catch (error) {
             console.error("Chyba pri načítaní hracích dní: ", error);
