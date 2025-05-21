@@ -132,7 +132,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         matchesContainer.insertAdjacentHTML('afterbegin', '<p>Načítavam logistiku turnaja...</p>');
         
         // Definície konštánt pre výpočet pozícií a rozmerov
-        const CELL_WIDTH_PX = 260;
+        const CELL_WIDTH_PX = 300;
         const MINUTES_PER_HOUR = 60;
         const PIXELS_PER_MINUTE = CELL_WIDTH_PX / MINUTES_PER_HOUR;
         const ITEM_HEIGHT_PX = 160;
