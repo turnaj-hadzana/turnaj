@@ -122,7 +122,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function displayMatchesAsSchedule() {
         if (!matchesContainer) return;
 
-        matchesContainer.innerHTML = '<p>Načítavam logistiku turnaja...</p>';
+        // Vymažeme obsah matchesContainer a busOverlayContainer pred opätovným vykreslením
+        matchesContainer.innerHTML = '';
+        const busOverlayContainer = document.createElement('div');
+        busOverlayContainer.id = 'busOverlayContainer';
+        busOverlayContainer.style.cssText = 'position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;';
+        matchesContainer.appendChild(busOverlayContainer);
+
+        matchesContainer.insertAdjacentHTML('afterbegin', '<p>Načítavam logistiku turnaja...</p>');
+        
         try {
             // Načítame zápasy
             const matchesQuery = query(matchesCollectionRef, orderBy("date", "asc"), orderBy("location", "asc"), orderBy("startTime", "asc"));
@@ -144,17 +152,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             const existingPlayingDays = playingDaysSnapshot.docs.map(doc => doc.data().date);
             const existingSportHalls = sportHallsSnapshot.docs.map(doc => doc.data().name);
 
-            // Spojíme existujúce entity s tými, ktoré sú v zápasoch/autobusoch, aby sme nič neprehliadli
+            // Spojíme unikátne miesta a dátumy zo všetkých udalostí
             const uniqueLocations = new Set([...existingSportHalls]);
             const uniqueDates = new Set([...existingPlayingDays]);
 
             allEvents.forEach(event => {
                 uniqueDates.add(event.date);
-                // Pre autobusy pridáme do unikátnych miest aj začiatočnú a koncovú lokalitu
                 if (event.type === 'bus') {
                     uniqueLocations.add(event.startLocation);
                     uniqueLocations.add(event.endLocation);
-                } else { // Pre zápasy je to len 'location'
+                } else {
                     uniqueLocations.add(event.location);
                 }
             });
@@ -177,9 +184,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const [endH, endM] = event.endTime.split(':').map(Number);
                     startTimeInMinutes = startH * 60 + startM;
                     endTimeInMinutes = endH * 60 + endM;
-                    // Ak príchod je v nasledujúci deň (napr. 23:00 - 01:00), potrebujeme to zohľadniť
                     if (endTimeInMinutes < startTimeInMinutes) {
-                        endTimeInMinutes += 24 * 60; // Pridáme 24 hodín pre správny rozsah
+                        endTimeInMinutes += 24 * 60; // Prechod cez polnoc
                     }
                 }
 
@@ -194,6 +200,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             });
 
+            // Odstránime "Načítavam logistiku turnaja..."
+            matchesContainer.innerHTML = ''; 
+            matchesContainer.appendChild(busOverlayContainer); // Zabezpečíme, že busOverlayContainer je prvý
+
             let scheduleHtml = '<div class="schedule-table-container">';
             scheduleHtml += '<table class="match-schedule-table"><thead><tr>';
             scheduleHtml += '<th class="fixed-column">Miesto / Čas</th>';
@@ -201,35 +211,32 @@ document.addEventListener('DOMContentLoaded', async () => {
             sortedDates.forEach(date => {
                 const range = dailyTimeRanges.get(date);
                 let hoursForDate = [];
-                let firstHourInDay = 0; // Inicializácia premennej
-                if (range) { // Ak existuje rozsah pre daný dátum (t.j. sú preň udalosti)
+                if (range) {
                     for (let h = range.minHour; h < range.maxHour; h++) {
                         hoursForDate.push(h);
                     }
-                    firstHourInDay = range.minHour; // Priradenie skutočnej hodnoty
                 }
 
                 const displayDateObj = new Date(date);
                 const displayDay = String(displayDateObj.getDate()).padStart(2, '0');
                 const displayMonth = String(displayDateObj.getMonth() + 1).padStart(2, '0');
                 const displayYear = String(displayDateObj.getFullYear());
-                const formattedDisplayDate = `${displayDay}. ${displayMonth}. ${displayYear}`; // Definícia tu
+                const formattedDisplayDate = `${displayDay}. ${displayMonth}. ${displayYear}`;
 
-                const colspan = hoursForDate.length;
+                const colspan = hoursForDate.length > 0 ? hoursForDate.length : 1;
 
-                if (colspan > 0) {
-                    scheduleHtml += `<th colspan="${colspan}" class="delete-date-header" data-date="${date}" title="Kliknutím vymažete hrací deň ${formattedDisplayDate} a všetky jeho zápasy">`;
-                    scheduleHtml += `<div class="schedule-date-header-content">${formattedDisplayDate}</div>`;
-                    scheduleHtml += '<div class="schedule-times-row">';
+                scheduleHtml += `<th colspan="${colspan}" class="delete-date-header" data-date="${date}" title="Kliknutím vymažete hrací deň ${formattedDisplayDate} a všetky jeho zápasy">`;
+                scheduleHtml += `<div class="schedule-date-header-content">${formattedDisplayDate}</div>`;
+                scheduleHtml += '<div class="schedule-times-row">';
+                if (hoursForDate.length > 0) {
                     hoursForDate.forEach(hour => {
                         scheduleHtml += `<span>${String(hour % 24).padStart(2, '0')}:00</span>`;
                     });
-                    scheduleHtml += '</div>';
-                    scheduleHtml += '</th>';
                 } else {
-                    scheduleHtml += `<th class="delete-date-header" data-date="${date}" title="Kliknutím vymažete hrací deň ${formattedDisplayDate}">`;
-                    scheduleHtml += `<div class="schedule-date-header-content">${formattedDisplayDate}</div><div class="schedule-times-row"><span></span></div></th>`;
+                    scheduleHtml += `<span></span>`; // Placeholder for empty day
                 }
+                scheduleHtml += '</div>';
+                scheduleHtml += '</th>';
             });
             scheduleHtml += '</tr></thead><tbody>';
 
@@ -239,200 +246,247 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 sortedDates.forEach(date => {
                     const range = dailyTimeRanges.get(date);
-                    let hoursForDate = [];
-                    let firstHourInDay = 0; // Inicializácia premennej aj tu
-                    if (range) {
-                        for (let h = range.minHour; h < range.maxHour; h++) {
-                            hoursForDate.push(h);
-                        }
-                        firstHourInDay = range.minHour; // Priradenie skutočnej hodnoty
-                    }
-                    const colspan = hoursForDate.length;
-
-                    if (colspan === 0) {
-                        scheduleHtml += `<td><span class="no-match-placeholder"></span></td>`;
-                        return;
-                    }
+                    const hoursForDateCount = range ? (range.maxHour - range.minHour) : 0;
+                    const colspan = hoursForDateCount > 0 ? hoursForDateCount : 1;
 
                     scheduleHtml += `<td colspan="${colspan}" style="position: relative; background-color: #f7f7f7;">`;
 
-                    // Filter udalostí pre danú lokalitu a dátum
-                    const eventsForLocationAndDate = allEvents.filter(event =>
-                        (event.type === 'match' && event.location === location && event.date === date) ||
-                        (event.type === 'bus' && event.date === date && (event.startLocation === location || event.endLocation === location))
+                    // Filter matches for this specific cell
+                    const matchesForCell = allEvents.filter(event =>
+                        event.type === 'match' && event.location === location && event.date === date
                     );
+
+                    matchesForCell.sort((a, b) => {
+                        const [aH, aM] = a.startTime.split(':').map(Number);
+                        const [bH, bM] = b.startTime.split(':').map(Number);
+                        return (aH * 60 + aM) - (bH * 60 + bM);
+                    });
 
                     const CELL_WIDTH_PX = 260;
                     const MINUTES_PER_HOUR = 60;
                     const PIXELS_PER_MINUTE = CELL_WIDTH_PX / MINUTES_PER_HOUR;
                     const ITEM_HEIGHT_PX = 160;
 
-                    eventsForLocationAndDate.sort((a, b) => {
-                        const [aH, aM] = a.startTime.split(':').map(Number);
-                        const [bH, bM] = b.startTime.split(':').map(Number);
-                        return (aH * 60 + aM) - (bH * 60 + bM);
-                    });
+                    matchesForCell.forEach(match => {
+                        const [startH, startM] = match.startTime.split(':').map(Number);
+                        const absoluteStartMin = startH * 60 + startM;
+                        const durationWithBuffer = (match.duration || 0) + (match.bufferTime || 0);
+                        
+                        const relativeStartMinInCell = absoluteStartMin - (range.minHour * 60);
 
-                    const tracks = [];
+                        const matchBlockLeftPx = relativeStartMinInCell * PIXELS_PER_MINUTE;
+                        const matchBlockWidthPx = match.duration * PIXELS_PER_MINUTE;
+                        const bufferBlockLeftPx = matchBlockLeftPx + matchBlockWidthPx;
+                        const bufferBlockWidthPx = match.bufferTime * PIXELS_PER_MINUTE;
 
-                    eventsForLocationAndDate.forEach(event => {
-                        let absoluteStartMin, durationOrRouteTime, bufferInMinutes = 0;
-                        let eventClass = '';
-                        let contentHtml = '';
-                        let dataId = event.id;
+                        const matchEndTime = new Date();
+                        matchEndTime.setHours(startH, startM + match.duration, 0, 0);
+                        const formattedEndTime = matchEndTime.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' });
 
-                        if (event.type === 'match') {
-                            const [startH, startM] = event.startTime.split(':').map(Number);
-                            absoluteStartMin = startH * 60 + startM;
-                            durationOrRouteTime = event.duration;
-                            bufferInMinutes = event.bufferTime || 0;
-
-                            const matchEndTime = new Date();
-                            matchEndTime.setHours(startH, startM + durationOrRouteTime, 0, 0);
-                            const formattedEndTime = matchEndTime.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' });
-
-                            eventClass = 'schedule-cell-match';
-                            contentHtml = `
-                                <p class="schedule-cell-time">${event.startTime} - ${formattedEndTime}</p>
-                                <p class="schedule-cell-category">${event.categoryName || 'N/A'}${event.groupName ? ` ${event.groupName}` : ''}</p>
-                                <p class="schedule-cell-teams">${event.team1DisplayName}<br>${event.team2DisplayName}</p>
-                                <p class="schedule-cell-club-names">${event.team1ClubName}<br>${event.team2ClubName}</p>
-                            `;
-
-                        } else if (event.type === 'bus') {
-                            const [startH, startM] = event.startTime.split(':').map(Number);
-                            const [endH, endM] = event.endTime.split(':').map(Number);
-                            absoluteStartMin = startH * 60 + startM;
-                            let absoluteEndMin = endH * 60 + endM;
-                            if (absoluteEndMin < absoluteStartMin) { // Prechádza cez polnoc
-                                absoluteEndMin += 24 * 60;
-                            }
-                            durationOrRouteTime = absoluteEndMin - absoluteStartMin; // Dĺžka trasy
-
-                            eventClass = 'schedule-cell-bus-svg-container'; // Použijeme tento kontajner pre SVG
-
-                            // Výpočet pozície a šírky pre vonkajší div
-                            const eventBlockLeftPx = (absoluteStartMin - (firstHourInDay * 60)) * PIXELS_PER_MINUTE;
-                            const eventBlockWidthPx = durationOrRouteTime * PIXELS_PER_MINUTE;
-
-                            // Definícia sklonu a odsadenia pre polygón vo vnútri SVG viewBoxu
-                            const paddingY = 10; // Odsadenie od vrchu/spodku bunky
-                            const slantY = 20; // Vertikálny sklon horných/dolných čiar
-
-                            // Body polygónu relatívne k SVG viewBoxu (0 až eventBlockWidthPx, 0 až ITEM_HEIGHT_PX)
-                            const points = `
-                                0,${paddingY}
-                                ${eventBlockWidthPx},${paddingY + slantY}
-                                ${eventBlockWidthPx},${ITEM_HEIGHT_PX - paddingY + slantY}
-                                0,${ITEM_HEIGHT_PX - paddingY}
-                            `.trim();
-
-                            // Výpočet pozície textu (centrovaný v polygóne)
-                            const textX = eventBlockWidthPx / 2;
-                            const textY = ITEM_HEIGHT_PX / 2;
-
-                            const busEndTime = new Date();
-                            busEndTime.setHours(endH, endM, 0, 0);
-                            const formattedEndTime = busEndTime.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' });
-
-                            contentHtml = `
-                                <svg class="bus-svg" width="100%" height="100%" viewBox="0 0 ${eventBlockWidthPx} ${ITEM_HEIGHT_PX}">
-                                    <polygon class="schedule-bus-polygon" points="${points}"></polygon>
-                                    <text class="schedule-bus-text"
-                                          x="${textX}" y="${textY - 20}"
-                                          text-anchor="middle" dominant-baseline="middle">
-                                        ${event.busName}
-                                    </text>
-                                    <text class="schedule-bus-route-text"
-                                          x="${textX}" y="${textY}"
-                                          text-anchor="middle" dominant-baseline="middle">
-                                        ${event.startLocation} &rarr; ${event.endLocation}
-                                    </text>
-                                    <text class="schedule-bus-time-text"
-                                          x="${textX}" y="${textY + 20}"
-                                          text-anchor="middle" dominant-baseline="middle">
-                                        ${event.startTime} - ${formattedEndTime}
-                                    </text>
-                                    ${event.notes ? `
-                                    <text class="schedule-bus-notes-text"
-                                          x="${textX}" y="${textY + 40}"
-                                          text-anchor="middle" dominant-baseline="middle">
-                                        ${event.notes}
-                                    </text>` : ''}
-                                </svg>
-                            `;
-                        } else {
-                            return; // Preskočíme neznámy typ udalosti
-                        }
-
-                        // Dôležité: Pre výpočet prekrývania pre stopy (tracks) použijeme celkovú dĺžku vrátane bufferu (ak je to zápas)
-                        const absoluteEndMinForTracks = absoluteStartMin + durationOrRouteTime + bufferInMinutes; 
-
-                        const relativeStartMin = absoluteStartMin - (firstHourInDay * 60);
-
-                        let eventBlockLeftPx;
-                        let eventBlockWidthPx;
-
-                        // Výpočet pozície a šírky pre zápasy aj autobusy na základe ich skutočného časového rozsahu
-                        eventBlockLeftPx = relativeStartMin * PIXELS_PER_MINUTE;
-                        eventBlockWidthPx = durationOrRouteTime * PIXELS_PER_MINUTE;
-
-
-                        // Pozícia a šírka ochranného pásma (začína presne po zápase)
-                        const bufferBlockLeftPx = eventBlockLeftPx + eventBlockWidthPx;
-                        const bufferBlockWidthPx = bufferInMinutes * PIXELS_PER_MINUTE;
-
-
-                        let topPx = 0;
-
-                        let foundTrack = false;
-                        for (let i = 0; i < tracks.length; i++) {
-                            const track = tracks[i];
-                            // Kontrola prekrývania pre stopy musí zohľadňovať aj ochranné pásmo
-                            const doesOverlap = (absoluteStartMin < track.endMin && absoluteEndMinForTracks > track.startMin);
-                            
-                            if (!doesOverlap) {
-                                topPx = track.topPx;
-                                track.startMin = Math.min(track.startMin, absoluteStartMin);
-                                track.endMin = Math.max(track.endMin, absoluteEndMinForTracks); // Aktualizujeme endMin s bufferom
-                                foundTrack = true;
-                                break;
-                            }
-                        }
-
-                        if (!foundTrack) {
-                            topPx = tracks.length * ITEM_HEIGHT_PX;
-                            tracks.push({ startMin: absoluteStartMin, endMin: absoluteEndMinForTracks, topPx: topPx }); // Uložíme endMin s bufferom
-                        }
-
-                        // Najprv pridáme blok ochranného pásma (ak existuje a je to zápas)
-                        if (event.type === 'match' && bufferInMinutes > 0) {
-                            scheduleHtml += `
-                                <div class="schedule-cell-buffer"
-                                    style="position: absolute; left: ${bufferBlockLeftPx}px; width: ${bufferBlockWidthPx}px; top: ${topPx}px; height: ${ITEM_HEIGHT_PX}px; background-color: #ffcccc; border-left: 1px dashed #ff9999;">
-                                </div>
-                            `;
-                        }
-
-                        // Potom pridáme blok samotnej udalosti (zápas alebo autobus)
                         scheduleHtml += `
-                            <div class="${eventClass}"
-                                data-id="${dataId}" data-type="${event.type}"
-                                style="position: absolute; left: ${eventBlockLeftPx}px; width: ${eventBlockWidthPx}px; top: ${topPx}px; height: ${ITEM_HEIGHT_PX}px;">
+                            <div class="schedule-cell-match"
+                                data-id="${match.id}" data-type="${match.type}"
+                                style="left: ${matchBlockLeftPx}px; width: ${matchBlockWidthPx}px; top: 0; height: 100%;">
                                 <div class="schedule-cell-content">
-                                    ${contentHtml}
+                                    <p class="schedule-cell-time">${match.startTime} - ${formattedEndTime}</p>
+                                    <p class="schedule-cell-category">${match.categoryName || 'N/A'}${match.groupName ? ` ${match.groupName}` : ''}</p>
+                                    <p class="schedule-cell-teams">${match.team1DisplayName}<br>${match.team2DisplayName}</p>
+                                    <p class="schedule-cell-club-names">${match.team1ClubName}<br>${match.team2ClubName}</p>
                                 </div>
                             </div>
                         `;
+                        if (match.bufferTime > 0) {
+                            scheduleHtml += `
+                                <div class="schedule-cell-buffer"
+                                    style="left: ${bufferBlockLeftPx}px; width: ${bufferBlockWidthPx}px; top: 0; height: 100%;">
+                                </div>
+                            `;
+                        }
                     });
                     scheduleHtml += '</td>';
                 });
                 scheduleHtml += '</tr>';
             });
-            
             scheduleHtml += '</tbody></table>';
-            scheduleHtml += '</div>';
-            matchesContainer.innerHTML = scheduleHtml;
+            scheduleHtml += '</div>'; // Close schedule-table-container
+
+            // Append the table to the DOM
+            matchesContainer.insertAdjacentHTML('beforeend', scheduleHtml);
+
+            // Get references to the table and its elements after it's in the DOM
+            const scheduleTable = matchesContainer.querySelector('.match-schedule-table');
+            // const busOverlayContainer = matchesContainer.querySelector('#busOverlayContainer'); // Už je vytvorený na začiatku funkcie
+
+            // Calculate global pixel offsets for locations and times
+            const matchesContainerRect = matchesContainer.getBoundingClientRect();
+            const tableRect = scheduleTable.getBoundingClientRect();
+
+            const locationRowTopOffsets = new Map(); // locationName -> global top pixel offset relative to matchesContainer
+            scheduleTable.querySelectorAll('tbody tr').forEach(row => {
+                const locationHeader = row.querySelector('th.fixed-column');
+                if (locationHeader) {
+                    const locationName = locationHeader.dataset.location;
+                    locationRowTopOffsets.set(locationName, locationHeader.getBoundingClientRect().top - matchesContainerRect.top);
+                }
+            });
+
+            const timeColumnLeftOffsets = new Map(); // date -> array of {hour, leftOffset relative to matchesContainer}
+            // Získame offset pre prvý stĺpec s časmi (prvý <th> okrem fixed-column)
+            const firstTimeHeader = scheduleTable.querySelector('thead th:not(.fixed-column)');
+            let initialTimeColumnLeftOffset = 0;
+            if (firstTimeHeader) {
+                initialTimeColumnLeftOffset = firstTimeHeader.getBoundingClientRect().left - matchesContainerRect.left;
+            }
+
+            sortedDates.forEach(date => {
+                const dateHeader = scheduleTable.querySelector(`th[data-date="${date}"]`);
+                if (dateHeader) {
+                    const timeSpans = dateHeader.querySelectorAll('.schedule-times-row span');
+                    const hourOffsets = [];
+                    let currentColumnLeft = dateHeader.getBoundingClientRect().left - matchesContainerRect.left; // Left of the date header
+                    const range = dailyTimeRanges.get(date);
+                    const firstHourInDay = range ? range.minHour : 0;
+
+                    timeSpans.forEach((span, index) => {
+                        const hour = firstHourInDay + index; // Hour based on its position in the span list
+                        hourOffsets.push({
+                            hour: hour,
+                            left: currentColumnLeft + (index * CELL_WIDTH_PX)
+                        });
+                    });
+                    timeColumnLeftOffsets.set(date, hourOffsets);
+                }
+            });
+
+            // Render buses as global SVGs
+            allBuses.forEach(bus => {
+                const startLocation = bus.startLocation;
+                const endLocation = bus.endLocation;
+                const date = bus.date;
+
+                const startLocationY = locationRowTopOffsets.get(startLocation);
+                const endLocationY = locationRowTopOffsets.get(endLocation) + ITEM_HEIGHT_PX; // End at the bottom of the end location cell
+
+                if (startLocationY === undefined || endLocationY === undefined) {
+                    console.warn(`Nenašiel som pozíciu pre začiatok alebo koniec trasy autobusu: ${bus.busName} (${startLocation} -> ${endLocation})`);
+                    return;
+                }
+
+                const [startH, startM] = bus.startTime.split(':').map(Number);
+                const [endH, endM] = bus.endTime.split(':').map(Number);
+
+                const startTimeInMinutes = startH * 60 + startM;
+                let endTimeInMinutes = endH * 60 + endM;
+                if (endTimeInMinutes < startTimeInMinutes) {
+                    endTimeInMinutes += 24 * 60; // Handle overnight routes
+                }
+
+                const durationInMinutes = endTimeInMinutes - startTimeInMinutes;
+
+                const dateHours = timeColumnLeftOffsets.get(date);
+                if (!dateHours || dateHours.length === 0) {
+                    console.warn(`Nenašiel som časové stĺpce pre dátum: ${date}`);
+                    return;
+                }
+
+                // Find the left pixel offset for the start time
+                let busLeftPx = 0;
+                const range = dailyTimeRanges.get(date);
+                const firstHourOfDate = range ? range.minHour : 0;
+                
+                // Calculate busLeftPx relative to the start of the first hour of the day
+                const firstHourDataForDate = dateHours.find(h => h.hour === firstHourOfDate);
+                if (firstHourDataForDate) {
+                    busLeftPx = firstHourDataForDate.left + ((startTimeInMinutes - (firstHourOfDate * 60)) * PIXELS_PER_MINUTE);
+                } else {
+                    // Fallback if the specific hour data is not found (shouldn't happen if logic is correct)
+                    console.warn(`Could not find specific hour data for date ${date} and hour ${firstHourOfDate}. Using first available.`);
+                    busLeftPx = dateHours[0].left + ((startTimeInMinutes - (dateHours[0].hour * 60)) * PIXELS_PER_MINUTE);
+                }
+
+
+                const busWidthPx = durationInMinutes * PIXELS_PER_MINUTE;
+
+                // Slant parameters
+                const slantOffset = 30; // How much the bottom points are shifted horizontally compared to top points
+
+                // Points for the parallelogram (relative to SVG's viewBox)
+                // (0,0) is top-left of the SVG container
+                const svgWidth = busWidthPx + Math.abs(slantOffset); // SVG needs to be wider to contain the slant
+                const svgHeight = endLocationY - startLocationY;
+
+                // Points are relative to the SVG's own coordinate system (0,0 to svgWidth, svgHeight)
+                const points = `
+                    ${slantOffset},0
+                    ${svgWidth},0
+                    ${busWidthPx},${svgHeight}
+                    0,${svgHeight}
+                `.trim();
+
+                const svgElement = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+                svgElement.setAttribute("class", "bus-svg");
+                svgElement.setAttribute("width", svgWidth);
+                svgElement.setAttribute("height", svgHeight);
+                svgElement.setAttribute("viewBox", `0 0 ${svgWidth} ${svgHeight}`);
+                svgElement.style.cssText = `
+                    position: absolute;
+                    left: ${busLeftPx - slantOffset}px; /* Adjust left position for the slant */
+                    top: ${startLocationY}px;
+                    pointer-events: all; /* Allow clicks on SVG */
+                `;
+                svgElement.dataset.id = bus.id;
+                svgElement.dataset.type = bus.type;
+
+                const polygon = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+                polygon.setAttribute("class", "schedule-bus-polygon");
+                polygon.setAttribute("points", points);
+                svgElement.appendChild(polygon);
+
+                // Add text elements
+                // Text positions need to be relative to the SVG's viewBox and adjusted for the slant
+                const textYBase = svgHeight / 2; 
+                const textXBase = svgWidth / 2; // Center of the SVG viewBox
+
+                const busNameText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                busNameText.setAttribute("class", "schedule-bus-text");
+                busNameText.setAttribute("x", textXBase);
+                busNameText.setAttribute("y", textYBase - 20); // Adjust Y for stacking
+                busNameText.setAttribute("text-anchor", "middle");
+                busNameText.setAttribute("dominant-baseline", "middle");
+                busNameText.textContent = bus.busName;
+                svgElement.appendChild(busNameText);
+
+                const busRouteText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                busRouteText.setAttribute("class", "schedule-bus-route-text");
+                busRouteText.setAttribute("x", textXBase);
+                busRouteText.setAttribute("y", textYBase); // Adjust Y for stacking
+                busRouteText.setAttribute("text-anchor", "middle");
+                busRouteText.setAttribute("dominant-baseline", "middle");
+                busRouteText.textContent = `${bus.startLocation} → ${bus.endLocation}`;
+                svgElement.appendChild(busRouteText);
+
+                const busTimeText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                busTimeText.setAttribute("class", "schedule-bus-time-text");
+                busTimeText.setAttribute("x", textXBase);
+                busTimeText.setAttribute("y", textYBase + 20); // Adjust Y for stacking
+                busTimeText.setAttribute("text-anchor", "middle");
+                busTimeText.setAttribute("dominant-baseline", "middle");
+                busTimeText.textContent = `${bus.startTime} - ${bus.endTime}`;
+                svgElement.appendChild(busTimeText);
+
+                if (bus.notes) {
+                    const busNotesText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                    busNotesText.setAttribute("class", "schedule-bus-notes-text");
+                    busNotesText.setAttribute("x", textXBase);
+                    busNotesText.setAttribute("y", textYBase + 40); // Adjust Y for stacking
+                    busNotesText.setAttribute("text-anchor", "middle");
+                    busNotesText.setAttribute("dominant-baseline", "middle");
+                    busNotesText.textContent = bus.notes;
+                    svgElement.appendChild(busNotesText);
+                }
+
+                busOverlayContainer.appendChild(svgElement);
+            });
 
             // Pridanie event listenerov pre kliknutie na zápas/autobus pre úpravu
             matchesContainer.querySelectorAll('.schedule-cell-match').forEach(element => {
@@ -442,9 +496,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 });
             });
 
-            matchesContainer.querySelectorAll('.schedule-cell-bus-svg-container').forEach(element => { // Zmenený selektor na .schedule-cell-bus-svg-container
+            // Event listener pre autobusy je teraz na SVG elemente
+            busOverlayContainer.querySelectorAll('.bus-svg').forEach(element => {
                 element.addEventListener('click', (event) => {
-                    const id = event.currentTarget.dataset.id; // Použiť currentTarget pre div
+                    const id = event.currentTarget.dataset.id; // Použiť currentTarget pre SVG
                     editBus(id);
                 });
             });
@@ -464,9 +519,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                         const locationToDelete = header.dataset.location;
                         deleteSportHall(locationToDelete);
                     }
-                }
-            );
-        });
+                });
+            });
 
         } catch (error) {
             console.error("Chyba pri načítaní rozvrhu zápasov: ", error);
@@ -543,7 +597,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 });
 
                 const busesEndQuery = query(busesCollectionRef, where("endLocation", "==", hallNameToDelete));
-                const busesEndSnapshot = await await getDocs(busesEndQuery);
+                const busesEndSnapshot = await getDocs(busesEndQuery);
                 busesEndSnapshot.docs.forEach(busDoc => {
                     // Ak je autobusová linka rovnaká ako tá, ktorá už bola vymazaná cez startLocation,
                     // batch.delete sa o to postará, ale pre istotu môžeme pridať kontrolu
