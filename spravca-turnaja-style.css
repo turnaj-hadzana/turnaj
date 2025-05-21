@@ -49,739 +49,203 @@
 }
 #clubsFilterContainer label {
 }
-#clubsFilterContainer select {
-}
-body.modal-open .left-menu {
-    opacity: 0.5;
-    pointer-events: none;
-}
-body.modal-open .left-menu a {
-    cursor: default;
-}
-body.modal-open main {
-    opacity: 0.5;
-    pointer-events: none;
-    user-select: none;
-}
-.content-wrapper {
-    display: flex;
-    width: 100%;
-    margin: 20px 0;
-    padding: 0 20px;
-    box-sizing: border-box;
-    gap: 20px;
-}
-.left-menu {
-    background-color: #fff;
-    padding: 15px;
-    border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    position: sticky;
-    top: 90px;
-    align-self: flex-start;
-    max-height: calc(100vh - 110px);
-    overflow-y: hidden;
-    z-index: 1002;
-    flex-shrink: 0;
-}
-.left-menu ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-.left-menu li {
-    margin-bottom: 10px;
-}
-.left-menu a {
-    text-decoration: none;
-    color: #007bff;
-    font-size: 1.1em;
-    display: block;
-    padding: 8px 5px;
-    border-radius: 4px;
-    transition: background-color 0.2s ease;
-    white-space: nowrap;
-}
-.left-menu a:hover {
-    background-color: #e9ecef;
-    color: #0056b3;
-}
-.left-menu a:active {
-    color: #004085;
-}
-main {
-    flex-grow: 1;
-    padding: 0;
-    box-shadow: none;
-    background-color: transparent;
-    min-width: 0;
-    overflow-x: hidden; /* Zabezpečí, že main sám nebude mať horizontálny scrollbar */
-    /* overflow-y: auto; Ak tu chceš vertikálny scrollbar pre celý main obsah */
-}
 
-#groupsContent,
-#clubsContent {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 20px;
-    padding: 0;
-    margin-bottom: 20px;
-    align-items: flex-start;
-    width: 100%;
-}
-#groupsContent .section-block,
-#clubsContent .section-block {
-    margin-bottom: 0;
-    flex: 1 1 300px;
-    min-width: 380px;
-    padding: 15px;
-    box-sizing: border-box;
-}
-table {
-    border-collapse: collapse;
-    margin-top: 15px;
-}
-th,
-td {
-    border: none;
-    padding: 10px;
-    text-align: left;
-    white-space: nowrap;
-}
-#categoryTable th, #clubsTable th, .category-group-table th, .group-clubs-table th, #createdTeamsTable th,
-#manageTeamsModal .group-clubs-table th, #clubModal .group-clubs-table th {
-    background-color: #f2f2f2;
-    color: #333;
-    font-weight: bold;
-    text-align: left;
-    padding: 12px 15px;
-    font-size: 0.9em;
-    white-space: nowrap;
-}
-#categoryTable td, #clubsTable td, .category-group-table td, .group-clubs-table td, #createdTeamsTable td,
-#manageTeamsModal .group-clubs-table td, #clubModal .group-clubs-table td {
-    text-align: left;
-    padding: 10px 15px;
-    font-size: 0.9em;
-    white-space: nowrap;
-}
-th {
-    background-color: #f2f2f2;
-    font-weight: bold;
-}
-tbody tr:nth-child(even) {
-    background-color: #f9f9f9;
-}
-tbody tr:hover {
-    background-color: #e9e9e9;
-}
-#createdTeamsTable th[data-filter-type]:hover {
-    cursor: pointer;
-    background-color: #e2e2e2;
-}
-td:last-child {
-    text-align: center;
-}
-.action-button {
-    padding: 5px 10px;
-    border: 1px solid #007bff;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 0.9em;
-    transition: background-color 0.3s ease, border-color 0.3s ease;
-}
-
-<!--
-.action-button:not(.delete-button) {
-    background-color: #007bff;
-    color: white;
-}
-.action-button:not(.delete-button):hover {
-    background-color: #0056b3;
-    border-color: #004085;
-}
-.action-button:not(.delete-button):active {
-    background-color: #004085;
-    border-color: #002752;
-}
--->
-
-.action-button.delete-button {
-    background-color: #dc3545;
-    color: white;
-    border-color: #c82333;
-}
-.action-button.delete-button:hover {
-    background-color: #c82333;
-    border-color: #bd2130;
-}
-.action-button.delete-button:active {
-    background-color: #bd2130;
-    border-color: #a71d2a;
-}
-.section-block h2 {
-    text-align: center;
-    margin-bottom: 20px;
-}
-#groupsContent .section-block h2 {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-#groupsContent .category-group-table td:first-child {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-#createdTeamsTable,
-.category-group-table,
-.group-clubs-table {
-    width: auto;
-    table-layout: auto;
-}
-.category-group-table td:last-child,
-.group-clubs-table td:last-child,
-#createdTeamsTable td:last-child {
-    white-space: nowrap;
-    padding: 5px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 5px;
-}
-.category-group-table th:last-child,
-.group-clubs-table th:last-child,
-#createdTeamsTable th:last-child {
-    width: 200px;
-    min-width: 200px;
-    white-space: nowrap;
-}
-#createdTeamsTable thead {
-}
-#createdTeamsTableHeader {
-}
-#teamCreationContentSection {
-}
-#teamCreationForm label,
-#teamCreationForm input,
-#teamCreationForm select {
-    display: block;
-    margin-bottom: 10px;
-}
-#teamCategoryCountContainer {
-    margin-top: 15px;
-    padding: 10px;
-    border: 1px solid #eee;
-    border-radius: 4px;
-    background-color: #fcfcfc;
-}
-.category-count-pair {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    margin-bottom: 10px;
-}
-.category-count-pair select {
-    flex-grow: 1;
-    max-width: 200px;
-    padding: 5px;
-}
-.category-count-pair input[type="number"] {
-    width: 60px;
-    padding: 5px;
-}
-.category-count-pair .remove-button {
-    padding: 5px;
-    background-color: #dc3545;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 0.9em;
-}
-.category-count-pair .remove-button:hover {
-    background-color: #c82333;
-}
-.add-button {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    background-color: #28a745;
-    color: white;
-    font-size: 2em;
-    border: none;
-    cursor: pointer;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-    z-index: 1000;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    transition: background-color 0.3s ease;
-}
-.add-button:hover {
-    background-color: #c46f50;
-}
-
-/* Nové štýly pre menu s tlačidlami */
-.add-button-menu {
-    position: fixed;
-    bottom: 80px; /* 20px od spodku + 50px výška tlačidla + 10px medzera */
-    right: 20px;
-    background-color: #fff;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-    padding: 10px;
-    display: none; /* Predvolene skryté, JS ho zobrazí */
-    flex-direction: column;
-    gap: 10px;
-    z-index: 1001; /* Vyšší z-index ako hlavné tlačidlo */
-    width: 200px; /* Nastavená šírka menu */
-}
-
-.add-button-menu.show {
-    display: flex; /* Trieda pre zobrazenie menu cez JS */
-}
-
-.add-button-menu button {
-    background-color: #007bff;
-    color: white;
-    padding: 10px 15px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 0.9em;
-    text-align: left;
-    transition: background-color 0.2s ease;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.add-button-menu button:hover {
-    background-color: #0056b3;
-}
-
-.add-button-menu button:active {
-    background-color: #004085;
-}
-
-.modal {
-    display: none;
-    position: fixed;
-    z-index: 1001;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    overflow: auto;
-    background-color: rgba(0, 0, 0, 0.4);
-    justify-content: center;
-    align-items: center;
-}
-.modal-content {
-    background-color: #fefefe;
-    margin: auto;
-    padding: 20px;
-    border: 1px solid #888;
-    width: 90%;
-    max-width: 600px;
-    border-radius: 8px;
-    position: relative;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-}
-.modal-content h2 {
-    margin-top: 0;
-    border-bottom: 1px solid #eee;
-    padding-bottom: 10px;
-    margin-bottom: 20px;
-}
-.modal-content form div {
-    margin-bottom: 15px;
-}
-.modal-content form label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: bold;
-}
-.modal-content form input[type="text"],
-.modal-content form input[type="number"],
-.modal-content form select,
-.modal-content form input[type="time"], /* NOVÉ: pre časové inputy */
-.modal-content form input[type="url"], /* Pre Google Maps URL */
-.modal-content form input[type="date"] /* Pre dátumové inputy */
- {
-    width: calc(100% - 22px);
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    box-sizing: border-box;
-    font-size: 1em;
-}
-.modal-content form button[type="submit"] {
-    background-color: #007bff;
-    color: white;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 1em;
-    transition: background-color 0.3s ease;
-}
-.modal-content form button[type="submit"]:hover {
-    background-color: #0056b3;
-}
-.modal-content .close {
-    color: #aaa;
-    float: right;
-    font-size: 28px;
-    font-weight: bold;
-    position: absolute;
-    top: 10px;
-    right: 15px;
-    cursor: pointer;
-}
-.modal-content .close:hover,
-.modal-content .close:focus {
-    color: black;
-    text-decoration: none;
-}
-.modal-content .form-group {
-    margin-bottom: 15px;
-}
-@media (max-width: 768px) {
-    .content-wrapper {
-        flex-direction: column;
-        padding: 0 10px;
-    }
-    .left-menu {
-        position: static;
-        margin-bottom: 20px;
-        width: 100%;
-        max-height: none;
-        overflow-y: visible;
-    }
-    #groupsContent,
-    #clubsContent {
-        flex-direction: column;
-        gap: 10px;
-    }
-    #groupsContent .section-block,
-    #clubsContent .section-block {
-        min-width: 100%;
-    }
-    .modal-content {
-        width: 95%;
-    }
-    .modal-content form input[type="text"],
-    .modal-content form input[type="number"],
-    .modal-content form select,
-    .modal-content form input[type="time"], /* NOVÉ: pre časové inputy */
-    .modal-content form input[type="url"], /* Pre Google Maps URL */
-    .modal-content form input[type="date"] /* Pre dátumové inputy */
-     {
-        width: calc(100% - 20px);
-    }
-    .category-count-pair {
-        flex-direction: column;
-        gap: 5px;
-        align-items: stretch;
-    }
-    .category-count-pair select,
-    .category-count-pair input[type="number"] {
-        max-width: none;
-        width: 100%;
-    }
-    /* Pre mobilné zariadenia prispôsobíme aj umiestnenie menu, ak je potrebné */
-    .add-button-menu {
-        bottom: 70px; /* Upravená pozícia pre menšie obrazovky */
-    }
-}
-#clubModal .modal-content #clubFormContent,
-#clubModal .modal-content #clubFilterContent {
-    width: 100%;
-}
-#filterSelect {
-    width: calc(100% - 16px);
-    padding: 8px;
-    box-sizing: border-box;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 1em;
-}
-.applied-filter-value {
-    display: block;
-    font-size: 0.8em;
-    color: #555;
-    margin-top: 2px;
-    font-weight: normal;
-}
-
-/*-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
-
-
-/* Kontajner, ktorý umožňuje horizontálny scroll, ak je tabuľka príliš široká */
+/* Štýly pre rozvrh zápasov a autobusov */
 .schedule-table-container {
     overflow-x: auto;
+    margin-top: 20px;
     border: 1px solid #ddd;
     border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    background-color: #fff;
-    /* width: 36%;  ODSTRÁNIŤ TOTO */
-    /* margin: 0 auto; ODSTRÁNIŤ TOTO */
-    width: 80vw; /* Tabuľka vyplní dostupnú šírku rodiča main, ktorý je flex-grow: 1 */
-    margin: 20px 0px 20px 0px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
-/* Základná tabuľka rozvrhu */
 .match-schedule-table {
+    width: 100%;
     border-collapse: collapse;
-/*    width: 2500px;*/
-    table-layout: fixed; /* Kľúčové pre vynútenie pevných šírok stĺpcov */
-    min-width: fit-content;
+    min-width: 1000px; /* Minimálna šírka tabuľky pre lepšie zobrazenie */
 }
 
-/* Základné štýly pre hlavičky a bunky */
 .match-schedule-table th,
 .match-schedule-table td {
-    border: 1px solid #e0e0e0;
-    padding: 0;
-    text-align: center;
+    border: 1px solid #ddd;
+    padding: 0; /* Odstránime padding z buniek, aby sme ho mohli kontrolovať v vnútorných divoch */
     vertical-align: top;
-    position: relative; /* Dôležité pre absolútne pozicionovanie zápasov */
-/*    min-width: 260px; /* Použite min-width, aby sa stĺpec mohol prispôsobiť, ale nie byť menší */
-/*    width: 260px; /* Nastavte pevnú šírku */
+    position: relative;
     box-sizing: border-box;
 }
 
-/* Špecifické štýly pre hlavičky (th) */
-.match-schedule-table th {
-    height: 80px; /* Stála výška riadku pre hlavičky */
-    overflow: hidden; /* Skryje pretekajúci obsah - ponechané tu, ak je text hlavičky dlhý */
-}
-
-/* Špecifické štýly pre bunky (td) */
-.match-schedule-table td {
-    height: 160px; /* Stála výška riadku pre bunky */
-    /* overflow: hidden; */ /* Odstránené, aby sa tlačidlá a obsah zápasu mohli zobraziť. Ak text stále preteká, je potrebné zvážiť zväčšenie height alebo riešenie v schedule-cell-content */
-}
-
-
-
-/* Štýly pre hlavičky */
-.match-schedule-table th {
-    background-color: #f0f0f0;
+.match-schedule-table thead th {
+    background-color: #e9ecef;
     font-weight: bold;
-    color: #333;
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    padding: 0;
-}
-
-/* Prvý stĺpec (Miesto / Čas) - pevný */
-.match-schedule-table .fixed-column {
-    background-color: #007bff;
-    color: white;
-    font-size: 0.9em;
-    width: 160px; /* Pevná šírka pre tento stĺpec */
-    min-width: 160px;
-    max-width: 160px;
-    position: sticky;
-    left: 0;
-    z-index: 11;
-    box-shadow: 2px 0 5px rgba(0,0,0,0.1);
-    padding: 5px;
-    text-align: left;
-    white-space: normal; /* Povoliť zalomenie textu, ak je názov miesta dlhý */
-}
-
-.match-schedule-table .schedule-location-header {
-    background-color: #007bff;
-    color: white;
-    font-size: 1em;
-    padding: 5px;
-    white-space: normal; /* Povoliť zalomenie textu, ak je názov miesta dlhý */
-}
-
-/* Hlavička dátumu v hornom riadku */
-.schedule-date-header {
-    background-color: #5cb85c;
-    color: white;
-    padding: 5px 0;
-    margin: 0;
-    font-size: 1.1em;
-    width: 100%;
-    display: block;
-    box-sizing: border-box;
+    text-align: center;
+    padding: 10px 5px;
     white-space: nowrap;
 }
 
-/* Riadok s časmi pod dátumom */
+.match-schedule-table .fixed-column {
+    position: sticky;
+    left: 0;
+    background-color: #e9ecef;
+    z-index: 2;
+    min-width: 150px;
+    text-align: left;
+    padding: 10px;
+}
+
+.schedule-date-header-content {
+    padding-bottom: 5px;
+}
+
 .schedule-times-row {
     display: flex;
     justify-content: space-around;
-    padding: 5px 0;
-    font-size: 0.85em;
-    color: #555;
-    background-color: #e6e6e6;
-    border-top: 1px solid #ddd;
-    margin: 0;
-    width: 100%;
-    box-sizing: border-box;
+    border-top: 1px solid #ccc;
+    padding-top: 5px;
 }
+
 .schedule-times-row span {
-    width: 260px; /* Zodpovedá šírke td/th */
-    flex-shrink: 0; /* Zabrání zmenšeniu */
+    flex: 1;
     text-align: center;
-    padding: 0 2px;
-    box-sizing: border-box;
+    font-size: 0.8em;
+    color: #555;
     white-space: nowrap;
+}
+
+.schedule-location-header {
+    background-color: #f8f9fa;
+    font-weight: bold;
+    text-align: left;
+    padding: 10px;
+    min-height: 160px; /* Výška riadku pre zhodu s ITEM_HEIGHT_PX v JS */
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+.schedule-cell-match {
+    position: absolute;
+    height: 100%; /* Zaberá celú výšku riadku */
+    background-color: #d1e7dd; /* Zelená pre zápasy */
+    border: 1px solid #a3cfb4;
+    border-radius: 5px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 5px;
+    box-sizing: border-box;
     overflow: hidden;
-    text-overflow: ellipsis;
-    border-left: 1px solid #555;
-    border-right: 1px solid #555;
+    z-index: 1; /* Zápasy budú mať z-index 1 */
+    cursor: pointer;
 }
 
-/* Štýly pre prázdne bunky */
-.match-schedule-table td:empty {
-    background-color: #f7f7f7;
+.schedule-cell-bus-svg-container { /* Pridaný aj kontajner pre SVG autobus */
+    position: absolute;
+    height: 100%; /* Zaberá celú výšku riadku */
+    background-color: transparent; /* Kontajner je transparentný, farbu má SVG */
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    z-index: 2; /* Autobusy budú mať z-index 2, teda nad zápasmi */
+    cursor: pointer;
 }
 
-/* Placeholder pre prázdne bunky */
+
+.schedule-cell-match .schedule-cell-content {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    width: 100%;
+}
+
+.schedule-cell-match p {
+    margin: 2px 0;
+    line-height: 1.2;
+    font-size: 0.85em;
+}
+
+.schedule-cell-match .schedule-cell-time {
+    font-weight: bold;
+    color: #28a745;
+}
+
+.schedule-cell-match .schedule-cell-category {
+    font-style: italic;
+    color: #6c757d;
+}
+
+.schedule-cell-match .schedule-cell-teams {
+    font-weight: bold;
+    font-size: 0.9em;
+    color: #343a40;
+}
+.schedule-cell-match .schedule-cell-club-names {
+    font-size: 0.75em;
+    color: #6c757d;
+}
+
+.schedule-cell-buffer {
+    position: absolute;
+    height: 100%;
+    background-color: #ffcccc; /* Svetlo červená pre ochranné pásmo */
+    border-left: 1px dashed #ff9999;
+    box-sizing: border-box;
+    z-index: 0; /* Pod zápasmi */
+}
+
+/* Štýly pre autobusy (SVG) */
+.schedule-bus-polygon {
+    fill: #FFD700; /* Zlatá žltá farba pre autobus */
+    stroke: #DAA520; /* Tmavšia žltá pre okraj */
+    stroke-width: 1;
+    opacity: 0.7;
+    cursor: pointer; /* Kurzor pre samotný polygón autobusu */
+}
+
+.schedule-bus-text {
+    fill: white;
+    font-size: 14px;
+    font-weight: bold;
+    text-anchor: middle;
+    dominant-baseline: middle;
+    pointer-events: none; /* Aby text neblokoval kliknutie na polygón */
+}
+
 .no-match-placeholder {
     display: block;
     width: 100%;
-    height: 100%;
+    height: 160px; /* Zodpovedá ITEM_HEIGHT_PX */
     background-color: #f7f7f7;
 }
 
-/* Štýly pre blok zápasu vo vnútri bunky */
-.schedule-cell-match {
-    position: absolute;
-    top: 0;
-    /* left a width sú nastavené JS dynamicky */
-    height: 100%; /* Zaberá celú výšku rodičovskej TD */
-    background-color: #e0f7fa; /* Svetlo modrá */
-    border: 1px solid #00bcd4; /* Tyrkysová */
-    border-radius: 4px;
-    padding: 5px; /* Ponechajte padding pre celú bunku */
-    margin: 2px 0;
-    box-sizing: border-box;
-    display: flex;
-    flex-direction: column; /* Položky sú usporiadané vertikálne */
-    justify-content: space-between; /* Obsah hore, tlačidlá dole */
-    z-index: 5;
-    cursor: pointer;
-    /* overflow: hidden;  <-- ODSTRÁNIL SOM TOTO, aby sa posuvník na schedule-cell-content mohol zobraziť, ak je to potrebné */
+/* Štýly pre hlavičky, ktoré sa dajú vymazať */
+.delete-date-header,
+.delete-location-header {
+    cursor: pointer; /* Kurzor pre hlavičky */
 }
 
-/* NOVÉ: Štýly pre blok autobusu vo vnútri bunky */
-.schedule-cell-bus {
-    position: absolute;
-    top: 0;
-    /* left a width sú nastavené JS dynamicky */
-    height: 100%; /* Zaberá celú výšku rodičovskej TD */
-    border-radius: 4px;
-    padding: 5px;
-    margin: 2px 0;
-    box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
-    justify-content: center; /* Centruje obsah vertikálne */
-    align-items: center; /* Centruje obsah horizontálne */
-    z-index: 6; /* Zvýšený z-index, aby bol nad zápasmi */
-
-    /* NOVÉ: Vizuálna úprava pre "štvoruholník" s výraznými okrajmi */
-    background-color: #f0e68c; /* Khaki - svetlo žltá výplň */
-    border: 2px solid #daa520; /* Výrazný zlatý okraj pre "štvoruholník" */
+.delete-date-header:hover,
+.delete-location-header:hover {
+    background-color: #f0f0f0; /* Svetlejšie pozadie pri hover */
 }
 
-.schedule-bus-polygon {
-    cursor: pointer;
-    fill: #FFD700; 
-    stroke: #DAA520;
-    stroke-width: 1;
-    opacity: 0.7;
-}
-
-.schedule-cell-content {
-    flex-grow: 1; /* Rozšíri sa a zaberie všetok dostupný priestor */
-    overflow-y: auto; /* PRIDANÉ: Posuvník len pre tento obsah, ak je príliš dlhý */
-    overflow-x: hidden; /* Zabráni horizontálnemu posuvníku */
-    padding-bottom: 5px; /* Malý padding nad tlačidlami, ak je content dlhý */
-    box-sizing: border-box; /* Zabezpečí, že padding nepridá k výške, ak je nastavená výška */
-    min-height: 0; /* Dôležité pre flexbox, aby sa obsah mohol zmenšiť a scrollbar sa zobrazil */
-}
-
-/* Odstránenie predvolených marginov z p elementov vnútri zápasu */
-.schedule-cell-match p,
-.schedule-cell-bus p { /* Aplikujeme aj na autobus */
-    margin: 0;
-    padding: 0 3px; /* Malý horizontálny padding pre text */
-    overflow-wrap: break-word;
-    min-width: 0; /* Dôležité pre flexbox, aby sa text mohol zmenšiť */
-}
-.schedule-cell-time {
-    font-size: 0.7em; /* Menšie písmo */
-    color: #555; /* Trochu tmavšia šedá */
-    margin-bottom: 2px; /* Malá medzera pod časom */
-    text-align: center; /* Voliteľné: Zarovnať čas na stred */
-}
-.schedule-cell-category {
-    font-weight: bold;
-    color: #0056b3;
-    font-size: 0.85em; /* Zmenšené písmo pre kategóriu */
-}
-
-.schedule-cell-teams {
-    font-weight: bold;
-    color: #333;
-    font-size: 0.8em; /* Zmenšené písmo pre tímy */
-}
-
-.schedule-cell-club-names {
-    font-style: italic;
-    color: #666;
-    font-size: 0.5em;
-    white-space: normal;
-}
-
-/* NOVÉ: Štýly pre text v bloku autobusu */
-.schedule-cell-bus-name {
-    font-weight: bold;
-    color: #8b4513; /* Hnedá */
-    font-size: 0.9em; /* Zväčšené písmo, keďže je to jediný text */
-    text-align: center;
-}
-
-.schedule-cell-bus-route,
-.schedule-cell-bus-notes {
-    display: none; /* Skryjeme, ak má byť zobrazený len názov autobusu */
-}
-
-
-/* Akčné tlačidlá vo vnútri bloku zápasu */
+/* Pôvodné štýly pre tlačidlá Upraviť/Vymazať (ak by sa niekedy vrátili) */
 .schedule-cell-actions {
-    /* position: absolute;  <-- TOTO JE KĽÚČOVÉ: ODSTRÁNIŤ */
-    /* bottom: 0; left: 0; right: 0;  <-- Tieto vlastnosti sú už zbytočné bez absolute */
+    position: absolute;
+    bottom: 5px;
+    left: 5px;
+    right: 5px;
     display: flex;
     justify-content: space-around;
-    gap: 2px;
-    padding: 2px;
-    background-color: rgba(255, 255, 255, 0.9);
-    border-top: 1px solid #ccc;
-    box-sizing: border-box;
-    flex-shrink: 0; /* Zabraňuje tlačidlám zmenšovať sa, ak je priestoru málo */
-    margin-top: 5px; /* Malý margin nad tlačidlami, ak je content príliš krátky */
-    align-items: center; /* Centruje obsah vertikálne */
-    font-size: 0.8em; /* Zmenšené písmo pre celú akčnú oblasť */
+    gap: 5px;
+    z-index: 2;
 }
 
 .schedule-cell-actions button {
-    flex-grow: 1;
+    flex: 1;
     padding: 1px 3px; /* Upravený padding pre menšie tlačidlá */
     border: none;
     border-radius: 3px;
@@ -802,34 +266,6 @@ td:last-child {
     color: white;
 }
 
-.delete-date-header,
-.delete-location-header {
-    cursor: pointer; /* Kurzor pre hlavičky */
-}
-
-.delete-date-header:hover,
-.delete-location-header:hover {
-    background-color: #f0f0f0; /* Svetlejšie pozadie pri hover */
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 .add-options-dropdown {
     position: fixed;
     bottom: 80px; /* 20px od spodku + 50px výška tlačidla + 10px medzera */
@@ -846,28 +282,5 @@ td:last-child {
 }
 
 .add-options-dropdown.show {
-    display: flex; /* Trieda pre zobrazenie menu cez JS */
-}
-
-.add-options-dropdown button {
-    background-color: #007bff;
-    color: white;
-    padding: 10px 15px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 0.9em;
-    text-align: left;
-    transition: background-color 0.2s ease;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.add-options-dropdown button:hover {
-    background-color: #0056b3;
-}
-
-.add-options-dropdown button:active {
-    background-color: #004085;
+    display: flex; /* Trieda pre zobrazenie */
 }
