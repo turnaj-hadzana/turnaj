@@ -531,6 +531,8 @@ td:last-child {
     background-color: #fff;
     width: 80vw; /* Tabuľka vyplní dostupnú šírku rodiča main, ktorý je flex-grow: 1 */
     margin: 20px 0px 20px 0px;
+    position: relative; /* Dôležité pre vytvorenie nového stacking kontextu */
+    z-index: 6; /* Nastavené na nižší z-index ako busOverlayContainer */
 }
 
 /* Základná tabuľka rozvrhu */
@@ -671,19 +673,22 @@ td:last-child {
     cursor: pointer;
 }
 
-/* NOVÉ: Štýly pre kontajner SVG autobusu */
-.schedule-cell-bus-svg-container {
+/* NOVÉ: Kontajner pre SVG autobusy, ktorý bude prekrývať celú tabuľku */
+#busOverlayContainer {
     position: absolute;
     top: 0;
-    /* left a width sú nastavené JS dynamicky */
-    height: 100%; /* Zaberá celú výšku rodičovskej TD */
-    background-color: transparent; /* Kontajner je transparentný */
-    border: none; /* Kontajner nemá vlastný okraj */
-    box-shadow: none;
-    padding: 0;
-    margin: 0; /* Uistite sa, že nemá margin, aby neovplyvňoval pozíciu SVG */
-    z-index: 150; /* Zvýšený z-index, aby bol nad zápasmi */
-    cursor: pointer;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none; /* Umožní kliknutie cez tento div na elementy pod ním, ale SVG polygóny môžu mať pointer-events: all; */
+    z-index: 7; /* Zmenené na 7 */
+}
+
+/* NOVÉ: Štýly pre samotný SVG element autobusu */
+.bus-svg {
+    pointer-events: all; /* Umožní kliknutie na SVG */
+    overflow: visible; /* Umožní polygónu presahovať viewBox, ak je to potrebné (napr. pre hrubé stroke) */
+    z-index: 2; /* Uistite sa, že je nad zápasmi, aj keď je v overlay kontajneri */
 }
 
 /* NOVÉ: Štýly pre samotný polygón autobusu */
@@ -697,18 +702,19 @@ td:last-child {
 /* NOVÉ: Štýly pre text v SVG autobuse */
 .schedule-bus-text,
 .schedule-bus-route-text,
-.schedule-bus-time-text, /* Pridaný štýl pre čas v autobuse */
+.schedule-bus-time-text,
 .schedule-bus-notes-text {
     fill: white; /* Farba textu na autobuse */
-    font-size: 12px; /* Menšie písmo pre detaily */
+    font-size: 12px; /* Základné písmo */
     font-weight: bold;
     pointer-events: none; /* Aby text neblokoval kliknutie na polygón */
+    user-select: none; /* Zabráni označovaniu textu */
 }
 
 .schedule-bus-route-text {
-    font-size: 10px; /* Ešte menšie pre trasu */
+    font-size: 10px; /* Menšie pre trasu */
 }
-.schedule-bus-time-text { /* Štýl pre čas v autobuse */
+.schedule-bus-time-text {
     font-size: 9px;
     font-weight: normal;
 }
@@ -727,8 +733,7 @@ td:last-child {
 }
 
 /* Odstránenie predvolených marginov z p elementov vnútri zápasu */
-.schedule-cell-match p,
-.schedule-cell-bus-svg-container p { /* Aplikujeme aj na autobus */
+.schedule-cell-match p {
     margin: 0;
     padding: 0 3px; /* Malý horizontálny padding pre text */
     overflow-wrap: break-word;
