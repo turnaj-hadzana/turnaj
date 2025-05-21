@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const matchForm = document.getElementById('matchForm');
     const matchIdInput = document.getElementById('matchId');
     const matchDateSelect = document.getElementById('matchDateSelect');
-    const matchLocationSelect = document.getElementById('matchLocationSelect'); // Opravená chyba na tomto riadku
+    const matchLocationSelect = document.getElementById('matchLocationSelect'); 
     const matchStartTimeInput = document.getElementById('matchStartTime');
     const matchDurationInput = document.getElementById('matchDuration');
     const matchBufferTimeInput = document.getElementById('matchBufferTime'); // NOVÉ: Input pre ochranné pásmo
@@ -199,19 +199,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             sortedDates.forEach(date => {
                 const range = dailyTimeRanges.get(date);
                 let hoursForDate = [];
-                if (range) {
+                let firstHourInDay = 0; // Inicializácia premennej
+                if (range) { // Ak existuje rozsah pre daný dátum (t.j. sú preň udalosti)
                     for (let h = range.minHour; h < range.maxHour; h++) {
                         hoursForDate.push(h);
                     }
+                    firstHourInDay = range.minHour; // Priradenie skutočnej hodnoty
                 }
-
-                const displayDateObj = new Date(date);
-                const displayDay = String(displayDateObj.getDate()).padStart(2, '0');
-                const displayMonth = String(displayDateObj.getMonth() + 1).padStart(2, '0');
-                const displayYear = String(displayDateObj.getFullYear());
-                const formattedDisplayDate = `${displayDay}. ${displayMonth}. ${displayYear}`;
-
                 const colspan = hoursForDate.length;
+
                 if (colspan > 0) {
                     scheduleHtml += `<th colspan="${colspan}" class="delete-date-header" data-date="${date}" title="Kliknutím vymažete hrací deň ${formattedDisplayDate} a všetky jeho zápasy">`;
                     scheduleHtml += `<div class="schedule-date-header-content">${formattedDisplayDate}</div>`;
@@ -235,10 +231,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 sortedDates.forEach(date => {
                     const range = dailyTimeRanges.get(date);
                     let hoursForDate = [];
+                    let firstHourInDay = 0; // Inicializácia premennej aj tu
                     if (range) {
                         for (let h = range.minHour; h < range.maxHour; h++) {
                             hoursForDate.push(h);
                         }
+                        firstHourInDay = range.minHour; // Priradenie skutočnej hodnoty
                     }
                     const colspan = hoursForDate.length;
 
@@ -331,7 +329,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                         // Dôležité: Pre výpočet prekrývania pre stopy (tracks) použijeme celkovú dĺžku vrátane bufferu (ak je to zápas)
                         const absoluteEndMinForTracks = absoluteStartMin + durationOrRouteTime + bufferInMinutes; 
 
-                        const firstHourInDay = range.minHour;
                         const relativeStartMin = absoluteStartMin - (firstHourInDay * 60);
 
                         let eventBlockLeftPx;
