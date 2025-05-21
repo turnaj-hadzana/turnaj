@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const matchForm = document.getElementById('matchForm');
     const matchIdInput = document.getElementById('matchId');
     const matchDateSelect = document.getElementById('matchDateSelect');
-    const matchLocationSelect = document.getElementById('matchLocationSelect');
+    const matchLocationSelect = document.getElementById('matchLocationSelect'); 
     const matchStartTimeInput = document.getElementById('matchStartTime');
     const matchDurationInput = document.getElementById('matchDuration');
     const matchBufferTimeInput = document.getElementById('matchBufferTime'); // NOVÉ: Input pre ochranné pásmo
@@ -53,7 +53,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const busForm = document.getElementById('busForm');
     const busIdInput = document.getElementById('busId');
     const busModalTitle = document.getElementById('busModalTitle');
-    const busNameInput = document.getElementById('busNameInput');
+    const busNameInput = document.getElementById('busNameInput'); 
     const busDateSelect = document.getElementById('busDateSelect');
     const busStartLocationSelect = document.getElementById('busStartLocationSelect');
     const busStartTimeInput = document.getElementById('busStartTimeInput');
@@ -61,6 +61,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     const busEndTimeInput = document.getElementById('busEndTimeInput');
     const busNotesInput = document.getElementById('busNotesInput');
     const deleteBusButtonModal = document.getElementById('deleteBusButtonModal'); // NOVÉ: Tlačidlo Vymazať v modale
+
+    // NOVÉ: Elementy pre pridávanie tímov do autobusu
+    const busCategorySelect = document.getElementById('busCategorySelect');
+    const busGroupSelect = document.getElementById('busGroupSelect');
+    const busTeamsContainer = document.getElementById('busTeamsContainer');
+    const addTeamToBusButton = document.getElementById('addTeamToBusButton');
 
 
     if (categoriesContentSection) {
@@ -132,7 +138,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         matchesContainer.insertAdjacentHTML('afterbegin', '<p>Načítavam logistiku turnaja...</p>');
         
         // Definície konštánt pre výpočet pozícií a rozmerov
-        const CELL_WIDTH_PX = 350;
+        const CELL_WIDTH_PX = 300;
         const MINUTES_PER_HOUR = 60;
         const PIXELS_PER_MINUTE = CELL_WIDTH_PX / MINUTES_PER_HOUR;
         const ITEM_HEIGHT_PX = 140; 
@@ -243,21 +249,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
                 scheduleHtml += '</div>';
 
-                // PÔVODNÉ: Informácie o autobusoch boli tu, teraz ich presúvame späť do SVG
-                // const busesForDate = allBuses.filter(bus => bus.date === date);
-                // if (busesForDate.length > 0) {
-                //     scheduleHtml += '<div class="schedule-bus-header-info">';
-                //     busesForDate.sort((a, b) => {
-                //         const [aH, aM] = a.startTime.split(':').map(Number);
-                //         const [bH, bM] = b.startTime.split(':').map(Number);
-                //         return (aH * 60 + aM) - (bH * 60 + bM);
-                //     });
-                //     busesForDate.forEach(bus => {
-                //         scheduleHtml += `<p>${bus.busName}: ${bus.startLocation} &rarr; ${bus.endLocation} (${bus.startTime} - ${bus.endTime})</p>`;
-                //     });
-                //     scheduleHtml += '</div>';
-                // }
-
                 scheduleHtml += '</th>';
             });
             scheduleHtml += '</tr></thead><tbody>';
@@ -331,11 +322,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             // Get references to the table and its elements after it's in the DOM
             const scheduleTable = matchesContainer.querySelector('.match-schedule-table');
-            // const busOverlayContainer = matchesContainer.querySelector('#busOverlayContainer'); // Už je vytvorený na začiatku funkcie
 
             // Calculate global pixel offsets for locations and times
             const matchesContainerRect = matchesContainer.getBoundingClientRect();
-            const tableRect = scheduleTable.getBoundingClientRect();
 
             const locationRowTopOffsets = new Map(); // locationName -> global top pixel offset relative to matchesContainer
             scheduleTable.querySelectorAll('tbody tr').forEach(row => {
@@ -347,13 +336,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
 
             const timeColumnLeftOffsets = new Map(); // date -> array of {hour, leftOffset relative to matchesContainer}
-            // Získame offset pre prvý stĺpec s časmi (prvý <th> okrem fixed-column)
-            const firstTimeHeader = scheduleTable.querySelector('thead th:not(.fixed-column)');
-            let initialTimeColumnLeftOffset = 0;
-            if (firstTimeHeader) {
-                initialTimeColumnLeftOffset = firstTimeHeader.getBoundingClientRect().left - matchesContainerRect.left;
-            }
-
+            
             sortedDates.forEach(date => {
                 const dateHeader = scheduleTable.querySelector(`th[data-date="${date}"]`);
                 if (dateHeader) {
@@ -434,103 +417,127 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
 
 
-                const busWidthPx = (durationInMinutes * PIXELS_PER_MINUTE) / 2; // ZMENENÉ: Polovičná šírka autobusu
+                const busWidthPx = (durationInMinutes * PIXELS_PER_MINUTE) / 2; 
 
                 // Slant parameters
                 const slantOffset = 30; // How much the bottom points are shifted horizontally compared to top points
 
                 // Points for the parallelogram (relative to SVG's viewBox)
                 // (0,0) is top-left of the SVG container
-                const svgWidth = busWidthPx + Math.abs(slantOffset); // SVG needs to be wider to contain the slant
-                const svgHeight = Math.abs(busEndY - busStartY); // Výška SVG je absolútna hodnota rozdielu Y súradníc
-
-                // Points are relative to the SVG's own coordinate system (0,0 to svgWidth, svgHeight)
-                let points;
-                let svgLeftOffset = 0; // Predvolené žiadne dodatočné posunutie
-
-                if (startLocationTop <= endLocationTop) {
-                    // Smer zhora nadol (alebo v rámci jedného riadku)
-                    // Pre prevrátenie sklonu použijeme body, ktoré pôvodne boli pre smer zdola nahor
-                    points = `
-                        0,0
-                        ${busWidthPx},0
-                        ${svgWidth},${svgHeight}
-                        ${slantOffset},${svgHeight}
-                    `.trim();
-                    svgLeftOffset = 0; // Polygon začína na x=0, takže žiadny offset
-                } else {
-                    // Smer zdola nahor
-                    // Pre prevrátenie sklonu použijeme body, ktoré pôvodne boli pre smer zhora nadol
-                    points = `
-                        ${slantOffset},0
-                        ${svgWidth},0
-                        ${busWidthPx},${svgHeight}
-                        0,${svgHeight}
-                    `.trim();
-                    svgLeftOffset = slantOffset; // SVG potrebuje byť posunuté doľava o slantOffset
-                }
-
+                const svgWidth = busWidthPx + Math.abs(slantOffset); 
+                let svgHeight = Math.abs(busEndY - busStartY); 
 
                 const svgElement = document.createElementNS("http://www.w3.org/2000/svg", "svg");
                 svgElement.setAttribute("class", "bus-svg");
                 svgElement.setAttribute("width", svgWidth);
-                svgElement.setAttribute("height", svgHeight);
-                svgElement.setAttribute("viewBox", `0 0 ${svgWidth} ${svgHeight}`);
+                svgElement.setAttribute("height", svgHeight); // Dočasná výška, bude upravená
+                svgElement.setAttribute("viewBox", `0 0 ${svgWidth} ${svgHeight}`); // Dočasný viewBox
                 svgElement.style.cssText = `
                     position: absolute;
-                    left: ${busLeftPx - svgLeftOffset}px; /* Upravte ľavú pozíciu na základe smeru sklonu */
-                    top: ${Math.min(busStartY, busEndY)}px; /* Používame minimum pre správne umiestnenie SVG */
-                    pointer-events: all; /* Umožňuje kliknutie na SVG */
+                    left: ${busLeftPx - (startLocationTop <= endLocationTop ? 0 : slantOffset)}px;
+                    top: ${Math.min(busStartY, busEndY)}px;
+                    pointer-events: all;
                 `;
                 svgElement.dataset.id = bus.id;
                 svgElement.dataset.type = bus.type;
 
                 const polygon = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
                 polygon.setAttribute("class", "schedule-bus-polygon");
-                polygon.setAttribute("points", points);
+                // Points will be set after calculating final height
                 svgElement.appendChild(polygon);
 
-                // Add text elements - VRÁTENÉ SPÄŤ DO SVG
-                const textYBase = svgHeight / 2; 
-                const textXBase = svgWidth / 2; // Center of the SVG viewBox
+                let currentTextY = 20; // Počiatočná Y pozícia pre text
 
                 const busNameText = document.createElementNS("http://www.w3.org/2000/svg", "text");
                 busNameText.setAttribute("class", "schedule-bus-text");
                 busNameText.setAttribute("x", textXBase);
-                busNameText.setAttribute("y", textYBase - 20); // Adjust Y for stacking
+                busNameText.setAttribute("y", currentTextY);
                 busNameText.setAttribute("text-anchor", "middle");
                 busNameText.setAttribute("dominant-baseline", "middle");
                 busNameText.textContent = bus.busName;
                 svgElement.appendChild(busNameText);
+                currentTextY += 20;
 
                 const busRouteText = document.createElementNS("http://www.w3.org/2000/svg", "text");
                 busRouteText.setAttribute("class", "schedule-bus-route-text");
                 busRouteText.setAttribute("x", textXBase);
-                busRouteText.setAttribute("y", textYBase); // Adjust Y for stacking
+                busRouteText.setAttribute("y", currentTextY);
                 busRouteText.setAttribute("text-anchor", "middle");
                 busRouteText.setAttribute("dominant-baseline", "middle");
                 busRouteText.textContent = `${bus.startLocation} → ${bus.endLocation}`;
                 svgElement.appendChild(busRouteText);
+                currentTextY += 20;
 
                 const busTimeText = document.createElementNS("http://www.w3.org/2000/svg", "text");
                 busTimeText.setAttribute("class", "schedule-bus-time-text");
                 busTimeText.setAttribute("x", textXBase);
-                busTimeText.setAttribute("y", textYBase + 20); // Adjust Y for stacking
+                busTimeText.setAttribute("y", currentTextY);
                 busTimeText.setAttribute("text-anchor", "middle");
                 busTimeText.setAttribute("dominant-baseline", "middle");
                 busTimeText.textContent = `${bus.startTime} - ${bus.endTime}`;
                 svgElement.appendChild(busTimeText);
+                currentTextY += 20;
 
                 if (bus.notes) {
                     const busNotesText = document.createElementNS("http://www.w3.org/2000/svg", "text");
                     busNotesText.setAttribute("class", "schedule-bus-notes-text");
                     busNotesText.setAttribute("x", textXBase);
-                    busNotesText.setAttribute("y", textYBase + 40); // Adjust Y for stacking
+                    busNotesText.setAttribute("y", currentTextY);
                     busNotesText.setAttribute("text-anchor", "middle");
                     busNotesText.setAttribute("dominant-baseline", "middle");
                     busNotesText.textContent = bus.notes;
                     svgElement.appendChild(busNotesText);
+                    currentTextY += 20;
                 }
+
+                // NOVÉ: Zobrazenie vybraných tímov
+                if (bus.selectedTeams && Array.isArray(bus.selectedTeams) && bus.selectedTeams.length > 0) {
+                    const teamsHeader = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                    teamsHeader.setAttribute("class", "schedule-bus-teams-header");
+                    teamsHeader.setAttribute("x", textXBase);
+                    teamsHeader.setAttribute("y", currentTextY);
+                    teamsHeader.setAttribute("text-anchor", "middle");
+                    teamsHeader.setAttribute("dominant-baseline", "middle");
+                    teamsHeader.textContent = "Tímy:";
+                    svgElement.appendChild(teamsHeader);
+                    currentTextY += 15; // Menší prírastok pre zoznam tímov
+
+                    bus.selectedTeams.forEach(team => {
+                        const teamText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                        teamText.setAttribute("class", "schedule-bus-team-item");
+                        teamText.setAttribute("x", textXBase);
+                        teamText.setAttribute("y", currentTextY);
+                        teamText.setAttribute("text-anchor", "middle");
+                        teamText.setAttribute("dominant-baseline", "middle");
+                        teamText.textContent = team.displayName;
+                        svgElement.appendChild(teamText);
+                        currentTextY += 15;
+                    });
+                }
+
+                // Dynamicky upraviť výšku SVG na základe obsahu
+                const finalSvgHeight = Math.max(svgHeight, currentTextY + 10); // +10 pre padding/buffer
+                svgElement.setAttribute("height", finalSvgHeight);
+                svgElement.setAttribute("viewBox", `0 0 ${svgWidth} ${finalSvgHeight}`);
+
+                // Prepočítať body polygónu s novou výškou
+                let points;
+                if (startLocationTop <= endLocationTop) {
+                    points = `
+                        0,0
+                        ${busWidthPx},0
+                        ${svgWidth},${finalSvgHeight}
+                        ${slantOffset},${finalSvgHeight}
+                    `.trim();
+                } else {
+                    points = `
+                        ${slantOffset},0
+                        ${svgWidth},0
+                        ${busWidthPx},${finalSvgHeight}
+                        0,${finalSvgHeight}
+                    `.trim();
+                }
+                polygon.setAttribute("points", points);
 
                 busOverlayContainer.appendChild(svgElement);
             });
@@ -740,7 +747,23 @@ document.addEventListener('DOMContentLoaded', async () => {
                 busEndTimeInput.value = busData.endTime || '';
                 busNotesInput.value = busData.notes || '';
 
-                // Zobrazenie tlačidla Vymazať v modale
+                // NOVÉ: Pre tímy
+                await populateCategorySelect(busCategorySelect, busData.selectedCategoryForTeams); 
+                if (busData.selectedCategoryForTeams) {
+                    await populateGroupSelect(busData.selectedCategoryForTeams, busGroupSelect, busData.selectedGroupForTeams);
+                    busGroupSelect.disabled = false;
+                } else {
+                    busGroupSelect.innerHTML = '<option value="">-- Vyberte skupinu --</option>';
+                    busGroupSelect.disabled = true;
+                }
+                busTeamsContainer.innerHTML = ''; // Vyčistiť a znovu pridať existujúce tímy
+                if (busData.selectedTeams && Array.isArray(busData.selectedTeams)) {
+                    for (const team of busData.selectedTeams) {
+                        await addTeamToBusUI(team); // Použiť await, ak getTeamName vo vnútri addTeamToBusUI je async
+                    }
+                }
+
+
                 deleteBusButtonModal.style.display = 'inline-block';
                 deleteBusButtonModal.onclick = () => deleteBus(busId);
 
@@ -822,6 +845,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         await populatePlayingDaysSelect(busDateSelect);
         await populateSportHallsSelect(busStartLocationSelect);
         await populateSportHallsSelect(busEndLocationSelect);
+
+        // NOVÉ: Pre tímy
+        await populateCategorySelect(busCategorySelect);
+        busGroupSelect.innerHTML = '<option value="">-- Vyberte skupinu --</option>';
+        busGroupSelect.disabled = true;
+        busTeamsContainer.innerHTML = ''; // Vyčistiť tímy pri pridávaní nového autobusu
+
         deleteBusButtonModal.style.display = 'none'; // Skryť tlačidlo Vymazať pri pridávaní
         openModal(busModal);
         addOptions.classList.remove('show'); // Skryť dropdown po výbere
@@ -1125,6 +1155,96 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
+    // NOVÉ: Event listener pre zmenu kategórie v modale autobusu
+    busCategorySelect.addEventListener('change', () => {
+        const selectedCategoryId = busCategorySelect.value;
+        if (selectedCategoryId) {
+            populateGroupSelect(selectedCategoryId, busGroupSelect);
+            busGroupSelect.disabled = false;
+        } else {
+            busGroupSelect.innerHTML = '<option value="">-- Vyberte skupinu --</option>';
+            busGroupSelect.disabled = true;
+        }
+        busTeamsContainer.innerHTML = ''; // Vyčistiť tímy pri zmene kategórie
+    });
+
+    // NOVÉ: Event listener pre zmenu skupiny v modale autobusu
+    busGroupSelect.addEventListener('change', () => {
+        busTeamsContainer.innerHTML = ''; // Vyčistiť tímy pri zmene skupiny
+    });
+
+    // NOVÉ: Funkcia na pridanie riadku pre výber tímu do UI autobusu
+    async function addTeamToBusUI(teamData = null) {
+        const selectedCategoryId = busCategorySelect.value;
+        const selectedGroupId = busGroupSelect.value;
+
+        if (!selectedCategoryId || !selectedGroupId) {
+            alert('Pre pridanie tímu najprv vyberte Kategóriu a Skupinu.');
+            return;
+        }
+
+        const teamRow = document.createElement('div');
+        teamRow.classList.add('bus-team-entry');
+        teamRow.style.cssText = 'display: flex; align-items: center; gap: 10px; margin-bottom: 5px;';
+
+        const teamNumberInput = document.createElement('input');
+        teamNumberInput.type = 'number';
+        teamNumberInput.min = '1';
+        teamNumberInput.placeholder = 'Číslo tímu';
+        teamNumberInput.style.cssText = 'width: 80px;';
+        teamNumberInput.required = true;
+        if (teamData && teamData.teamNumber) {
+            teamNumberInput.value = teamData.teamNumber;
+        }
+
+        const teamDisplayNameSpan = document.createElement('span');
+        teamDisplayNameSpan.classList.add('bus-team-display-name');
+        teamDisplayNameSpan.textContent = teamData ? teamData.displayName : 'Načítavam...';
+        teamDisplayNameSpan.style.cssText = 'flex-grow: 1; font-style: italic; color: #555;';
+
+        const removeButton = document.createElement('button');
+        removeButton.type = 'button';
+        removeButton.classList.add('action-button', 'delete-button');
+        removeButton.textContent = 'X';
+        removeButton.addEventListener('click', () => {
+            teamRow.remove();
+        });
+
+        teamRow.appendChild(teamNumberInput);
+        teamRow.appendChild(teamDisplayNameSpan);
+        teamRow.appendChild(removeButton);
+        busTeamsContainer.appendChild(teamRow);
+
+        // Dynamicky aktualizovať názov tímu pri zmene čísla tímu
+        teamNumberInput.addEventListener('input', async () => {
+            const teamNumber = parseInt(teamNumberInput.value);
+            if (!isNaN(teamNumber) && teamNumber > 0) {
+                const teamInfo = await getTeamName(selectedCategoryId, selectedGroupId, teamNumber);
+                teamDisplayNameSpan.textContent = teamInfo.fullDisplayName || 'N/A';
+                teamRow.dataset.fullDisplayName = teamInfo.fullDisplayName;
+                teamRow.dataset.clubName = teamInfo.clubName;
+                teamRow.dataset.clubId = teamInfo.clubId;
+            } else {
+                teamDisplayNameSpan.textContent = 'N/A';
+                teamRow.dataset.fullDisplayName = '';
+                teamRow.dataset.clubName = '';
+                teamRow.dataset.clubId = '';
+            }
+        });
+
+        // Ak sú dáta tímu, hneď ich načítať
+        if (teamData && teamData.teamNumber) {
+            const teamInfo = await getTeamName(selectedCategoryId, selectedGroupId, teamData.teamNumber);
+            teamDisplayNameSpan.textContent = teamInfo.fullDisplayName || 'N/A';
+            teamRow.dataset.fullDisplayName = teamInfo.fullDisplayName;
+            teamRow.dataset.clubName = teamInfo.clubName;
+            teamRow.dataset.clubId = teamInfo.clubId;
+        }
+    }
+
+    // NOVÉ: Event listener pre tlačidlo "Pridať tím" v modale autobusu
+    addTeamToBusButton.addEventListener('click', () => addTeamToBusUI());
+
 
     // --- NOVÉ: Event Listener pre formulár AUTOBUSU ---
     busForm.addEventListener('submit', async (e) => {
@@ -1221,6 +1341,41 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         // --- KONIEC KONTROLY PREKRÝVANIA AUTOBUSOV ---
 
+        // NOVÉ: Získanie vybraných tímov
+        const selectedTeams = [];
+        const teamEntries = busTeamsContainer.querySelectorAll('.bus-team-entry');
+        for (const entry of teamEntries) {
+            const teamNumberInput = entry.querySelector('input[type="number"]');
+            const teamNumber = parseInt(teamNumberInput.value);
+            const displayName = entry.dataset.fullDisplayName;
+            const clubName = entry.dataset.clubName;
+            const clubId = entry.dataset.clubId;
+
+            if (isNaN(teamNumber) || teamNumber <= 0 || !displayName || displayName === 'N/A') {
+                alert('Prosím, skontrolujte všetky pridané tímy. Niektoré údaje chýbajú alebo sú neplatné (napr. tím neexistuje).');
+                return;
+            }
+
+            selectedTeams.push({
+                categoryId: busCategorySelect.value,
+                groupId: busGroupSelect.value,
+                teamNumber: teamNumber,
+                displayName: displayName,
+                clubName: clubName,
+                clubId: clubId
+            });
+        }
+
+        // Validácia duplicitných tímov v rámci jedného autobusu
+        const uniqueTeams = new Set();
+        for (const team of selectedTeams) {
+            const teamIdentifier = `${team.categoryId}-${team.groupId}-${team.teamNumber}`;
+            if (uniqueTeams.has(teamIdentifier)) {
+                alert(`Tím ${team.displayName} je pridaný viackrát do tohto autobusu. Prosím, odstráňte duplikáty.`);
+                return;
+            }
+            uniqueTeams.add(teamIdentifier);
+        }
 
         const busData = {
             busName: busName,
@@ -1230,6 +1385,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             endLocation: busEndLocation,
             endTime: busEndTime,
             notes: busNotes,
+            selectedCategoryForTeams: busCategorySelect.value, // Uložiť vybranú kategóriu pre tímy
+            selectedGroupForTeams: busGroupSelect.value,       // Uložiť vybranú skupinu pre tímy
+            selectedTeams: selectedTeams, // NOVÉ: Uloženie vybraných tímov
             createdAt: new Date()
         };
 
