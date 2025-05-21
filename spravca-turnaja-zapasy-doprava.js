@@ -31,6 +31,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const matchesContainer = document.getElementById('matchesContainer');
     const team1NumberInput = document.getElementById('team1NumberInput');
     const team2NumberInput = document.getElementById('team2NumberInput');
+    const deleteMatchButtonModal = document.getElementById('deleteMatchButtonModal'); // NOVÉ: Tlačidlo Vymazať v modale
 
     // Modálne okno pre hrací deň
     const playingDayModal = document.getElementById('playingDayModal');
@@ -40,7 +41,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Modálne okno pre športovú halu
     const sportHallModal = document.getElementById('sportHallModal');
-    const closeSportHallModalButton = document.getElementById('closeSportHallModal');
+    const closeSportHallModalButton = document = document.getElementById('closeSportHallModal');
     const sportHallForm = document.getElementById('sportHallForm');
     const hallNameInput = document.getElementById('hallName');
     const hallAddressInput = document.getElementById('hallAddress');
@@ -59,6 +60,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const busEndLocationSelect = document.getElementById('busEndLocationSelect');
     const busEndTimeInput = document.getElementById('busEndTimeInput');
     const busNotesInput = document.getElementById('busNotesInput');
+    const deleteBusButtonModal = document.getElementById('deleteBusButtonModal'); // NOVÉ: Tlačidlo Vymazať v modale
 
 
     if (categoriesContentSection) {
@@ -278,8 +280,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         let eventClass = '';
                         let contentHtml = '';
                         let dataId = event.id;
-                        let editFunction = '';
-                        let deleteFunction = '';
+                        // Odstránené editFunction a deleteFunction pre inline tlačidlá
 
                         if (event.type === 'match') {
                             const [startH, startM] = event.startTime.split(':').map(Number);
@@ -298,8 +299,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 <p class="schedule-cell-teams">${event.team1DisplayName}<br>${event.team2DisplayName}</p>
                                 <p class="schedule-cell-club-names">${event.team1ClubName}<br>${event.team2ClubName}</p>
                             `;
-                            editFunction = `editMatch('${dataId}')`;
-                            deleteFunction = `deleteMatch('${dataId}')`;
 
                         } else if (event.type === 'bus') {
                             const [startH, startM] = event.startTime.split(':').map(Number);
@@ -327,8 +326,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                                     </text>
                                 </svg>
                             `;
-                            editFunction = `editBus('${dataId}')`;
-                            deleteFunction = `deleteBus('${dataId}')`;
                         } else {
                             return; // Preskočíme neznámy typ udalosti
                         }
@@ -399,11 +396,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                     <div class="schedule-cell-content">
                                         ${contentHtml}
                                     </div>
-                                    <div class="schedule-cell-actions">
-                                        <button class="edit-btn" data-id="${dataId}" data-type="${event.type}">Upraviť</button>
-                                        <button class="delete-btn" data-id="${dataId}" data-type="${event.type}">Vymazať</button>
                                     </div>
-                                </div>
                             `;
                         } else if (event.type === 'bus') {
                             scheduleHtml += `
@@ -412,12 +405,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                     style="position: absolute; left: ${eventBlockLeftPx}px; width: ${eventBlockWidthPx}px; top: ${topPx}px; height: ${ITEM_HEIGHT_PX}px;">
                                     ${contentHtml}
                                 </div>
-                                <div class="schedule-cell-actions schedule-cell-bus-actions"
-                                    style="position: absolute; left: ${eventBlockLeftPx}px; width: ${eventBlockWidthPx}px; top: ${topPx + ITEM_HEIGHT_PX - 30}px; height: 30px;">
-                                    <button class="edit-btn" data-id="${dataId}" data-type="${event.type}">Upraviť</button>
-                                    <button class="delete-btn" data-id="${dataId}" data-type="${event.type}">Vymazať</button>
-                                </div>
-                            `;
+                                `;
                         }
                     });
                     scheduleHtml += '</td>';
@@ -429,47 +417,35 @@ document.addEventListener('DOMContentLoaded', async () => {
             scheduleHtml += '</div>';
             matchesContainer.innerHTML = scheduleHtml;
 
-            // Pridanie event listenerov pre Upraviť/Vymazať tlačidlá
-            matchesContainer.querySelectorAll('.edit-btn').forEach(button => {
-                button.addEventListener('click', (event) => {
-                    const id = event.target.dataset.id;
-                    const type = event.target.dataset.type;
-                    if (type === 'match') {
-                        editMatch(id);
-                    } else if (type === 'bus') {
-                        editBus(id);
-                    }
+            // Pridanie event listenerov pre kliknutie na zápas/autobus pre úpravu
+            matchesContainer.querySelectorAll('.schedule-cell-match').forEach(element => {
+                element.addEventListener('click', (event) => {
+                    const id = event.currentTarget.dataset.id; // Použiť currentTarget pre div
+                    editMatch(id);
                 });
             });
-            matchesContainer.querySelectorAll('.delete-btn').forEach(button => {
-                button.addEventListener('click', (event) => {
-                    const id = event.target.dataset.id;
-                    const type = event.target.dataset.type;
-                    if (type === 'match') {
-                        deleteMatch(id);
-                    } else if (type === 'bus') {
-                        deleteBus(id);
-                    }
+
+            matchesContainer.querySelectorAll('.schedule-bus-polygon').forEach(element => {
+                element.addEventListener('click', (event) => {
+                    const id = event.currentTarget.dataset.id; // Použiť currentTarget pre polygon
+                    editBus(id);
                 });
             });
+
+            // Pôvodné event listenery pre hlavičky zostávajú
             matchesContainer.querySelectorAll('.delete-date-header').forEach(header => {
                 header.addEventListener('click', (event) => {
                     if (event.target === header || event.target.closest('.delete-date-header') === header) {
-                        if (!event.target.classList.contains('edit-btn') && !event.target.classList.contains('delete-btn')) {
-                            const dateToDelete = header.dataset.date;
-                            deletePlayingDay(dateToDelete);
-                        }
+                        const dateToDelete = header.dataset.date;
+                        deletePlayingDay(dateToDelete);
                     }
                 });
             });
             matchesContainer.querySelectorAll('.delete-location-header').forEach(header => {
                 header.addEventListener('click', (event) => {
                     if (event.target === header || event.target.closest('.delete-location-header') === header) {
-                        if (!event.target.classList.contains('edit-btn') && !event.target.classList.contains('delete-btn')) {
-                            const locationToDelete = header.dataset.location;
-                            deleteSportHall(locationToDelete);
-                        }
-                        
+                        const locationToDelete = header.dataset.location;
+                        deleteSportHall(locationToDelete);
                     }
                 });
             });
@@ -597,6 +573,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 team1NumberInput.value = matchData.team1Number || '';
                 team2NumberInput.value = matchData.team2Number || '';
 
+                // Zobrazenie tlačidla Vymazať v modale
+                deleteMatchButtonModal.style.display = 'inline-block';
+                deleteMatchButtonModal.onclick = () => deleteMatch(matchId);
+
                 openModal(matchModal);
             } else {
                 alert("Zápas sa nenašiel.");
@@ -612,6 +592,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             try {
                 await deleteDoc(doc(matchesCollectionRef, matchId));
                 alert('Zápas úspešne vymazaný!');
+                closeModal(matchModal); // Zatvorí modal po vymazaní
                 displayMatchesAsSchedule();
             } catch (error) {
                 console.error("Chyba pri mazaní zápasu: ", error);
@@ -639,6 +620,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 busEndTimeInput.value = busData.endTime || '';
                 busNotesInput.value = busData.notes || '';
 
+                // Zobrazenie tlačidla Vymazať v modale
+                deleteBusButtonModal.style.display = 'inline-block';
+                deleteBusButtonModal.onclick = () => deleteBus(busId);
+
                 openModal(busModal);
             } else {
                 alert("Autobusová linka sa nenašla.");
@@ -654,6 +639,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             try {
                 await deleteDoc(doc(busesCollectionRef, busId));
                 alert('Autobusová linka úspešne vymazaná!');
+                closeModal(busModal); // Zatvorí modal po vymazaní
                 displayMatchesAsSchedule();
             } catch (error) {
                 console.error("Chyba pri mazaní autobusovej linky: ", error);
@@ -703,6 +689,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         team2NumberInput.value = '';
         matchDurationInput.value = '';
         matchBufferTimeInput.value = 5; // Predvolená hodnota 5 minút pre ochranné pásmo
+        deleteMatchButtonModal.style.display = 'none'; // Skryť tlačidlo Vymazať pri pridávaní
         openModal(matchModal);
         addOptions.classList.remove('show'); // Skryť dropdown po výbere
     });
@@ -715,6 +702,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         await populatePlayingDaysSelect(busDateSelect);
         await populateSportHallsSelect(busStartLocationSelect);
         await populateSportHallsSelect(busEndLocationSelect);
+        deleteBusButtonModal.style.display = 'none'; // Skryť tlačidlo Vymazať pri pridávaní
         openModal(busModal);
         addOptions.classList.remove('show'); // Skryť dropdown po výbere
     });
