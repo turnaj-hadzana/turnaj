@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const busDateSelect = document.getElementById('busDateSelect');
     const busStartLocationSelect = document.getElementById('busStartLocationSelect');
     const busStartTimeInput = document.getElementById('busStartTimeInput');
-    const busEndLocationSelect = document.getElementById('busEndLocationSelect'); // Opravený riadok
+    const busEndLocationSelect = document.getElementById('busEndLocationSelect');
     const busEndTimeInput = document.getElementById('busEndTimeInput');
     const busNotesInput = document.getElementById('busNotesInput');
     const deleteBusButtonModal = document.getElementById('deleteBusButtonModal'); // NOVÉ: Tlačidlo Vymazať v modale
@@ -679,7 +679,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 matchModalTitle.textContent = 'Upraviť zápas';
 
                 await populatePlayingDaysSelect(matchDateSelect, matchData.date);
-                // Opravená chyba: matchData.data.location na matchData.location
                 await populateSportHallsSelect(matchLocationSelect, matchData.location);
 
                 matchStartTimeInput.value = matchData.startTime || '';
@@ -703,6 +702,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 deleteMatchButtonModal.onclick = () => deleteMatch(matchId);
 
                 openModal(matchModal);
+                // Zavolaj funkciu pre nastavenie najskoršieho času po načítaní dát
+                setEarliestAvailableMatchTime();
             } else {
                 alert("Zápas sa nenašiel.");
             }
@@ -817,6 +818,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         deleteMatchButtonModal.style.display = 'none'; // Skryť tlačidlo Vymazať pri pridávaní
         openModal(matchModal);
         addOptions.classList.remove('show'); // Skryť dropdown po výbere
+        // Zavolaj funkciu pre nastavenie najskoršieho času po otvorení modalu
+        setEarliestAvailableMatchTime();
     });
 
     // NOVÉ: Event listener pre tlačidlo Pridať autobus
@@ -1331,4 +1334,142 @@ document.addEventListener('DOMContentLoaded', async () => {
             alert("Chyba pri ukladaní športovej haly. Pozrite konzolu pre detaily.");
         }
     });
+
+    // --- Funkcia na výpočet a nastavenie najskoršieho dostupného času zápasu ---
+    async function setEarliestAvailableMatchTime() {
+        const selectedDate = matchDateSelect.value;
+        const selectedLocation = matchLocationSelect.value;
+        const matchDuration = parseInt(matchDurationInput.value) || 60; // Predvolené 60 minút
+        const matchBufferTime = parseInt(matchBufferTimeInput.value) || 5; // Predvolené 5 minút
+
+        if (!selectedDate || !selectedLocation) {
+            matchStartTimeInput.value = ''; // Vymaž čas, ak nie je vybraný dátum alebo hala
+            return;
+        }
+
+        const requiredSlotDuration = matchDuration + matchBufferTime;
+        let occupiedSlots = [];
+
+        try {
+            // Určenie počiatočného času na základe dňa turnaja
+            const playingDaysSnapshot = await getDocs(query(playingDaysCollectionRef, orderBy("date", "asc")));
+            const sortedPlayingDays = playingDaysSnapshot.docs.map(doc => doc.data().date);
+            const selectedDateIndex = sortedPlayingDays.indexOf(selectedDate);
+
+            let earliestAvailableMinutes;
+            if (selectedDateIndex === 0) { // Prvý deň
+                earliestAvailableMinutes = 12 * 60; // 12:00
+            } else { // Druhý, tretí a ďalšie dni
+                earliestAvailableMinutes = 8 * 60; // 08:00
+            }
+
+            // Načítaj zápasy pre vybraný dátum a halu
+            const matchesQuery = query(
+                matchesCollectionRef,
+                where("date", "==", selectedDate),
+                where("location", "==", selectedLocation)
+            );
+            const matchesSnapshot = await getDocs(matchesQuery);
+            matchesSnapshot.docs.forEach(doc => {
+                const match = doc.data();
+                const [startH, startM] = match.startTime.split(':').map(Number);
+                const startMinutes = startH * 60 + startM;
+                const endMinutes = startMinutes + (match.duration || 0) + (match.bufferTime || 0);
+                occupiedSlots.push({ start: startMinutes, end: endMinutes });
+            });
+
+            // Načítaj autobusy pre vybraný dátum a halu (ako štart alebo cieľ)
+            const busesStartQuery = query(
+                busesCollectionRef,
+                where("date", "==", selectedDate),
+                where("startLocation", "==", selectedLocation)
+            );
+            const busesEndQuery = query(
+                busesCollectionRef,
+                where("date", "==", selectedDate),
+                where("endLocation", "==", selectedLocation)
+            );
+
+            const [busesStartSnapshot, busesEndSnapshot] = await Promise.all([
+                getDocs(busesStartQuery),
+                getDocs(busesEndQuery)
+            ]);
+
+            busesStartSnapshot.docs.forEach(doc => {
+                const bus = doc.data();
+                const [startH, startM] = bus.startTime.split(':').map(Number);
+                const [endH, endM] = bus.endTime.split(':').map(Number);
+                let startMinutes = startH * 60 + startM;
+                let endMinutes = endH * 60 + endM;
+                if (endMinutes < startMinutes) { // Ošetrenie prechodu cez polnoc
+                    endMinutes += 24 * 60;
+                }
+                occupiedSlots.push({ start: startMinutes, end: endMinutes });
+            });
+
+            busesEndSnapshot.docs.forEach(doc => {
+                const bus = doc.data();
+                const [startH, startM] = bus.startTime.split(':').map(Number);
+                const [endH, endM] = bus.endTime.split(':').map(Number);
+                let startMinutes = startH * 60 + startM;
+                let endMinutes = endH * 60 + endM;
+                if (endMinutes < startMinutes) { // Ošetrenie prechodu cez polnoc
+                    endMinutes += 24 * 60;
+                }
+                occupiedSlots.push({ start: startMinutes, end: endMinutes });
+            });
+
+            // Zlúč prekrývajúce sa obsadené sloty
+            const mergedOccupiedSlots = mergeIntervals(occupiedSlots);
+
+            // Nájdi najskorší dostupný čas
+            for (const slot of mergedOccupiedSlots) {
+                // Ak aktuálny slot začína po našom potenciálnom čase začiatku a je pred ním dostatočná medzera
+                if (earliestAvailableMinutes + requiredSlotDuration <= slot.start) {
+                    break; // Našli sme voľný slot
+                }
+                // Inak, posuň náš potenciálny čas začiatku za koniec aktuálneho obsadeného slotu
+                earliestAvailableMinutes = Math.max(earliestAvailableMinutes, slot.end);
+            }
+
+            // Formátuj minúty späť na HH:MM
+            const hours = Math.floor(earliestAvailableMinutes / 60);
+            const minutes = earliestAvailableMinutes % 60;
+            const formattedTime = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+            matchStartTimeInput.value = formattedTime;
+
+        } catch (error) {
+            console.error("Chyba pri výpočte najskoršieho dostupného času: ", error);
+            matchStartTimeInput.value = ''; // Vymaž čas v prípade chyby
+        }
+    }
+
+    // Pomocná funkcia na zlúčenie intervalov
+    function mergeIntervals(intervals) {
+        if (intervals.length === 0) {
+            return [];
+        }
+
+        intervals.sort((a, b) => a.start - b.start);
+
+        const merged = [intervals[0]];
+
+        for (let i = 1; i < intervals.length; i++) {
+            const current = intervals[i];
+            const lastMerged = merged[merged.length - 1];
+
+            if (current.start <= lastMerged.end) {
+                lastMerged.end = Math.max(lastMerged.end, current.end);
+            } else {
+                merged.push(current);
+            }
+        }
+        return merged;
+    }
+
+    // --- Event Listeners pre automatické nastavenie času zápasu ---
+    matchDateSelect.addEventListener('change', setEarliestAvailableMatchTime);
+    matchLocationSelect.addEventListener('change', setEarliestAvailableMatchTime);
+    matchDurationInput.addEventListener('change', setEarliestAvailableMatchTime);
+    matchBufferTimeInput.addEventListener('change', setEarliestAvailableMatchTime);
 });
