@@ -360,7 +360,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Render buses as global SVGs
             allBuses.forEach(bus => {
                 const startLocation = bus.startLocation;
-                const endLocation = bus.location; // Should be bus.endLocation
+                const endLocation = bus.endLocation; // Opravené: Používame bus.endLocation
                 const date = bus.date;
 
                 let busStartY, busEndY;
