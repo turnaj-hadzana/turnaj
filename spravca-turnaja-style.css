@@ -408,7 +408,11 @@ td:last-child {
 }
 .modal-content form input[type="text"],
 .modal-content form input[type="number"],
-.modal-content form select {
+.modal-content form select,
+.modal-content form input[type="time"], /* NOVÉ: pre časové inputy */
+.modal-content form input[type="url"], /* Pre Google Maps URL */
+.modal-content form input[type="date"] /* Pre dátumové inputy */
+ {
     width: calc(100% - 22px);
     padding: 10px;
     border: 1px solid #ccc;
@@ -473,7 +477,11 @@ td:last-child {
     }
     .modal-content form input[type="text"],
     .modal-content form input[type="number"],
-    .modal-content form select {
+    .modal-content form select,
+    .modal-content form input[type="time"], /* NOVÉ: pre časové inputy */
+    .modal-content form input[type="url"], /* Pre Google Maps URL */
+    .modal-content form input[type="date"] /* Pre dátumové inputy */
+     {
         width: calc(100% - 20px);
     }
     .category-count-pair {
@@ -669,6 +677,25 @@ td:last-child {
     /* overflow: hidden;  <-- ODSTRÁNIL SOM TOTO, aby sa posuvník na schedule-cell-content mohol zobraziť, ak je to potrebné */
 }
 
+/* NOVÉ: Štýly pre blok autobusu vo vnútri bunky */
+.schedule-cell-bus {
+    position: absolute;
+    top: 0;
+    /* left a width sú nastavené JS dynamicky */
+    height: 100%; /* Zaberá celú výšku rodičovskej TD */
+    background-color: #f0e68c; /* Khaki - svetlo žltá */
+    border: 1px solid #daa520; /* Zlatá tyč - tmavo žltá */
+    border-radius: 4px;
+    padding: 5px;
+    margin: 2px 0;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    z-index: 5;
+}
+
+
 .schedule-cell-content {
     flex-grow: 1; /* Rozšíri sa a zaberie všetok dostupný priestor */
     overflow-y: auto; /* PRIDANÉ: Posuvník len pre tento obsah, ak je príliš dlhý */
@@ -679,7 +706,8 @@ td:last-child {
 }
 
 /* Odstránenie predvolených marginov z p elementov vnútri zápasu */
-.schedule-cell-match p {
+.schedule-cell-match p,
+.schedule-cell-bus p { /* Aplikujeme aj na autobus */
     margin: 0;
     padding: 0 3px; /* Malý horizontálny padding pre text */
     overflow-wrap: break-word;
@@ -709,6 +737,27 @@ td:last-child {
     font-size: 0.5em;
     white-space: normal;
 }
+
+/* NOVÉ: Štýly pre text v bloku autobusu */
+.schedule-cell-bus-name {
+    font-weight: bold;
+    color: #8b4513; /* Hnedá */
+    font-size: 0.85em;
+}
+
+.schedule-cell-bus-route {
+    color: #4682b4; /* Oceľová modrá */
+    font-size: 0.8em;
+    white-space: normal;
+}
+
+.schedule-cell-bus-notes {
+    font-style: italic;
+    color: #778899; /* Svetlá bridlicová šedá */
+    font-size: 0.6em;
+    white-space: normal;
+}
+
 
 /* Akčné tlačidlá vo vnútri bloku zápasu */
 .schedule-cell-actions {
