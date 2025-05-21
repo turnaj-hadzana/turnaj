@@ -384,7 +384,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         e.preventDefault();
 
         const matchCategory = matchCategorySelect.value;
-        const matchGroup = matchGroupSelect.value; // Stále potrebujeme túto hodnotu pre uloženie
+        const matchGroup = matchGroupSelect.value;
         const team1Number = parseInt(team1NumberInput.value);
         const team2Number = parseInt(team2NumberInput.value);
 
@@ -418,27 +418,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         // Kontrola, či tímy z rovnakého klubu nemôžu hrať proti sebe v rovnakej skupine
-        // Tuto ponecháme kontrolu v rámci skupiny, ak je to stále relevantné.
-        // Ak by sa to malo vzťahovať na celú kategóriu (tímy z rovnakého klubu nikdy proti sebe v danej kategórii),
-        // museli by sme z query odstrániť "groupId" a upraviť hlásenie.
         if (team1Result.clubId && team2Result.clubId && team1Result.clubId === team2Result.clubId) {
-            alert('Tímy z rovnakého klubu nemôžu hrať proti sebe v rovnakej skupine. Prosím, vyberte tímy z rôznych klubov alebo rôznych skupín/kategórií.');
+            alert('Tímy z rovnakého klubu nemôžu hrať proti sebe v rovnakej skupine. Prosím, vyberte tímy z rôznych klubov.');
             return;
         }
 
-        // --- NOVÁ/UPRAVENÁ KONTROLA: Či už tímy hrali proti sebe v rámci KATEGÓRIE ---
+        // --- UPRAVENÁ KONTROLA: Či už tímy hrali proti sebe v konkrétnej kategórii A skupine ---
         try {
             // Skontrolujeme v oboch smeroch (Tím 1 vs Tím 2 A Tím 2 vs Tím 1)
-            // Filter len na categoryId, nie groupId
             const q1 = query(
                 matchesCollectionRef,
                 where("categoryId", "==", matchCategory),
+                where("groupId", "==", matchGroup), // Pridaný filter pre skupinu
                 where("team1Number", "==", team1Number),
                 where("team2Number", "==", team2Number)
             );
             const q2 = query(
                 matchesCollectionRef,
                 where("categoryId", "==", matchCategory),
+                where("groupId", "==", matchGroup), // Pridaný filter pre skupinu
                 where("team1Number", "==", team2Number),
                 where("team2Number", "==", team1Number)
             );
@@ -453,7 +451,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
 
             if (alreadyPlayed) {
-                alert('Tieto dva tímy už proti sebe hrali v tejto kategórii. Nemôžu hrať znova.');
+                alert('Tieto dva tímy už proti sebe hrali v tejto kategórii a skupine. Nemôžu hrať znova.');
                 return;
             }
 
@@ -472,18 +470,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             location: matchLocationInput.value,
             categoryId: matchCategory,
             categoryName: matchCategorySelect.options[matchCategorySelect.selectedIndex].text,
-            groupId: matchGroup || null, // Zachovávame groupId pre uloženie dát
+            groupId: matchGroup || null,
             groupName: matchGroup ? matchGroupSelect.options[matchGroupSelect.selectedIndex].text.replace(/skupina /gi, '').trim() : null,
 
             team1Category: matchCategory,
-            team1Group: matchGroup, // Aj tu uchovávame groupId
+            team1Group: matchGroup,
             team1Number: team1Number,
             team1DisplayName: team1Result.fullDisplayName,
             team1ClubName: team1Result.clubName,
             team1ClubId: team1Result.clubId,
 
             team2Category: matchCategory,
-            team2Group: matchGroup, // Aj tu uchovávame groupId
+            team2Group: matchGroup,
             team2Number: team2Number,
             team2DisplayName: team2Result.fullDisplayName,
             team2ClubName: team2Result.clubName,
