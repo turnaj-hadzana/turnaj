@@ -20,383 +20,516 @@ document.addEventListener('DOMContentLoaded', async () => {
     const matchCategorySelect = document.getElementById('matchCategory');
     const matchGroupSelect = document.getElementById('matchGroup');
     const matchModalTitle = document.getElementById('matchModalTitle');
+    const matchesContainer = document.getElementById('matchesContainer');
+
     const team1NumberInput = document.getElementById('team1NumberInput');
-    const team2NumberInput = document.getElementById('team2NumberInput'); // Opravené ID
+    const team2NumberInput = document.getElementById('team2NumberInput');
 
-    // Funkcia na získanie kompletného názvu tímu (s klubom)
-    async function getTeamName(categoryId, groupId, teamNumber) {
-        if (!categoryId || !groupId || !teamNumber) {
-            return { fullDisplayName: `Neznámy tím`, clubName: `Neznámy klub` };
-        }
-        try {
-            const groupDoc = await getDoc(doc(groupsCollectionRef, groupId));
-            if (!groupDoc.exists()) {
-                console.warn(`Skupina s ID ${groupId} nebola nájdená.`);
-                return { fullDisplayName: `Tím ${teamNumber} (neznáma skupina)`, clubName: `Neznámy klub` };
-            }
-            const groupData = groupDoc.data();
-            const team = groupData.teams.find(t => t.teamNumber === parseInt(teamNumber));
 
-            if (team) {
-                const clubDoc = await getDoc(doc(clubsCollectionRef, team.clubId));
-                const clubName = clubDoc.exists() ? clubDoc.data().name : `Neznámy klub (ID: ${team.clubId})`;
-                return {
-                    fullDisplayName: `Tím ${teamNumber} (${clubName})`,
-                    clubName: clubName // Vraciam aj názov klubu
-                };
-            } else {
-                return { fullDisplayName: `Tím ${teamNumber} (nie je v skupine)`, clubName: `Neznámy klub` };
+    if (categoriesContentSection) {
+        categoriesContentSection.style.display = 'block';
+        const otherSections = document.querySelectorAll('main > section, main > div');
+        otherSections.forEach(section => {
+            if (section.id !== 'categoriesContentSection') {
+                section.style.display = 'none';
             }
-        } catch (error) {
-            console.error("Chyba pri získavaní názvu tímu:", error);
-            return { fullDisplayName: `Chyba načítania tímu`, clubName: `Neznámy klub` };
-        }
+        });
     }
 
-    // Funkcia na zobrazenie rozvrhu zápasov
+    // --- Funkcia na načítanie a zobrazenie zápasov ako rozvrh (miesto vs. čas/deň) ---
     async function displayMatchesAsSchedule() {
-        const matchesContainer = document.getElementById('matchesContainer');
-        matchesContainer.innerHTML = 'Načítavam zápasy...';
+        if (!matchesContainer) return;
 
+        matchesContainer.innerHTML = '<p>Načítavam rozvrh zápasov...</p>';
         try {
-            const q = query(matchesCollectionRef, orderBy('date'), orderBy('location'), orderBy('startTime'));
+            // Použite túto query ak ste vytvorili index:
+            const q = query(matchesCollectionRef, orderBy("date", "asc"), orderBy("location", "asc"), orderBy("startTime", "asc"));
+            // Ak stále máte problémy s indexom, skúste na testovanie najprv načítavať len podľa dátumu:
+            // const q = query(matchesCollectionRef, orderBy("date", "asc"));
             const querySnapshot = await getDocs(q);
 
             if (querySnapshot.empty) {
-                matchesContainer.innerHTML = '<p>Žiadne zápasy nie sú naplánované.</p>';
+                matchesContainer.innerHTML = '<p>Žiadne zápasy ani informácie o doprave zatiaľ.</p>';
                 return;
             }
 
-            const matches = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const allMatches = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-            const locations = [...new Set(matches.map(m => m.location))].sort();
-            const dates = [...new Set(matches.map(m => m.date))].sort(); // Zoraď dátumy
-
-            // Nájdite najskorší začiatok a najneskorší koniec pre určenie časového rozsahu
-            let minHour = 24;
-            let maxHour = 0;
-            matches.forEach(match => {
-                const startTimeParts = match.startTime.split(':').map(Number);
-                const startHour = startTimeParts[0];
-                const startMinute = startTimeParts[1];
-                const durationHours = Math.floor(match.duration / 60);
-                const durationMinutes = match.duration % 60;
-
-                const endTime = new Date();
-                endTime.setHours(startHour, startMinute + durationMinutes, 0, 0); // Použijeme pôvodné minúty + trvanie
-                endTime.setHours(endTime.getHours() + durationHours);
-
-                minHour = Math.min(minHour, startHour);
-                maxHour = Math.max(maxHour, endTime.getHours() + (endTime.getMinutes() > 0 ? 1 : 0)); // Ak sú minúty, zaokrúhli hore
+            const uniqueLocations = new Set();
+            const uniqueDates = new Set();
+            allMatches.forEach(match => {
+                uniqueLocations.add(match.location);
+                uniqueDates.add(match.date);
             });
 
-            // Ak nie sú zápasy, ale chceme zobraziť prázdny rozvrh, nastavte predvolený rozsah
-            if (minHour === 24) minHour = 8;
-            if (maxHour === 0) maxHour = 20;
+            const sortedLocations = Array.from(uniqueLocations).sort();
+            const sortedDates = Array.from(uniqueDates).sort();
 
-            const timeSlots = [];
-            for (let h = minHour; h <= maxHour; h++) {
-                timeSlots.push(`${String(h).padStart(2, '0')}:00`);
-            }
+            // Získame všetky unikátne celé hodiny pre každý deň (od najskoršieho začiatku do najneskoršieho konca)
+            const dailyTimeRanges = new Map(); // Map<date, {minHour, maxHour}>
+            allMatches.forEach(match => {
+                const date = match.date;
+                const [startH, startM] = match.startTime.split(':').map(Number);
+                const duration = match.duration;
 
-            let html = `
-                <div class="schedule-table-wrapper">
-                    <table class="match-schedule-table">
-                        <thead>
-                            <tr>
-                                <th class="sticky-column">Miesto / Čas</th>
-                                ${dates.map(date => `<th colspan="${timeSlots.length}">${date}</th>`).join('')}
-                            </tr>
-                            <tr>
-                                <th class="sticky-column"></th>
-                                ${dates.map(() => timeSlots.map(ts => `<th>${ts}</th>`).join('')).join('')}
-                            </tr>
-                        </thead>
-                        <tbody>
-            `;
+                const startTimeInMinutes = startH * 60 + startM;
+                const endTimeInMinutes = startTimeInMinutes + duration;
 
-            locations.forEach(location => {
-                html += `<tr><td class="sticky-column">${location}</td>`;
-                dates.forEach(date => {
-                    timeSlots.forEach(timeSlot => {
-                        html += `<td class="schedule-cell" data-location="${location}" data-date="${date}" data-timeslot="${timeSlot}">`;
-                        // Nájdeme všetky zápasy pre túto bunku (miesto, dátum, časový slot)
-                        const relevantMatches = matches.filter(m =>
-                            m.location === location &&
-                            m.date === date &&
-                            m.startTime.substring(0, 2) === timeSlot.substring(0, 2) // Len hodiny
-                        );
+                // maxHour by mala byť najbližšia celá hodina PRED koncom zápasu.
+                // Ak zápas končí 8:00, maxHour by mala byť 8.
+                // Ak zápas končí 8:01, maxHour by mala byť 9.
+                let actualEndHour = Math.ceil(endTimeInMinutes / 60);
 
-                        // Skontrolujeme, či zápasy v tomto slote neprekrývajú iné.
-                        // Pre jednoduchosť budeme ukladať pozície zápasov do dočasného poľa.
-                        const placedMatches = [];
+                if (!dailyTimeRanges.has(date)) {
+                    dailyTimeRanges.set(date, { minHour: startH, maxHour: actualEndHour });
+                } else {
+                    const range = dailyTimeRanges.get(date);
+                    range.minHour = Math.min(range.minHour, startH);
+                    range.maxHour = Math.max(range.maxHour, actualEndHour);
+                }
+            });
 
-                        relevantMatches.forEach(match => {
-                            const startTimeParts = match.startTime.split(':').map(Number);
-                            const startHour = startTimeParts[0];
-                            const startMinute = startTimeParts[1];
-                            const durationMinutes = match.duration;
+            let scheduleHtml = '<div class="schedule-table-container">';
+            scheduleHtml += '<table class="match-schedule-table"><thead><tr>';
+            scheduleHtml += '<th class="fixed-column">Miesto / Čas</th>';
 
-                            // Vypočítame pozíciu a výšku zápasu v rámci hodinového slotu (alebo celej bunky)
-                            // Šírka jednej hodiny v percentách (pre 15-minútové intervaly, ak by boli)
-                            // Aktuálne bunky sú hodinové, takže šírka zápasu bude relatívna k celej bunke
-                            const totalMinutesInHour = 60;
-                            const startOffsetMinutes = startMinute; // Offset v minútach od začiatku hodiny
-                            const leftPercentage = (startOffsetMinutes / totalMinutesInHour) * 100;
-                            const widthPercentage = (durationMinutes / totalMinutesInHour) * 100;
+            // Hlavičky pre dni a ich unikátne časy (iba celé hodiny)
+            sortedDates.forEach(date => {
+                const range = dailyTimeRanges.get(date);
+                let hoursForDate = [];
+                if (range) {
+                    // ZMENA: Používame < range.maxHour pre správny počet hodinových slotov
+                    for (let h = range.minHour; h < range.maxHour; h++) { 
+                        hoursForDate.push(h);
+                    }
+                }
 
-                            // Pre zabránenie prekrývaniu môžeme rozdeliť bunku na "dráhy"
-                            let track = 0;
-                            let conflict = true;
-                            while (conflict) {
-                                conflict = false;
-                                for (const pMatch of placedMatches) {
-                                    // Kontrola prekrývania v čase a na rovnakej dráhe
-                                    const pStart = pMatch.startMinute;
-                                    const pEnd = pMatch.startMinute + pMatch.duration;
-                                    const currentStart = startMinute;
-                                    const currentEnd = startMinute + durationMinutes;
+                const displayDateObj = new Date(date);
+                const displayDay = String(displayDateObj.getDate()).padStart(2, '0');
+                const displayMonth = String(displayDateObj.getMonth() + 1).padStart(2, '0');
+                const displayYear = String(displayDateObj.getFullYear());
+                const formattedDisplayDate = `${displayDay}. ${displayMonth}. ${displayYear}`;
+                
+                const colspan = hoursForDate.length;
+                if (colspan > 0) {
+                    scheduleHtml += `<th colspan="${colspan}">`;
+                    scheduleHtml += `<div class="schedule-date-header">${formattedDisplayDate}</div>`;
+//                    scheduleHtml += `<div class="schedule-date-header">${date}</div>`;
+                    scheduleHtml += '<div class="schedule-times-row">';
+                    hoursForDate.forEach(hour => {
+                        scheduleHtml += `<span>${String(hour % 24).padStart(2, '0')}:00</span>`;
+                    });
+                    scheduleHtml += '</div>';
+                    scheduleHtml += '</th>';
+                } else {
+                    scheduleHtml += `<th><div class="schedule-date-header">${formattedDisplayDate}</div><div class="schedule-times-row"><span></span></div></th>`;
+//                    scheduleHtml += `<th><div class="schedule-date-header">${date}</div><div class="schedule-times-row"><span></span></div></th>`;
+                }
+            });
+            scheduleHtml += '</tr></thead><tbody>';
 
-                                    if (track === pMatch.track && !(pEnd <= currentStart || currentEnd <= pStart)) {
-                                        conflict = true;
-                                        track++;
-                                        break;
+            // Generovanie riadkov tabuľky (pre každé miesto)
+            sortedLocations.forEach(location => {
+                scheduleHtml += '<tr>';
+                scheduleHtml += `<th class="fixed-column schedule-location-header">${location}</th>`;
+
+                sortedDates.forEach(date => {
+                    const range = dailyTimeRanges.get(date);
+                    let hoursForDate = [];
+                    if (range) {
+                        for (let h = range.minHour; h < range.maxHour; h++) {
+                            hoursForDate.push(h);
+                        }
+                    }
+                    const colspan = hoursForDate.length;
+
+                    if (colspan === 0) {
+                        scheduleHtml += `<td><span class="no-match-placeholder"></span></td>`;
+                        return;
+                    }
+
+                    // Vytvoríme jednu veľkú TD bunku pre každý deň a miesto
+                    // Nastavíme overflow: visible, aby sa absolútne pozicionované prvky mohli vykresliť aj mimo hraníc, ak by to bolo potrebné pri ladení.
+                    // Ale pre správne fungovanie scrollbaru by sme mali zabezpečiť, aby sa zmestili, alebo sa o ne postará JavaScript.
+                    scheduleHtml += `<td colspan="${colspan}" style="position: relative; background-color: #f7f7f7;">`; // Removed overflow: hidden here for now
+
+                    const matchesForLocationAndDate = allMatches.filter(match =>
+                        match.location === location && match.date === date
+                    );
+
+                    // Nová logika pre správne umiestnenie zápasov
+                    // Vytvoríme "sloty" pre každý hodinový segment v rámci dňa, každý slot je 260px široký
+                    // a 170px vysoký (z CSS).
+                    const CELL_WIDTH_PX = 260; // Šírka jednej TD bunky pre 1 hodinu
+                    const CELL_HEIGHT_PX = 170; // Výška jednej TD bunky
+                    const MINUTES_PER_CELL = 60; // Jedna bunka reprezentuje 60 minút
+                    const PIXELS_PER_MINUTE = CELL_WIDTH_PX / MINUTES_PER_CELL;
+
+                    // Ukladáme informácie o obsadenosti pre každý slot (hodina_začiatku_dňa, pozícia_v_slote)
+                    const occupiedSlots = new Map(); // Kľúč: hodina_index_v_dni, Hodnota: [ { startMin, endMin, top } ]
+
+                    matchesForLocationAndDate.sort((a, b) => {
+                        const [aH, aM] = a.startTime.split(':').map(Number);
+                        const [bH, bM] = b.startTime.split(':').map(Number);
+                        return (aH * 60 + aM) - (bH * 60 + bM);
+                    });
+
+                    matchesForLocationAndDate.forEach(match => {
+                        const [startH, startM] = match.startTime.split(':').map(Number);
+                        const durationInMinutes = match.duration;
+
+                        // Absolútny začiatok a koniec zápasu v minútach od polnoci
+                        const absoluteStartMin = startH * 60 + startM;
+                        const absoluteEndMin = absoluteStartMin + durationInMinutes;
+
+                        // Nájdeme prvú hodinu v rámci tohto dňa
+                        const firstHourInDay = range.minHour;
+
+                        // Relatívny začiatok a koniec zápasu v minútach od začiatku prvého slotu v rámci daného dňa
+                        const relativeStartMin = absoluteStartMin - (firstHourInDay * 60);
+                        const relativeEndMin = absoluteEndMin - (firstHourInDay * 60);
+
+                        // Spočítame pozície v pixeloch
+                        const leftPx = relativeStartMin * PIXELS_PER_MINUTE;
+                        const widthPx = durationInMinutes * PIXELS_PER_MINUTE;
+
+                        // -------- Nová logika pre umiestnenie v rámci TD bunky (vertikálne prekrývanie) --------
+                        let topOffset = 0; // Začiatočná pozícia zhora
+                        let collisionDetected = true;
+                        let maxAttempts = 5; // Obmedzenie pre pokusy zabrániť nekonečnej slučke
+                        let currentAttempt = 0;
+
+                        // Dynamicky určujeme "riadok" pre zápas, ak sa časovo prekrýva s iným zápasom
+                        // Využijeme jednoduchý algoritmus pre umiestnenie:
+                        // Skúšame nájsť voľné miesto odhora (topOffset) pre zápas
+                        // Zatiaľ to bude jednoduché, zápasy sa budú skladať pod seba
+                        let currentMatchesInCell = [];
+                        matchesForLocationAndDate.forEach(m => {
+                            if (m.id !== match.id) { // Nezrovnávame zápas sám so sebou
+                                const [mStartH, mStartM] = m.startTime.split(':').map(Number);
+                                const mAbsoluteStartMin = mStartH * 60 + mStartM;
+                                const mAbsoluteEndMin = mAbsoluteStartMin + m.duration;
+
+                                // Ak sa časové rozsahy prekrývajú
+                                if ((absoluteStartMin < mAbsoluteEndMin && absoluteEndMin > mAbsoluteStartMin)) {
+                                    currentMatchesInCell.push(m);
+                                }
+                            }
+                        });
+
+                        // Toto je veľmi zjednodušená detekcia kolízií pre top pozíciu.
+                        // Pre plne funkčný rozvrh by ste potrebovali komplexnejší algoritmus,
+                        // ktorý by spravoval "dráhy" (tracks) alebo stĺpce v rámci bunky,
+                        // aby sa zápasy mohli efektívne skladať vedľa seba alebo pod seba.
+                        // Pre úvodný fix prekrývania stačí, aby každý prekrývajúci sa zápas mal iný 'top'.
+                        // Tu je nápad: ak sa prekrýva, daj ho nižšie. Ak je to viac zápasov, potrebujeme komplexnejší výpočet riadku.
+
+                        // Pre jednoduchosť, zatiaľ každý zápas v bunke bude mať len nejaký fixný top
+                        // Tento prístup nezabráni prekrývaniu, ak sú dva zápasy v rovnakom čase.
+                        // Potrebujeme inteligentnejší algoritmus na určenie `top` a `height`.
+
+                        // **PRVÁ VERZIA RIEŠENIA PREKRÝVANIA (Vertikálne):**
+                        // Zistíme, koľko zápasov sa prekrýva s týmto zápasom, a na základe toho určíme top.
+                        let overlappingCount = 0;
+                        matchesForLocationAndDate.forEach(otherMatch => {
+                            if (otherMatch.id !== match.id) {
+                                const [otherStartH, otherStartM] = otherMatch.startTime.split(':').map(Number);
+                                const otherAbsoluteStartMin = otherStartH * 60 + otherStartM;
+                                const otherAbsoluteEndMin = otherAbsoluteStartMin + otherMatch.duration;
+
+                                // Ak sa tento zápas prekrýva s iným
+                                if (
+                                    (absoluteStartMin < otherAbsoluteEndMin && absoluteEndMin > otherAbsoluteStartMin) &&
+                                    (otherAbsoluteStartMin < absoluteEndMin && otherAbsoluteEndMin > absoluteStartMin)
+                                ) {
+                                    // A je umiestnený pred aktuálnym zápasom (aby sa zabránilo rekurzívnemu počítaniu)
+                                    // Zjednodušená kontrola, ak chceme zápasy skladať pod seba
+                                    if (otherAbsoluteStartMin < absoluteStartMin || (otherAbsoluteStartMin === absoluteStartMin && otherMatch.id < match.id)) {
+                                         // len ak ide o match, ktorý už bol spracovaný (predchadzajuci v poli)
+                                         // toto nie je robustne. Potrebovali by sme trackovať riadky.
                                     }
                                 }
                             }
-                            placedMatches.push({
-                                startMinute: startMinute,
-                                duration: durationMinutes,
-                                track: track,
-                                match: match
-                            });
-
-                            const maxTracks = Math.max(...placedMatches.map(pm => pm.track)) + 1;
-                            const topPercentage = (track / maxTracks) * 100; // Rozdelenie vertikálne
-                            const heightPercentage = (1 / maxTracks) * 100;
-
-                            html += `
-                                <div class="schedule-cell-match"
-                                    style="left: ${leftPercentage}%; width: ${widthPercentage}%;
-                                           top: ${topPercentage}%; height: ${heightPercentage}%;
-                                           position: absolute; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between;">
-                                    <div class="schedule-cell-content">
-                                        <div class="schedule-cell-time">${match.startTime} - ${new Date(new Date().setHours(startHour, startMinute + durationMinutes)).toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' })}</div>
-                                        <div class="schedule-cell-category">${match.categoryName}</div>
-                                        <div class="schedule-cell-teams">${match.team1DisplayName} vs ${match.team2DisplayName}</div>
-                                        <div class="schedule-cell-club-names">${match.team1ClubName} vs ${match.team2ClubName}</div>
-                                    </div>
-                                    <div class="schedule-cell-actions">
-                                        <button class="action-button edit-button" data-id="${match.id}">Upraviť</button>
-                                        <button class="action-button delete-button" data-id="${match.id}">Vymazať</button>
-                                    </div>
-                                </div>
-                            `;
                         });
-                        html += `</td>`;
+
+
+                        // Kód, ktorý ste mali predtým, vypočítaval left a width v percentách z celého rozsahu dňa.
+                        // To je v poriadku, pokiaľ ide o horizontálne umiestnenie v rámci celkovej šírky zlúčenej TD.
+                        // Problém je, že všetky zápasy majú `top: 0; height: 100%;` čo ich núti prekrývať sa.
+
+                        // Pre vertikálne usporiadanie prekrývajúcich sa zápasov
+                        // Potrebujeme dynamicky určiť `top` a `height` pre každý zápas.
+                        // Najjednoduchšie je rozdeliť výšku bunky a umiestniť ich pod seba.
+                        // Získame všetky zápasy, ktoré časovo spadajú do rovnakej bunky (TD).
+                        const matchesInThisCell = matchesForLocationAndDate.filter(m => {
+                            const [mStartH, mStartM] = m.startTime.split(':').map(Number);
+                            const mAbsoluteStartMin = mStartH * 60 + mStartM;
+                            const mAbsoluteEndMin = mAbsoluteStartMin + m.duration;
+                            return (absoluteStartMin < mAbsoluteEndMin && absoluteEndMin > mAbsoluteStartMin); // Check for temporal overlap
+                        });
+
+                        // Toto je len na ukážku - pre robustnejší plánovač potrebujete "track" systém.
+                        // Ak sa prekrývajú, rozdelíme výšku bunky na rovnaké časti.
+                        let currentTop = 0;
+                        let currentHeight = CELL_HEIGHT_PX;
+
+                        // Tento prístup je stále veľmi zjednodušený a bude viesť k vertikálnemu stlačeniu,
+                        // ak bude veľa prekrývajúcich sa zápasov.
+                        // Skutočné riešenie vyžaduje "algoritmus rozvrhovania" na strane klienta.
+                        // Pre testovanie: ak sú zápasy, ktoré začínajú v rovnakom čase, umiestnite ich vertikálne:
+                        let verticalOverlapCount = 0;
+                        matchesForLocationAndDate.filter(m => m.startTime === match.startTime).forEach((m, index) => {
+                            if (m.id !== match.id) { // Počítaj len tie, ktoré začínajú v rovnakom čase, ale nie sú rovnaký zápas
+                                // ak má current match nižšie ID, tak by mal byť umiestnený nižšie
+                                if (match.id > m.id) { // Zjednodušené pravidlo na rozlíšenie
+                                    verticalOverlapCount++;
+                                }
+                            }
+                        });
+                        const TOP_OFFSET_PER_OVERLAP = 40; // Napríklad 40px odsadenie pre každý prekrývajúci sa zápas
+                        const topPx = verticalOverlapCount * TOP_OFFSET_PER_OVERLAP;
+
+                        // Váš `totalDayMinutes` je stále správny na to, aby sa `left` a `width` počítali ako percentá z celkovej šírky TD.
+                        // Ak je však `totalDayMinutes` veľmi malý (napr. len jedna hodina), percentá budú priveľké.
+                        // CELL_WIDTH_PX = 260; // šírka jednej hodiny
+
+                        const left = leftPx; // V pixeloch, nie percentách
+                        const width = widthPx; // V pixeloch, nie percentách
+
+                        const matchEndTime = new Date();
+                        matchEndTime.setHours(startH, startM + durationInMinutes, 0, 0);
+                        const formattedEndTime = matchEndTime.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' });
+
+                        scheduleHtml += `
+                            <div class="schedule-cell-match"
+                                data-id="${match.id}"
+                                style="left: ${left}px; width: ${width}px; top: ${topPx}px;">
+                                <p class="schedule-cell-time">${match.startTime} - ${formattedEndTime}</p>
+                                <p class="schedule-cell-category">${match.categoryName || 'N/A'}${match.groupName ? ` ${match.groupName}` : ''}</p>
+                                <p class="schedule-cell-teams">${match.team1DisplayName}<br>${match.team2DisplayName}</p>
+                                <p class="schedule-cell-club-names">${match.team1ClubName}<br>${match.team2ClubName}</p>
+                                <div class="schedule-cell-actions">
+                                    <button class="edit-btn" data-id="${match.id}">Upraviť</button>
+                                    <button class="delete-btn" data-id="${match.id}">Vymazať</button>
+                                </div>
+                            </div>
+                        `;
                     });
+                    scheduleHtml += '</td>';
                 });
-                html += `</tr>`;
+                scheduleHtml += '</tr>';
             });
+            
+            scheduleHtml += '</tbody></table>';
+            scheduleHtml += '</div>';
+            matchesContainer.innerHTML = scheduleHtml;
 
-            html += `
-                        </tbody>
-                    </table>
-                </div>
-            `;
-            matchesContainer.innerHTML = html;
-
-            document.querySelectorAll('.edit-button').forEach(button => {
-                button.addEventListener('click', (event) => {
-                    editMatch(event.target.dataset.id);
-                });
+            // Priradenie event listenerov po vložení HTML
+            matchesContainer.querySelectorAll('.edit-btn').forEach(button => {
+                button.addEventListener('click', (event) => editMatch(event.target.dataset.id));
             });
-
-            document.querySelectorAll('.delete-button').forEach(button => {
-                button.addEventListener('click', (event) => {
-                    deleteMatch(event.target.dataset.id);
-                });
+            matchesContainer.querySelectorAll('.delete-btn').forEach(button => {
+                button.addEventListener('click', (event) => deleteMatch(event.target.dataset.id));
             });
 
         } catch (error) {
-            console.error("Chyba pri načítavaní zápasov: ", error);
-            matchesContainer.innerHTML = '<p>Nastala chyba pri načítavaní zápasov.</p>';
+            console.error("Chyba pri načítaní rozvrhu zápasov: ", error);
+            matchesContainer.innerHTML = '<p>Chyba pri načítaní rozvrhu zápasov. Skontrolujte konzolu pre detaily a uistite sa, že máte vytvorené potrebné indexy vo Firestore.</p>';
         }
     }
 
-
-    // Funkcia na úpravu zápasu
-    async function editMatch(id) {
+    async function editMatch(matchId) {
         try {
-            const matchDoc = await getDoc(doc(matchesCollectionRef, id));
+            const matchDocRef = doc(matchesCollectionRef, matchId);
+            const matchDoc = await getDoc(matchDocRef);
+
             if (matchDoc.exists()) {
                 const matchData = matchDoc.data();
-                matchIdInput.value = id;
-                matchDateInput.value = matchData.date;
-                matchStartTimeInput.value = matchData.startTime;
-                matchDurationInput.value = matchData.duration;
-                matchLocationInput.value = matchData.location;
+                matchIdInput.value = matchId;
+                matchModalTitle.textContent = 'Upraviť zápas / dopravu';
 
-                // Vyplnenie kategórie a následne skupiny
+                matchDateInput.value = matchData.date || '';
+                matchStartTimeInput.value = matchData.startTime || '';
+                matchDurationInput.value = matchData.duration || 60; // Načítanie duration
+                matchLocationInput.value = matchData.location || '';
+
                 await populateCategorySelect(matchCategorySelect, matchData.categoryId);
-                // OPRAVA TU: Prehodenie argumentov
-                await populateGroupSelect(matchData.categoryId, matchGroupSelect, matchData.groupId);
+                if (matchData.categoryId) {
+                    await populateGroupSelect(matchData.categoryId, matchGroupSelect, matchData.groupId);
+                    matchGroupSelect.disabled = false;
+                } else {
+                    matchGroupSelect.innerHTML = '<option value="">-- Vyberte skupinu --</option>';
+                    matchGroupSelect.disabled = true;
+                }
 
-                team1NumberInput.value = matchData.team1Number;
-                team2NumberInput.value = matchData.team2Number;
+                team1NumberInput.value = matchData.team1Number || '';
+                team2NumberInput.value = matchData.team2Number || '';
 
-                matchModalTitle.textContent = 'Upraviť zápas';
                 openModal(matchModal);
             } else {
-                alert('Zápas nebol nájdený.');
+                alert("Zápas sa nenašiel.");
             }
         } catch (error) {
-            console.error("Chyba pri načítaní zápasu na úpravu: ", error);
-            alert("Chyba pri načítaní dát zápasu.");
+            console.error("Chyba pri načítavaní dát zápasu pre úpravu: ", error);
+            alert("Vyskytla sa chyba pri načítavaní dát zápasu. Skúste to znova.");
         }
     }
 
-    // Funkcia na vymazanie zápasu
-    async function deleteMatch(id) {
+    async function deleteMatch(matchId) {
         if (confirm('Naozaj chcete vymazať tento zápas?')) {
             try {
-                await deleteDoc(doc(matchesCollectionRef, id));
+                await deleteDoc(doc(matchesCollectionRef, matchId));
                 alert('Zápas úspešne vymazaný!');
-                await displayMatchesAsSchedule(); // Znovu načítame rozvrh
+                displayMatchesAsSchedule();
             } catch (error) {
-                console.error("Chyba pri vymazávaní zápasu: ", error);
-                alert("Chyba pri vymazávaní zápasu.");
+                console.error("Chyba pri mazaní zápasu: ", error);
+                alert("Chyba pri mazaní zápasu. Pozrite konzolu pre detaily.");
             }
         }
     }
 
-    // Inicializácia filtrov a načítanie dát pri štarte
-    await populateCategorySelect(matchCategorySelect);
-    // OPRAVA TU: Prehodenie argumentov
-    await populateGroupSelect(matchCategorySelect.value, matchGroupSelect); // Načíta skupiny pre vybranú kategóriu
-
-    matchCategorySelect.addEventListener('change', async () => {
-        // OPRAVA TU: Prehodenie argumentov
-        await populateGroupSelect(matchCategorySelect.value, matchGroupSelect);
-    });
+    await displayMatchesAsSchedule();
 
     addButton.addEventListener('click', () => {
-        // Resetovanie formulára
+        matchForm.reset();
         matchIdInput.value = '';
-        matchDateInput.value = '';
-        matchStartTimeInput.value = '';
-        matchDurationInput.value = '60';
-        matchLocationInput.value = '';
-        matchCategorySelect.value = ''; // Resetovať kategóriu
-        matchGroupSelect.innerHTML = '<option value="">Vyberte skupinu</option>'; // Vyprázdniť skupiny
+        matchModalTitle.textContent = 'Pridať nový zápas / dopravu';
+
+        populateCategorySelect(matchCategorySelect);
+        matchGroupSelect.innerHTML = '<option value="">-- Vyberte skupinu --</option>';
+        matchGroupSelect.disabled = true;
+
         team1NumberInput.value = '';
         team2NumberInput.value = '';
+        matchDurationInput.value = '';
 
-        matchModalTitle.textContent = 'Pridať nový zápas';
         openModal(matchModal);
+    });
+
+    matchCategorySelect.addEventListener('change', () => {
+        const selectedCategoryId = matchCategorySelect.value;
+        if (selectedCategoryId) {
+            populateGroupSelect(selectedCategoryId, matchGroupSelect);
+            matchGroupSelect.disabled = false;
+        } else {
+            matchGroupSelect.innerHTML = '<option value="">-- Vyberte skupinu --</option>';
+            matchGroupSelect.disabled = true;
+            team1NumberInput.value = '';
+            team2NumberInput.value = '';
+        }
     });
 
     closeMatchModalButton.addEventListener('click', () => {
         closeModal(matchModal);
+        displayMatchesAsSchedule();
     });
+
+    const getTeamName = async (categoryId, groupId, teamNumber) => {
+        if (!categoryId || !groupId || !teamNumber) {
+            return { fullDisplayName: null, clubName: null };
+        }
+
+        try {
+            const categoryDoc = await getDoc(doc(categoriesCollectionRef, categoryId));
+            const categoryName = categoryDoc.exists() ? (categoryDoc.data().name || categoryId) : categoryId;
+
+            const groupDoc = await getDoc(doc(groupsCollectionRef, groupId));
+            const groupData = groupDoc.exists() ? groupDoc.data() : null;
+            const groupName = groupData ? (groupData.name || groupId) : groupId;
+
+            let clubName = `Tím ${teamNumber}`;
+
+            const clubsQuery = query(
+                clubsCollectionRef,
+                where("categoryId", "==", categoryId),
+                where("groupId", "==", groupId),
+                where("orderInGroup", "==", parseInt(teamNumber))
+            );
+            const clubsSnapshot = await getDocs(clubsQuery);
+
+            if (!clubsSnapshot.empty) {
+                const teamDocData = clubsSnapshot.docs[0].data();
+                if (teamDocData.name) {
+                    clubName = teamDocData.name;
+                }
+            } else {
+                console.warn(`Tím s číslom ${teamNumber} v kategórii ${categoryId} a skupine ${groupId} sa nenašiel. Používam fallback: "${clubName}"`);
+            }
+
+            let shortCategoryName = categoryName;
+            if (shortCategoryName) {
+                shortCategoryName = shortCategoryName.replace(/U(\d+)\s*([CHZ])/i, 'U$1$2').toUpperCase();
+            }
+
+            let shortGroupName = '';
+            if (groupName) {
+                const match = groupName.match(/(?:skupina\s*)?([A-Z])/i);
+                if (match && match[1]) {
+                    shortGroupName = match[1].toUpperCase();
+                }
+            }
+
+            const fullDisplayName = `${shortCategoryName} ${shortGroupName}${teamNumber}`;
+
+            return {
+                fullDisplayName: fullDisplayName,
+                clubName: clubName
+            };
+        } catch (error) {
+            console.error("Chyba pri získavaní názvu tímu: ", error);
+            return { fullDisplayName: `Chyba`, clubName: `Chyba` };
+        }
+    };
 
     matchForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
-        const matchId = matchIdInput.value;
-        const matchDate = matchDateInput.value;
-        const matchStartTime = matchStartTimeInput.value;
-        const matchDuration = matchDurationInput.value;
-        const matchLocation = matchLocationInput.value;
         const matchCategory = matchCategorySelect.value;
         const matchGroup = matchGroupSelect.value;
+
         const team1Number = team1NumberInput.value;
-        const team2Number = team2NumberInput.value; // Opravené ID
+        const team2Number = team2NumberInput.value;
 
-        if (!matchDate || !matchStartTime || !matchDuration || !matchLocation || !matchCategory || !matchGroup || !team1Number || !team2Number) {
-            alert('Prosím, vyplňte všetky polia.');
+        if (!matchCategory || !matchGroup || !team1Number || !team2Number) {
+            alert('Prosím, vyplňte všetky povinné polia (Kategória, Skupina, Poradové číslo tímu 1 a 2).');
             return;
         }
 
-        // Kontrola, či sa tímy nelíšia len poradím
-        if (parseInt(team1Number) === parseInt(team2Number)) {
-            alert('Tím nemôže hrať sám proti sebe. Prosím, vyberte rôzne tímy.');
+        let team1Result = null;
+        let team2Result = null;
+
+        try {
+            team1Result = await getTeamName(matchCategory, matchGroup, team1Number);
+            team2Result = await getTeamName(matchCategory, matchGroup, team2Number);
+        } catch (error) {
+            console.error("Chyba pri získavaní názvov tímov:", error);
+            alert("Vyskytla sa chyba pri získavaní názvov tímov. Skúste to znova.");
             return;
         }
 
-        const team1Result = await getTeamName(matchCategory, matchGroup, team1Number);
-        const team2Result = await getTeamName(matchCategory, matchGroup, team2Number);
-
-        // Kontrola, či sa načítali názvy klubov
-        if (!team1Result.clubName || !team2Result.clubName) {
-            alert('Nepodarilo sa načítať názvy klubov pre jeden alebo oba tímy. Skontrolujte kategóriu, skupinu a čísla tímov.');
+        if (!team1Result || !team1Result.fullDisplayName || !team2Result || !team2Result.fullDisplayName) {
+            alert('Jeden alebo oba tímy sa nenašli. Skontrolujte poradové čísla v danej kategórii a skupine.');
             return;
         }
-
-        // AK SEM PRIDÁVAME NOVÚ KONTROLU
-        // Skontrolujeme, či kluby už proti sebe hrali v rovnakej kategórii
-        const club1Name = team1Result.clubName;
-        const club2Name = team2Result.clubName;
-
-        // Nemôžu hrať rovnaké kluby
-        if (club1Name === club2Name) {
-             alert('Tím nemôže hrať sám proti sebe. Prosím, vyberte rôzne tímy.');
-             return;
-        }
-
-        // Vyhľadanie existujúcich zápasov v rovnakej kategórii
-        const q = query(
-            matchesCollectionRef,
-            where('categoryId', '==', matchCategory) // Zápasy v rovnakej kategórii
-        );
-        const querySnapshot = await getDocs(q);
-
-        let alreadyPlayed = false;
-        querySnapshot.forEach(docSnap => {
-            const existingMatch = docSnap.data();
-            // Preskočíme aktuálny upravovaný zápas, aby sa neblokoval sám sebou
-            if (matchId && docSnap.id === matchId) {
-                return;
-            }
-
-            // Skontrolujeme obe možné kombinácie (A vs B alebo B vs A)
-            // Získame názvy klubov z existujúceho zápasu
-            const existingClub1Name = existingMatch.team1ClubName;
-            const existingClub2Name = existingMatch.team2ClubName;
-
-            // Vytvoríme zoradené polia pre porovnanie
-            const clubsInExistingMatch = [existingClub1Name, existingClub2Name].sort();
-            const clubsInNewMatch = [club1Name, club2Name].sort();
-
-            if (clubsInExistingMatch[0] === clubsInNewMatch[0] && clubsInExistingMatch[1] === clubsInNewMatch[1]) {
-                alreadyPlayed = true;
-            }
-        });
-
-        if (alreadyPlayed) {
-            alert(`Kluby "${club1Name}" a "${club2Name}" už proti sebe v tejto kategórii hrali.`);
-            return; // Zastavíme ukladanie
-        }
-        // KONIEC NOVEJ KONTROLY
 
         const matchData = {
-            date: matchDate,
-            startTime: matchStartTime,
-            duration: parseInt(matchDuration),
-            location: matchLocation,
-            categoryId: matchCategory, // Toto je ID kategórie
+            date: matchDateInput.value,
+            startTime: matchStartTimeInput.value,
+            duration: parseInt(matchDurationInput.value), // UISTITE SA, ŽE SA TOTO UKLADÁ!
+            location: matchLocationInput.value,
+            categoryId: matchCategory,
             categoryName: matchCategorySelect.options[matchCategorySelect.selectedIndex].text,
-
             groupId: matchGroup || null,
             groupName: matchGroup ? matchGroupSelect.options[matchGroupSelect.selectedIndex].text.replace(/skupina /gi, '').trim() : null,
+//            groupName: matchGroup ? matchGroupSelect.options[matchGroupSelect.selectedIndex].text : null,
 
-            team1Category: matchCategory, // Toto sú duplicitné dáta pre jednoduchšie filtrovanie
+            team1Category: matchCategory,
             team1Group: matchGroup,
             team1Number: parseInt(team1Number),
             team1DisplayName: team1Result.fullDisplayName,
             team1ClubName: team1Result.clubName,
 
-            team2Category: matchCategory, // Toto sú duplicitné dáta pre jednoduchšie filtrovanie
+            team2Category: matchCategory,
             team2Group: matchGroup,
             team2Number: parseInt(team2Number),
             team2DisplayName: team2Result.fullDisplayName,
@@ -409,21 +542,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         try {
             if (matchIdInput.value) {
-                // Ak ID existuje, aktualizujeme existujúci dokument
                 await setDoc(doc(matchesCollectionRef, matchIdInput.value), matchData, { merge: true });
                 alert('Zápas úspešne aktualizovaný!');
             } else {
-                // Ak ID neexistuje, pridáme nový dokument
                 await addDoc(matchesCollectionRef, matchData);
                 alert('Nový zápas úspešne pridaný!');
             }
             closeModal(matchModal);
-            await displayMatchesAsSchedule(); // Znovu načítame rozvrh
+            await displayMatchesAsSchedule();
         } catch (error) {
             console.error("Chyba pri ukladaní zápasu: ", error);
             alert("Chyba pri ukladaní zápasu. Pozrite konzolu pre detaily.");
         }
     });
-
-    await displayMatchesAsSchedule(); // Načíta zápasy pri štarte stránky
 });
