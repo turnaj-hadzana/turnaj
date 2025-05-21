@@ -322,7 +322,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (closePlayingDayModalButton) {
         closePlayingDayModalButton.addEventListener('click', () => closeModal(playingDayModal));
     } else {
-        console.error("Element 'closePlayingDayModalButton' not found. Cannot attach event listener.");
+        console.error("Element 'closePlayingDayButton' not found. Cannot attach event listener.");
     }
 
     if (playingDayForm) {
@@ -398,7 +398,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (closeSportHallModalButton) {
         closeSportHallModalButton.addEventListener('click', () => closeModal(sportHallModal));
     } else {
-        console.error("Element 'closeSportHallButton' not found. Cannot attach event listener.");
+        console.error("Element 'closeSportHallModalButton' not found. Cannot attach event listener.");
     }
 
     if (sportHallForm) {
