@@ -19,8 +19,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const closeMatchModalButton = document.getElementById('closeMatchModal');
     const matchForm = document.getElementById('matchForm');
     const matchIdInput = document.getElementById('matchId');
-    const matchDateSelect = document.getElementById('matchDateSelect'); // ZMENENÉ ID
-    const matchLocationSelect = document.getElementById('matchLocationSelect'); // ZMENENÉ ID
+    // ZMENENÉ: Namiesto inputu select boxy
+    const matchDateSelect = document.getElementById('matchDateSelect');
+    const matchLocationSelect = document.getElementById('matchLocationSelect');
+    // Koniec zmien
     const matchStartTimeInput = document.getElementById('matchStartTime');
     const matchDurationInput = document.getElementById('matchDuration');
     const matchCategorySelect = document.getElementById('matchCategory');
@@ -30,13 +32,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     const team1NumberInput = document.getElementById('team1NumberInput');
     const team2NumberInput = document.getElementById('team2NumberInput');
 
-    // Modálne okno pre hrací deň
+    // NOVÉ: Modálne okno pre hrací deň
     const playingDayModal = document.getElementById('playingDayModal');
     const closePlayingDayModalButton = document.getElementById('closePlayingDayModal');
     const playingDayForm = document.getElementById('playingDayForm');
     const playingDayDateInput = document.getElementById('playingDayDate');
 
-    // Modálne okno pre športovú halu
+    // NOVÉ: Modálne okno pre športovú halu
     const sportHallModal = document.getElementById('sportHallModal');
     const closeSportHallModalButton = document.getElementById('closeSportHallModal');
     const sportHallForm = document.getElementById('sportHallForm');
@@ -55,7 +57,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // --- NOVÉ FUNKCIE PRE PLNENIE SELECT BOXOV ---
+    // --- NOVÉ FUNKCIE PRE PLNENIE SELECT BODOV ---
     async function populatePlayingDaysSelect(selectElement, selectedDate = '') {
         selectElement.innerHTML = '<option value="">-- Vyberte dátum --</option>';
         try {
@@ -207,8 +209,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     );
 
                     const CELL_WIDTH_PX = 260;
-                    const MINUTES_PER_CELL = 60;
-                    const PIXELS_PER_MINUTE = CELL_WIDTH_PX / MINUTES_PER_MINUTE; // Opravená chyba: PIXELS_PER_MINUTE by malo byť založené na CELL_WIDTH_PX / MINUTES_PER_CELL
+                    const MINUTES_PER_CELL = 60; // <--- OPRAVA: Konštanta je už definovaná vyššie
+                    const PIXELS_PER_MINUTE = CELL_WIDTH_PX / MINUTES_PER_CELL; // <-- TU BOLA CHYBA, teraz je opravená!
                     const ITEM_HEIGHT_PX = 160;
 
                     matchesForLocationAndDate.sort((a, b) => {
@@ -513,7 +515,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const categoryName = categoryDoc.exists() ? (categoryDoc.data().name || categoryId) : categoryId;
 
             const groupDoc = await getDoc(doc(groupsCollectionRef, groupId));
-            const groupData = groupDoc.exists() ? groupDoc.data() : null; // Oprava: groupData.data() bolo správne
+            const groupData = groupDoc.exists() ? groupDoc.data() : null;
             const groupName = groupData ? (groupData.name || groupId) : groupId;
 
             let clubName = `Tím ${teamNumber}`;
@@ -572,8 +574,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         const team1Number = parseInt(team1NumberInput.value);
         const team2Number = parseInt(team2NumberInput.value);
 
-        const matchDate = matchDateSelect.value; // ZMENENÉ
-        const matchLocation = matchLocationSelect.value; // ZMENENÉ
+        const matchDate = matchDateSelect.value;
+        const matchLocation = matchLocationSelect.value;
         const matchStartTime = matchStartTimeInput.value;
         const matchDuration = parseInt(matchDurationInput.value);
 
