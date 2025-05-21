@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const addPlayingDayButton = document.getElementById('addPlayingDayButton');
     const addSportHallButton = document.getElementById('addSportHallButton');
     const addMatchButton = document.getElementById('addMatchButton');
-    const addBusButton = document = document.getElementById('addBusButton'); // NOVÉ: Tlačidlo pre pridanie autobusu
+    const addBusButton = document.getElementById('addBusButton'); // NOVÉ: Tlačidlo pre pridanie autobusu
 
     // Modálne okno pre zápas
     const matchModal = document.getElementById('matchModal');
