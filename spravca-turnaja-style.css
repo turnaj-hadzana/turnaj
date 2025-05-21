@@ -815,6 +815,10 @@ td:last-child {
     bottom: 30px; /* Vzdialenosť od spodného okraja */
     right: 30px; /* Vzdialenosť od pravého okraja */
     z-index: 1000; /* Zabezpečí, že je nad ostatným obsahom */
+    /* Dôležité: Nepoužívajte tu display: flex; alebo display: grid; */
+    /* pre #controlsContainer, ak chcete, aby sa #addOptions
+       pozicoval priamo vzhľadom na #addButton v rámci tohto kontajnera.
+       #controlsContainer by mal byť len kontajner pre pozicovanie. */
 }
 
 /* Tlačidlo "+" */
@@ -826,14 +830,14 @@ td:last-child {
     font-size: 2.5em; /* Zväčšené písmo */
     border: none;
     border-radius: 50%;
-    display: flex;
+    display: flex; /* Toto je dôležité pre centrovanie '+' v tlačidle */
     justify-content: center;
     align-items: center;
     cursor: pointer;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3); /* Väčší tieň */
     transition: background-color 0.3s ease, transform 0.2s ease;
     z-index: 1001; /* Uistíme sa, že je nad dropdownom a nad #controlsContainer */
-    position: relative; /* Potrebné pre z-index vo vzťahu k siblings */
+    /* position: relative;  - Toto nie je potrebné, ak je rodič fixed, ale nevadí to */
 }
 
 #addButton:hover {
@@ -842,9 +846,13 @@ td:last-child {
 }
 
 /* Dropdown možnosti */
-#controlsContainer #addOptions.add-options-dropdown { /* Zvýšená špecifickosť */
+/* KĽÚČOVÁ ZMENA: targetujeme priamo #addOptions s jeho triedou,
+   a uistíme sa, že pozicovanie je správne vzhľadom na addButton */
+#addOptions.add-options-dropdown { 
     position: absolute; /* Absolútne pozicovanie vzhľadom na #controlsContainer */
-    bottom: calc(100% + 15px); /* Umiestni dropdown nad tlačidlo "+". 100% je výška #controlsContainer (alebo #addButton), 15px je medzera */
+    /* bottom: calc(100% + 15px); - TOTO JE PRE NICH! Použijeme bottom: 100% a pridáme margin pre medzeru */
+    bottom: 100%; /* Umiestni spodný okraj dropdownu na horný okraj #controlsContainer (ktorý obsahuje #addButton) */
+    margin-bottom: 15px; /* Vytvorí medzeru medzi dropdownom a tlačidlom */
     right: 0; /* Zarovná dropdown k pravému okraju rodiča (#controlsContainer) */
     
     background-color: white;
@@ -864,7 +872,7 @@ td:last-child {
 }
 
 /* Pravidlo pre zobrazenie dropdownu pomocou JS */
-#controlsContainer #addOptions.add-options-dropdown.show { /* Zvýšená špecifickosť */
+#addOptions.add-options-dropdown.show { 
     display: flex;
     opacity: 1; /* Animácia zobrazenia */
     transform: translateY(0); /* Animácia zobrazenia */
