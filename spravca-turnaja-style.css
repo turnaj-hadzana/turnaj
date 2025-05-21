@@ -117,6 +117,7 @@ main {
     min-width: 0;
     overflow-x: hidden; /* Zabezpečí, že main sám nebude mať horizontálny scrollbar */
     /* overflow-y: auto; Ak tu chceš vertikálny scrollbar pre celý main obsah */
+    align-self: flex-start; /* NOVÉ: Zabezpečí, že main sa vertikálne neroztiahne viac, ako je potrebné */
 }
 
 #groupsContent,
@@ -412,7 +413,7 @@ td:last-child {
 .modal-content form input[type="time"], /* NOVÉ: pre časové inputy */
 .modal-content form input[type="url"], /* Pre Google Maps URL */
 .modal-content form input[type="date"] /* Pre dátumové inputy */
- {
+{
     width: calc(100% - 22px);
     padding: 10px;
     border: 1px solid #ccc;
@@ -481,7 +482,7 @@ td:last-child {
     .modal-content form input[type="time"], /* NOVÉ: pre časové inputy */
     .modal-content form input[type="url"], /* Pre Google Maps URL */
     .modal-content form input[type="date"] /* Pre dátumové inputy */
-     {
+    {
         width: calc(100% - 20px);
     }
     .category-count-pair {
@@ -560,12 +561,11 @@ td:last-child {
     overflow: hidden; /* Skryje pretekajúci obsah - ponechané tu, ak je text hlavičky dlhý */
 }
 
-<!--
 /* Špecifické štýly pre bunky (td) */
 .match-schedule-table td {
-    height: 140px;
+    height: 140px; /* Ponechané, aby sa autobusy nerozbili */
 }
--->
+
 
 
 /* Štýly pre hlavičky */
@@ -621,7 +621,7 @@ td:last-child {
 .schedule-times-row {
     display: flex;
     justify-content: space-around;
-    padding: 5
+    padding: 5px;
     background-color: #e6e6e6;
     border-top: 1px solid #ddd;
     margin: 0;
@@ -872,6 +872,6 @@ td:last-child {
     text-decoration: none;
 }
 .hall-address a {
-    text-decoration: none; 
+    text-decoration: none;
     color: inherit;
 }
