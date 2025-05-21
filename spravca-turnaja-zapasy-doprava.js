@@ -253,7 +253,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // Ak názov miesta v sortedLocations nezodpovedá aktívnej športovej hale, preskočíme tento riadok.
                 // Toto rieši prípady, keď hala mohla byť vymazaná, ale udalosti na ňu stále odkazujú.
                 if (!hallData) {
-                    console.warn(`Preskakujem riadok pre miesto "${locationName}", pretože to nie je aktívna športová hala. Riadok nebude vykreslený.`);
+                    console.warn(`Preskakujem riadok pre miesto "${locationName}", pretože to nie je aktívna športová hala.`);
                     return; 
                 }
 
@@ -339,28 +339,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             busOverlayContainer.id = 'busOverlayContainer';
             // Nastavíme pozíciu na absolute v rámci scheduleTableContainer (ktorý je relative a scrollable)
             // Nastavíme šírku a výšku na 100% rodiča a pointer-events na none predvolene
-
-// Vytvor a nastav overlay kontajner
-busOverlayContainer.id = 'busOverlayContainer';
-
-// Nový štýl s obmedzenou výškou
-busOverlayContainer.style.cssText = `
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: ${scheduleTable.offsetHeight}px;
-    pointer-events: none;
-    overflow: visible;
-    z-index: 7;
-`;
-
-scheduleTableContainer.appendChild(busOverlayContainer);          
-            
-
-
-
-            
+            busOverlayContainer.style.cssText = 'position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;'; 
             scheduleTableContainer.appendChild(busOverlayContainer); // Pridáme do scheduleTableContainer
 
             // Výpočet globálnych pixelových offsetov pre miesta a časy
