@@ -631,7 +631,12 @@ td:last-child {
     overflow-wrap: break-word;
     min-width: 0; /* Dôležité pre flexbox, aby sa text mohol zmenšiť */
 }
-
+.schedule-cell-time {
+    font-size: 0.7em; /* Menšie písmo */
+    color: #555; /* Trochu tmavšia šedá */
+    margin-bottom: 2px; /* Malá medzera pod časom */
+    text-align: center; /* Voliteľné: Zarovnať čas na stred */
+}
 .schedule-cell-category {
     font-weight: bold;
     color: #0056b3;
