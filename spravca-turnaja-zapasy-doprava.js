@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const busDateSelect = document.getElementById('busDateSelect');
     const busStartLocationSelect = document.getElementById('busStartLocationSelect');
     const busStartTimeInput = document.getElementById('busStartTimeInput');
-    const busEndLocationSelect = document.getElementById('busEndLocationSelect');
+    const busEndLocationSelect = document.getElementById('busEndLocationSelect'); // Opravené: odstránené duplicitné "document ="
     const busEndTimeInput = document.getElementById('busEndTimeInput');
     const busNotesInput = document.getElementById('busNotesInput');
     const deleteBusButtonModal = document.getElementById('deleteBusButtonModal'); // NOVÉ: Tlačidlo Vymazať v modale
@@ -364,13 +364,26 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const endLocation = bus.endLocation;
                 const date = bus.date;
 
-                const startLocationY = locationRowTopOffsets.get(startLocation);
-                const endLocationY = locationRowTopOffsets.get(endLocation) + ITEM_HEIGHT_PX; // End at the bottom of the end location cell
+                let busStartY, busEndY;
+                const startLocationTop = locationRowTopOffsets.get(startLocation);
+                const endLocationTop = locationRowTopOffsets.get(endLocation);
 
-                if (startLocationY === undefined || endLocationY === undefined) {
+                if (startLocationTop === undefined || endLocationTop === undefined) {
                     console.warn(`Nenašiel som pozíciu pre začiatok alebo koniec trasy autobusu: ${bus.busName} (${startLocation} -> ${endLocation})`);
                     return;
                 }
+
+                // Logika pre smer vykresľovania autobusu
+                if (startLocationTop <= endLocationTop) {
+                    // Začiatočná hala je nad alebo v rovnakom riadku ako koncová hala
+                    busStartY = startLocationTop; // Začína na hornom okraji riadku začiatku
+                    busEndY = endLocationTop + ITEM_HEIGHT_PX; // Končí na spodnom okraji riadku konca
+                } else {
+                    // Začiatočná hala je pod koncovou halou
+                    busStartY = startLocationTop + ITEM_HEIGHT_PX; // Začína na spodnom okraji riadku začiatku
+                    busEndY = endLocationTop; // Končí na hornom okraji riadku konca
+                }
+
 
                 const [startH, startM] = bus.startTime.split(':').map(Number);
                 const [endH, endM] = bus.endTime.split(':').map(Number);
@@ -413,15 +426,28 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // Points for the parallelogram (relative to SVG's viewBox)
                 // (0,0) is top-left of the SVG container
                 const svgWidth = busWidthPx + Math.abs(slantOffset); // SVG needs to be wider to contain the slant
-                const svgHeight = endLocationY - startLocationY;
+                const svgHeight = Math.abs(busEndY - busStartY); // Výška SVG je absolútna hodnota rozdielu Y súradníc
 
                 // Points are relative to the SVG's own coordinate system (0,0 to svgWidth, svgHeight)
-                const points = `
-                    ${slantOffset},0
-                    ${svgWidth},0
-                    ${busWidthPx},${svgHeight}
-                    0,${svgHeight}
-                `.trim();
+                let points;
+                if (startLocationTop <= endLocationTop) {
+                    // Smer zhora nadol (alebo v rámci jedného riadku)
+                    points = `
+                        ${slantOffset},0
+                        ${svgWidth},0
+                        ${busWidthPx},${svgHeight}
+                        0,${svgHeight}
+                    `.trim();
+                } else {
+                    // Smer zdola nahor
+                    points = `
+                        0,0
+                        ${busWidthPx},0
+                        ${svgWidth},${svgHeight}
+                        ${slantOffset},${svgHeight}
+                    `.trim();
+                }
+
 
                 const svgElement = document.createElementNS("http://www.w3.org/2000/svg", "svg");
                 svgElement.setAttribute("class", "bus-svg");
@@ -431,7 +457,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 svgElement.style.cssText = `
                     position: absolute;
                     left: ${busLeftPx - slantOffset}px; /* Adjust left position for the slant */
-                    top: ${startLocationY}px;
+                    top: ${Math.min(busStartY, busEndY)}px; /* Používame minimum pre správne umiestnenie SVG */
                     pointer-events: all; /* Allow clicks on SVG */
                 `;
                 svgElement.dataset.id = bus.id;
