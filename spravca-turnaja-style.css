@@ -683,16 +683,19 @@ td:last-child {
     top: 0;
     /* left a width sú nastavené JS dynamicky */
     height: 100%; /* Zaberá celú výšku rodičovskej TD */
-    background-color: #f0e68c; /* Khaki - svetlo žltá */
-    border: 1px solid #daa520; /* Zlatá tyč - tmavo žltá */
     border-radius: 4px;
     padding: 5px;
     margin: 2px 0;
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
-    z-index: 5;
+    justify-content: center; /* Centruje obsah vertikálne */
+    align-items: center; /* Centruje obsah horizontálne */
+    z-index: 6; /* Zvýšený z-index, aby bol nad zápasmi */
+
+    /* NOVÉ: Vizuálna úprava pre "štvoruholník" s výraznými okrajmi */
+    background-color: #f0e68c; /* Khaki - svetlo žltá výplň */
+    border: 2px solid #daa520; /* Výrazný zlatý okraj pre "štvoruholník" */
 }
 
 
@@ -742,20 +745,13 @@ td:last-child {
 .schedule-cell-bus-name {
     font-weight: bold;
     color: #8b4513; /* Hnedá */
-    font-size: 0.85em;
+    font-size: 0.9em; /* Zväčšené písmo, keďže je to jediný text */
+    text-align: center;
 }
 
-.schedule-cell-bus-route {
-    color: #4682b4; /* Oceľová modrá */
-    font-size: 0.8em;
-    white-space: normal;
-}
-
+.schedule-cell-bus-route,
 .schedule-cell-bus-notes {
-    font-style: italic;
-    color: #778899; /* Svetlá bridlicová šedá */
-    font-size: 0.6em;
-    white-space: normal;
+    display: none; /* Skryjeme, ak má byť zobrazený len názov autobusu */
 }
 
 
