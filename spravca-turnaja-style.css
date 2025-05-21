@@ -526,7 +526,7 @@ td:last-child {
     background-color: #007bff;
     color: white;
     font-size: 0.9em;
-    width: 50px; /* Pevná šírka pre tento stĺpec */
+    width: 80px; /* Pevná šírka pre tento stĺpec */
 /*    min-width: 160px;*/
 /*    max-width: 160px;*/
     position: sticky;
