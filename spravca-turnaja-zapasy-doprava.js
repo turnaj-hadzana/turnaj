@@ -389,7 +389,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         team1NumberInput.value = '';
         team2NumberInput.value = '';
-        matchDurationInput.value = 60; // Predvolená hodnota pri pridávaní
+        matchDurationInput.value = '';
 
         openModal(matchModal);
     });
