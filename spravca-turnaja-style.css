@@ -788,3 +788,19 @@ td:last-child {
 .modal-content button[type="submit"]:hover {
     background-color: #45a049;
 }
+.delete-date-btn, .delete-location-btn {
+    background: none;
+    border: none;
+    color: #ff0000; /* Červená farba pre lepšiu viditeľnosť */
+    cursor: pointer;
+    font-size: 0.9em; /* Alebo podľa potreby */
+    margin-left: 5px;
+    padding: 0;
+    vertical-align: middle;
+    opacity: 0.7;
+    transition: opacity 0.2s ease-in-out;
+}
+
+.delete-date-btn:hover, .delete-location-btn:hover {
+    opacity: 1;
+}
