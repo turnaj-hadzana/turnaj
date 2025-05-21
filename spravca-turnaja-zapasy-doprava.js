@@ -166,8 +166,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Event listener pre zmeny v select boxoch haly a hracieho dňa
-    hallSelect.addEventListener('change', calculateFirstAvailableMatchTime);
-    playingDaySelect.addEventListener('change', calculateFirstAvailableMatchTime);
+    // Pridaná kontrola, či elementy existujú, aby sa predišlo chybe "Cannot read properties of null"
+    if (hallSelect) {
+        hallSelect.addEventListener('change', calculateFirstAvailableMatchTime);
+    } else {
+        console.error("Chyba: Element s ID 'hallSelect' nebol nájdený. Event listener pre zmenu haly nebol pridaný.");
+    }
+
+    if (playingDaySelect) {
+        playingDaySelect.addEventListener('change', calculateFirstAvailableMatchTime);
+    } else {
+        console.error("Chyba: Element s ID 'playingDaySelect' nebol nájdený. Event listener pre zmenu hracieho dňa nebol pridaný.");
+    }
 
 
     // Zobrazenie rozbaľovacieho menu po kliknutí na tlačidlo "+"
@@ -717,7 +727,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         e.preventDefault();
         const id = hallIdInput.value;
         const name = hallNameInput.value.trim();
-        const address = hallAddressInput.value.trim();
+        const address = hallAddressInput.trim();
         const googleMapsUrl = hallGoogleMapsUrlInput.value.trim();
 
         if (!name || !address || !googleMapsUrl) {
@@ -869,4 +879,3 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Inicializácia zobrazenia rozvrhu pri načítaní stránky
     await displayMatchesAsSchedule();
 });
-
