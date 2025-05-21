@@ -131,6 +131,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         matchesContainer.insertAdjacentHTML('afterbegin', '<p>Načítavam logistiku turnaja...</p>');
         
+        // Definície konštánt pre výpočet pozícií a rozmerov
+        const CELL_WIDTH_PX = 260;
+        const MINUTES_PER_HOUR = 60;
+        const PIXELS_PER_MINUTE = CELL_WIDTH_PX / MINUTES_PER_HOUR;
+        const ITEM_HEIGHT_PX = 160;
+
         try {
             // Načítame zápasy
             const matchesQuery = query(matchesCollectionRef, orderBy("date", "asc"), orderBy("location", "asc"), orderBy("startTime", "asc"));
@@ -262,15 +268,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                         return (aH * 60 + aM) - (bH * 60 + bM);
                     });
 
-                    const CELL_WIDTH_PX = 260;
-                    const MINUTES_PER_HOUR = 60;
-                    const PIXELS_PER_MINUTE = CELL_WIDTH_PX / MINUTES_PER_HOUR;
-                    const ITEM_HEIGHT_PX = 160;
-
                     matchesForCell.forEach(match => {
                         const [startH, startM] = match.startTime.split(':').map(Number);
                         const absoluteStartMin = startH * 60 + startM;
-                        const durationWithBuffer = (match.duration || 0) + (match.bufferTime || 0);
                         
                         const relativeStartMinInCell = absoluteStartMin - (range.minHour * 60);
 
@@ -627,7 +627,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 matchModalTitle.textContent = 'Upraviť zápas';
 
                 await populatePlayingDaysSelect(matchDateSelect, matchData.date);
-                await populateSportHallsSelect(matchLocationSelect, matchData.location);
+                await populateSportHallsSelect(matchLocationSelect, matchData.data.location);
 
                 matchStartTimeInput.value = matchData.startTime || '';
                 matchDurationInput.value = matchData.duration || 60;
