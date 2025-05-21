@@ -60,7 +60,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             categoriesSnapshot.forEach(categoryDoc => {
                 const categoryId = categoryDoc.id;
                 const categoryName = categoryDoc.data().name;
-                const categoryData = existingCategorySettings[categoryId] || { duration: 60, bufferTime: 5 }; // Predvolené hodnoty
+                const categoryData = existingCategorySettings[categoryId] || { duration: '', bufferTime: '' }; // Predvolené hodnoty
 
                 const categoryDiv = document.createElement('div');
                 categoryDiv.classList.add('form-group', 'category-setting-group');
