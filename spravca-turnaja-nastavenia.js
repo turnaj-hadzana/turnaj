@@ -50,6 +50,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         categorySettingsContainer.innerHTML = '<p>Načítavam kategórie...</p>';
         try {
             console.log("Pokúšam sa načítať kategórie z Firestore...");
+            // Logujeme celú cestu ku kolekcii, aby sme videli, čo sa hľadá
+            console.log(`Cesta ku kolekcii kategórií: ${categoriesCollectionRef.path}`);
+            
             const categoriesSnapshot = await getDocs(query(categoriesCollectionRef, orderBy("name", "asc")));
             
             console.log(`Načítaných kategórií: ${categoriesSnapshot.docs.length}`);
