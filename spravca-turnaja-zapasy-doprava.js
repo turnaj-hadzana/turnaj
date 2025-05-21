@@ -234,12 +234,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                         const relativeStartMin = absoluteStartMin - (firstHourInDay * 60);
 
                         const matchBlockLeftPx = relativeStartMin * PIXELS_PER_MINUTE;
-                        // Šírka hlavného bloku zápasu teraz zahŕňa aj ochranné pásmo
-                        const matchBlockTotalWidthPx = (durationInMinutes + bufferInMinutes) * PIXELS_PER_MINUTE; 
+                        // Šírka modrého obdĺžnika zobrazuje IBA čas zápasu
+                        const matchBlockWidthPx = durationInMinutes * PIXELS_PER_MINUTE; 
 
-                        // Pozícia a šírka vnútorného bloku pre ochranné pásmo
-                        const bufferInternalLeftPx = durationInMinutes * PIXELS_PER_MINUTE;
-                        const bufferInternalWidthPx = bufferInMinutes * PIXELS_PER_MINUTE;
+                        // Pozícia a šírka ochranného pásma (začína presne po zápase)
+                        const bufferBlockLeftPx = matchBlockLeftPx + matchBlockWidthPx;
+                        const bufferBlockWidthPx = bufferInMinutes * PIXELS_PER_MINUTE;
 
 
                         let topPx = 0;
@@ -268,17 +268,21 @@ document.addEventListener('DOMContentLoaded', async () => {
                         matchEndTime.setHours(startH, startM + durationInMinutes, 0, 0);
                         const formattedEndTime = matchEndTime.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' });
 
+                        // Najprv pridáme blok ochranného pásma (ak existuje)
+                        // Bude umiestnený hneď za blokom zápasu a s vyšším z-indexom
+                        if (bufferInMinutes > 0) {
+                            scheduleHtml += `
+                                <div class="schedule-cell-buffer"
+                                    style="position: absolute; left: ${bufferBlockLeftPx}px; width: ${bufferBlockWidthPx}px; top: ${topPx}px; height: ${ITEM_HEIGHT_PX}px; background-color: #ffcccc; border-left: 1px dashed #ff9999; z-index: 6;">
+                                    </div>
+                            `;
+                        }
+
+                        // Potom pridáme blok samotného zápasu
                         scheduleHtml += `
                             <div class="schedule-cell-match"
                                 data-id="${match.id}"
-                                style="left: ${matchBlockLeftPx}px; width: ${matchBlockTotalWidthPx}px; top: ${topPx}px; height: ${ITEM_HEIGHT_PX}px; position: absolute; z-index: 5;">
-                                
-                                ${bufferInMinutes > 0 ? `
-                                    <div class="schedule-cell-buffer-internal"
-                                        style="position: absolute; left: ${bufferInternalLeftPx}px; width: ${bufferInternalWidthPx}px; top: 0; height: 100%; background-color: #ffcccc; border-left: 1px dashed #ff9999; box-sizing: border-box; z-index: 6;">
-                                    </div>
-                                ` : ''}
-
+                                style="position: absolute; left: ${matchBlockLeftPx}px; width: ${matchBlockWidthPx}px; top: ${topPx}px; height: ${ITEM_HEIGHT_PX}px; z-index: 5;">
                                 <p class="schedule-cell-time">${match.startTime} - ${formattedEndTime}</p>
                                 <p class="schedule-cell-category">${match.categoryName || 'N/A'}${match.groupName ? ` ${match.groupName}` : ''}</p>
                                 <p class="schedule-cell-teams">${match.team1DisplayName}<br>${match.team2DisplayName}</p>
