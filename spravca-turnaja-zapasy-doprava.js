@@ -151,19 +151,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Spojíme všetky udalosti (zápasy a autobusy)
             const allEvents = [...allMatches, ...allBuses];
 
-            // Získame aj hracie dni a športové haly pre hlavičky tabuľky
-            const playingDaysSnapshot = await getDocs(query(playingDaysCollectionRef, orderBy("date", "asc")));
+            // Získame kompletné dáta o halách pre zobrazenie adresy a URL (potrebné pre hall-address)
             const sportHallsSnapshot = await getDocs(query(sportHallsCollectionRef, orderBy("name", "asc")));
-
-            const existingPlayingDays = playingDaysSnapshot.docs.map(doc => doc.data().date);
-            // Získame kompletné dáta o halách pre zobrazenie adresy a URL
             const existingSportHallsData = sportHallsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            const existingSportHallsNames = existingSportHallsData.map(hall => hall.name);
 
 
-            // Spojíme unikátne miesta a dátumy zo všetkých udalostí
-            const uniqueLocations = new Set([...existingSportHallsNames]);
-            const uniqueDates = new Set([...existingPlayingDays]);
+            // Spojíme unikátne miesta a dátumy LEN zo všetkých udalostí
+            const uniqueLocations = new Set(); 
+            const uniqueDates = new Set(); 
 
             allEvents.forEach(event => {
                 uniqueDates.add(event.date);
