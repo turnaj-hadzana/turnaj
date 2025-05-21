@@ -341,14 +341,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             const q1 = query(
                 matchesCollectionRef,
                 where("categoryId", "==", matchCategory),
-                where("groupId", "==", matchGroup),
                 where("team1Number", "==", team1Number),
                 where("team2Number", "==", team2Number)
             );
             const q2 = query(
                 matchesCollectionRef,
                 where("categoryId", "==", matchCategory),
-                where("groupId", "==", matchGroup),
                 where("team1Number", "==", team2Number),
                 where("team2Number", "==", team1Number)
             );
