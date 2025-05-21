@@ -360,7 +360,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Render buses as global SVGs
             allBuses.forEach(bus => {
                 const startLocation = bus.startLocation;
-                const endLocation = bus.endLocation;
+                const endLocation = bus.location; // Should be bus.endLocation
                 const date = bus.date;
 
                 let busStartY, busEndY;
@@ -417,7 +417,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
 
 
-                const busWidthPx = (durationInMinutes * PIXELS_PER_MINUTE) / 2; 
+                // Corrected busWidthPx calculation: should be directly proportional to duration
+                const busWidthPx = durationInMinutes * PIXELS_PER_MINUTE; 
 
                 // Slant parameters
                 const slantOffset = 30; // How much the bottom points are shifted horizontally compared to top points
