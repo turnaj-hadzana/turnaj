@@ -104,7 +104,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     }
                 }
 
-                const displayDateObj = new Date(dateRaw);
+                const displayDateObj = new Date(date);
                 const displayDay = String(displayDateObj.getDate()).padStart(2, '0');
                 const displayMonth = String(displayDateObj.getMonth() + 1).padStart(2, '0');
                 const displayYear = String(displayDateObj.getFullYear());
