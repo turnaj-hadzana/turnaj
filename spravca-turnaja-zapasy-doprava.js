@@ -417,13 +417,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        // Kontrola, či tímy z rovnakého klubu nemôžu hrať proti sebe v rovnakej skupine
-        // Túto podmienku ponechávam, ak je stále platná:
-        if (team1Result.clubId && team2Result.clubId && team1Result.clubId === team2Result.clubId) {
-            alert('Tímy z rovnakého klubu nemôžu hrať proti sebe v rovnakej skupine. Prosím, vyberte tímy z rôznych klubov.');
-            return;
-        }
-
         // --- KONTROLA: Tímy v rovnakej kategórii a skupine nemôžu hrať proti sebe viackrát ---
         try {
             // Skontrolujeme v oboch smeroch (Tím 1 vs Tím 2 A Tím 2 vs Tím 1)
