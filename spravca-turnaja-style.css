@@ -215,6 +215,10 @@ td:last-child {
     background-color: #bd2130;
     border-color: #a71d2a;
 }
+.section-block h2 {
+    text-align: center; 
+    margin-bottom: 20px;
+}
 #groupsContent .section-block h2 {
     white-space: nowrap;
     overflow: hidden;
