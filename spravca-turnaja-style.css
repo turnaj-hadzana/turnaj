@@ -677,25 +677,36 @@ td:last-child {
     /* overflow: hidden;  <-- ODSTRÁNIL SOM TOTO, aby sa posuvník na schedule-cell-content mohol zobraziť, ak je to potrebné */
 }
 
-/* NOVÉ: Štýly pre blok autobusu vo vnútri bunky */
-.schedule-cell-bus {
+/* NOVÉ: Základné štýly pre SVG kontajner pre autobus */
+.schedule-cell-bus-svg-container {
     position: absolute;
     top: 0;
-    /* left a width sú nastavené JS dynamicky */
-    height: 100%; /* Zaberá celú výšku rodičovskej TD */
-    border-radius: 4px;
-    padding: 5px;
-    margin: 2px 0;
-    box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
-    justify-content: center; /* Centruje obsah vertikálne */
-    align-items: center; /* Centruje obsah horizontálne */
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible; /* Dôležité, aby sa SVG mohlo vykresliť aj mimo hraníc bunky */
     z-index: 6; /* Zvýšený z-index, aby bol nad zápasmi */
+    pointer-events: none; /* Aby kliknutia prešli na podkladové elementy (napr. pre editáciu) */
+}
 
-    /* NOVÉ: Vizuálna úprava pre "štvoruholník" s výraznými okrajmi */
-    background-color: #f0e68c; /* Khaki - svetlo žltá výplň */
-    border: 2px solid #daa520; /* Výrazný zlatý okraj pre "štvoruholník" */
+/* NOVÉ: Štýly pre SVG polygon autobusu */
+.schedule-bus-polygon {
+    fill: #8bc34a; /* Zelená farba autobusu */
+    stroke: #33691e; /* Tmavší zelený okraj */
+    stroke-width: 2;
+    pointer-events: auto; /* Znovu povoliť udalosti na samotnom polygóne */
+    cursor: pointer; /* Zmena kurzora na ruku */
+}
+
+/* NOVÉ: Štýly pre text názvu autobusu v SVG */
+.schedule-bus-text {
+    font-family: sans-serif;
+    font-size: 12px;
+    fill: #333; /* Farba textu */
+    text-anchor: middle; /* Centruje text horizontálne */
+    dominant-baseline: middle; /* Centruje text vertikálne */
+    pointer-events: none; /* Text nebude blokovať kliknutia na polygon */
+    font-weight: bold;
 }
 
 
@@ -741,7 +752,7 @@ td:last-child {
     white-space: normal;
 }
 
-/* NOVÉ: Štýly pre text v bloku autobusu */
+/* NOVÉ: Štýly pre text v bloku autobusu (už sa nepoužívajú priamo, ale ponechané pre konzistenciu) */
 .schedule-cell-bus-name {
     font-weight: bold;
     color: #8b4513; /* Hnedá */
