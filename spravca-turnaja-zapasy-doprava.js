@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // NOVÉ: Modálne okno pre autobus
     const busModal = document.getElementById('busModal');
-    const closeBusModalButton = document.getElementById('closeBusModal');
+    const closeBusModalButton = document = document.getElementById('closeBusModal');
     const busForm = document.getElementById('busForm');
     const busIdInput = document.getElementById('busId');
     const busModalTitle = document.getElementById('busModalTitle');
@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const busDateSelect = document.getElementById('busDateSelect');
     const busStartLocationSelect = document.getElementById('busStartLocationSelect');
     const busStartTimeInput = document.getElementById('busStartTimeInput');
-    const busEndLocationSelect = document.getElementById('busEndLocationSelect'); // Opravené: odstránené duplicitné "document ="
+    const busEndLocationSelect = document.getElementById('busEndLocationSelect');
     const busEndTimeInput = document.getElementById('busEndTimeInput');
     const busNotesInput = document.getElementById('busNotesInput');
     const deleteBusButtonModal = document.getElementById('deleteBusButtonModal'); // NOVÉ: Tlačidlo Vymazať v modale
@@ -430,22 +430,28 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 // Points are relative to the SVG's own coordinate system (0,0 to svgWidth, svgHeight)
                 let points;
+                let svgLeftOffset = 0; // Predvolené žiadne dodatočné posunutie
+
                 if (startLocationTop <= endLocationTop) {
                     // Smer zhora nadol (alebo v rámci jedného riadku)
-                    points = `
-                        ${slantOffset},0
-                        ${svgWidth},0
-                        ${busWidthPx},${svgHeight}
-                        0,${svgHeight}
-                    `.trim();
-                } else {
-                    // Smer zdola nahor
+                    // Pre prevrátenie sklonu použijeme body, ktoré pôvodne boli pre smer zdola nahor
                     points = `
                         0,0
                         ${busWidthPx},0
                         ${svgWidth},${svgHeight}
                         ${slantOffset},${svgHeight}
                     `.trim();
+                    svgLeftOffset = 0; // Polygon začína na x=0, takže žiadny offset
+                } else {
+                    // Smer zdola nahor
+                    // Pre prevrátenie sklonu použijeme body, ktoré pôvodne boli pre smer zhora nadol
+                    points = `
+                        ${slantOffset},0
+                        ${svgWidth},0
+                        ${busWidthPx},${svgHeight}
+                        0,${svgHeight}
+                    `.trim();
+                    svgLeftOffset = slantOffset; // SVG potrebuje byť posunuté doľava o slantOffset
                 }
 
 
@@ -456,9 +462,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 svgElement.setAttribute("viewBox", `0 0 ${svgWidth} ${svgHeight}`);
                 svgElement.style.cssText = `
                     position: absolute;
-                    left: ${busLeftPx - slantOffset}px; /* Adjust left position for the slant */
+                    left: ${busLeftPx - svgLeftOffset}px; /* Upravte ľavú pozíciu na základe smeru sklonu */
                     top: ${Math.min(busStartY, busEndY)}px; /* Používame minimum pre správne umiestnenie SVG */
-                    pointer-events: all; /* Allow clicks on SVG */
+                    pointer-events: all; /* Umožňuje kliknutie na SVG */
                 `;
                 svgElement.dataset.id = bus.id;
                 svgElement.dataset.type = bus.type;
