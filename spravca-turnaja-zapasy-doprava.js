@@ -834,8 +834,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 await populateSportHallsSelect(matchLocationSelect, matchData.location);
 
                 matchStartTimeInput.value = matchData.startTime || '';
-                matchDurationInput.value = matchData.duration || 60;
-                matchBufferTimeInput.value = matchData.bufferTime || 5; // Načítanie ochranného pásma
+                matchDurationInput.value = matchData.duration || '';
+                matchBufferTimeInput.value = matchData.bufferTime || ''; // Načítanie ochranného pásma
 
                 await populateCategorySelect(matchCategorySelect, matchData.categoryId);
                 if (matchData.categoryId) {
@@ -964,8 +964,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         team1NumberInput.value = '';
         team2NumberInput.value = '';
         // Nastavíme predvolené hodnoty pre trvanie a ochranné pásmo, ktoré sa prepočítajú po výbere kategórie
-        matchDurationInput.value = 60; 
-        matchBufferTimeInput.value = 5; 
+        matchDurationInput.value = ''; 
+        matchBufferTimeInput.value = ''; 
         deleteMatchButtonModal.style.display = 'none'; // Skryť tlačidlo Vymazať pri pridávaní
         openModal(matchModal);
         addOptions.classList.remove('show'); // Skryť dropdown po výbere
