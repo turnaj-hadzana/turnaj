@@ -607,7 +607,6 @@ td:last-child {
     border-radius: 4px;
     padding: 5px; /* Ponechajte padding pre celú bunku */
     margin: 2px 0;
-    white-space: normal;
     box-sizing: border-box;
     display: flex;
     flex-direction: column; /* Položky sú usporiadané vertikálne */
@@ -653,7 +652,8 @@ td:last-child {
 .schedule-cell-club-names {
     font-style: italic;
     color: #666;
-    font-size: 0.75em; /* Zmenšené písmo pre kluby (už bolo 0.9em, teraz ešte menšie) */
+    font-size: 0.75em;
+    white-space: normal;
 }
 
 /* Akčné tlačidlá vo vnútri bloku zápasu */
