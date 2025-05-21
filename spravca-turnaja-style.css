@@ -472,7 +472,7 @@ td:last-child {
     /* width: 36%;  ODSTRÁNIŤ TOTO */
     /* margin: 0 auto; ODSTRÁNIŤ TOTO */
     width: 50%; /* Tabuľka vyplní dostupnú šírku rodiča main, ktorý je flex-grow: 1 */
-    margin: 20px 0px 20px auto;
+    margin: 20px 0px 20px 500px;
 }
 
 /* Základná tabuľka rozvrhu */
