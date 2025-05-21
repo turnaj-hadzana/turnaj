@@ -325,8 +325,23 @@ document.addEventListener('DOMContentLoaded', async () => {
                         const firstHourInDay = range.minHour;
                         const relativeStartMin = absoluteStartMin - (firstHourInDay * 60);
 
-                        const eventBlockLeftPx = relativeStartMin * PIXELS_PER_MINUTE;
-                        const eventBlockWidthPx = durationOrRouteTime * PIXELS_PER_MINUTE; 
+                        let eventBlockLeftPx;
+                        let eventBlockWidthPx;
+
+                        if (event.type === 'match') {
+                            eventBlockLeftPx = relativeStartMin * PIXELS_PER_MINUTE;
+                            eventBlockWidthPx = durationOrRouteTime * PIXELS_PER_MINUTE;
+                        } else if (event.type === 'bus') {
+                            // NOVÉ: Úprava šírky zobrazeného elementu pre autobus
+                            // Zmenšíme šírku autobusu na percento z vypočítanej šírky, aby bol vizuálne odlíšiteľný
+                            const BUS_WIDTH_SCALE_FACTOR = 0.7; // Napr. 70% šírky oproti vypočítanej dĺžke trasy
+                            const originalBusWidthPx = durationOrRouteTime * PIXELS_PER_MINUTE;
+                            eventBlockWidthPx = originalBusWidthPx * BUS_WIDTH_SCALE_FACTOR;
+                            
+                            // Vycentrujeme autobusový blok v rámci jeho pôvodného časového slotu
+                            eventBlockLeftPx = relativeStartMin * PIXELS_PER_MINUTE + (originalBusWidthPx - eventBlockWidthPx) / 2;
+                        }
+
 
                         // Pozícia a šírka ochranného pásma (začína presne po zápase)
                         const bufferBlockLeftPx = eventBlockLeftPx + eventBlockWidthPx;
@@ -723,7 +738,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const categoryName = categoryDoc.exists() ? (categoryDoc.data().name || categoryId) : categoryId;
 
             const groupDoc = await getDoc(doc(groupsCollectionRef, groupId));
-            const groupData = groupDoc.exists() ? groupDoc.data() : null;
+            const groupData = groupDoc.exists() ? groupData.data() : null;
             const groupName = groupData ? (groupData.name || groupId) : groupId;
 
             let clubName = `Tím ${teamNumber}`;
