@@ -135,8 +135,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const categorySettings = data.categoryMatchSettings && data.categoryMatchSettings[categoryId];
                 if (categorySettings) {
                     return {
-                        duration: categorySettings.duration || 60,
-                        bufferTime: categorySettings.bufferTime || 5
+                        duration: categorySettings.duration || '',
+                        bufferTime: categorySettings.bufferTime || ''
                     };
                 }
             }
