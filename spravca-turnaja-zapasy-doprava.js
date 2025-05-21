@@ -242,6 +242,22 @@ document.addEventListener('DOMContentLoaded', async () => {
                     scheduleHtml += `<span></span>`; // Placeholder for empty day
                 }
                 scheduleHtml += '</div>';
+
+                // NOVÉ: Pridanie informácií o autobusoch do hlavičky dátumu
+                const busesForDate = allBuses.filter(bus => bus.date === date);
+                if (busesForDate.length > 0) {
+                    scheduleHtml += '<div class="schedule-bus-header-info">';
+                    busesForDate.sort((a, b) => {
+                        const [aH, aM] = a.startTime.split(':').map(Number);
+                        const [bH, bM] = b.startTime.split(':').map(Number);
+                        return (aH * 60 + aM) - (bH * 60 + bM);
+                    });
+                    busesForDate.forEach(bus => {
+                        scheduleHtml += `<p>${bus.busName}: ${bus.startLocation} &rarr; ${bus.endLocation} (${bus.startTime} - ${bus.endTime})</p>`;
+                    });
+                    scheduleHtml += '</div>';
+                }
+
                 scheduleHtml += '</th>';
             });
             scheduleHtml += '</tr></thead><tbody>';
@@ -474,48 +490,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 polygon.setAttribute("points", points);
                 svgElement.appendChild(polygon);
 
-                // Add text elements
-                // Text positions need to be relative to the SVG's viewBox and adjusted for the slant
-                const textYBase = svgHeight / 2; 
-                const textXBase = svgWidth / 2; // Center of the SVG viewBox
-
-                const busNameText = document.createElementNS("http://www.w3.org/2000/svg", "text");
-                busNameText.setAttribute("class", "schedule-bus-text");
-                busNameText.setAttribute("x", textXBase);
-                busNameText.setAttribute("y", textYBase - 20); // Adjust Y for stacking
-                busNameText.setAttribute("text-anchor", "middle");
-                busNameText.setAttribute("dominant-baseline", "middle");
-                busNameText.textContent = bus.busName;
-                svgElement.appendChild(busNameText);
-
-                const busRouteText = document.createElementNS("http://www.w3.org/2000/svg", "text");
-                busRouteText.setAttribute("class", "schedule-bus-route-text");
-                busRouteText.setAttribute("x", textXBase);
-                busRouteText.setAttribute("y", textYBase); // Adjust Y for stacking
-                busRouteText.setAttribute("text-anchor", "middle");
-                busRouteText.setAttribute("dominant-baseline", "middle");
-                busRouteText.textContent = `${bus.startLocation} → ${bus.endLocation}`;
-                svgElement.appendChild(busRouteText);
-
-                const busTimeText = document.createElementNS("http://www.w3.org/2000/svg", "text");
-                busTimeText.setAttribute("class", "schedule-bus-time-text");
-                busTimeText.setAttribute("x", textXBase);
-                busTimeText.setAttribute("y", textYBase + 20); // Adjust Y for stacking
-                busTimeText.setAttribute("text-anchor", "middle");
-                busTimeText.setAttribute("dominant-baseline", "middle");
-                busTimeText.textContent = `${bus.startTime} - ${bus.endTime}`;
-                svgElement.appendChild(busTimeText);
-
-                if (bus.notes) {
-                    const busNotesText = document.createElementNS("http://www.w3.org/2000/svg", "text");
-                    busNotesText.setAttribute("class", "schedule-bus-notes-text");
-                    busNotesText.setAttribute("x", textXBase);
-                    busNotesText.setAttribute("y", textYBase + 40); // Adjust Y for stacking
-                    busNotesText.setAttribute("text-anchor", "middle");
-                    busNotesText.setAttribute("dominant-baseline", "middle");
-                    busNotesText.textContent = bus.notes;
-                    svgElement.appendChild(busNotesText);
-                }
+                // Textové elementy pre autobus boli presunuté do hlavičky dátumu
+                // Preto sú z tohto miesta odstránené.
 
                 busOverlayContainer.appendChild(svgElement);
             });
