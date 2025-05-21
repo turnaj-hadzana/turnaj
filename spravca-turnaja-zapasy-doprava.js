@@ -41,7 +41,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Modálne okno pre športovú halu
     const sportHallModal = document.getElementById('sportHallModal');
-    const closeSportHallModalButton = document = document.getElementById('closeSportHallModal');
+    const closeSportHallModalButton = document.getElementById('closeSportHallModal');
     const sportHallForm = document.getElementById('sportHallForm');
     const hallNameInput = document.getElementById('hallName');
     const hallAddressInput = document.getElementById('hallAddress');
