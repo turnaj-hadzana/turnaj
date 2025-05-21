@@ -34,7 +34,7 @@
 
     <div id="matchModal" class="modal">
         <div class="modal-content">
-            <button class="close group-modal-close" id="closeMatchModal" type="button">&times;</button>
+            <button class="close group-modal-close" id="closeMatchModal" type="button">×</button>
             <h2 id="matchModalTitle">Pridať nový zápas / dopravu</h2>
             <form id="matchForm">
                 <input type="hidden" id="matchId">
@@ -92,7 +92,7 @@
 
     <div id="playingDayModal" class="modal">
         <div class="modal-content">
-            <button class="close group-modal-close" id="closePlayingDayModal" type="button">&times;</button>   
+            <button class="close group-modal-close" id="closePlayingDayModal" type="button">×</button>   
             <h2>Pridať hrací deň</h2>
             <form id="playingDayForm">
                 <div class="form-group">
@@ -106,7 +106,7 @@
 
     <div id="sportHallModal" class="modal">
         <div class="modal-content">
-            <button class="close group-modal-close" id="closeSportHallModal" type="button">&times;</button>
+            <button class="close group-modal-close" id="closeSportHallModal" type="button">×</button>
             <h2>Pridať športovú halu</h2>
             <form id="sportHallForm">
                 <div class="form-group">
@@ -126,12 +126,65 @@
         </div>
     </div>
 
+    <div id="busModal" class="modal">
+        <div class="modal-content">
+            <button class="close group-modal-close" id="closeBusModal" type="button">×</button>
+            <h2 id="busModalTitle">Pridať nový autobus</h2>
+            <form id="busForm">
+                <input type="hidden" id="busId">
+                <div class="form-group">
+                    <label for="busName">Názov autobusu / Označenie:</label>
+                    <input type="text" id="busName" required>
+                </div>
+                <div class="form-group">
+                    <label for="busCapacity">Kapacita (počet miest):</label>
+                    <input type="number" id="busCapacity" min="1" value="50">
+                </div>
+                <div class="form-group">
+                    <label for="busDriverName">Meno vodiča (voliteľné):</label>
+                    <input type="text" id="busDriverName">
+                </div>
+                <div class="form-group">
+                    <label for="busContactInfo">Kontaktné údaje (voliteľné):</label>
+                    <input type="text" id="busContactInfo">
+                </div>
+                <div class="form-group">
+                    <label for="busNotes">Poznámky (voliteľné):</label>
+                    <textarea id="busNotes" rows="3"></textarea>
+                </div>
+                <hr> <h3>Detaily cesty</h3>
+                <div class="form-group">
+                    <label for="busDateSelect">Dátum cesty:</label>
+                    <select id="busDateSelect" required></select>
+                </div>
+                <div class="form-group">
+                    <label for="busFromLocationSelect">Miesto odchodu (športová hala):</label>
+                    <select id="busFromLocationSelect" required></select>
+                </div>
+                <div class="form-group">
+                    <label for="busToLocationSelect">Miesto príchodu (športová hala):</label>
+                    <select id="busToLocationSelect" required></select>
+                </div>
+                <div class="form-group">
+                    <label for="busDepartureTime">Čas odchodu:</label>
+                    <input type="time" id="busDepartureTime" required>
+                </div>
+                <div class="form-group">
+                    <label for="busArrivalTime">Čas príchodu:</label>
+                    <input type="time" id="busArrivalTime" required>
+                </div>
+                <button type="submit">Uložiť autobus</button>
+            </form>
+        </div>
+    </div>
+
     <div id="controlsContainer">
         <button id="addButton" class="add-button">+</button>
         <div id="addOptions" class="add-options-dropdown">
             <button id="addPlayingDayButton">Pridať hrací deň</button>
             <button id="addSportHallButton">Pridať športovú halu</button>
             <button id="addMatchButton">Pridať zápas</button>
+            <button id="addBusButton">Pridať autobus</button>
         </div>
     </div>
 
