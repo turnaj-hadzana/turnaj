@@ -1,7 +1,4 @@
-import { db, settingsCollectionRef, categoriesCollectionRef, getDoc, setDoc, doc, getDocs, query, orderBy } from './spravca-turnaja-common.js'; // categoriesCollectionRef je opäť importovaný
-
-// Odstránená lokálna definícia appId a localCategoriesCollectionRef,
-// pretože budeme používať categoriesCollectionRef importovaný z common.js
+import { db, settingsCollectionRef, categoriesCollectionRef, getDoc, setDoc, doc, getDocs, query, orderBy } from './spravca-turnaja-common.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     const loggedInUsername = localStorage.getItem('username');
@@ -53,12 +50,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         categorySettingsContainer.innerHTML = '<p>Načítavam kategórie...</p>';
         try {
             console.log("Pokúšam sa načítať kategórie z Firestore...");
-            // Logujeme celú cestu ku kolekcii, aby sme videli, čo sa hľadá
-            // Teraz categoriesCollectionRef pochádza priamo z common.js
             console.log(`Cesta ku kolekcii kategórií (z common.js): ${categoriesCollectionRef.path}`); 
             
-            // Používame referenciu importovanú z common.js
-            const categoriesSnapshot = await getDocs(query(categoriesCollectionRef, orderBy("name", "asc")));
+            // Používame referenciu importovanú z common.js, bez orderBy
+            const categoriesSnapshot = await getDocs(categoriesCollectionRef); // Zmenené: odstránené query a orderBy
             
             console.log(`Načítaných kategórií: ${categoriesSnapshot.docs.length}`);
 
@@ -70,7 +65,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return;
             }
 
-            categoriesSnapshot.forEach(categoryDoc => {
+            categoriesSnapshot.docs.forEach(categoryDoc => { // Prechádzame dokumentmi priamo
                 const categoryId = categoryDoc.id;
                 const categoryName = categoryDoc.data().name;
                 console.log(`Spracovávam kategóriu: ID=${categoryId}, Názov=${categoryName}`);
