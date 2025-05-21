@@ -1,4 +1,4 @@
-import { db, categoriesCollectionRef, groupsCollectionRef, clubsCollectionRef, matchesCollectionRef, openModal, closeModal, populateCategorySelect, populateGroupSelect, populateTeamNumberSelect, getDocs, doc, setDoc, addDoc, getDoc, query, where, orderBy, deleteDoc } from './spravca-turnaja-common.js';
+import { db, categoriesCollectionRef, groupsCollectionRef, clubsCollectionRef, matchesCollectionRef, playingDaysCollectionRef, sportHallsCollectionRef, openModal, closeModal, populateCategorySelect, populateGroupSelect, getDocs, doc, setDoc, addDoc, getDoc, query, where, orderBy, deleteDoc, writeBatch } from './spravca-turnaja-common.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     const loggedInUsername = localStorage.getItem('username');
@@ -9,21 +9,40 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const categoriesContentSection = document.getElementById('categoriesContentSection');
     const addButton = document.getElementById('addButton');
+    const addOptions = document.getElementById('addOptions'); // Správne získanie odkazu na dropdown
+    const addPlayingDayButton = document.getElementById('addPlayingDayButton');
+    const addSportHallButton = document.getElementById('addSportHallButton');
+    const addMatchButton = document.getElementById('addMatchButton');
+
+    // Modálne okno pre zápas
     const matchModal = document.getElementById('matchModal');
     const closeMatchModalButton = document.getElementById('closeMatchModal');
     const matchForm = document.getElementById('matchForm');
     const matchIdInput = document.getElementById('matchId');
-    const matchDateInput = document.getElementById('matchDate');
+    const matchDateSelect = document.getElementById('matchDateSelect');
+    const matchLocationSelect = document.getElementById('matchLocationSelect');
     const matchStartTimeInput = document.getElementById('matchStartTime');
     const matchDurationInput = document.getElementById('matchDuration');
-    const matchLocationInput = document.getElementById('matchLocation');
     const matchCategorySelect = document.getElementById('matchCategory');
     const matchGroupSelect = document.getElementById('matchGroup');
     const matchModalTitle = document.getElementById('matchModalTitle');
     const matchesContainer = document.getElementById('matchesContainer');
-
     const team1NumberInput = document.getElementById('team1NumberInput');
     const team2NumberInput = document.getElementById('team2NumberInput');
+
+    // Modálne okno pre hrací deň
+    const playingDayModal = document.getElementById('playingDayModal');
+    const closePlayingDayModalButton = document.getElementById('closePlayingDayModal');
+    const playingDayForm = document.getElementById('playingDayForm');
+    const playingDayDateInput = document.getElementById('playingDayDate');
+
+    // Modálne okno pre športovú halu
+    const sportHallModal = document.getElementById('sportHallModal');
+    const closeSportHallModalButton = document.getElementById('closeSportHallModal');
+    const sportHallForm = document.getElementById('sportHallForm');
+    const hallNameInput = document.getElementById('hallName');
+    const hallAddressInput = document.getElementById('hallAddress');
+    const hallGoogleMapsUrlInput = document.getElementById('hallGoogleMapsUrl');
 
 
     if (categoriesContentSection) {
@@ -36,6 +55,47 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
+    // --- NOVÉ FUNKCIE PRE PLNENIE SELECT BODOV ---
+    async function populatePlayingDaysSelect(selectElement, selectedDate = '') {
+        selectElement.innerHTML = '<option value="">-- Vyberte dátum --</option>';
+        try {
+            const querySnapshot = await getDocs(query(playingDaysCollectionRef, orderBy("date", "asc")));
+            querySnapshot.forEach((doc) => {
+                const day = doc.data();
+                const option = document.createElement('option');
+                option.value = day.date; // Uložíme dátum ako hodnotu
+                option.textContent = day.date; // Zobrazíme dátum
+                selectElement.appendChild(option);
+            });
+            if (selectedDate) {
+                selectElement.value = selectedDate;
+            }
+        } catch (error) {
+            console.error("Chyba pri načítaní hracích dní: ", error);
+        }
+    }
+
+    async function populateSportHallsSelect(selectElement, selectedHallName = '') {
+        selectElement.innerHTML = '<option value="">-- Vyberte miesto (halu) --</option>';
+        try {
+            const querySnapshot = await getDocs(query(sportHallsCollectionRef, orderBy("name", "asc")));
+            querySnapshot.forEach((doc) => {
+                const hall = doc.data();
+                const option = document.createElement('option');
+                option.value = hall.name; // Uložíme názov haly ako hodnotu
+                option.textContent = hall.name; // Zobrazíme názov haly
+                selectElement.appendChild(option);
+            });
+            if (selectedHallName) {
+                selectElement.value = selectedHallName;
+            }
+        } catch (error) {
+            console.error("Chyba pri načítaní športových hál: ", error);
+        }
+    }
+    // --- KONIEC NOVÝCH FUNKCIÍ ---
+
+
     // --- Funkcia na načítanie a zobrazenie zápasov ako rozvrh (miesto vs. čas/deň) ---
     async function displayMatchesAsSchedule() {
         if (!matchesContainer) return;
@@ -45,15 +105,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             const q = query(matchesCollectionRef, orderBy("date", "asc"), orderBy("location", "asc"), orderBy("startTime", "asc"));
             const querySnapshot = await getDocs(q);
 
-            if (querySnapshot.empty) {
-                matchesContainer.innerHTML = '<p>Žiadne zápasy ani informácie o doprave zatiaľ.</p>';
-                return;
-            }
+            // Získame aj hracie dni a športové haly pre hlavičky tabuľky
+            const playingDaysSnapshot = await getDocs(query(playingDaysCollectionRef, orderBy("date", "asc")));
+            const sportHallsSnapshot = await getDocs(query(sportHallsCollectionRef, orderBy("name", "asc")));
 
             const allMatches = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const existingPlayingDays = playingDaysSnapshot.docs.map(doc => doc.data().date);
+            const existingSportHalls = sportHallsSnapshot.docs.map(doc => doc.data().name);
 
-            const uniqueLocations = new Set();
-            const uniqueDates = new Set();
+            // Spojíme existujúce entity s tými, ktoré sú v zápasoch, aby sme nič neprehliadli
+            const uniqueLocations = new Set([...existingSportHalls]);
+            const uniqueDates = new Set([...existingPlayingDays]);
+
             allMatches.forEach(match => {
                 uniqueLocations.add(match.location);
                 uniqueDates.add(match.date);
@@ -103,8 +166,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 const colspan = hoursForDate.length;
                 if (colspan > 0) {
-                    scheduleHtml += `<th colspan="${colspan}">`;
-                    scheduleHtml += `<div class="schedule-date-header">${formattedDisplayDate}</div>`;
+                    scheduleHtml += `<th colspan="${colspan}" class="delete-date-header" data-date="${date}" title="Kliknutím vymažete hrací deň ${formattedDisplayDate} a všetky jeho zápasy">`;
+                    scheduleHtml += `<div class="schedule-date-header-content">${formattedDisplayDate}</div>`;
                     scheduleHtml += '<div class="schedule-times-row">';
                     hoursForDate.forEach(hour => {
                         scheduleHtml += `<span>${String(hour % 24).padStart(2, '0')}:00</span>`;
@@ -112,14 +175,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                     scheduleHtml += '</div>';
                     scheduleHtml += '</th>';
                 } else {
-                    scheduleHtml += `<th><div class="schedule-date-header">${formattedDisplayDate}</div><div class="schedule-times-row"><span></span></div></th>`;
+                    scheduleHtml += `<th class="delete-date-header" data-date="${date}" title="Kliknutím vymažete hrací deň ${formattedDisplayDate}">`;
+                    scheduleHtml += `<div class="schedule-date-header-content">${formattedDisplayDate}</div><div class="schedule-times-row"><span></span></div></th>`;
                 }
             });
             scheduleHtml += '</tr></thead><tbody>';
 
             sortedLocations.forEach(location => {
                 scheduleHtml += '<tr>';
-                scheduleHtml += `<th class="fixed-column schedule-location-header">${location}</th>`;
+                scheduleHtml += `<th class="fixed-column schedule-location-header delete-location-header" data-location="${location}" title="Kliknutím vymažete športovú halu ${location} a všetky jej zápasy">${location}</th>`;
 
                 sortedDates.forEach(date => {
                     const range = dailyTimeRanges.get(date);
@@ -143,8 +207,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     );
 
                     const CELL_WIDTH_PX = 260;
-                    const MINUTES_PER_CELL = 60;
-                    const PIXELS_PER_MINUTE = CELL_WIDTH_PX / MINUTES_PER_CELL;
+                    const MINUTES_PER_HOUR = 60; // Upravený názov pre jasnosť
+                    const PIXELS_PER_MINUTE = CELL_WIDTH_PX / MINUTES_PER_HOUR;
                     const ITEM_HEIGHT_PX = 160;
 
                     matchesForLocationAndDate.sort((a, b) => {
@@ -173,7 +237,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                         let foundTrack = false;
                         for (let i = 0; i < tracks.length; i++) {
                             const track = tracks[i];
-                            if (absoluteStartMin >= track.endMin || absoluteEndMin <= track.startMin) {
+                            const doesOverlap = (absoluteStartMin < track.endMin && absoluteEndMin > track.startMin);
+                            
+                            if (!doesOverlap) {
                                 topPx = track.topPx;
                                 track.startMin = Math.min(track.startMin, absoluteStartMin);
                                 track.endMin = Math.max(track.endMin, absoluteEndMin);
@@ -210,7 +276,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 });
                 scheduleHtml += '</tr>';
             });
-
+            
             scheduleHtml += '</tbody></table>';
             scheduleHtml += '</div>';
             matchesContainer.innerHTML = scheduleHtml;
@@ -221,12 +287,95 @@ document.addEventListener('DOMContentLoaded', async () => {
             matchesContainer.querySelectorAll('.delete-btn').forEach(button => {
                 button.addEventListener('click', (event) => deleteMatch(event.target.dataset.id));
             });
+            matchesContainer.querySelectorAll('.delete-date-header').forEach(header => {
+                header.addEventListener('click', (event) => {
+                    if (event.target === header || event.target.closest('.delete-date-header') === header) {
+                        if (!event.target.classList.contains('edit-btn') && !event.target.classList.contains('delete-btn')) {
+                            const dateToDelete = header.dataset.date;
+                            deletePlayingDay(dateToDelete);
+                        }
+                    }
+                });
+            });
+            matchesContainer.querySelectorAll('.delete-location-header').forEach(header => {
+                header.addEventListener('click', (event) => {
+                    if (event.target === header || event.target.closest('.delete-location-header') === header) {
+                        if (!event.target.classList.contains('edit-btn') && !event.target.classList.contains('delete-btn')) {
+                            const locationToDelete = header.dataset.location;
+                            deleteSportHall(locationToDelete);
+                        }
+                    }
+                });
+            });
 
         } catch (error) {
             console.error("Chyba pri načítaní rozvrhu zápasov: ", error);
             matchesContainer.innerHTML = '<p>Chyba pri načítaní rozvrhu zápasov. Skontrolujte konzolu pre detaily a uistite sa, že máte vytvorené potrebné indexy vo Firestore.</p>';
         }
     }
+
+    async function deletePlayingDay(dateToDelete) {
+        if (confirm(`Naozaj chcete vymazať hrací deň ${dateToDelete} a VŠETKY zápasy, ktoré sa konajú v tento deň?`)) {
+            try {
+                const batch = writeBatch(db);
+
+                const playingDayQuery = query(playingDaysCollectionRef, where("date", "==", dateToDelete));
+                const playingDaySnapshot = await getDocs(playingDayQuery);
+                if (!playingDaySnapshot.empty) {
+                    playingDaySnapshot.docs.forEach(docToDelete => {
+                        batch.delete(doc(playingDaysCollectionRef, docToDelete.id));
+                    });
+                } else {
+                    console.warn(`Hrací deň ${dateToDelete} sa nenašiel, ale pokračujem v mazaní zápasov.`);
+                }
+
+                const matchesQuery = query(matchesCollectionRef, where("date", "==", dateToDelete));
+                const matchesSnapshot = await getDocs(matchesQuery);
+                matchesSnapshot.docs.forEach(matchDoc => {
+                    batch.delete(doc(matchesCollectionRef, matchDoc.id));
+                });
+
+                await batch.commit();
+                alert(`Hrací deň ${dateToDelete} a všetky súvisiace zápasy boli úspešne vymazané!`);
+                await displayMatchesAsSchedule();
+            } catch (error) {
+                console.error(`Chyba pri mazaní hracieho dňa ${dateToDelete}: `, error);
+                alert(`Chyba pri mazaní hracieho dňa ${dateToDelete}. Pozrite konzolu pre detaily.`);
+            }
+        }
+    }
+
+    async function deleteSportHall(hallNameToDelete) {
+        if (confirm(`Naozaj chcete vymazať športovú halu ${hallNameToDelete} a VŠETKY zápasy, ktoré sa konajú v tejto hale?`)) {
+            try {
+                const batch = writeBatch(db);
+
+                const sportHallQuery = query(sportHallsCollectionRef, where("name", "==", hallNameToDelete));
+                const sportHallSnapshot = await getDocs(sportHallQuery);
+                if (!sportHallSnapshot.empty) {
+                    sportHallSnapshot.docs.forEach(docToDelete => {
+                        batch.delete(doc(sportHallsCollectionRef, docToDelete.id));
+                    });
+                } else {
+                    console.warn(`Športová hala ${hallNameToDelete} sa nenašla, ale pokračujem v mazaní zápasov.`);
+                }
+
+                const matchesQuery = query(matchesCollectionRef, where("location", "==", hallNameToDelete));
+                const matchesSnapshot = await getDocs(matchesQuery);
+                matchesSnapshot.docs.forEach(matchDoc => {
+                    batch.delete(doc(matchesCollectionRef, matchDoc.id));
+                });
+
+                await batch.commit();
+                alert(`Športová hala ${hallNameToDelete} a všetky súvisiace zápasy boli úspešne vymazané!`);
+                await displayMatchesAsSchedule();
+            } catch (error) {
+                console.error(`Chyba pri mazaní športovej haly ${hallNameToDelete}: `, error);
+                alert(`Chyba pri mazaní športovej haly ${hallNameToDelete}. Pozrite konzolu pre detaily.`);
+            }
+        }
+    }
+
 
     async function editMatch(matchId) {
         try {
@@ -238,10 +387,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 matchIdInput.value = matchId;
                 matchModalTitle.textContent = 'Upraviť zápas / dopravu';
 
-                matchDateInput.value = matchData.date || '';
+                await populatePlayingDaysSelect(matchDateSelect, matchData.date);
+                await populateSportHallsSelect(matchLocationSelect, matchData.location);
+
                 matchStartTimeInput.value = matchData.startTime || '';
                 matchDurationInput.value = matchData.duration || 60;
-                matchLocationInput.value = matchData.location || '';
 
                 await populateCategorySelect(matchCategorySelect, matchData.categoryId);
                 if (matchData.categoryId) {
@@ -280,20 +430,62 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     await displayMatchesAsSchedule();
 
-    addButton.addEventListener('click', () => {
+
+    // --- Logika pre tlačidlo '+' a dropdown ---
+    addButton.addEventListener('click', (event) => {
+        event.stopPropagation(); // Zabráni okamžitému zatvoreniu dropdownu kliknutím na tlačidlo
+        addOptions.classList.toggle('show'); // Prepne triedu 'show'
+    });
+
+    // Skryť dropdown, ak kliknem mimo neho alebo jeho možností
+    document.addEventListener('click', (event) => {
+        if (!addButton.contains(event.target) && !addOptions.contains(event.target)) {
+            addOptions.classList.remove('show');
+        }
+    });
+
+    addPlayingDayButton.addEventListener('click', () => {
+        playingDayForm.reset();
+        openModal(playingDayModal);
+        addOptions.classList.remove('show'); // Skryť dropdown po výbere
+    });
+
+    addSportHallButton.addEventListener('click', () => {
+        sportHallForm.reset();
+        openModal(sportHallModal);
+        addOptions.classList.remove('show'); // Skryť dropdown po výbere
+    });
+
+    addMatchButton.addEventListener('click', async () => {
         matchForm.reset();
         matchIdInput.value = '';
         matchModalTitle.textContent = 'Pridať nový zápas / dopravu';
-
-        populateCategorySelect(matchCategorySelect);
+        await populateCategorySelect(matchCategorySelect);
+        await populatePlayingDaysSelect(matchDateSelect);
+        await populateSportHallsSelect(matchLocationSelect);
         matchGroupSelect.innerHTML = '<option value="">-- Vyberte skupinu --</option>';
         matchGroupSelect.disabled = true;
-
         team1NumberInput.value = '';
         team2NumberInput.value = '';
         matchDurationInput.value = '';
-
         openModal(matchModal);
+        addOptions.classList.remove('show'); // Skryť dropdown po výbere
+    });
+
+    // --- Zatváranie modálnych okien ---
+    closePlayingDayModalButton.addEventListener('click', () => {
+        closeModal(playingDayModal);
+        displayMatchesAsSchedule();
+    });
+
+    closeSportHallModalButton.addEventListener('click', () => {
+        closeModal(sportHallModal);
+        displayMatchesAsSchedule();
+    });
+
+    closeMatchModalButton.addEventListener('click', () => {
+        closeModal(matchModal);
+        displayMatchesAsSchedule();
     });
 
     matchCategorySelect.addEventListener('change', () => {
@@ -307,11 +499,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             team1NumberInput.value = '';
             team2NumberInput.value = '';
         }
-    });
-
-    closeMatchModalButton.addEventListener('click', () => {
-        closeModal(matchModal);
-        displayMatchesAsSchedule();
     });
 
     const getTeamName = async (categoryId, groupId, teamNumber) => {
@@ -374,6 +561,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
+    // --- Event Listener pre formulár ZÁPASU ---
     matchForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
@@ -382,10 +570,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         const team1Number = parseInt(team1NumberInput.value);
         const team2Number = parseInt(team2NumberInput.value);
 
+        const matchDate = matchDateSelect.value;
+        const matchLocation = matchLocationSelect.value;
+        const matchStartTime = matchStartTimeInput.value;
+        const matchDuration = parseInt(matchDurationInput.value);
+
+
         const currentMatchId = matchIdInput.value;
 
-        if (!matchCategory || !matchGroup || isNaN(team1Number) || isNaN(team2Number)) {
-            alert('Prosím, vyplňte všetky povinné polia (Kategória, Skupina, Poradové číslo tímu 1 a 2).');
+        if (!matchCategory || !matchGroup || isNaN(team1Number) || isNaN(team2Number) || !matchDate || !matchLocation || !matchStartTime || isNaN(matchDuration)) {
+            alert('Prosím, vyplňte všetky povinné polia (Kategória, Skupina, Poradové číslo tímu 1 a 2, Dátum, Miesto, Čas začiatku, Trvanie).');
             return;
         }
 
@@ -412,7 +606,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         // --- KONTROLA: Tímy v rovnakej kategórii a skupine nemôžu hrať proti sebe viackrát ---
-        let existingMatchId = null; // Uchovávame ID existujúceho duplikátu
+        let existingMatchId = null;
         try {
             const q1 = query(
                 matchesCollectionRef,
@@ -432,7 +626,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             const snapshot1 = await getDocs(q1);
             const snapshot2 = await getDocs(q2);
 
-            // Hľadáme existujúci zápas, ktorý NIE JE ten, ktorý práve upravujeme
             const foundDoc1 = snapshot1.docs.find(doc => doc.id !== currentMatchId);
             const foundDoc2 = snapshot2.docs.find(doc => doc.id !== currentMatchId);
 
@@ -453,23 +646,24 @@ document.addEventListener('DOMContentLoaded', async () => {
                 } else {
                     alert('Operácia zrušená. Zápas nebol pridaný ani odstránený.');
                     closeModal(matchModal);
-                    return; // Zastavíme submit, ak používateľ nechce odstrániť existujúci zápas
+                    return;
                 }
             }
 
-        } catch (error) {
+        } // catch blok pre kontrolu existujuceho zapasu bol zmenený v predchadzajucej verzii, vrátim ho
+        catch (error) {
             console.error("Chyba pri kontrole alebo mazaní existujúceho zápasu:", error);
             alert("Vyskytla sa chyba pri kontrole alebo mazaní existujúceho zápasu. Skúste to znova.");
-            return; // Zastavíme submit pri chybe
+            return;
         }
         // --- KONIEC KONTROLY ---
 
 
         const matchData = {
-            date: matchDateInput.value,
-            startTime: matchStartTimeInput.value,
-            duration: parseInt(matchDurationInput.value),
-            location: matchLocationInput.value,
+            date: matchDate,
+            startTime: matchStartTime,
+            duration: matchDuration,
+            location: matchLocation,
             categoryId: matchCategory,
             categoryName: matchCategorySelect.options[matchCategorySelect.selectedIndex].text,
             groupId: matchGroup || null,
@@ -507,6 +701,82 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (error) {
             console.error("Chyba pri ukladaní zápasu: ", error);
             alert("Chyba pri ukladaní zápasu. Pozrite konzolu pre detaily.");
+        }
+    });
+
+
+    // --- Event Listener pre formulár HRACIEHO DŇA ---
+    playingDayForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const date = playingDayDateInput.value;
+
+        if (!date) {
+            alert('Prosím, zadajte dátum hracieho dňa.');
+            return;
+        }
+
+        try {
+            const q = query(playingDaysCollectionRef, where("date", "==", date));
+            const querySnapshot = await getDocs(q);
+
+            if (!querySnapshot.empty) {
+                alert('Hrací deň s týmto dátumom už existuje!');
+                return;
+            }
+
+            await addDoc(playingDaysCollectionRef, {
+                date: date,
+                createdAt: new Date()
+            });
+            alert('Hrací deň úspešne pridaný!');
+            closeModal(playingDayModal);
+            await displayMatchesAsSchedule(); // Aktualizovať rozvrh
+        } catch (error) {
+            console.error("Chyba pri ukladaní hracieho dňa: ", error);
+            alert("Chyba pri ukladaní hracieho dňa. Pozrite konzolu pre detaily.");
+        }
+    });
+
+    // --- Event Listener pre formulár ŠPORTOVEJ HALY ---
+    sportHallForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const name = hallNameInput.value.trim();
+        const address = hallAddressInput.value.trim();
+        const googleMapsUrl = hallGoogleMapsUrlInput.value.trim();
+
+        if (!name || !address || !googleMapsUrl) {
+            alert('Prosím, vyplňte všetky polia (Názov haly, Adresa, Odkaz na Google Maps).');
+            return;
+        }
+
+        try {
+            new URL(googleMapsUrl);
+        } catch (_) {
+            alert('Odkaz na Google Maps musí byť platná URL adresa.');
+            return;
+        }
+
+        try {
+            const q = query(sportHallsCollectionRef, where("name", "==", name));
+            const querySnapshot = await getDocs(q);
+
+            if (!querySnapshot.empty) {
+                alert('Športová hala s týmto názvom už existuje!');
+                return;
+            }
+
+            await addDoc(sportHallsCollectionRef, {
+                name: name,
+                address: address,
+                googleMapsUrl: googleMapsUrl,
+                createdAt: new Date()
+            });
+            alert('Športová hala úspešne pridaná!');
+            closeModal(sportHallModal);
+            await displayMatchesAsSchedule(); // Aktualizovať rozvrh
+        } catch (error) {
+            console.error("Chyba pri ukladaní športovej haly: ", error);
+            alert("Chyba pri ukladaní športovej haly. Pozrite konzolu pre detaily.");
         }
     });
 });
