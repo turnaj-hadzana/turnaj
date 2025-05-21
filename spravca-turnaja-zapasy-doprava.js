@@ -156,10 +156,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             const sportHallsSnapshot = await getDocs(query(sportHallsCollectionRef, orderBy("name", "asc")));
 
             const existingPlayingDays = playingDaysSnapshot.docs.map(doc => doc.data().date);
-            const existingSportHalls = sportHallsSnapshot.docs.map(doc => doc.data().name);
+            // Získame kompletné dáta o halách pre zobrazenie adresy a URL
+            const existingSportHallsData = sportHallsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const existingSportHallsNames = existingSportHallsData.map(hall => hall.name);
+
 
             // Spojíme unikátne miesta a dátumy zo všetkých udalostí
-            const uniqueLocations = new Set([...existingSportHalls]);
+            const uniqueLocations = new Set([...existingSportHallsNames]);
             const uniqueDates = new Set([...existingPlayingDays]);
 
             allEvents.forEach(event => {
@@ -243,28 +246,23 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
                 scheduleHtml += '</div>';
 
-                // PÔVODNÉ: Informácie o autobusoch boli tu, teraz ich presúvame späť do SVG
-                // const busesForDate = allBuses.filter(bus => bus.date === date);
-                // if (busesForDate.length > 0) {
-                //     scheduleHtml += '<div class="schedule-bus-header-info">';
-                //     busesForDate.sort((a, b) => {
-                //         const [aH, aM] = a.startTime.split(':').map(Number);
-                //         const [bH, bM] = b.startTime.split(':').map(Number);
-                //         return (aH * 60 + aM) - (bH * 60 + bM);
-                //     });
-                //     busesForDate.forEach(bus => {
-                //         scheduleHtml += `<p>${bus.busName}: ${bus.startLocation} &rarr; ${bus.endLocation} (${bus.startTime} - ${bus.endTime})</p>`;
-                //     });
-                //     scheduleHtml += '</div>';
-                // }
-
                 scheduleHtml += '</th>';
             });
             scheduleHtml += '</tr></thead><tbody>';
 
-            sortedLocations.forEach(location => {
+            sortedLocations.forEach(locationName => {
+                // Nájdeme kompletné dáta haly podľa názvu
+                const hallData = existingSportHallsData.find(hall => hall.name === locationName);
+                const hallAddress = hallData ? hallData.address : 'Adresa neznáma';
+                const hallGoogleMapsUrl = hallData ? hallData.googleMapsUrl : '#'; // Fallback na '#'
+
                 scheduleHtml += '<tr>';
-                scheduleHtml += `<th class="fixed-column schedule-location-header delete-location-header" data-location="${location}" title="Kliknutím vymažete športovú halu ${location} a všetky jej zápasy">${location}</th>`;
+                scheduleHtml += `<th class="fixed-column schedule-location-header delete-location-header" data-location="${locationName}" title="Kliknutím vymažete športovú halu ${locationName} a všetky jej zápasy">
+                    <div class="hall-name">${locationName}</div>
+                    <div class="hall-address">
+                        <a href="${hallGoogleMapsUrl}" target="_blank" rel="noopener noreferrer">${hallAddress}</a>
+                    </div>
+                </th>`;
 
                 sortedDates.forEach(date => {
                     const range = dailyTimeRanges.get(date);
@@ -275,7 +273,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                     // Filter matches for this specific cell
                     const matchesForCell = allEvents.filter(event =>
-                        event.type === 'match' && event.location === location && event.date === date
+                        event.type === 'match' && event.location === locationName && event.date === date
                     );
 
                     matchesForCell.sort((a, b) => {
@@ -640,6 +638,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const busesStartQuery = query(busesCollectionRef, where("startLocation", "==", hallNameToDelete));
                 const busesStartSnapshot = await getDocs(busesStartQuery);
                 busesStartSnapshot.docs.forEach(busDoc => {
+                    // Ak je autobusová linka rovnaká ako tá, ktorá už bola vymazaná cez startLocation,
+                    // batch.delete sa o to postará, ale pre istotu môžeme pridať kontrolu
                     batch.delete(doc(busesCollectionRef, busDoc.id));
                 });
 
