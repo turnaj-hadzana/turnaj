@@ -418,133 +418,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         // Kontrola, či tímy z rovnakého klubu nemôžu hrať proti sebe v rovnakej skupine
+        // Túto podmienku ponechávam, ak je stále platná:
         if (team1Result.clubId && team2Result.clubId && team1Result.clubId === team2Result.clubId) {
             alert('Tímy z rovnakého klubu nemôžu hrať proti sebe v rovnakej skupine. Prosím, vyberte tímy z rôznych klubov.');
             return;
         }
 
-        // --- KONTROLA 1: Či už tímy hrali proti sebe v rámci KATEGÓRIE (bez ohľadu na skupinu) ---
+        // --- KONTROLA: Tímy v rovnakej kategórii a skupine nemôžu hrať proti sebe viackrát ---
         try {
-            const q1_category = query(
-                matchesCollectionRef,
-                where("categoryId", "==", matchCategory),
-                where("team1Number", "==", team1Number),
-                where("team2Number", "==", team2Number)
-            );
-            const q2_category = query(
-                matchesCollectionRef,
-                where("categoryId", "==", matchCategory),
-                where("team1Number", "==", team2Number),
-                where("team2Number", "==", team1Number)
-            );
-
-            const snapshot1_category = await getDocs(q1_category);
-            const snapshot2_category = await getDocs(q2_category);
-
-            let alreadyPlayedInCategory = false;
-            if (snapshot1_category.docs.some(doc => doc.id !== currentMatchId) || snapshot2_category.docs.some(doc => doc.id !== currentMatchId)) {
-                alreadyPlayedInCategory = true;
-            }
-
-            if (alreadyPlayedInCategory) {
-                alert('Tieto dva tímy už proti sebe hrali v tejto kategórii (v inej alebo rovnakej skupine). Nemôžu hrať znova.');
-                return;
-            }
-
-        } catch (error) {
-            console.error("Chyba pri kontrole predchádzajúcich zápasov v kategórii:", error);
-            alert("Vyskytla sa chyba pri kontrole predchádzajúcich zápasov v kategórii. Skúste to znova.");
-            return;
-        }
-        // --- KONIEC KONTROLY 1 ---
-
-
-        // --- KONTROLA 2: Či už tímy hrali proti sebe v KONKRÉTNEJ SKUPINE (len ak neprešla kontrola kategórie) ---
-        // Táto kontrola sa vykoná LEN AK tímy EŠTE nehrali proti sebe v rámci CELEJ kategórie.
-        // Ak chceme, aby sa tímy mohli v rámci kategórie stretnúť viackrát (napr. skupina + play-off),
-        // ale v rámci jednej skupiny LEN RAZ, tak predchádzajúca kontrola by mala byť zrušená.
-        // AK ale platí, že v rámci kategórie môžu hrať len raz, tak táto druhá kontrola je nadbytočná.
-
-        // Pre jasnosť scenára: ak chcete, aby sa tímy mohli stretnúť viackrát v kategórii,
-        // ale len raz v *rovnakej* skupine, potom by sa KONTROLA 1 mala úplne odstrániť
-        // a ponechať len KONTROLU 2 (ktorá je vaša predošlá verzia).
-
-        // AK je vaša požiadavka "najskôr pre kategoriu, potom pre skupinu" myslená ako:
-        // 1. Ak už hrali v KATEGÓRII (akákoľvek skupina) -> stop
-        // 2. Ak neprešli 1. bodom, ale už hrali v TEJTO KONKRÉTNEJ SKUPINE -> stop (toto by nemalo nastať ak bod 1. prešiel, lebo ak hrali v skupine, tak hrali aj v kategórii).
-        // Ak je to takto, potom KONTROLA 2 nižšie už nemá zmysel.
-
-        // Ak myslíte:
-        // 1. Skontroluj, či už hrali v TEJTO SKUPINE (ak áno, stop).
-        // 2. Ak nie, skontroluj, či už hrali v TEJTO KATEGÓRII (ak áno, stop).
-
-        // Ak je scenár 2, potom potrebujeme najprv kontrolu pre skupinu a AŽ POTOM pre kategóriu.
-        // Váš popis "najskôr pre kategóriu, potom pre skupinu" je trochu nejednoznačný v kontexte toho, čo chcete dovoliť.
-
-        // Predpokladajme, že chcete:
-        // A) Tímy nemôžu hrať sami proti sebe.
-        // B) Tímy z rovnakého klubu nemôžu hrať proti sebe v rovnakej SKUPINE.
-        // C) Dva konkrétne tímy (podľa čísla) môžu hrať proti sebe v DANEJ KATEGÓRII len raz (bez ohľadu na skupinu).
-        // Ak platí C), potom kontrola, či hrali v konkrétnej skupine, je zbytočná, lebo KONTROLA 1 už to pokryla.
-
-        // AK ALEBO chceme:
-        // A) Tímy nemôžu hrať sami proti sebe.
-        // B) Tímy z rovnakého klubu nemôžu hrať proti sebe v rovnakej SKUPINE.
-        // C) Dva konkrétne tímy (podľa čísla) môžu hrať proti sebe v DANEJ SKUPINE len raz.
-        // D) A ak prešli C), ale už hrali v TEJ ISTEJ KATEGÓRII (ale v inej skupine) -> to je OK.
-
-        // Ak je požiadavka (C) a (D), tak potom by kontrola pre skupinu mala byť prvá a až potom by prišla kontrola pre kategóriu,
-        // ALEBO by ste ju chceli mať nezávisle a rozhodnúť sa, ktorú chcete použiť.
-
-        // Na základe "najskôr pre kategoriu, potom pre skupinu" budem interpretovať, že ak už hrali v rámci kategórie, tak nová hra je zakázaná.
-        // KONTROLA 2 (pre skupinu) by potom bola relevantná len ak by KONTROLA 1 (kategória) bola zrušená.
-        // ALEBO, ak chcete, aby sa tímy stretli len raz V KATEGÓRII (spolu), ale zároveň, aby sa nemohli stretnúť dvakrát V TEJ ISTEJ SKUPINE.
-        // To by bol scenár, kde "kategória" je striktnejšia než "skupina".
-
-        // Ak chceme, aby kontrola pre skupinu bola stále aktívna a zobrazovala iné hlásenie:
-        // Musíme spraviť druhý query.
-
-        // Pre ilustráciu scenára, kde "najprv pre kategoriu, potom pre skupinu" má zmysel:
-        // Predstavme si, že tímy môžu hrať proti sebe viackrát v tej istej kategórii (napr. rôzne fázy turnaja),
-        // ale v rámci jednej skupiny (napr. základnej skupiny) len raz.
-        // A potom napríklad v play-off sa už môžu stretnúť znova.
-
-        // AK JE CIEĽOM:
-        // 1. Zisti, či už hrali v tejto KATEGÓRII a TEJTO SKUPINE (striktne v rovnakej skupine)
-        // 2. Ak nie, zisti, či už hrali v tejto KATEGÓRII (v akejkoľvek skupine)
-        // Toto by však dávalo zmysel, ak by ste mali v úmysle povoliť viac zápasov medzi rovnakými tímami V RÁMCI KATEGÓRIE,
-        // ale zakázať duplicitné zápasy v rámci TEJ ISTEJ SKUPINY.
-        // V takom prípade by kontrola 1 (kategória) mala byť menej prísna alebo sa úplne odstrániť.
-
-        // Vzhľadom na formuláciu "najskôr pre kategóriu, potom pre skupinu", predpokladám, že ak už hrali v kategórii (kdekoľvek),
-        // tak ďalší zápas je zakázaný. Tým pádom je kontrola pre konkrétnu skupinu nadbytočná.
-
-        // Ak však "najskôr pre kategóriu, potom pre skupinu" znamená, že prioritou je kontrola v rámci kategórie,
-        // ale ak prejdú touto kontrolou, tak ešte dodatočne skontrolujeme, či už nehrali v tej ISTEJ skupine.
-        // To by ale vyžadovalo, aby sa kontrola na kategóriu zjemnila (napr. aby povolila viac zápasov v kategórii,
-        // ak sú v iných skupinách).
-        // Ak to má byť ako "hlavná kontrola je kategória, a len ak neprejde, tak pozri skupinu", je to redundantné.
-
-        // Pravdepodobne to myslíte takto:
-        // 1. Kontrola, či dva tímy už hrali proti sebe v TEJTO KATEGÓRII A TEJTO SKUPINE.
-        // 2. Ak nie, tak kontrola, či dva tímy už hrali proti sebe v TEJTO KATEGÓRII (v inej skupine).
-        // A ak zistím niektorý z nich, tak stopnem.
-        // To by bola tá istá logika, akú som mal predtým, ale s pridaním druhého dopytu na skupinu.
-
-        // Najprv vykonám kontrolu pre KATEGÓRIU A SKUPINU (ako to bolo predtým, čo ste vrátili), a až potom kontrolu len pre KATEGÓRIU.
-        // Ak sa nájde zhoda v KATEGÓRII A SKUPINE, zobrazí sa špecifické hlásenie.
-        // Ak sa nájde zhoda len v KATEGÓRII (ale nie v tejto skupine), zobrazí sa iné hlásenie.
-
-        // --- KONTROLA 1: Či už tímy hrali proti sebe v konkrétnej kategórii A skupine ---
-        try {
-            const q1_group = query(
+            // Skontrolujeme v oboch smeroch (Tím 1 vs Tím 2 A Tím 2 vs Tím 1)
+            const q1 = query(
                 matchesCollectionRef,
                 where("categoryId", "==", matchCategory),
                 where("groupId", "==", matchGroup),
                 where("team1Number", "==", team1Number),
                 where("team2Number", "==", team2Number)
             );
-            const q2_group = query(
+            const q2 = query(
                 matchesCollectionRef,
                 where("categoryId", "==", matchCategory),
                 where("groupId", "==", matchGroup),
@@ -552,62 +442,26 @@ document.addEventListener('DOMContentLoaded', async () => {
                 where("team2Number", "==", team1Number)
             );
 
-            const snapshot1_group = await getDocs(q1_group);
-            const snapshot2_group = await getDocs(q2_group);
+            const snapshot1 = await getDocs(q1);
+            const snapshot2 = await getDocs(q2);
 
-            let alreadyPlayedInGroup = false;
-            if (snapshot1_group.docs.some(doc => doc.id !== currentMatchId) || snapshot2_group.docs.some(doc => doc.id !== currentMatchId)) {
-                alreadyPlayedInGroup = true;
-            }
-
-            if (alreadyPlayedInGroup) {
-                alert('Tieto dva tímy už proti sebe hrali v tejto kategórii a skupine. Nemôžu hrať znova v rovnakej skupine.');
-                return;
-            }
-
-        } catch (error) {
-            console.error("Chyba pri kontrole predchádzajúcich zápasov v skupine:", error);
-            alert("Vyskytla sa chyba pri kontrole predchádzajúcich zápasov v skupine. Skúste to znova.");
-            return;
-        }
-
-        // --- KONTROLA 2: Či už tímy hrali proti sebe v rámci KATEGÓRIE (bez ohľadu na skupinu) ---
-        // Táto kontrola sa vykoná AŽ POTOM, čo prejde kontrola pre konkrétnu skupinu.
-        // Ak už hrali v akejkoľvek inej skupine v tej istej kategórii, upozorníme.
-        try {
-            const q1_category_overall = query(
-                matchesCollectionRef,
-                where("categoryId", "==", matchCategory),
-                where("team1Number", "==", team1Number),
-                where("team2Number", "==", team2Number)
-            );
-            const q2_category_overall = query(
-                matchesCollectionRef,
-                where("categoryId", "==", matchCategory),
-                where("team1Number", "==", team2Number),
-                where("team2Number", "==", team1Number)
-            );
-
-            const snapshot1_category_overall = await getDocs(q1_category_overall);
-            const snapshot2_category_overall = await getDocs(q2_category_overall);
-
-            let alreadyPlayedInCategoryOverall = false;
+            let alreadyPlayed = false;
             // Filter pre existujúce zápasy, aby sa vylúčil aktuálny upravovaný zápas
-            if (snapshot1_category_overall.docs.some(doc => doc.id !== currentMatchId) || snapshot2_category_overall.docs.some(doc => doc.id !== currentMatchId)) {
-                alreadyPlayedInCategoryOverall = true;
+            if (snapshot1.docs.some(doc => doc.id !== currentMatchId) || snapshot2.docs.some(doc => doc.id !== currentMatchId)) {
+                alreadyPlayed = true;
             }
 
-            if (alreadyPlayedInCategoryOverall) {
-                alert('Tieto dva tímy už proti sebe hrali v tejto kategórii (v inej skupine). Nemôžu hrať znova v rámci tejto kategórie.');
+            if (alreadyPlayed) {
+                alert('Tieto dva tímy už proti sebe hrali v tejto kategórii a skupine. Nemôžu hrať znova.');
                 return;
             }
 
         } catch (error) {
-            console.error("Chyba pri kontrole predchádzajúcich zápasov v kategórii (celkovo):", error);
-            alert("Vyskytla sa chyba pri kontrole predchádzajúcich zápasov v kategórii (celkovo). Skúste to znova.");
+            console.error("Chyba pri kontrole predchádzajúcich zápasov:", error);
+            alert("Vyskytla sa chyba pri kontrole predchádzajúcich zápasov. Skúste to znova.");
             return;
         }
-        // --- KONIEC KONTROLY 2 ---
+        // --- KONIEC KONTROLY ---
 
 
         const matchData = {
