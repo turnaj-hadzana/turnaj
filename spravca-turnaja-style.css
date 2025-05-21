@@ -674,6 +674,7 @@ td:last-child {
     flex-direction: column; /* Položky sú usporiadané vertikálne */
     justify-content: space-between; /* Obsah hore, tlačidlá dole */
     z-index: 5;
+    cursor: pointer;
     /* overflow: hidden;  <-- ODSTRÁNIL SOM TOTO, aby sa posuvník na schedule-cell-content mohol zobraziť, ak je to potrebné */
 }
 
@@ -698,6 +699,9 @@ td:last-child {
     border: 2px solid #daa520; /* Výrazný zlatý okraj pre "štvoruholník" */
 }
 
+.schedule-bus-polygon {
+    cursor: pointer;
+}
 
 .schedule-cell-content {
     flex-grow: 1; /* Rozšíri sa a zaberie všetok dostupný priestor */
@@ -792,6 +796,16 @@ td:last-child {
 .schedule-cell-actions .delete-btn {
     background-color: #dc3545;
     color: white;
+}
+
+.delete-date-header,
+.delete-location-header {
+    cursor: pointer; /* Kurzor pre hlavičky */
+}
+
+.delete-date-header:hover,
+.delete-location-header:hover {
+    background-color: #f0f0f0; /* Svetlejšie pozadie pri hover */
 }
 
 
