@@ -869,3 +869,7 @@ td:last-child {
     color: white;
     text-decoration: none;
 }
+.hall-address a {
+    text-decoration: none; 
+    color: inherit;
+}
