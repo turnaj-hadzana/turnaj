@@ -561,7 +561,7 @@ td:last-child {
 
 /* Špecifické štýly pre bunky (td) */
 .match-schedule-table td {
-    height: 140px; /* Stála výška riadku pre bunky */
+    height: 140px;
 }
 
 
@@ -619,9 +619,7 @@ td:last-child {
 .schedule-times-row {
     display: flex;
     justify-content: space-around;
-    padding: 5px 0;
-    font-size: 0.85em;
-    color: #555;
+    padding: 5
     background-color: #e6e6e6;
     border-top: 1px solid #ddd;
     margin: 0;
@@ -629,7 +627,7 @@ td:last-child {
     box-sizing: border-box;
 }
 .schedule-times-row span {
-    width: 350px; /* Zodpovedá šírke td/th */
+    width: 300px;
     flex-shrink: 0; /* Zabrání zmenšeniu */
     text-align: center;
     padding: 0 2px;
@@ -640,6 +638,29 @@ td:last-child {
     border-left: 1px solid #555;
     border-right: 1px solid #555;
 }
+
+/* PÔVODNÉ: Štýly pre kontajner textu autobusu v hlavičke (teraz odstránené) */
+/*
+.schedule-bus-header-info {
+    padding: 5px;
+    background-color: #e0f7fa;
+    border-top: 1px solid #00bcd4;
+    font-size: 0.75em;
+    color: #333;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    white-space: normal;
+}
+
+.schedule-bus-header-info p {
+    margin: 0;
+    padding: 0;
+    line-height: 1.2;
+}
+*/
+
 
 /* Štýly pre prázdne bunky */
 .match-schedule-table td:empty {
@@ -696,7 +717,7 @@ td:last-child {
     fill: #5cb85c; /* Zelená farba pre autobus, ako na obrázku */
     stroke: #449d44; /* Tmavšia zelená pre okraj */
     stroke-width: 1;
-    opacity: 0.5; /* Mierna priehľadnosť, ak je to potrebné */
+    opacity: 0.5; /* Mierna priehľadnosť zmenená na 0.5 */
 }
 
 /* NOVÉ: Štýly pre text v SVG autobuse */
@@ -704,7 +725,7 @@ td:last-child {
 .schedule-bus-route-text,
 .schedule-bus-time-text,
 .schedule-bus-notes-text {
-    fill: black; /* Farba textu na autobuse */
+    fill: black; /* Farba textu na autobuse zmenená na čiernu */
     font-size: 12px; /* Základné písmo */
     font-weight: bold;
     pointer-events: none; /* Aby text neblokoval kliknutie na polygón */
@@ -740,7 +761,7 @@ td:last-child {
     min-width: 0; /* Dôležité pre flexbox, aby sa text mohol zmenšiť */
 }
 .schedule-cell-time {
-    font-size: 0.7em; /* Menšie písmo */
+    font-size: 0.5em; /* ZMENENÉ: Pôvodne 0.7em */
     color: #555; /* Trochu tmavšia šedá */
     margin-bottom: 2px; /* Malá medzera pod časom */
     text-align: center; /* Voliteľné: Zarovnať čas na stred */
@@ -748,19 +769,19 @@ td:last-child {
 .schedule-cell-category {
     font-weight: bold;
     color: #0056b3;
-    font-size: 0.85em; /* Zmenšené písmo pre kategóriu */
+    font-size: 0.5em; /* ZMENENÉ: Pôvodne 0.85em */
 }
 
 .schedule-cell-teams {
     font-weight: bold;
     color: #333;
-    font-size: 0.8em; /* Zmenšené písmo pre tímy */
+    font-size: 0.5em; /* ZMENENÉ: Pôvodne 0.8em */
 }
 
 .schedule-cell-club-names {
     font-style: italic;
     color: #666;
-    font-size: 0.5em;
+    font-size: 0.5em; /* ZMENENÉ: Pôvodne 0.5em */
     white-space: normal;
 }
 
