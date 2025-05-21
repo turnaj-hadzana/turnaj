@@ -340,16 +340,26 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Nastavíme pozíciu na absolute v rámci scheduleTableContainer (ktorý je relative a scrollable)
             // Nastavíme šírku a výšku na 100% rodiča a pointer-events na none predvolene
 
-            const tableHeight = scheduleTable.offsetHeight;
 
-            busOverlayContainer.style.cssText = `
-                position: absolute;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: ${tableHeight}px;
-                pointer-events: none;
-            `;            
+const scheduleTable = scheduleTableContainer.querySelector('.match-schedule-table');
+
+// Vytvor a nastav overlay kontajner
+const busOverlayContainer = document.createElement('div');
+busOverlayContainer.id = 'busOverlayContainer';
+
+// Nový štýl s obmedzenou výškou
+busOverlayContainer.style.cssText = `
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: ${scheduleTable.offsetHeight}px;
+    pointer-events: none;
+    overflow: visible;
+    z-index: 7;
+`;
+
+scheduleTableContainer.appendChild(busOverlayContainer);          
             
 
 
