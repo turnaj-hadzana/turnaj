@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const busDateSelect = document.getElementById('busDateSelect');
     const busStartLocationSelect = document.getElementById('busStartLocationSelect');
     const busStartTimeInput = document.getElementById('busStartTimeInput');
-    const busEndLocationSelect = document.getElementById('busEndLocationSelect');
+    const busEndLocationSelect = document.getElementById('busEndLocationSelect'); // Opravený riadok
     const busEndTimeInput = document.getElementById('busEndTimeInput');
     const busNotesInput = document.getElementById('busNotesInput');
     const deleteBusButtonModal = document.getElementById('deleteBusButtonModal'); // NOVÉ: Tlačidlo Vymazať v modale
@@ -259,7 +259,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 scheduleHtml += '<tr>';
                 scheduleHtml += `<th class="fixed-column schedule-location-header delete-location-header" data-location="${locationName}" title="Kliknutím vymažete športovú halu ${locationName} a všetky jej zápasy">
                     <div class="hall-name">${locationName}</div>
-                    <div class="hall-address">
+                    <div class="hall-address" style="font-size: 0.85em;">
                         <a href="${hallGoogleMapsUrl}" target="_blank" rel="noopener noreferrer">${hallAddress}</a>
                     </div>
                 </th>`;
@@ -565,7 +565,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         return; // Do nothing if the link was clicked
                     }
                     // If it's not the link, and the click is on the header itself or the hall name div, proceed with deletion
-                    if (event.target === header || event.target.closest('.hall-name') === header.querySelector('.hall-name')) {
+                    if (event.target === header || event.target.closest('.hall-name')) { 
                         const locationToDelete = header.dataset.location;
                         deleteSportHall(locationToDelete);
                     }
