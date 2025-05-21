@@ -810,50 +810,50 @@ td:last-child {
 
 
 
+/* Kontajner pre tlačidlo "+" a jeho možnosti */
 #controlsContainer {
-    position: fixed; /* Kľúčové: fixované pozicovanie */
+    position: fixed; /* Zabezpečí, že sa bude fixovať v rohu obrazovky */
     bottom: 30px; /* Vzdialenosť od spodného okraja */
     right: 30px; /* Vzdialenosť od pravého okraja */
     z-index: 1000; /* Zabezpečí, že je nad ostatným obsahom */
-    /* Dôležité: Nepoužívajte tu display: flex; alebo display: grid; */
-    /* pre #controlsContainer, ak chcete, aby sa #addOptions
-       pozicoval priamo vzhľadom na #addButton v rámci tohto kontajnera.
-       #controlsContainer by mal byť len kontajner pre pozicovanie. */
+    /* Kľúčové: Nemal by byť flex alebo grid kontajnerom pre svoje deti. */
+    /* Ak ho chceme ako rodiča pre 'absolute' polohovanie dropdownu, */
+    /* stačí mu defaultný display: block alebo inline-block. */
+    /* display: block; */ /* Pridané pre istotu, ale defaultne je to blok */
+    width: 60px; /* Šírka kontajnera rovná šírke tlačidla, aby sa zmestilo */
+    height: 60px; /* Výška kontajnera rovná výške tlačidla */
 }
 
 /* Tlačidlo "+" */
 #addButton {
-    width: 60px; /* Zväčšené pre lepšiu viditeľnosť, upravte podľa potreby */
-    height: 60px; /* Zväčšené pre lepšiu viditeľnosť, upravte podľa potreby */
+    width: 60px;
+    height: 60px;
     background-color: #4CAF50;
     color: white;
-    font-size: 2.5em; /* Zväčšené písmo */
+    font-size: 2.5em;
     border: none;
     border-radius: 50%;
-    display: flex; /* Toto je dôležité pre centrovanie '+' v tlačidle */
+    display: flex; /* Pre centrovanie '+' */
     justify-content: center;
     align-items: center;
     cursor: pointer;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3); /* Väčší tieň */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
     transition: background-color 0.3s ease, transform 0.2s ease;
-    z-index: 1001; /* Uistíme sa, že je nad dropdownom a nad #controlsContainer */
-    /* position: relative;  - Toto nie je potrebné, ak je rodič fixed, ale nevadí to */
+    z-index: 1001; /* Uistíme sa, že je nad dropdownom */
+    position: relative; /* Dôležité pre z-index a ak by bolo treba pre presnejšie umiestnenie */
 }
 
 #addButton:hover {
     background-color: #45a049;
-    transform: scale(1.05); /* Malá animácia pri nabehnutí myšou */
+    transform: scale(1.05);
 }
 
 /* Dropdown možnosti */
-/* KĽÚČOVÁ ZMENA: targetujeme priamo #addOptions s jeho triedou,
-   a uistíme sa, že pozicovanie je správne vzhľadom na addButton */
-#addOptions.add-options-dropdown { 
+#addOptions.add-options-dropdown {
     position: absolute; /* Absolútne pozicovanie vzhľadom na #controlsContainer */
-    /* bottom: calc(100% + 15px); - TOTO JE PRE NICH! Použijeme bottom: 100% a pridáme margin pre medzeru */
-    bottom: 100%; /* Umiestni spodný okraj dropdownu na horný okraj #controlsContainer (ktorý obsahuje #addButton) */
+    bottom: 100%; /* Umiestni spodný okraj dropdownu na horný okraj #controlsContainer (alebo #addButton) */
     margin-bottom: 15px; /* Vytvorí medzeru medzi dropdownom a tlačidlom */
-    right: 0; /* Zarovná dropdown k pravému okraju rodiča (#controlsContainer) */
+    right: 0; /* Zarovná dropdown k pravému okraju #controlsContainer */
     
     background-color: white;
     border: 1px solid #ddd;
@@ -862,21 +862,21 @@ td:last-child {
     padding: 10px;
     z-index: 1000; /* Zabezpečí, že dropdown je pod "+" ale nad ostatným obsahom */
     display: none; /* Predvolene skryté pomocou CSS */
-    flex-direction: column;
+    flex-direction: column; /* Aby boli tlačidlá pod sebou */
     gap: 8px;
     min-width: 180px;
-    opacity: 0; /* Pridané pre animáciu */
-    transform: translateY(10px); /* Pridané pre animáciu */
+    opacity: 0; /* Pre animáciu */
+    transform: translateY(10px); /* Pre animáciu */
     transition: opacity 0.2s ease-out, transform 0.2s ease-out; /* Animácia zobrazenia */
     pointer-events: none; /* Zabraňuje interakcii, keď je skryté */
 }
 
 /* Pravidlo pre zobrazenie dropdownu pomocou JS */
-#addOptions.add-options-dropdown.show { 
-    display: flex;
-    opacity: 1; /* Animácia zobrazenia */
-    transform: translateY(0); /* Animácia zobrazenia */
-    pointer-events: auto; /* Povolenie interakcie */
+#addOptions.add-options-dropdown.show {
+    display: flex; /* Zobrazí ako flex pre layout interných tlačidiel */
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
 }
 
 
