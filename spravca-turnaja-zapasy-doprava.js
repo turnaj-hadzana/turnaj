@@ -239,7 +239,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 // Vyplnenie kategórie a následne skupiny
                 await populateCategorySelect(matchCategorySelect, matchData.categoryId);
-                await populateGroupSelect(matchGroupSelect, matchData.categoryId, matchData.groupId);
+                // OPRAVA TU: Prehodenie argumentov
+                await populateGroupSelect(matchData.categoryId, matchGroupSelect, matchData.groupId);
 
                 team1NumberInput.value = matchData.team1Number;
                 team2NumberInput.value = matchData.team2Number;
@@ -271,10 +272,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Inicializácia filtrov a načítanie dát pri štarte
     await populateCategorySelect(matchCategorySelect);
-    await populateGroupSelect(matchGroupSelect, matchCategorySelect.value); // Načíta skupiny pre vybranú kategóriu
+    // OPRAVA TU: Prehodenie argumentov
+    await populateGroupSelect(matchCategorySelect.value, matchGroupSelect); // Načíta skupiny pre vybranú kategóriu
 
     matchCategorySelect.addEventListener('change', async () => {
-        await populateGroupSelect(matchGroupSelect, matchCategorySelect.value);
+        // OPRAVA TU: Prehodenie argumentov
+        await populateGroupSelect(matchCategorySelect.value, matchGroupSelect);
     });
 
     addButton.addEventListener('click', () => {
