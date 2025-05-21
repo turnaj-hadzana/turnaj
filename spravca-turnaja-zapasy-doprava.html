@@ -35,9 +35,6 @@
     <div id="matchModal" class="modal">
         <div class="modal-content">
             <button class="close group-modal-close" id="closeMatchModal" type="button">&times;</button>
-<!--          
-            <span class="close-button" id="closeMatchModal">×</span>
--->
             <h2 id="matchModalTitle">Pridať nový zápas / dopravu</h2>
             <form id="matchForm">
                 <input type="hidden" id="matchId">
@@ -54,6 +51,11 @@
                 <div class="form-group">
                     <label for="matchDuration">Dĺžka zápasu (min.):</label>
                     <input type="number" id="matchDuration" min="1" value="60" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="matchBufferTime">Ochranné pásmo medzi zápasmi (minúty):</label>
+                    <input type="number" id="matchBufferTime" min="0" value="5" required>
                 </div>
 
                 <div class="form-group">
@@ -90,10 +92,7 @@
 
     <div id="playingDayModal" class="modal">
         <div class="modal-content">
-            <button class="close group-modal-close" id="closePlayingDayModal" type="button">&times;</button>
-<!--
-            <span class="close-button" id="closePlayingDayModal">×</span>
--->          
+            <button class="close group-modal-close" id="closePlayingDayModal" type="button">&times;</button>   
             <h2>Pridať hrací deň</h2>
             <form id="playingDayForm">
                 <div class="form-group">
@@ -108,9 +107,6 @@
     <div id="sportHallModal" class="modal">
         <div class="modal-content">
             <button class="close group-modal-close" id="closeSportHallModal" type="button">&times;</button>
-<!--            
-            <span class="close-button" id="closeSportHallModal">×</span>
--->
             <h2>Pridať športovú halu</h2>
             <form id="sportHallForm">
                 <div class="form-group">
