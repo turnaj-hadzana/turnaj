@@ -121,14 +121,60 @@ document.addEventListener('DOMContentLoaded', async () => {
     // --- Koniec funkcií pre plnenie select boxov ---
 
     /**
+     * Načíta nastavenia zápasu pre vybranú kategóriu z Firestore.
+     * Ak nastavenia neexistujú, vráti predvolené hodnoty.
+     * @param {string} categoryId ID vybranej kategórie.
+     * @returns {Promise<{duration: number, bufferTime: number}>} Objekt s trvaním a ochranným pásmom.
+     */
+    async function getCategoryMatchSettings(categoryId) {
+        try {
+            const settingsDocRef = doc(settingsCollectionRef, SETTINGS_DOC_ID);
+            const settingsDoc = await getDoc(settingsDocRef);
+            if (settingsDoc.exists()) {
+                const data = settingsDoc.data();
+                const categorySettings = data.categoryMatchSettings && data.categoryMatchSettings[categoryId];
+                if (categorySettings) {
+                    return {
+                        duration: categorySettings.duration || 60,
+                        bufferTime: categorySettings.bufferTime || 5
+                    };
+                }
+            }
+        } catch (error) {
+            console.error("Chyba pri načítaní nastavení kategórie: ", error);
+        }
+        // Predvolené hodnoty, ak nastavenia pre kategóriu neexistujú alebo sa vyskytla chyba
+        return { duration: 60, bufferTime: 5 };
+    }
+
+    /**
+     * Aktualizuje inputy pre trvanie a ochranné pásmo na základe vybranej kategórie.
+     */
+    async function updateMatchDurationAndBuffer() {
+        const selectedCategoryId = matchCategorySelect.value;
+        if (selectedCategoryId) {
+            const settings = await getCategoryMatchSettings(selectedCategoryId);
+            matchDurationInput.value = settings.duration;
+            matchBufferTimeInput.value = settings.bufferTime;
+        } else {
+            // Ak nie je vybraná kategória, nastav predvolené hodnoty
+            matchDurationInput.value = 60;
+            matchBufferTimeInput.value = 5;
+        }
+        // Po aktualizácii trvania/bufferu, skús nájsť prvý dostupný čas
+        findFirstAvailableTime();
+    }
+
+
+    /**
      * Nájsť prvý dostupný časový slot pre zápas na základe vybraného dátumu, miesta, trvania a ochranného pásma.
      * Nastaví nájdený čas do inputu matchStartTimeInput.
      */
     async function findFirstAvailableTime() {
         const selectedDate = matchDateSelect.value;
         const selectedLocation = matchLocationSelect.value;
-        const duration = parseInt(matchDurationInput.value) || ''; 
-        const bufferTime = parseInt(matchBufferTimeInput.value) || 5;
+        const duration = parseInt(matchDurationInput.value) || 60; // Použije aktuálnu hodnotu inputu
+        const bufferTime = parseInt(matchBufferTimeInput.value) || 5; // Použije aktuálnu hodnotu inputu
 
         // Ak nie sú vybrané dátum alebo miesto, nemôžeme hľadať voľný slot
         if (!selectedDate || !selectedLocation) {
@@ -437,7 +483,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             busOverlayContainer.id = 'busOverlayContainer';
             // Nastavíme pozíciu na absolute v rámci scheduleTableContainer (ktorý je relative a scrollable)
             // Nastavíme šírku a výšku na 100% rodiča a pointer-events na none predvolene
-            busOverlayContainer.style.cssText = 'position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;'; 
+            busOverlayContainer.style.cssText = `
+                    position: absolute; 
+                    top: 0; 
+                    left: 0; 
+                    width: ${scheduleTable.offsetWidth}px; /* Nastavíme šírku na šírku tabuľky */
+                    height: ${scheduleTable.offsetHeight}px; /* Nastavíme výšku na výšku tabuľky */
+                    pointer-events: none;
+                `; 
             scheduleTableContainer.appendChild(busOverlayContainer); // Pridáme do scheduleTableContainer
 
             // Výpočet globálnych pixelových offsetov pre miesta a časy
@@ -708,7 +761,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         batch.delete(doc(sportHallsCollectionRef, docToDelete.id));
                     });
                 } else {
-                    console.warn(`Športová hala ${hallNameToDelete} sa nenašla, ale pokračujem v mazaní zápasov a autobusov.`);
+                    console.warn(`Športová hala ${hallNameToDelete} sa nenašiel, ale pokračujem v mazaní zápasov a autobusov.`);
                 }
 
                 // Vymazanie súvisiacich zápasov
@@ -890,12 +943,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         matchGroupSelect.disabled = true;
         team1NumberInput.value = '';
         team2NumberInput.value = '';
-        matchDurationInput.value = 60; // Predvolená hodnota 60 minút
-        matchBufferTimeInput.value = 5; // Predvolená hodnota 5 minút pre ochranné pásmo
+        // Nastavíme predvolené hodnoty pre trvanie a ochranné pásmo, ktoré sa prepočítajú po výbere kategórie
+        matchDurationInput.value = 60; 
+        matchBufferTimeInput.value = 5; 
         deleteMatchButtonModal.style.display = 'none'; // Skryť tlačidlo Vymazať pri pridávaní
         openModal(matchModal);
         addOptions.classList.remove('show'); // Skryť dropdown po výbere
-        await findFirstAvailableTime(); // Zavoláme po otvorení modalu a nastavení predvolených hodnôt
+        // Ak je už kategória vybraná (napr. pri editácii, ktorá volá tento modal), aktualizujeme trvanie/buffer
+        if (matchCategorySelect.value) {
+            await updateMatchDurationAndBuffer();
+        } else {
+            // Ak nie je kategória vybraná, skúsime nájsť čas iba na základe dátumu a miesta (s predvolenými hodnotami)
+            await findFirstAvailableTime(); 
+        }
     });
 
     // NOVÉ: Event listener pre tlačidlo Pridať autobus
@@ -933,16 +993,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         displayMatchesAsSchedule();
     });
 
-    matchCategorySelect.addEventListener('change', () => {
+    matchCategorySelect.addEventListener('change', async () => { // Zmenené na async
         const selectedCategoryId = matchCategorySelect.value;
         if (selectedCategoryId) {
-            populateGroupSelect(selectedCategoryId, matchGroupSelect);
+            await populateGroupSelect(selectedCategoryId, matchGroupSelect); // Čakáme na dokončenie
             matchGroupSelect.disabled = false;
+            await updateMatchDurationAndBuffer(); // Voláme po zmene kategórie
         } else {
             matchGroupSelect.innerHTML = '<option value="">-- Vyberte skupinu --</option>';
             matchGroupSelect.disabled = true;
             team1NumberInput.value = '';
             team2NumberInput.value = '';
+            // Ak nie je vybraná kategória, nastavíme predvolené hodnoty a pokúsime sa nájsť čas
+            matchDurationInput.value = 60;
+            matchBufferTimeInput.value = 5;
+            await findFirstAvailableTime();
         }
     });
 
