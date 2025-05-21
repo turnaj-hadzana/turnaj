@@ -829,7 +829,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         e.preventDefault();
         const name = hallNameInput.value.trim();
         const address = hallAddressInput.value.trim();
-        const googleMapsUrl = hallGoogleMapsUrlInput.trim(); // Trimmed here
+        const googleMapsUrl = hallGoogleMapsUrlInput.value.trim();
 
         if (!name || !address || !googleMapsUrl) {
             alert('Prosím, vyplňte všetky polia (Názov haly, Adresa, Odkaz na Google Maps).');
