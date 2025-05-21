@@ -118,7 +118,6 @@ main {
     overflow-x: hidden; /* Zabezpečí, že main sám nebude mať horizontálny scrollbar */
     /* overflow-y: auto; Ak tu chceš vertikálny scrollbar pre celý main obsah */
     align-self: flex-start; /* Zabezpečí, že main sa vertikálne neroztiahne viac, ako je potrebné */
-    height: fit-content; /* NOVÉ: Zabezpečí, že výška main sa prispôsobí obsahu */
     min-height: 0; /* NOVÉ: Zabezpečí, že nebude minimálna výška, ktorá by ho rozťahovala */
 }
 
@@ -537,9 +536,9 @@ td:last-child {
     position: relative; /* Dôležité pre vytvorenie nového stacking kontextu */
     z-index: 6; /* Nastavené na nižší z-index ako busOverlayContainer */
     /*min-height: fit-content;*/
-    height: auto;
+    height: 50vh;
     max-height: none;
-    overflow: visible;    
+    overflow-y: auto;    
 }
 
 /* Základná tabuľka rozvrhu */
@@ -884,5 +883,4 @@ td:last-child {
     overflow: hidden;
     padding-bottom: 0 !important;
     margin-bottom: 0 !important;
-    height: fit-content; /* NOVÉ: Zabezpečí, že výška kontajnera sa prispôsobí obsahu */
 }
