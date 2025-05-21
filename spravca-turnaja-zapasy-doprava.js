@@ -339,7 +339,25 @@ document.addEventListener('DOMContentLoaded', async () => {
             busOverlayContainer.id = 'busOverlayContainer';
             // Nastavíme pozíciu na absolute v rámci scheduleTableContainer (ktorý je relative a scrollable)
             // Nastavíme šírku a výšku na 100% rodiča a pointer-events na none predvolene
+
+            const scheduleTable = scheduleTableContainer.querySelector('.match-schedule-table');
+            const tableHeight = scheduleTable.offsetHeight;
+
+            busOverlayContainer.style.cssText = `
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: ${tableHeight}px;
+                pointer-events: none;
+            `;            
+            
+<!--            
             busOverlayContainer.style.cssText = 'position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;'; 
+-->
+
+
+            
             scheduleTableContainer.appendChild(busOverlayContainer); // Pridáme do scheduleTableContainer
 
             // Výpočet globálnych pixelových offsetov pre miesta a časy
