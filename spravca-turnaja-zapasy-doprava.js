@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const matchForm = document.getElementById('matchForm');
     const matchIdInput = document.getElementById('matchId');
     const matchDateSelect = document.getElementById('matchDateSelect');
-    const matchLocationSelect = document.getElementById('matchLocationSelect');
+    const matchLocationSelect = document = document.getElementById('matchLocationSelect');
     const matchStartTimeInput = document.getElementById('matchStartTime');
     const matchDurationInput = document.getElementById('matchDuration');
     const matchBufferTimeInput = document.getElementById('matchBufferTime'); // NOVÉ: Input pre ochranné pásmo
@@ -306,10 +306,21 @@ document.addEventListener('DOMContentLoaded', async () => {
                             }
                             durationOrRouteTime = absoluteEndMin - absoluteStartMin; // Dĺžka trasy
 
-                            eventClass = 'schedule-cell-bus';
-                            // Obsah len názov autobusu
+                            eventClass = 'schedule-cell-bus-svg-container'; // Používame nový SVG kontajner
                             contentHtml = `
-                                <p class="schedule-cell-bus-name">${event.busName}</p>
+                                <svg width="100%" height="100%" viewBox="0 0 ${CELL_WIDTH_PX * colspan} ${ITEM_HEIGHT_PX}">
+                                    <polygon class="schedule-bus-polygon" points="
+                                        ${(absoluteStartMin - (firstHourInDay * 60)) * PIXELS_PER_MINUTE}, 0
+                                        ${(absoluteEndMin - (firstHourInDay * 60)) * PIXELS_PER_MINUTE}, 0
+                                        ${(absoluteEndMin - (firstHourInDay * 60)) * PIXELS_PER_MINUTE}, ${ITEM_HEIGHT_PX}
+                                        ${(absoluteStartMin - (firstHourInDay * 60)) * PIXELS_PER_MINUTE}, ${ITEM_HEIGHT_PX}
+                                    " data-id="${dataId}" data-type="${event.type}"></polygon>
+                                    <text class="schedule-bus-text" 
+                                          x="${((absoluteStartMin - (firstHourInDay * 60)) * PIXELS_PER_MINUTE + (absoluteEndMin - (firstHourInDay * 60)) * PIXELS_PER_MINUTE) / 2}" 
+                                          y="${ITEM_HEIGHT_PX / 2}">
+                                        ${event.busName}
+                                    </text>
+                                </svg>
                             `;
                             editFunction = `editBus('${dataId}')`;
                             deleteFunction = `deleteBus('${dataId}')`;
@@ -330,14 +341,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                             eventBlockLeftPx = relativeStartMin * PIXELS_PER_MINUTE;
                             eventBlockWidthPx = durationOrRouteTime * PIXELS_PER_MINUTE;
                         } else if (event.type === 'bus') {
-                            // Úprava šírky zobrazeného elementu pre autobus
-                            // Zmenšíme šírku autobusu na percento z vypočítanej šírky, aby bol vizuálne odlíšiteľný
-                            const BUS_WIDTH_SCALE_FACTOR = 0.7; // Napr. 70% šírky oproti vypočítanej dĺžke trasy
-                            const originalBusWidthPx = durationOrRouteTime * PIXELS_PER_MINUTE;
-                            eventBlockWidthPx = originalBusWidthPx * BUS_WIDTH_SCALE_FACTOR;
-                            
-                            // Vycentrujeme autobusový blok v rámci jeho pôvodného časového slotu
-                            eventBlockLeftPx = relativeStartMin * PIXELS_PER_MINUTE + (originalBusWidthPx - eventBlockWidthPx) / 2;
+                            // Pre autobus už nepočítame šírku a pozíciu pre div, ale pre SVG
+                            // SVG kontajner zaberá celú šírku bunky, a polygon sa vykreslí v ňom
+                            eventBlockLeftPx = 0; // SVG kontajner je vľavo v bunke
+                            eventBlockWidthPx = CELL_WIDTH_PX * colspan; // SVG kontajner zaberá celú šírku colspan bunky
                         }
 
 
@@ -378,19 +385,36 @@ document.addEventListener('DOMContentLoaded', async () => {
                         }
 
                         // Potom pridáme blok samotnej udalosti (zápas alebo autobus)
-                        scheduleHtml += `
-                            <div class="${eventClass}"
-                                data-id="${dataId}" data-type="${event.type}"
-                                style="position: absolute; left: ${eventBlockLeftPx}px; width: ${eventBlockWidthPx}px; top: ${topPx}px; height: ${ITEM_HEIGHT_PX}px;">
-                                <div class="schedule-cell-content">
+                        // Pre autobusy už nebudeme mať schedule-cell-content ani schedule-cell-actions v tomto div-e
+                        // Akčné tlačidlá pre autobusy budú pridané samostatne a prepojené s SVG polygónom
+                        if (event.type === 'match') {
+                            scheduleHtml += `
+                                <div class="${eventClass}"
+                                    data-id="${dataId}" data-type="${event.type}"
+                                    style="position: absolute; left: ${eventBlockLeftPx}px; width: ${eventBlockWidthPx}px; top: ${topPx}px; height: ${ITEM_HEIGHT_PX}px;">
+                                    <div class="schedule-cell-content">
+                                        ${contentHtml}
+                                    </div>
+                                    <div class="schedule-cell-actions">
+                                        <button class="edit-btn" data-id="${dataId}" data-type="${event.type}">Upraviť</button>
+                                        <button class="delete-btn" data-id="${dataId}" data-type="${event.type}">Vymazať</button>
+                                    </div>
+                                </div>
+                            `;
+                        } else if (event.type === 'bus') {
+                            scheduleHtml += `
+                                <div class="${eventClass}"
+                                    data-id="${dataId}" data-type="${event.type}"
+                                    style="position: absolute; left: ${eventBlockLeftPx}px; width: ${eventBlockWidthPx}px; top: ${topPx}px; height: ${ITEM_HEIGHT_PX}px;">
                                     ${contentHtml}
                                 </div>
-                                <div class="schedule-cell-actions">
+                                <div class="schedule-cell-actions schedule-cell-bus-actions"
+                                    style="position: absolute; left: ${eventBlockLeftPx}px; width: ${eventBlockWidthPx}px; top: ${topPx + ITEM_HEIGHT_PX - 30}px; height: 30px;">
                                     <button class="edit-btn" data-id="${dataId}" data-type="${event.type}">Upraviť</button>
                                     <button class="delete-btn" data-id="${dataId}" data-type="${event.type}">Vymazať</button>
                                 </div>
-                            </div>
-                        `;
+                            `;
+                        }
                     });
                     scheduleHtml += '</td>';
                 });
