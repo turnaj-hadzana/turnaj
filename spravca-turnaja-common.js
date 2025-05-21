@@ -10,12 +10,19 @@ const firebaseConfig = {
 };
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+
+// Get the app ID from the global variable, or use a default if not defined
+const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
 export const categoriesCollectionRef = collection(db, 'tournamentData', 'mainTournamentData', 'categories');
 export const groupsCollectionRef = collection(db, 'tournamentData', 'mainTournamentData', 'groups');
 export const clubsCollectionRef = collection(db, 'tournamentData', 'mainTournamentData', 'clubs');
 export const matchesCollectionRef = collection(db, 'tournamentData', 'mainTournamentData', 'matches');
 export const playingDaysCollectionRef = collection(db, 'tournamentData', 'mainTournamentData', 'playingDays');
 export const sportHallsCollectionRef = collection(db, 'tournamentData', 'mainTournamentData', 'sportHalls');
+export const busesCollectionRef = collection(db, 'tournamentData', 'mainTournamentData', 'buses'); // Ensure this is also correctly defined if used elsewhere
+export const settingsCollectionRef = collection(db, `artifacts/${appId}/public/data/settings`); // NOVÉ: Export pre kolekciu nastavení
+
 let openModalCount = 0;
 export function openModal(modalElement) {
     if (!modalElement) {
@@ -186,4 +193,4 @@ export async function populateTeamNumberSelect(selectedCategoryId, selectedGroup
     }
 }
 export { db, query, where, getDocs, getDoc, setDoc, deleteDoc, updateDoc, writeBatch, addDoc, doc, orderBy };
-export const busesCollectionRef = collection(db, 'buses');
+// export const busesCollectionRef = collection(db, 'buses'); // Pôvodný riadok, už definovaný vyššie
