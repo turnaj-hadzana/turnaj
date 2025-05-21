@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const matchForm = document.getElementById('matchForm');
     const matchIdInput = document.getElementById('matchId');
     const matchDateSelect = document.getElementById('matchDateSelect');
-    const matchLocationSelect = document.getElementById('matchLocationSelect'); 
+    const matchLocationSelect = document.getElementById('matchLocationSelect');
     const matchStartTimeInput = document.getElementById('matchStartTime');
     const matchDurationInput = document.getElementById('matchDuration');
     const matchBufferTimeInput = document.getElementById('matchBufferTime'); // NOVÉ: Input pre ochranné pásmo
@@ -206,6 +206,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                     }
                     firstHourInDay = range.minHour; // Priradenie skutočnej hodnoty
                 }
+
+                const displayDateObj = new Date(date);
+                const displayDay = String(displayDateObj.getDate()).padStart(2, '0');
+                const displayMonth = String(displayDateObj.getMonth() + 1).padStart(2, '0');
+                const displayYear = String(displayDateObj.getFullYear());
+                const formattedDisplayDate = `${displayDay}. ${displayMonth}. ${displayYear}`; // Definícia tu
+
                 const colspan = hoursForDate.length;
 
                 if (colspan > 0) {
