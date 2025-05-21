@@ -815,9 +815,6 @@ td:last-child {
     bottom: 30px; /* Vzdialenosť od spodného okraja */
     right: 30px; /* Vzdialenosť od pravého okraja */
     z-index: 1000; /* Zabezpečí, že je nad ostatným obsahom */
-    /* display: inline-block; */ /* Už nie je potrebné, keďže je fixed */
-    /* margin-bottom: 20px; */ /* Už nie je potrebné */
-    /* vertical-align: top; */ /* Už nie je potrebné */
 }
 
 /* Tlačidlo "+" */
@@ -835,7 +832,8 @@ td:last-child {
     cursor: pointer;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3); /* Väčší tieň */
     transition: background-color 0.3s ease, transform 0.2s ease;
-    z-index: 101; /* Uistíme sa, že je nad dropdownom */
+    z-index: 1001; /* Uistíme sa, že je nad dropdownom a nad #controlsContainer */
+    position: relative; /* Potrebné pre z-index vo vzťahu k siblings */
 }
 
 #addButton:hover {
@@ -844,7 +842,7 @@ td:last-child {
 }
 
 /* Dropdown možnosti */
-#addOptions.add-options-dropdown {
+#controlsContainer #addOptions.add-options-dropdown { /* Zvýšená špecifickosť */
     position: absolute; /* Absolútne pozicovanie vzhľadom na #controlsContainer */
     bottom: calc(100% + 15px); /* Umiestni dropdown nad tlačidlo "+". 100% je výška #controlsContainer (alebo #addButton), 15px je medzera */
     right: 0; /* Zarovná dropdown k pravému okraju rodiča (#controlsContainer) */
@@ -854,7 +852,7 @@ td:last-child {
     border-radius: 5px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     padding: 10px;
-    z-index: 100; /* Zabezpečí, že dropdown je pod "+" ale nad ostatným obsahom */
+    z-index: 1000; /* Zabezpečí, že dropdown je pod "+" ale nad ostatným obsahom */
     display: none; /* Predvolene skryté pomocou CSS */
     flex-direction: column;
     gap: 8px;
@@ -866,7 +864,7 @@ td:last-child {
 }
 
 /* Pravidlo pre zobrazenie dropdownu pomocou JS */
-#addOptions.add-options-dropdown.show {
+#controlsContainer #addOptions.add-options-dropdown.show { /* Zvýšená špecifickosť */
     display: flex;
     opacity: 1; /* Animácia zobrazenia */
     transform: translateY(0); /* Animácia zobrazenia */
