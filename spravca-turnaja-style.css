@@ -581,8 +581,8 @@ td:last-child {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    border-left: 1px solid #000;
-    border-right: 1px solid #000;
+    border-left: 1px solid #555;
+    border-right: 1px solid #555;
 }
 
 /* Štýly pre prázdne bunky */
