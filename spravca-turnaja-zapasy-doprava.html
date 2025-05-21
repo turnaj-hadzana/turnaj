@@ -26,7 +26,35 @@
             <section id="categoriesContentSection" class="section-block">
                 <h2>Zápasy a doprava</h2>
                 
-                <div id="matchesContainer" class="data-display-container">
+                <div id="filterContainer" class="filter-container">
+                    <div class="filter-group">
+                        <label for="categoryFilter">Filtrovať podľa kategórie:</label>
+                        <select id="categoryFilter"></select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="groupFilter">Filtrovať podľa skupiny:</label>
+                        <select id="groupFilter" disabled></select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="dateFilter">Filtrovať podľa dátumu:</label>
+                        <input type="date" id="dateFilter">
+                    </div>
+                    <div class="filter-group">
+                        <label for="locationFilter">Filtrovať podľa miesta:</label>
+                        <select id="locationFilter"></select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="teamSearch">Hľadať tím:</label>
+                        <input type="text" id="teamSearch" placeholder="Názov tímu alebo číslo">
+                    </div>
+                    <div class="filter-group">
+                        <label for="busSearch">Hľadať autobus:</label>
+                        <input type="text" id="busSearch" placeholder="Názov autobusu">
+                    </div>
+                    <button id="resetFiltersButton" class="action-button">Resetovať filtre</button>
+                </div>
+
+                <div id="matchesContainer">
                     </div>
             </section>
         </main>
@@ -34,57 +62,46 @@
 
     <div id="matchModal" class="modal">
         <div class="modal-content">
-            <button class="close group-modal-close" id="closeMatchModal" type="button">×</button>
+            <button class="close" id="closeMatchModal" type="button">×</button>
             <h2 id="matchModalTitle">Pridať nový zápas</h2>
             <form id="matchForm">
                 <input type="hidden" id="matchId">
                 <div class="form-group">
-                    <label for="matchDateSelect">Dátum (hrací deň):</label>
-                    <select id="matchDateSelect" required></select>
-                </div>
-
-                <div class="form-group">
-                    <label for="matchStartTime">Čas začiatku:</label>
-                    <input type="time" id="matchStartTime" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="matchDuration">Dĺžka zápasu (min.):</label>
-                    <input type="number" id="matchDuration" min="1" value="60" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="matchBufferTime">Ochranné pásmo medzi zápasmi (minúty):</label>
-                    <input type="number" id="matchBufferTime" min="0" value="5" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="matchLocationSelect">Miesto (športová hala):</label>
-                    <select id="matchLocationSelect" required></select>
-                </div>
-
-                <div class="form-group">
-                    <label for="matchCategory">Kategória (pre zápas):</label>
+                    <label for="matchCategory">Kategória:</label>
                     <select id="matchCategory" required></select>
                 </div>
-
                 <div class="form-group">
-                    <label for="matchGroup">Skupina (pre zápas):</label>
-                    <select id="matchGroup" required></select>
+                    <label for="matchGroup">Skupina:</label>
+                    <select id="matchGroup" required disabled></select>
                 </div>
-
-                <h3>Tím 1</h3>
                 <div class="form-group">
                     <label for="team1NumberInput">Poradové číslo tímu 1:</label>
                     <input type="number" id="team1NumberInput" min="1" required>
                 </div>
-
-                <h3>Tím 2</h3>
                 <div class="form-group">
                     <label for="team2NumberInput">Poradové číslo tímu 2:</label>
                     <input type="number" id="team2NumberInput" min="1" required>
                 </div>
-
+                <div class="form-group">
+                    <label for="matchDateSelect">Dátum:</label>
+                    <select id="matchDateSelect" required></select>
+                </div>
+                <div class="form-group">
+                    <label for="matchLocationSelect">Miesto (hala):</label>
+                    <select id="matchLocationSelect" required></select>
+                </div>
+                <div class="form-group">
+                    <label for="matchStartTime">Čas začiatku:</label>
+                    <input type="time" id="matchStartTime" required>
+                </div>
+                <div class="form-group">
+                    <label for="matchDuration">Trvanie zápasu (minúty):</label>
+                    <input type="number" id="matchDuration" min="1" value="60" required>
+                </div>
+                <div class="form-group">
+                    <label for="matchBufferTime">Ochranné pásmo po zápase (minúty):</label>
+                    <input type="number" id="matchBufferTime" min="0" value="5" required>
+                </div>
                 <button type="submit">Uložiť zápas</button>
             </form>
         </div>
@@ -92,7 +109,7 @@
 
     <div id="playingDayModal" class="modal">
         <div class="modal-content">
-            <button class="close group-modal-close" id="closePlayingDayModal" type="button">×</button>   
+            <button class="close" id="closePlayingDayModal" type="button">×</button>
             <h2>Pridať hrací deň</h2>
             <form id="playingDayForm">
                 <div class="form-group">
@@ -128,12 +145,12 @@
 
     <div id="busModal" class="modal">
         <div class="modal-content">
-            <button class="close group-modal-close" id="closeBusModal" type="button">×</button>
+            <button class="close" id="closeBusModal" type="button">×</button>
             <h2 id="busModalTitle">Pridať autobusovú linku</h2>
             <form id="busForm">
                 <input type="hidden" id="busId">
                 <div class="form-group">
-                    <label for="busNameInput">Názov autobusu (napr. Bus 1, BA-123AB):</label>
+                    <label for="busNameInput">Názov autobusu (napr. Bus 1, Bus A):</label>
                     <input type="text" id="busNameInput" required>
                 </div>
                 <div class="form-group">
@@ -141,7 +158,7 @@
                     <select id="busDateSelect" required></select>
                 </div>
                 <div class="form-group">
-                    <label for="busStartLocationSelect">Miesto začiatku:</label>
+                    <label for="busStartLocationSelect">Miesto odchodu:</label>
                     <select id="busStartLocationSelect" required></select>
                 </div>
                 <div class="form-group">
@@ -149,7 +166,7 @@
                     <input type="time" id="busStartTimeInput" required>
                 </div>
                 <div class="form-group">
-                    <label for="busEndLocationSelect">Miesto cieľa:</label>
+                    <label for="busEndLocationSelect">Miesto príchodu:</label>
                     <select id="busEndLocationSelect" required></select>
                 </div>
                 <div class="form-group">
