@@ -561,7 +561,7 @@ td:last-child {
 
 /* Špecifické štýly pre bunky (td) */
 .match-schedule-table td {
-    height: 120px; /* Stála výška riadku pre bunky */
+    height: 130px; /* Stála výška riadku pre bunky */
 }
 
 
