@@ -135,7 +135,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const CELL_WIDTH_PX = 350;
         const MINUTES_PER_HOUR = 60;
         const PIXELS_PER_MINUTE = CELL_WIDTH_PX / MINUTES_PER_HOUR;
-        const ITEM_HEIGHT_PX = 160;
+        const ITEM_HEIGHT_PX = 140;
 
         try {
             // Načítame zápasy
