@@ -685,7 +685,7 @@ td:last-child {
     border: 1px solid #00bcd4; /* Tyrkysová */
     border-radius: 4px;
     padding: 5px; /* Ponechajte padding pre celú bunku */
-    margin: 2px 0;
+    margin: 0; /* ZMENENÉ: Pôvodne 2px 0 */
     box-sizing: border-box;
     display: flex;
     flex-direction: column; /* Položky sú usporiadané vertikálne */
