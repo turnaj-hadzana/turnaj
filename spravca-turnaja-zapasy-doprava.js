@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // NOVÉ: Modálne okno pre autobus
     const busModal = document.getElementById('busModal');
-    const closeBusModalButton = document = document.getElementById('closeBusModal');
+    const closeBusModalButton = document.getElementById('closeBusModal');
     const busForm = document.getElementById('busForm');
     const busIdInput = document.getElementById('busId');
     const busModalTitle = document.getElementById('busModalTitle');
