@@ -865,6 +865,7 @@ td:last-child {
     background-color: #004085;
 }
 .hall-address {
-    font-size: 0.85em;
-    font: white;
+    font-size: 0.5em;
+    color: white;
+    text-decoration: none;
 }
