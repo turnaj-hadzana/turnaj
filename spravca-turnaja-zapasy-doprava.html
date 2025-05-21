@@ -35,7 +35,7 @@
     <div id="matchModal" class="modal">
         <div class="modal-content">
             <button class="close group-modal-close" id="closeMatchModal" type="button">×</button>
-            <h2 id="matchModalTitle">Pridať nový zápas / dopravu</h2>
+            <h2 id="matchModalTitle">Pridať nový zápas</h2>
             <form id="matchForm">
                 <input type="hidden" id="matchId">
                 <div class="form-group">
@@ -129,49 +129,36 @@
     <div id="busModal" class="modal">
         <div class="modal-content">
             <button class="close group-modal-close" id="closeBusModal" type="button">×</button>
-            <h2 id="busModalTitle">Pridať nový autobus</h2>
+            <h2 id="busModalTitle">Pridať autobusovú linku</h2>
             <form id="busForm">
                 <input type="hidden" id="busId">
                 <div class="form-group">
-                    <label for="busName">Názov autobusu / Označenie:</label>
-                    <input type="text" id="busName" required>
+                    <label for="busNameInput">Názov autobusu (napr. Bus 1, BA-123AB):</label>
+                    <input type="text" id="busNameInput" required>
                 </div>
                 <div class="form-group">
-                    <label for="busCapacity">Kapacita (počet miest):</label>
-                    <input type="number" id="busCapacity" min="1" value="50">
-                </div>
-                <div class="form-group">
-                    <label for="busDriverName">Meno vodiča (voliteľné):</label>
-                    <input type="text" id="busDriverName">
-                </div>
-                <div class="form-group">
-                    <label for="busContactInfo">Kontaktné údaje (voliteľné):</label>
-                    <input type="text" id="busContactInfo">
-                </div>
-                <div class="form-group">
-                    <label for="busNotes">Poznámky (voliteľné):</label>
-                    <textarea id="busNotes" rows="3"></textarea>
-                </div>
-                <hr> <h3>Detaily cesty</h3>
-                <div class="form-group">
-                    <label for="busDateSelect">Dátum cesty:</label>
+                    <label for="busDateSelect">Dátum:</label>
                     <select id="busDateSelect" required></select>
                 </div>
                 <div class="form-group">
-                    <label for="busFromLocationSelect">Miesto odchodu (športová hala):</label>
-                    <select id="busFromLocationSelect" required></select>
+                    <label for="busStartLocationSelect">Miesto začiatku:</label>
+                    <select id="busStartLocationSelect" required></select>
                 </div>
                 <div class="form-group">
-                    <label for="busToLocationSelect">Miesto príchodu (športová hala):</label>
-                    <select id="busToLocationSelect" required></select>
+                    <label for="busStartTimeInput">Čas odchodu:</label>
+                    <input type="time" id="busStartTimeInput" required>
                 </div>
                 <div class="form-group">
-                    <label for="busDepartureTime">Čas odchodu:</label>
-                    <input type="time" id="busDepartureTime" required>
+                    <label for="busEndLocationSelect">Miesto cieľa:</label>
+                    <select id="busEndLocationSelect" required></select>
                 </div>
                 <div class="form-group">
-                    <label for="busArrivalTime">Čas príchodu:</label>
-                    <input type="time" id="busArrivalTime" required>
+                    <label for="busEndTimeInput">Čas príchodu:</label>
+                    <input type="time" id="busEndTimeInput" required>
+                </div>
+                <div class="form-group">
+                    <label for="busNotesInput">Poznámky (voliteľné):</label>
+                    <input type="text" id="busNotesInput">
                 </div>
                 <button type="submit">Uložiť autobus</button>
             </form>
@@ -184,8 +171,7 @@
             <button id="addPlayingDayButton">Pridať hrací deň</button>
             <button id="addSportHallButton">Pridať športovú halu</button>
             <button id="addMatchButton">Pridať zápas</button>
-            <button id="addBusButton">Pridať autobus</button>
-        </div>
+            <button id="addBusButton">Pridať autobus</button> </div>
     </div>
 
     <script type="module" src="spravca-turnaja-common.js"></script>
