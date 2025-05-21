@@ -453,8 +453,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                                     <p class="schedule-cell-time">${match.startTime} - ${formattedEndTime}</p>
                                     <p class="schedule-cell-category">${match.categoryName || 'N/A'}${match.groupName ? ` ${match.groupName}` : ''}</p>
                                     <p class="schedule-cell-teams">
-                                        ${match.team1ClubName ? `${match.team1ClubName} (${match.team1DisplayName})` : match.team1DisplayName}<br>
-                                        ${match.team2ClubName ? `${match.team2ClubName} (${match.team2DisplayName})` : match.team2DisplayName}
+                                        ${match.team1DisplayName}
+                                        ${match.team1ClubName ? `<br>(${match.team1ClubName})` : ''}<br>
+                                        ${match.team2DisplayName}
+                                        ${match.team2ClubName ? `<br>(${match.team2ClubName})` : ''}
                                     </p>
                                 </div>
                             </div>
