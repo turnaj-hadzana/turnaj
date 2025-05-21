@@ -304,6 +304,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             const locationToDelete = header.dataset.location;
                             deleteSportHall(locationToDelete);
                         }
+                        
                     }
                 });
             });
@@ -605,8 +606,67 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
+        // --- NOVÁ KONTROLA: Prekrývanie časov v rovnakej hale a deň ---
+        const [newStartHour, newStartMinute] = matchStartTime.split(':').map(Number);
+        const newMatchStartInMinutes = newStartHour * 60 + newStartMinute;
+        const newMatchEndInMinutes = newMatchStartInMinutes + matchDuration;
+
+        try {
+            const existingMatchesQuery = query(
+                matchesCollectionRef,
+                where("date", "==", matchDate),
+                where("location", "==", matchLocation)
+            );
+            const existingMatchesSnapshot = await getDocs(existingMatchesQuery);
+
+            let overlapFound = false;
+            let overlappingMatchDetails = null;
+
+            existingMatchesSnapshot.docs.forEach(doc => {
+                const existingMatch = doc.data();
+                const existingMatchId = doc.id;
+
+                // Ak upravujeme existujúci zápas, preskočíme ho pri kontrole prekrývania
+                if (currentMatchId && existingMatchId === currentMatchId) {
+                    return;
+                }
+
+                const [existingStartHour, existingStartMinute] = existingMatch.startTime.split(':').map(Number);
+                const existingMatchStartInMinutes = existingStartHour * 60 + existingStartMinute;
+                const existingMatchEndInMinutes = existingMatchStartInMinutes + existingMatch.duration;
+
+                // Kontrola prekrývania: (nový začína pred existujúcim koncom A nový končí po existujúcom začiatku)
+                if (newMatchStartInMinutes < existingMatchEndInMinutes && newMatchEndInMinutes > existingMatchStartInMinutes) {
+                    overlapFound = true;
+                    overlappingMatchDetails = existingMatch;
+                    return; // Nájdené prekrývanie, nie je potrebné ďalej kontrolovať
+                }
+            });
+
+            if (overlapFound) {
+                // Formátovanie koncového času pre existujúci zápas v správe
+                const [existingStartHour, existingStartMinute] = overlappingMatchDetails.startTime.split(':').map(Number);
+                const existingMatchEndTimeObj = new Date(); // Použijeme aktuálny dátum, len pre čas
+                existingMatchEndTimeObj.setHours(existingStartHour, existingStartMinute + overlappingMatchDetails.duration, 0, 0);
+                const formattedExistingEndTime = existingMatchEndTimeObj.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit'});
+
+                alert(`Zápas sa prekrýva s existujúcim zápasom v hale "${matchLocation}" dňa ${matchDate}:\n\n` +
+                      `Existujúci zápas: ${overlappingMatchDetails.startTime} - ${formattedExistingEndTime}\n` +
+                      `Tímy: ${overlappingMatchDetails.team1DisplayName} vs ${overlappingMatchDetails.team2DisplayName}\n\n` +
+                      `Prosím, upravte čas začiatku alebo trvanie nového zápasu.`);
+                return; // Zastaviť vykonávanie, neuložiť zápas
+            }
+        } catch (error) {
+            console.error("Chyba pri kontrole prekrývania zápasov: ", error);
+            alert("Vyskytla sa chyba pri kontrole prekrývania zápasov. Skúste to znova.");
+            return;
+        }
+        // --- KONIEC NOVEJ KONTROLY ---
+
+
         // --- KONTROLA: Tímy v rovnakej kategórii a skupine nemôžu hrať proti sebe viackrát ---
-        let existingMatchId = null;
+        // (Tento blok kódu bol už vo vašom pôvodnom súbore)
+        let existingMatchIdForTeams = null; // Zmenený názov pre jasnosť
         try {
             const q1 = query(
                 matchesCollectionRef,
@@ -630,19 +690,19 @@ document.addEventListener('DOMContentLoaded', async () => {
             const foundDoc2 = snapshot2.docs.find(doc => doc.id !== currentMatchId);
 
             if (foundDoc1) {
-                existingMatchId = foundDoc1.id;
+                existingMatchIdForTeams = foundDoc1.id;
             } else if (foundDoc2) {
-                existingMatchId = foundDoc2.id;
+                existingMatchIdForTeams = foundDoc2.id;
             }
 
-            if (existingMatchId) {
+            if (existingMatchIdForTeams) {
                 const confirmDelete = confirm(
                     `Zápas medzi tímami ${team1Result.fullDisplayName} a ${team2Result.fullDisplayName} už existuje v tejto kategórii a skupine. ` +
                     `Chcete existujúci zápas odstrániť a nahradiť ho novým?`
                 );
                 if (confirmDelete) {
-                    await deleteDoc(doc(matchesCollectionRef, existingMatchId));
-                    console.log(`Existujúci zápas ${existingMatchId} bol odstránený.`);
+                    await deleteDoc(doc(matchesCollectionRef, existingMatchIdForTeams));
+                    console.log(`Existujúci zápas ${existingMatchIdForTeams} bol odstránený.`);
                 } else {
                     alert('Operácia zrušená. Zápas nebol pridaný ani odstránený.');
                     closeModal(matchModal);
@@ -650,13 +710,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             }
 
-        } // catch blok pre kontrolu existujuceho zapasu bol zmenený v predchadzajucej verzii, vrátim ho
-        catch (error) {
-            console.error("Chyba pri kontrole alebo mazaní existujúceho zápasu:", error);
-            alert("Vyskytla sa chyba pri kontrole alebo mazaní existujúceho zápasu. Skúste to znova.");
+        } catch (error) {
+            console.error("Chyba pri kontrole alebo mazaní existujúceho zápasu (tímov):", error);
+            alert("Vyskytla sa chyba pri kontrole alebo mazaní existujúceho zápasu (tímov). Skúste to znova.");
             return;
         }
-        // --- KONIEC KONTROLY ---
+        // --- KONIEC KONTROLY TÍMOV ---
 
 
         const matchData = {
