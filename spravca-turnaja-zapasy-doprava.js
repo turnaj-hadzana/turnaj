@@ -446,6 +446,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // Points will be set after calculating final height
                 svgElement.appendChild(polygon);
 
+                // Define textXBase here
+                const textXBase = svgWidth / 2;
+
                 let currentTextY = 20; // Počiatočná Y pozícia pre text
 
                 const busNameText = document.createElementNS("http://www.w3.org/2000/svg", "text");
