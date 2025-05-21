@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const addPlayingDayButton = document.getElementById('addPlayingDayButton');
     const addSportHallButton = document.getElementById('addSportHallButton');
     const addMatchButton = document.getElementById('addMatchButton');
-    const addBusButton = document.getElementById('addBusButton'); // NOVÉ: Tlačidlo pre pridanie autobusu
+    const addBusButton = document = document.getElementById('addBusButton'); // NOVÉ: Tlačidlo pre pridanie autobusu
 
     // Modálne okno pre zápas
     const matchModal = document.getElementById('matchModal');
@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const busModalTitle = document.getElementById('busModalTitle');
     const busNameInput = document.getElementById('busNameInput');
     const busDateSelect = document.getElementById('busDateSelect');
-    const busStartLocationSelect = document.getElementById('busStartLocationSelect');
+    const busStartLocationSelect = document = document.getElementById('busStartLocationSelect');
     const busStartTimeInput = document.getElementById('busStartTimeInput');
     const busEndLocationSelect = document.getElementById('busEndLocationSelect'); // Opravený riadok
     const busEndTimeInput = document.getElementById('busEndTimeInput');
@@ -446,16 +446,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                         const formattedEndTime = matchEndTime.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' });
 
                         // Logika pre zobrazenie názvov tímov
-                        let team1ClubDisplay = match.team1ClubName ? `(${match.team1ClubName})` : '';
-                        let team2ClubDisplay = match.team2ClubName ? `(${match.team2ClubName})` : '';
+                        let team1ClubNameDisplay = match.team1ClubName ? `${match.team1ClubName}` : '';
+                        let team2ClubNameDisplay = match.team2ClubName ? `${match.team2ClubName}` : '';
 
                         let clubNamesHtml = '';
-                        if (team1ClubDisplay && team2ClubDisplay) {
-                            clubNamesHtml = `${team1ClubDisplay}<br>${team2ClubDisplay}`;
-                        } else if (team1ClubDisplay) {
-                            clubNamesHtml = team1ClubDisplay;
-                        } else if (team2ClubDisplay) {
-                            clubNamesHtml = team2ClubDisplay;
+                        if (team1ClubNameDisplay) {
+                            clubNamesHtml += `${team1ClubNameDisplay}`;
+                        }
+                        if (team2ClubNameDisplay) {
+                            if (clubNamesHtml) clubNamesHtml += `<br>`; // Pridáme <br> len ak už je niečo v clubNamesHtml
+                            clubNamesHtml += `${team2ClubNameDisplay}`;
                         }
 
                         scheduleHtml += `
