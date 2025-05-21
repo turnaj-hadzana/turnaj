@@ -744,3 +744,63 @@ td:last-child {
     background-color: #dc3545;
     color: white;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+.add-options-dropdown {
+    position: fixed;
+    bottom: 80px; /* 20px od spodku + 50px výška tlačidla + 10px medzera */
+    right: 20px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    padding: 10px;
+    display: none; /* Predvolene skryté, JS ho zobrazí */
+    flex-direction: column;
+    gap: 10px;
+    z-index: 1001; /* Vyšší z-index ako hlavné tlačidlo */
+    width: 200px; /* Nastavená šírka menu */
+}
+
+.add-options-dropdown.show {
+    display: flex; /* Trieda pre zobrazenie menu cez JS */
+}
+
+.add-options-dropdown button {
+    background-color: #007bff;
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+    text-align: left;
+    transition: background-color 0.2s ease;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.add-options-dropdown button:hover {
+    background-color: #0056b3;
+}
+
+.add-options-dropdown button:active {
+    background-color: #004085;
+}
