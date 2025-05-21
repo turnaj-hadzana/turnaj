@@ -560,11 +560,12 @@ td:last-child {
     overflow: hidden; /* Skryje pretekajúci obsah - ponechané tu, ak je text hlavičky dlhý */
 }
 
+<!--
 /* Špecifické štýly pre bunky (td) */
 .match-schedule-table td {
     height: 140px;
 }
-
+-->
 
 
 /* Štýly pre hlavičky */
