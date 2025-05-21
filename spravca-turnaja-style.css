@@ -810,62 +810,67 @@ td:last-child {
 
 
 
-/* Kontajner pre tlačidlo "+" a jeho možnosti - POUŽÍVAME TOTO AKO REFERENCIU */
 #controlsContainer {
-    position: relative; /* Kľúčové pre absolútne pozicovanie #addOptions */
-    display: inline-block; /* Aby sa zabránilo roztiahnutiu na celú šírku */
-    margin-bottom: 20px; /* Pridá medzeru pod kontajnerom */
-    vertical-align: top; /* Zarovná hore, ak je v riadku s inými prvkami */
+    position: fixed; /* Kľúčové: fixované pozicovanie */
+    bottom: 30px; /* Vzdialenosť od spodného okraja */
+    right: 30px; /* Vzdialenosť od pravého okraja */
+    z-index: 1000; /* Zabezpečí, že je nad ostatným obsahom */
+    /* display: inline-block; */ /* Už nie je potrebné, keďže je fixed */
+    /* margin-bottom: 20px; */ /* Už nie je potrebné */
+    /* vertical-align: top; */ /* Už nie je potrebné */
 }
 
 /* Tlačidlo "+" */
 #addButton {
-    width: 50px;
-    height: 50px;
+    width: 60px; /* Zväčšené pre lepšiu viditeľnosť, upravte podľa potreby */
+    height: 60px; /* Zväčšené pre lepšiu viditeľnosť, upravte podľa potreby */
     background-color: #4CAF50;
     color: white;
-    font-size: 2em;
+    font-size: 2.5em; /* Zväčšené písmo */
     border: none;
     border-radius: 50%;
     display: flex;
     justify-content: center;
     align-items: center;
     cursor: pointer;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-    transition: background-color 0.3s ease;
-    z-index: 100; /* Zabezpečí, že "+" je nad dropdownom */
-    position: relative; /* Môže byť užitočné, ak by ste chceli pridať animácie atď. */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3); /* Väčší tieň */
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    z-index: 101; /* Uistíme sa, že je nad dropdownom */
 }
 
 #addButton:hover {
     background-color: #45a049;
+    transform: scale(1.05); /* Malá animácia pri nabehnutí myšou */
 }
 
 /* Dropdown možnosti */
-#addOptions.add-options-dropdown { /* Cielime na ID aj triedu pre špecifickosť */
+#addOptions.add-options-dropdown {
     position: absolute; /* Absolútne pozicovanie vzhľadom na #controlsContainer */
-    bottom: calc(100% + 10px); /* Umiestni dropdown nad tlačidlo "+". 100% je výška #controlsContainer (alebo #addButton), 10px je medzera */
-    right: 0; /* Zarovná dropdown k pravému okraju tlačidla "+" */
-    /* Ak by ste chceli vycentrovať:
-    left: 50%;
-    transform: translateX(-50%);
-    */
+    bottom: calc(100% + 15px); /* Umiestni dropdown nad tlačidlo "+". 100% je výška #controlsContainer (alebo #addButton), 15px je medzera */
+    right: 0; /* Zarovná dropdown k pravému okraju rodiča (#controlsContainer) */
     
     background-color: white;
     border: 1px solid #ddd;
     border-radius: 5px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     padding: 10px;
-    z-index: 90; /* Zabezpečí, že dropdown je pod "+" ale nad ostatným obsahom */
+    z-index: 100; /* Zabezpečí, že dropdown je pod "+" ale nad ostatným obsahom */
     display: none; /* Predvolene skryté pomocou CSS */
-    flex-direction: column; /* Aby sa tlačidlá zobrazovali pod sebou */
-    gap: 8px; /* Medzera medzi tlačidlami */
-    min-width: 180px; /* Minimálna šírka dropdownu */
+    flex-direction: column;
+    gap: 8px;
+    min-width: 180px;
+    opacity: 0; /* Pridané pre animáciu */
+    transform: translateY(10px); /* Pridané pre animáciu */
+    transition: opacity 0.2s ease-out, transform 0.2s ease-out; /* Animácia zobrazenia */
+    pointer-events: none; /* Zabraňuje interakcii, keď je skryté */
 }
 
 /* Pravidlo pre zobrazenie dropdownu pomocou JS */
-#addOptions.add-options-dropdown.show { /* Pridajte túto triedu pomocou JS pri kliknutí */
-    display: flex; /* Zobrazí dropdown ako flexbox */
+#addOptions.add-options-dropdown.show {
+    display: flex;
+    opacity: 1; /* Animácia zobrazenia */
+    transform: translateY(0); /* Animácia zobrazenia */
+    pointer-events: auto; /* Povolenie interakcie */
 }
 
 
@@ -878,8 +883,9 @@ td:last-child {
     border-radius: 4px;
     cursor: pointer;
     transition: background-color 0.2s ease;
-    text-align: left; /* Zarovná text doľava */
-    font-size: 0.9em; /* Možno zmenšiť písmo pre lepšie zapadnutie */
+    text-align: left;
+    font-size: 0.9em;
+    white-space: nowrap; /* Zabraňuje zalomeniu textu tlačidla */
 }
 
 #addOptions.add-options-dropdown button:hover {
