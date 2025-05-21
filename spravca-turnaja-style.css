@@ -116,6 +116,7 @@ main {
     background-color: transparent;
     min-width: 0;
     overflow-x: hidden; /* Zabezpečí, že main sám nebude mať horizontálny scrollbar */
+    /* overflow-y: auto; Ak tu chceš vertikálny scrollbar pre celý main obsah */
 }
 
 #groupsContent,
@@ -215,7 +216,7 @@ td:last-child {
     border-color: #a71d2a;
 }
 .section-block h2 {
-    text-align: center;    
+    text-align: center; 
     margin-bottom: 20px;
 }
 #groupsContent .section-block h2 {
@@ -297,17 +298,40 @@ td:last-child {
 .category-count-pair .remove-button:hover {
     background-color: #c82333;
 }
+.add-button {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background-color: #28a745;
+    color: white;
+    font-size: 2em;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: background-color 0.3s ease;
+}
+.add-button:hover {
+    background-color: #c46f50;
+}
 .modal {
-    display: none; /* Skryté predvolene */
-    position: fixed; /* Zostať na mieste */
-    z-index: 2000; /* Prekryť všetko */
+    display: none;
+    position: fixed;
+    z-index: 1001;
     left: 0;
     top: 0;
     width: 100%;
     height: 100%;
-    overflow: auto; /* Povoliť rolovanie, ak je obsah príliš veľký */
-    background-color: rgba(0,0,0,0.4); /* Čierne s priehľadnosťou */
-    padding-top: 60px;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.4);
+    justify-content: center;
+    align-items: center;
 }
 .modal-content {
     background-color: #fefefe;
@@ -445,6 +469,8 @@ td:last-child {
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     background-color: #fff;
+    /* width: 36%;  ODSTRÁNIŤ TOTO */
+    /* margin: 0 auto; ODSTRÁNIŤ TOTO */
     width: 80vw; /* Tabuľka vyplní dostupnú šírku rodiča main, ktorý je flex-grow: 1 */
     margin: 20px 0px 20px 0px;
 }
@@ -452,6 +478,7 @@ td:last-child {
 /* Základná tabuľka rozvrhu */
 .match-schedule-table {
     border-collapse: collapse;
+/*    width: 2500px;*/
     table-layout: fixed; /* Kľúčové pre vynútenie pevných šírok stĺpcov */
     min-width: fit-content;
 }
@@ -464,6 +491,8 @@ td:last-child {
     text-align: center;
     vertical-align: top;
     position: relative; /* Dôležité pre absolútne pozicionovanie zápasov */
+/*    min-width: 260px; /* Použite min-width, aby sa stĺpec mohol prispôsobiť, ale nie byť menší */
+/*    width: 260px; /* Nastavte pevnú šírku */
     box-sizing: border-box;
 }
 
@@ -476,7 +505,10 @@ td:last-child {
 /* Špecifické štýly pre bunky (td) */
 .match-schedule-table td {
     height: 160px; /* Stála výška riadku pre bunky */
+    /* overflow: hidden; */ /* Odstránené, aby sa tlačidlá a obsah zápasu mohli zobraziť. Ak text stále preteká, je potrebné zvážiť zväčšenie height alebo riešenie v schedule-cell-content */
 }
+
+
 
 /* Štýly pre hlavičky */
 .match-schedule-table th {
@@ -582,6 +614,7 @@ td:last-child {
     flex-direction: column; /* Položky sú usporiadané vertikálne */
     justify-content: space-between; /* Obsah hore, tlačidlá dole */
     z-index: 5;
+    /* overflow: hidden;  <-- ODSTRÁNIL SOM TOTO, aby sa posuvník na schedule-cell-content mohol zobraziť, ak je to potrebné */
 }
 
 .schedule-cell-content {
@@ -627,6 +660,8 @@ td:last-child {
 
 /* Akčné tlačidlá vo vnútri bloku zápasu */
 .schedule-cell-actions {
+    /* position: absolute;  <-- TOTO JE KĽÚČOVÉ: ODSTRÁNIŤ */
+    /* bottom: 0; left: 0; right: 0;  <-- Tieto vlastnosti sú už zbytočné bez absolute */
     display: flex;
     justify-content: space-around;
     gap: 2px;
@@ -660,160 +695,4 @@ td:last-child {
 .schedule-cell-actions .delete-btn {
     background-color: #dc3545;
     color: white;
-}
-
-/*-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
-
-/* Kontajner pre tlačidlo "+" a jeho možnosti */
-#controlsContainer {
-    position: fixed; /* Zabezpečí, že sa bude fixovať v rohu obrazovky */
-    bottom: 30px; /* Vzdialenosť od spodného okraja */
-    right: 30px; /* Vzdialenosť od pravého okraja */
-    z-index: 1000; /* Zabezpečí, že je nad ostatným obsahom */
-    width: 60px; /* Šírka kontajnera rovná šírke tlačidla */
-    height: 60px; /* Výška kontajnera rovná výške tlačidla */
-}
-
-/* Tlačidlo "+" */
-#addButton {
-    width: 60px;
-    height: 60px;
-    background-color: #4CAF50;
-    color: white;
-    font-size: 2.5em;
-    border: none;
-    border-radius: 50%;
-    display: flex; /* Pre centrovanie '+' */
-    justify-content: center;
-    align-items: center;
-    cursor: pointer;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-    transition: background-color 0.3s ease, transform 0.2s ease;
-    z-index: 1001; /* Uistíme sa, že je nad dropdownom */
-    position: relative; /* Dôležité pre z-index */
-}
-
-#addButton:hover {
-    background-color: #45a049;
-    transform: scale(1.05);
-}
-
-/* Dropdown možnosti (menu) */
-#addOptions.add-options-dropdown {
-    position: absolute; /* Absolútne pozicovanie vzhľadom na #controlsContainer */
-    bottom: 100%; /* Spodný okraj dropdownu sa zarovná s horným okrajom tlačidla */
-    margin-bottom: 15px; /* Vytvorí medzeru medzi dropdownom a tlačidlom */
-    right: 0; /* Pravý okraj dropdownu sa zarovná s pravým okrajom tlačidla */
-    
-    padding: 0; /* Odstránený vnútorný priestor pre "bez obdĺžnika" */
-    
-    z-index: 1000;
-    display: none;
-    flex-direction: column;
-    gap: 8px; /* Medzera medzi tlačidlami */
-    min-width: 180px; /* Minimálna šírka pre text */
-    width: max-content; /* Prispôsobí šírku obsahu */
-    opacity: 0;
-    transform: translateY(10px); /* Pre animáciu zhora nadol */
-    transition: opacity 0.2s ease-out, transform 0.2s ease-out;
-    pointer-events: none; /* Zakáže interakciu, keď je skryté */
-}
-
-/* Pravidlo pre zobrazenie dropdownu pomocou JS */
-#addOptions.add-options-dropdown.show {
-    display: flex;
-    opacity: 1;
-    transform: translateY(0);
-    pointer-events: auto; /* Povoliť interakciu, keď je zobrazené */
-}
-
-/* Tlačidlá vo vnútri dropdownu (menu) */
-#addOptions.add-options-dropdown button {
-    background-color: #007bff;
-    color: white;
-    border: none;
-    padding: 8px 12px;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-    text-align: left;
-    font-size: 0.9em;
-    white-space: nowrap;
-}
-
-#addOptions.add-options-dropdown button:hover {
-    background-color: #0056b3;
-}
-
-/* Ostatné modálne štýly a tlačidlá, ktoré zostali */
-.modal-content {
-    background-color: #fefefe;
-    margin: 5% auto; /* 5% od vrchu a centrované */
-    padding: 20px;
-    border: 1px solid #888;
-    width: 80%; /* Mohlo by sa zmeniť na max-width pre lepšiu odozvu */
-    max-width: 500px; /* Maximálna šírka pre formuláre */
-    border-radius: 8px;
-    position: relative;
-    box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2), 0 6px 20px 0 rgba(0,0,0,0.19);
-}
-.close-button {
-    color: #aaa;
-    float: right;
-    font-size: 28px;
-    font-weight: bold;
-}
-.close-button:hover,
-.close-button:focus {
-    color: black;
-    text-decoration: none;
-    cursor: pointer;
-}
-.form-group {
-    margin-bottom: 15px;
-}
-.form-group label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: bold;
-}
-.form-group input[type="text"],
-.form-group input[type="date"],
-.form-group input[type="time"],
-.form-group input[type="number"],
-.form-group input[type="url"],
-.form-group select {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    box-sizing: border-box; /* Zabezpečí, že padding a border sú zahrnuté vo width */
-}
-.modal-content button[type="submit"] {
-    background-color: #4CAF50;
-    color: white;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 1em;
-}
-.modal-content button[type="submit"]:hover {
-    background-color: #45a049;
-}
-.delete-date-btn, .delete-location-btn {
-    background: none;
-    border: none;
-    color: #ff0000; /* Červená farba pre lepšiu viditeľnosť */
-    cursor: pointer;
-    font-size: 0.9em; /* Alebo podľa potreby */
-    margin-left: 5px;
-    padding: 0;
-    vertical-align: middle;
-    opacity: 0.7;
-    transition: opacity 0.2s ease-in-out;
-}
-
-.delete-date-btn:hover, .delete-location-btn:hover {
-    opacity: 1;
 }
