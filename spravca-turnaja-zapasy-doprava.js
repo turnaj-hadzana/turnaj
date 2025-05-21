@@ -360,7 +360,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Render buses as global SVGs
             allBuses.forEach(bus => {
                 const startLocation = bus.startLocation;
-                const endLocation = bus.endLocation; // Opravené: Používame bus.endLocation
+                const endLocation = bus.endLocation; 
                 const date = bus.date;
 
                 let busStartY, busEndY;
@@ -372,16 +372,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                     return;
                 }
 
-                // Logika pre smer vykresľovania autobusu
-                if (startLocationTop <= endLocationTop) {
-                    // Začiatočná hala je nad alebo v rovnakom riadku ako koncová hala
-                    busStartY = startLocationTop; // Začína na hornom okraji riadku začiatku
-                    busEndY = endLocationTop + ITEM_HEIGHT_PX; // Končí na spodnom okraji riadku konca
-                } else {
-                    // Začiatočná hala je pod koncovou halou
-                    busStartY = startLocationTop + ITEM_HEIGHT_PX; // Začína na spodnom okraji riadku začiatku
-                    busEndY = endLocationTop; // Končí na hornom okraji riadku konca
-                }
+                // NEW: Calculate overall vertical span for the bus
+                // The SVG will span from the top of the higher location row to the bottom of the lower location row
+                const topOfSpan = Math.min(startLocationTop, endLocationTop);
+                const bottomOfSpan = Math.max(startLocationTop + ITEM_HEIGHT_PX, endLocationTop + ITEM_HEIGHT_PX);
+                const svgHeight = bottomOfSpan - topOfSpan;
 
 
                 const [startH, startM] = bus.startTime.split(':').map(Number);
@@ -417,38 +412,35 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
 
 
-                // Corrected busWidthPx calculation: should be directly proportional to duration
                 const busWidthPx = durationInMinutes * PIXELS_PER_MINUTE; 
 
-                // Slant parameters
-                const slantOffset = 30; // How much the bottom points are shifted horizontally compared to top points
-
-                // Points for the parallelogram (relative to SVG's viewBox)
-                // (0,0) is top-left of the SVG container
-                const svgWidth = busWidthPx + Math.abs(slantOffset); 
-                let svgHeight = Math.abs(busEndY - busStartY); 
+                // Slant parameters (no longer used for polygon, but kept for potential future use or text positioning)
+                const slantOffset = 0; // Set to 0 for a vertical rectangle.
 
                 const svgElement = document.createElementNS("http://www.w3.org/2000/svg", "svg");
                 svgElement.setAttribute("class", "bus-svg");
-                svgElement.setAttribute("width", svgWidth);
-                svgElement.setAttribute("height", svgHeight); // Dočasná výška, bude upravená
-                svgElement.setAttribute("viewBox", `0 0 ${svgWidth} ${svgHeight}`); // Dočasný viewBox
+                svgElement.setAttribute("width", busWidthPx); // SVG width is now just busWidthPx
+                svgElement.setAttribute("height", svgHeight); 
+                svgElement.setAttribute("viewBox", `0 0 ${busWidthPx} ${svgHeight}`); 
                 svgElement.style.cssText = `
                     position: absolute;
-                    left: ${busLeftPx - (startLocationTop <= endLocationTop ? 0 : slantOffset)}px;
-                    top: ${Math.min(busStartY, busEndY)}px;
+                    left: ${busLeftPx}px; /* No slant offset for X position */
+                    top: ${topOfSpan}px; /* Position at the top of the calculated span */
                     pointer-events: all;
                 `;
                 svgElement.dataset.id = bus.id;
                 svgElement.dataset.type = bus.type;
 
-                const polygon = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
-                polygon.setAttribute("class", "schedule-bus-polygon");
-                // Points will be set after calculating final height
-                svgElement.appendChild(polygon);
+                const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect"); // Use rect instead of polygon
+                rect.setAttribute("class", "schedule-bus-polygon"); // Keep class for styling
+                rect.setAttribute("x", 0);
+                rect.setAttribute("y", 0);
+                rect.setAttribute("width", busWidthPx);
+                rect.setAttribute("height", svgHeight);
+                svgElement.appendChild(rect);
 
                 // Define textXBase here
-                const textXBase = svgWidth / 2;
+                const textXBase = busWidthPx / 2; // Center text within the rect width
 
                 let currentTextY = 20; // Počiatočná Y pozícia pre text
 
@@ -520,28 +512,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
 
                 // Dynamicky upraviť výšku SVG na základe obsahu
-                const finalSvgHeight = Math.max(svgHeight, currentTextY + 10); // +10 pre padding/buffer
-                svgElement.setAttribute("height", finalSvgHeight);
-                svgElement.setAttribute("viewBox", `0 0 ${svgWidth} ${finalSvgHeight}`);
-
-                // Prepočítať body polygónu s novou výškou
-                let points;
-                if (startLocationTop <= endLocationTop) {
-                    points = `
-                        0,0
-                        ${busWidthPx},0
-                        ${svgWidth},${finalSvgHeight}
-                        ${slantOffset},${finalSvgHeight}
-                    `.trim();
-                } else {
-                    points = `
-                        ${slantOffset},0
-                        ${svgWidth},0
-                        ${busWidthPx},${finalSvgHeight}
-                        0,${finalSvgHeight}
-                    `.trim();
-                }
-                polygon.setAttribute("points", points);
+                // The SVG height is already fixed by the span of locations.
+                // We need to ensure text fits within this height or scrolls.
+                // For simplicity, we'll just let text overflow if it's too tall for the location span.
+                // If text needs to be scrollable within the bus, that's a more complex SVG interaction.
 
                 busOverlayContainer.appendChild(svgElement);
             });
