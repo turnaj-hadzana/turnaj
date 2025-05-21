@@ -445,6 +445,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                         matchEndTime.setHours(startH, startM + match.duration, 0, 0);
                         const formattedEndTime = matchEndTime.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' });
 
+                        // Logika pre zobrazenie názvov tímov
+                        let team1ClubDisplay = match.team1ClubName ? `(${match.team1ClubName})` : '';
+                        let team2ClubDisplay = match.team2ClubName ? `(${match.team2ClubName})` : '';
+
+                        let clubNamesHtml = '';
+                        if (team1ClubDisplay && team2ClubDisplay) {
+                            clubNamesHtml = `${team1ClubDisplay}<br>${team2ClubDisplay}`;
+                        } else if (team1ClubDisplay) {
+                            clubNamesHtml = team1ClubDisplay;
+                        } else if (team2ClubDisplay) {
+                            clubNamesHtml = team2ClubDisplay;
+                        }
+
                         scheduleHtml += `
                             <div class="schedule-cell-match"
                                 data-id="${match.id}" data-type="${match.type}"
@@ -453,10 +466,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                                     <p class="schedule-cell-time">${match.startTime} - ${formattedEndTime}</p>
                                     <p class="schedule-cell-category">${match.categoryName || 'N/A'}${match.groupName ? ` ${match.groupName}` : ''}</p>
                                     <p class="schedule-cell-teams">
-                                        ${match.team1DisplayName}
-                                        ${match.team1ClubName ? `<br>(${match.team1ClubName})` : ''}<br>
-                                        ${match.team2DisplayName}
-                                        ${match.team2ClubName ? `<br>(${match.team2ClubName})` : ''}
+                                        ${match.team1DisplayName}<br>
+                                        ${match.team2DisplayName}<br>
+                                        ${clubNamesHtml}
                                     </p>
                                 </div>
                             </div>
