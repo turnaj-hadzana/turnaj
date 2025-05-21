@@ -296,11 +296,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                         const left = leftPx; // V pixeloch, nie percentách
                         const width = widthPx; // V pixeloch, nie percentách
 
+                        const matchEndTime = new Date();
+                        matchEndTime.setHours(startH, startM + durationInMinutes, 0, 0);
+                        const formattedEndTime = matchEndTime.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' });
 
                         scheduleHtml += `
                             <div class="schedule-cell-match"
                                 data-id="${match.id}"
                                 style="left: ${left}px; width: ${width}px; top: ${topPx}px;">
+                                <p class="schedule-cell-time">${match.startTime} - ${formattedEndTime}</p>
                                 <p class="schedule-cell-category">${match.categoryName || 'N/A'}${match.groupName ? ` ${match.groupName}` : ''}</p>
                                 <p class="schedule-cell-teams">${match.team1DisplayName}<br>${match.team2DisplayName}</p>
                                 <p class="schedule-cell-club-names">${match.team1ClubName}<br>${match.team2ClubName}</p>
