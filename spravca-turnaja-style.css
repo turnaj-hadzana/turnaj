@@ -578,11 +578,11 @@ td:last-child {
     text-align: center;
     padding: 0 2px;
     box-sizing: border-box;
-    white-space: nowrap; /* Zabezpečí, že čas zostane v jednom riadku */
+    white-space: nowrap;
     overflow: hidden;
-    text-overflow: ellipsis; /* Ak je čas príliš dlhý (nemalo by sa stať) */
-    border-left: 1px solid #ddd; /* Jemná ľavá čiara */
-    border-right: 1px solid #ddd; /* Jemná pravá čiara */
+    text-overflow: ellipsis;
+    border-left: 1px solid #000;
+    border-right: 1px solid #000;
 }
 
 /* Štýly pre prázdne bunky */
