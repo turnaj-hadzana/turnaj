@@ -208,7 +208,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Odstránime "Načítavam logistiku turnaja..."
             matchesContainer.innerHTML = ''; 
 
-            let scheduleHtml = '<div class="schedule-table-container">';
+            // Vytvoríme schedule-table-container s position:relative a overflow:auto
+            // To je kľúčové pre správne posúvanie SVG elementov vo vnútri
+            let scheduleHtml = '<div class="schedule-table-container" style="position: relative; overflow: auto;">'; 
             scheduleHtml += '<table class="match-schedule-table"><thead><tr>';
             scheduleHtml += '<th class="fixed-column">Miesto / Čas</th>';
 
@@ -307,7 +309,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                                     <p class="schedule-cell-time">${match.startTime} - ${formattedEndTime}</p>
                                     <p class="schedule-cell-category">${match.categoryName || 'N/A'}${match.groupName ? ` ${match.groupName}` : ''}</p>
                                     <p class="schedule-cell-teams">${match.team1DisplayName}<br>${match.team2DisplayName}</p>
-                                    <p class="schedule-cell-club-names">${match.team1ClubName}<br>${match.team2ClubName}</p>
                                 </div>
                             </div>
                         `;
@@ -326,7 +327,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             scheduleHtml += '</tbody></table>';
             scheduleHtml += '</div>'; // Close schedule-table-container
 
-            // Append the table structure to the DOM first
+            // Pridáme štruktúru tabuľky do DOM
             matchesContainer.insertAdjacentHTML('beforeend', scheduleHtml);
 
             // Získame referencie na tabuľku a jej kontajner po tom, čo sú v DOM
@@ -336,38 +337,28 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Vytvoríme a pridáme busOverlayContainer teraz, keď je tabuľka v DOM
             const busOverlayContainer = document.createElement('div');
             busOverlayContainer.id = 'busOverlayContainer';
-            // Nastavíme pozíciu na absolute v rámci matchesContainer (ktorý je relative)
-            // Nastavíme šírku na 100% a pointer-events na none predvolene
-            busOverlayContainer.style.cssText = 'position: absolute; top: 0; left: 0; width: 100%; pointer-events: none;'; 
-            matchesContainer.appendChild(busOverlayContainer); // Pridáme do matchesContainer
-
-            // Dynamicky nastavíme výšku busOverlayContainer tak, aby zodpovedala scrollHeight kontajnera tabuľky
-            // Tým sa zabezpečí, že pokryje celú posúvateľnú oblasť tabuľky a posúva sa s ňou.
-            busOverlayContainer.style.height = `${scheduleTableContainer.scrollHeight}px`;
-
+            // Nastavíme pozíciu na absolute v rámci scheduleTableContainer (ktorý je relative a scrollable)
+            // Nastavíme šírku a výšku na 100% rodiča a pointer-events na none predvolene
+            busOverlayContainer.style.cssText = 'position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;'; 
+            scheduleTableContainer.appendChild(busOverlayContainer); // Pridáme do scheduleTableContainer
 
             // Výpočet globálnych pixelových offsetov pre miesta a časy
-            // Tieto offsety sú relatívne k matchesContainer, ktorý je kontextom pozícií pre busOverlayContainer
-            const matchesContainerRect = matchesContainer.getBoundingClientRect();
-            // const tableRect = scheduleTable.getBoundingClientRect(); // Toto sa priamo nepoužíva pre základ pozícií SVG, ale pre pozície interných elementov tabuľky.
+            // Tieto offsety sú teraz relatívne k scheduleTableContainer, ktorý je kontextom pozícií pre busOverlayContainer
+            const scheduleTableContainerRect = scheduleTableContainer.getBoundingClientRect();
 
-            const locationRowTopOffsets = new Map(); // locationName -> globálny top pixelový offset relatívny k matchesContainer
+            const locationRowTopOffsets = new Map(); // locationName -> globálny top pixelový offset relatívny k scheduleTableContainer
             scheduleTable.querySelectorAll('tbody tr').forEach(row => {
                 const locationHeader = row.querySelector('th.fixed-column');
                 if (locationHeader) {
                     const locationName = locationHeader.dataset.location;
-                    // Vypočítame offset relatívny k top matchesContainer
-                    locationRowTopOffsets.set(locationName, locationHeader.getBoundingClientRect().top - matchesContainerRect.top);
+                    // Vypočítame offset relatívny k top scheduleTableContainer
+                    locationRowTopOffsets.set(locationName, locationHeader.getBoundingClientRect().top - scheduleTableContainerRect.top);
                 }
             });
 
-            const timeColumnLeftOffsets = new Map(); // date -> pole {hour, leftOffset relatívny k matchesContainer}
-            // Získame offset pre prvý stĺpec s časmi (prvý <th> okrem fixed-column)
+            const timeColumnLeftOffsets = new Map(); // date -> pole {hour, leftOffset relatívny k scheduleTableContainer}
             const firstTimeHeader = scheduleTable.querySelector('thead th:not(.fixed-column)');
             if (firstTimeHeader) {
-                // Vypočítame offset relatívny k left matchesContainer
-                // let currentColumnLeft = firstTimeHeader.getBoundingClientRect().left - matchesContainerRect.left; // Táto premenná sa už nepoužíva priamo, ale je súčasťou výpočtu nižšie.
-                
                 sortedDates.forEach(date => {
                     const dateHeader = scheduleTable.querySelector(`th[data-date="${date}"]`);
                     if (dateHeader) {
@@ -380,8 +371,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                             const hour = firstHourInDay + index; // Hodina na základe jej pozície v zozname spanov
                             hourOffsets.push({
                                 hour: hour,
-                                // Vypočítame ľavú pozíciu relatívnu k left matchesContainer
-                                left: (dateHeader.getBoundingClientRect().left - matchesContainerRect.left) + (index * CELL_WIDTH_PX)
+                                // Vypočítame ľavú pozíciu relatívnu k left scheduleTableContainer
+                                left: (dateHeader.getBoundingClientRect().left - scheduleTableContainerRect.left) + (index * CELL_WIDTH_PX)
                             });
                         });
                         timeColumnLeftOffsets.set(date, hourOffsets);
@@ -668,7 +659,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 matchModalTitle.textContent = 'Upraviť zápas';
 
                 await populatePlayingDaysSelect(matchDateSelect, matchData.date);
-                // Opravená chyba: matchData.data.location na matchData.location
                 await populateSportHallsSelect(matchLocationSelect, matchData.location);
 
                 matchStartTimeInput.value = matchData.startTime || '';
@@ -866,9 +856,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             const categoryName = categoryDoc.exists() ? (categoryDoc.data().name || categoryId) : categoryId;
 
             const groupDoc = await getDoc(doc(groupsCollectionRef, groupId));
-            let groupData = null; // Inicializácia groupData
+            let groupData = null; 
             if (groupDoc.exists()) {
-                groupData = groupDoc.data(); // Priradenie dát, ak dokument existuje
+                groupData = groupDoc.data(); 
             }
             const groupName = groupData ? (groupData.name || groupId) : groupId;
 
@@ -919,7 +909,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
-    // --- Event Listener pre formulár ZÁPASU ---
     matchForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
@@ -932,7 +921,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const matchLocation = matchLocationSelect.value;
         const matchStartTime = matchStartTimeInput.value;
         const matchDuration = parseInt(matchDurationInput.value);
-        const matchBufferTime = parseInt(matchBufferTimeInput.value); // Získanie hodnoty ochranného pásma
+        const matchBufferTime = parseInt(matchBufferTimeInput.value); 
 
 
         const currentMatchId = matchIdInput.value;
@@ -964,7 +953,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        // --- KONTROLA: Prekrývanie časov v rovnakej hale a deň (vrátane ochranného pásma) ---
         const [newStartHour, newStartMinute] = matchStartTime.split(':').map(Number);
         const newMatchStartInMinutes = newStartHour * 60 + newStartMinute;
         const newMatchEndInMinutesWithBuffer = newMatchStartInMinutes + matchDuration + matchBufferTime; 
@@ -984,7 +972,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const existingMatch = doc.data();
                 const existingMatchId = doc.id;
 
-                // Ak upravujeme existujúci zápas, preskočíme ho pri kontrole prekrývania
                 if (currentMatchId && existingMatchId === currentMatchId) {
                     return;
                 }
@@ -1017,10 +1004,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             alert("Vyskytla sa chyba pri kontrole prekrývania zápasov. Skúste to znova.");
             return;
         }
-        // --- KONIEC KONTROLY PREKRÝVANIA ---
 
-
-        // --- KONTROLA: Tímy v rovnakej kategórii a skupine nemôžu hrať proti sebe viackrát ---
         let existingMatchIdForTeams = null; 
         try {
             const q1 = query(
@@ -1070,14 +1054,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             alert("Vyskytla sa chyba pri kontrole alebo mazaní existujúceho zápasu (tímov). Skúste to znova.");
             return;
         }
-        // --- KONIEC KONTROLY TÍMOV ---
-
 
         const matchData = {
             date: matchDate,
             startTime: matchStartTime,
             duration: matchDuration,
-            bufferTime: matchBufferTime, // Uloženie ochranného pásma
+            bufferTime: matchBufferTime, 
             location: matchLocation,
             categoryId: matchCategory,
             categoryName: matchCategorySelect.options[matchCategorySelect.selectedIndex].text,
@@ -1120,7 +1102,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
 
-    // --- NOVÉ: Event Listener pre formulár AUTOBUSU ---
     busForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
@@ -1139,22 +1120,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        // Kontrola, či miesto začiatku a cieľa nie sú rovnaké
         if (busStartLocation === busEndLocation) {
             alert('Miesto začiatku a miesto cieľa nemôžu byť rovnaké. Prosím, zvoľte rôzne miesta.');
             return;
         }
 
-        // Kontrola, či čas príchodu nie je pred časom odchodu (ak je v ten istý deň)
         const [startH, startM] = busStartTime.split(':').map(Number);
         const [endH, endM] = busEndTime.split(':').map(Number);
         const startTimeInMinutes = startH * 60 + startM;
         let endTimeInMinutes = endH * 60 + endM;
 
-        // Ak čas príchodu je menší ako čas odchodu, predpokladáme, že je to nasledujúci deň
         if (endTimeInMinutes < startTimeInMinutes) {
-            // Toto je v poriadku, ak ide o prechod cez polnoc, ale nesmie to byť prekrývanie v rámci dňa
-            // Pre účely výpočtu dĺžky trasy a prekrývania pridáme 24 hodín
             endTimeInMinutes += 24 * 60; 
         }
 
@@ -1165,12 +1141,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
 
-        // --- KONTROLA: Prekrývanie autobusových liniek pre ten istý autobus ---
         try {
             const existingBusesQuery = query(
                 busesCollectionRef,
                 where("date", "==", busDate),
-                where("busName", "==", busName) // Kontrolujeme pre konkrétny autobus
+                where("busName", "==", busName) 
             );
             const existingBusesSnapshot = await getDocs(existingBusesQuery);
 
@@ -1181,7 +1156,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const existingBus = doc.data();
                 const existingBusId = doc.id;
 
-                // Ak upravujeme existujúci autobus, preskočíme ho pri kontrole prekrývania
                 if (currentBusId && existingBusId === currentBusId) {
                     return;
                 }
@@ -1194,7 +1168,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                     existingBusEndInMinutes += 24 * 60;
                 }
 
-                // Kontrola prekrývania: (nový začína pred existujúcim koncom A nový končí po existujúcom začiatku)
                 if (startTimeInMinutes < existingBusEndInMinutes && endTimeInMinutes > existingBusStartInMinutes) {
                     overlapFound = true;
                     overlappingBusDetails = existingBus;
@@ -1213,8 +1186,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             alert("Vyskytla sa chyba pri kontrole prekrývania autobusových liniek. Skúste to znova.");
             return;
         }
-        // --- KONIEC KONTROLY PREKRÝVANIA AUTOBUSOV ---
-
 
         const busData = {
             busName: busName,
@@ -1246,7 +1217,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
 
-    // --- Event Listener pre formulár HRACIEHO DŇA ---
     playingDayForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const date = playingDayDateInput.value;
@@ -1271,14 +1241,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
             alert('Hrací deň úspešne pridaný!');
             closeModal(playingDayModal);
-            await displayMatchesAsSchedule(); // Aktualizovať rozvrh
+            await displayMatchesAsSchedule(); 
         } catch (error) {
             console.error("Chyba pri ukladaní hracieho dňa: ", error);
             alert("Chyba pri ukladaní hracieho dňa. Pozrite konzolu pre detaily.");
         }
     });
 
-    // --- Event Listener pre formulár ŠPORTOVEJ HALY ---
     sportHallForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const name = hallNameInput.value.trim();
@@ -1291,7 +1260,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         try {
-            new URL(googleMapsUrl); // Validate URL format
+            new URL(googleMapsUrl); 
         } catch (_) {
             alert('Odkaz na Google Maps musí byť platná URL adresa.');
             return;
@@ -1314,7 +1283,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
             alert('Športová hala úspešne pridaná!');
             closeModal(sportHallModal);
-            await displayMatchesAsSchedule(); // Aktualizovať rozvrh
+            await displayMatchesAsSchedule(); 
         } catch (error) {
             console.error("Chyba pri ukladaní športovej haly: ", error);
             alert("Chyba pri ukladaní športovej haly. Pozrite konzolu pre detaily.");
