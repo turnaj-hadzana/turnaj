@@ -322,7 +322,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const getTeamName = async (categoryId, groupId, teamNumber) => {
         if (!categoryId || !groupId || !teamNumber) {
-            return { fullDisplayName: null, clubName: null, clubId: null }; // Pridané clubId
+            return { fullDisplayName: null, clubName: null, clubId: null };
         }
 
         try {
@@ -346,7 +346,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             if (!clubsSnapshot.empty) {
                 const teamDocData = clubsSnapshot.docs[0].data();
-                clubId = clubsSnapshot.docs[0].id; // Získanie ID klubu
+                clubId = clubsSnapshot.docs[0].id;
                 if (teamDocData.name) {
                     clubName = teamDocData.name;
                 }
@@ -372,7 +372,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             return {
                 fullDisplayName: fullDisplayName,
                 clubName: clubName,
-                clubId: clubId // Vrátenie ID klubu
+                clubId: clubId
             };
         } catch (error) {
             console.error("Chyba pri získavaní názvu tímu: ", error);
@@ -386,15 +386,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         const matchCategory = matchCategorySelect.value;
         const matchGroup = matchGroupSelect.value;
 
-        const team1Number = team1NumberInput.value;
-        const team2Number = team2NumberInput.value;
+        const team1Number = parseInt(team1NumberInput.value);
+        const team2Number = parseInt(team2NumberInput.value);
 
-        if (!matchCategory || !matchGroup || !team1Number || !team2Number) {
+        const currentMatchId = matchIdInput.value; // ID aktuálneho zápasu, ak ide o úpravu
+
+        if (!matchCategory || !matchGroup || isNaN(team1Number) || isNaN(team2Number)) {
             alert('Prosím, vyplňte všetky povinné polia (Kategória, Skupina, Poradové číslo tímu 1 a 2).');
             return;
         }
 
-        if (parseInt(team1Number) === parseInt(team2Number)) {
+        if (team1Number === team2Number) {
             alert('Tímy nemôžu hrať sami proti sebe. Prosím, zadajte rôzne poradové čísla tímov.');
             return;
         }
@@ -416,11 +418,51 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        // Kontrola, či tímy nepatria k rovnakému klubu
+        // Kontrola, či tímy z rovnakého klubu nemôžu hrať proti sebe v rovnakej skupine
         if (team1Result.clubId && team2Result.clubId && team1Result.clubId === team2Result.clubId) {
             alert('Tímy z rovnakého klubu nemôžu hrať proti sebe v rovnakej skupine. Prosím, vyberte tímy z rôznych klubov alebo rôznych skupín/kategórií.');
             return;
         }
+
+        // --- NOVÁ KONTROLA: Či už tímy hrali proti sebe v rovnakej skupine ---
+        try {
+            // Skontrolujeme v oboch smeroch (Tím 1 vs Tím 2 A Tím 2 vs Tím 1)
+            const q1 = query(
+                matchesCollectionRef,
+                where("categoryId", "==", matchCategory),
+                where("groupId", "==", matchGroup),
+                where("team1Number", "==", team1Number),
+                where("team2Number", "==", team2Number)
+            );
+            const q2 = query(
+                matchesCollectionRef,
+                where("categoryId", "==", matchCategory),
+                where("groupId", "==", matchGroup),
+                where("team1Number", "==", team2Number),
+                where("team2Number", "==", team1Number)
+            );
+
+            const snapshot1 = await getDocs(q1);
+            const snapshot2 = await getDocs(q2);
+
+            let alreadyPlayed = false;
+            // Filter pre existujúce zápasy, aby sa vylúčil aktuálny upravovaný zápas
+            if (snapshot1.docs.some(doc => doc.id !== currentMatchId) || snapshot2.docs.some(doc => doc.id !== currentMatchId)) {
+                alreadyPlayed = true;
+            }
+
+            if (alreadyPlayed) {
+                alert('Tieto dva tímy už proti sebe hrali v tejto skupine. Nemôžu hrať znova.');
+                return;
+            }
+
+        } catch (error) {
+            console.error("Chyba pri kontrole predchádzajúcich zápasov:", error);
+            alert("Vyskytla sa chyba pri kontrole predchádzajúcich zápasov. Skúste to znova.");
+            return;
+        }
+        // --- KONIEC NOVEJ KONTROLY ---
+
 
         const matchData = {
             date: matchDateInput.value,
@@ -434,17 +476,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             team1Category: matchCategory,
             team1Group: matchGroup,
-            team1Number: parseInt(team1Number),
+            team1Number: team1Number,
             team1DisplayName: team1Result.fullDisplayName,
             team1ClubName: team1Result.clubName,
-            team1ClubId: team1Result.clubId, // Uložíme ID klubu
+            team1ClubId: team1Result.clubId,
 
             team2Category: matchCategory,
             team2Group: matchGroup,
-            team2Number: parseInt(team2Number),
+            team2Number: team2Number,
             team2DisplayName: team2Result.fullDisplayName,
             team2ClubName: team2Result.clubName,
-            team2ClubId: team2Result.clubId, // Uložíme ID klubu
+            team2ClubId: team2Result.clubId,
 
             createdAt: new Date()
         };
@@ -452,8 +494,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.log('Dáta zápasu na uloženie:', matchData);
 
         try {
-            if (matchIdInput.value) {
-                await setDoc(doc(matchesCollectionRef, matchIdInput.value), matchData, { merge: true });
+            if (currentMatchId) { // Používame currentMatchId pre jasnosť
+                await setDoc(doc(matchesCollectionRef, currentMatchId), matchData, { merge: true });
                 alert('Zápas úspešne aktualizovaný!');
             } else {
                 await addDoc(matchesCollectionRef, matchData);
