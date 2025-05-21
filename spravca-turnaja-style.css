@@ -469,7 +469,7 @@ td:last-child {
     /* margin: 0 auto; ODSTRÁNIŤ TOTO */
     width: 50%; /* Tabuľka vyplní dostupnú šírku rodiča main, ktorý je flex-grow: 1 */
     margin: 20px 0; /* Pre lepšie vizuálne oddelenie */
-    margin-left: 180px;
+    margin-left: 360px;
 }
 
 /* Základná tabuľka rozvrhu */
