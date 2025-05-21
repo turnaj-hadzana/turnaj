@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Modálne okno pre hrací deň
     const playingDayModal = document.getElementById('playingDayModal');
-    const closePlayingDayModalButton = document.getElementById('closePlayingDayModal');
+    const closePlayingDayModalButton = document = document.getElementById('closePlayingDayModal');
     const playingDayForm = document.getElementById('playingDayForm');
     const playingDayDateInput = document.getElementById('playingDayDate');
 
@@ -253,7 +253,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // Ak názov miesta v sortedLocations nezodpovedá aktívnej športovej hale, preskočíme tento riadok.
                 // Toto rieši prípady, keď hala mohla byť vymazaná, ale udalosti na ňu stále odkazujú.
                 if (!hallData) {
-                    console.warn(`Preskakujem riadok pre miesto "${locationName}", pretože to nie je aktívna športová hala.`);
+                    console.warn(`Preskakujem riadok pre miesto "${locationName}", pretože to nie je aktívna športová hala. Riadok nebude vykreslený.`);
                     return; 
                 }
 
