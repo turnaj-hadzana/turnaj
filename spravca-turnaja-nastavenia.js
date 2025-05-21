@@ -49,10 +49,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function loadCategorySettings(existingCategorySettings) {
         categorySettingsContainer.innerHTML = '<p>Načítavam kategórie...</p>';
         try {
+            console.log("Pokúšam sa načítať kategórie z Firestore...");
             const categoriesSnapshot = await getDocs(query(categoriesCollectionRef, orderBy("name", "asc")));
+            
+            console.log(`Načítaných kategórií: ${categoriesSnapshot.docs.length}`);
+
             categorySettingsContainer.innerHTML = ''; // Vyčistíme pred pridaním
 
             if (categoriesSnapshot.empty) {
+                console.log("categoriesSnapshot je prázdny. Žiadne kategórie neboli nájdené v kolekcii.");
                 categorySettingsContainer.innerHTML = '<p>Žiadne kategórie neboli nájdené. Prosím, najprv vytvorte kategórie.</p>';
                 return;
             }
@@ -60,7 +65,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             categoriesSnapshot.forEach(categoryDoc => {
                 const categoryId = categoryDoc.id;
                 const categoryName = categoryDoc.data().name;
-                const categoryData = existingCategorySettings[categoryId] || { duration: '', bufferTime: '' }; // Predvolené hodnoty
+                console.log(`Spracovávam kategóriu: ID=${categoryId}, Názov=${categoryName}`);
+
+                const categoryData = existingCategorySettings[categoryId] || { duration: 60, bufferTime: 5 }; // Predvolené hodnoty
 
                 const categoryDiv = document.createElement('div');
                 categoryDiv.classList.add('form-group', 'category-setting-group');
@@ -74,6 +81,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 `;
                 categorySettingsContainer.appendChild(categoryDiv);
             });
+            console.log("Kategórie úspešne zobrazené.");
 
         } catch (error) {
             console.error("Chyba pri načítaní nastavení kategórií: ", error);
