@@ -116,7 +116,6 @@ main {
     background-color: transparent;
     min-width: 0;
     overflow-x: hidden; /* Zabezpečí, že main sám nebude mať horizontálny scrollbar */
-    /* overflow-y: auto; Ak tu chceš vertikálny scrollbar pre celý main obsah */
 }
 
 #groupsContent,
@@ -216,7 +215,7 @@ td:last-child {
     border-color: #a71d2a;
 }
 .section-block h2 {
-    text-align: center; 
+    text-align: center;    
     margin-bottom: 20px;
 }
 #groupsContent .section-block h2 {
@@ -298,6 +297,8 @@ td:last-child {
 .category-count-pair .remove-button:hover {
     background-color: #c82333;
 }
+/* POZNÁMKA: Nižšie je stará/duplicitná definícia .add-button. Táto by mala byť odstránená. */
+/*
 .add-button {
     position: fixed;
     bottom: 20px;
@@ -320,6 +321,7 @@ td:last-child {
 .add-button:hover {
     background-color: #c46f50;
 }
+*/
 .modal {
     display: none; /* Skryté predvolene */
     position: fixed; /* Zostať na mieste */
@@ -468,8 +470,6 @@ td:last-child {
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     background-color: #fff;
-    /* width: 36%;  ODSTRÁNIŤ TOTO */
-    /* margin: 0 auto; ODSTRÁNIŤ TOTO */
     width: 80vw; /* Tabuľka vyplní dostupnú šírku rodiča main, ktorý je flex-grow: 1 */
     margin: 20px 0px 20px 0px;
 }
@@ -477,7 +477,6 @@ td:last-child {
 /* Základná tabuľka rozvrhu */
 .match-schedule-table {
     border-collapse: collapse;
-/*    width: 2500px;*/
     table-layout: fixed; /* Kľúčové pre vynútenie pevných šírok stĺpcov */
     min-width: fit-content;
 }
@@ -490,8 +489,6 @@ td:last-child {
     text-align: center;
     vertical-align: top;
     position: relative; /* Dôležité pre absolútne pozicionovanie zápasov */
-/*    min-width: 260px; /* Použite min-width, aby sa stĺpec mohol prispôsobiť, ale nie byť menší */
-/*    width: 260px; /* Nastavte pevnú šírku */
     box-sizing: border-box;
 }
 
@@ -504,10 +501,7 @@ td:last-child {
 /* Špecifické štýly pre bunky (td) */
 .match-schedule-table td {
     height: 160px; /* Stála výška riadku pre bunky */
-    /* overflow: hidden; */ /* Odstránené, aby sa tlačidlá a obsah zápasu mohli zobraziť. Ak text stále preteká, je potrebné zvážiť zväčšenie height alebo riešenie v schedule-cell-content */
 }
-
-
 
 /* Štýly pre hlavičky */
 .match-schedule-table th {
@@ -613,7 +607,6 @@ td:last-child {
     flex-direction: column; /* Položky sú usporiadané vertikálne */
     justify-content: space-between; /* Obsah hore, tlačidlá dole */
     z-index: 5;
-    /* overflow: hidden;  <-- ODSTRÁNIL SOM TOTO, aby sa posuvník na schedule-cell-content mohol zobraziť, ak je to potrebné */
 }
 
 .schedule-cell-content {
@@ -659,8 +652,6 @@ td:last-child {
 
 /* Akčné tlačidlá vo vnútri bloku zápasu */
 .schedule-cell-actions {
-    /* position: absolute;  <-- TOTO JE KĽÚČOVÉ: ODSTRÁNIŤ */
-    /* bottom: 0; left: 0; right: 0;  <-- Tieto vlastnosti sú už zbytočné bez absolute */
     display: flex;
     justify-content: space-around;
     gap: 2px;
@@ -696,43 +687,96 @@ td:last-child {
     color: white;
 }
 
+/*-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
 
-//----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-
+/* Kontajner pre tlačidlo "+" a jeho možnosti - JEDINÁ SPRÁVNA DEFINÍCIA */
 #controlsContainer {
-    position: relative;
-    margin-bottom: 20px;
-    display: flex; /* Aby tlačidlo "+" a dropdown boli vedľa seba */
-    align-items: center;
+    position: fixed; /* Zabezpečí, že sa bude fixovať v rohu obrazovky */
+    bottom: 30px; /* Vzdialenosť od spodného okraja */
+    right: 30px; /* Vzdialenosť od pravého okraja */
+    z-index: 1000; /* Zabezpečí, že je nad ostatným obsahom */
+    width: 60px; /* Šírka kontajnera rovná šírke tlačidla */
+    height: 60px; /* Výška kontajnera rovná výške tlačidla */
 }
-.add-options-dropdown {
-    position: absolute;
-    top: 0; /* Zarovnať s vrchnou časťou tlačidla + */
-    left: 60px; /* Posunúť doprava od tlačidla + */
-    display: none; /* Predvolene skryté */
-    flex-direction: column;
-    background-color: white;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    z-index: 1000;
-    min-width: 180px; /* Dostatočná šírka pre text */
-    padding: 5px 0;
-}
-.add-options-dropdown button {
-    background: none;
+
+/* Tlačidlo "+" - JEDINÁ SPRÁVNA DEFINÍCIA */
+#addButton {
+    width: 60px;
+    height: 60px;
+    background-color: #4CAF50;
+    color: white;
+    font-size: 2.5em;
     border: none;
-    padding: 10px 15px;
-    text-align: left;
+    border-radius: 50%;
+    display: flex; /* Pre centrovanie '+' */
+    justify-content: center;
+    align-items: center;
     cursor: pointer;
-    font-size: 1em;
-    color: #333;
-    width: 100%;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    z-index: 1001; /* Uistíme sa, že je nad dropdownom */
+    position: relative; /* Dôležité pre z-index */
 }
-.add-options-dropdown button:hover {
-    background-color: #f0f0f0;
+
+#addButton:hover {
+    background-color: #45a049;
+    transform: scale(1.05);
 }
+
+/* Dropdown možnosti - JEDINÁ SPRÁVNA DEFINÍCIA */
+#addOptions.add-options-dropdown {
+    position: absolute; /* Absolútne pozicovanie vzhľadom na #controlsContainer */
+    bottom: 100%; /* Spodný okraj dropdownu sa zarovná s horným okrajom tlačidla */
+    margin-bottom: 15px; /* Vytvorí medzeru medzi dropdownom a tlačidlom */
+    right: 0; /* Pravý okraj dropdownu sa zarovná s pravým okrajom tlačidla */
+    
+    /* Vlastnosti pre odstránenie obdĺžnika */
+    /* background-color: white; */ /* Odstránené pozadie */
+    /* border: 1px solid #ddd; */ /* Odstránený rámik */
+    border-radius: 5px; /* Ponechané, ak chcete zaoblené rohy tlačidiel */
+    /* box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); */ /* Odstránený tieň */
+    padding: 0; /* Odstránený vnútorný priestor */
+    
+    z-index: 1000;
+    display: none;
+    flex-direction: column;
+    gap: 8px; /* Medzera medzi tlačidlami zostane */
+    min-width: 180px; /* Minimálna šírka pre text */
+    width: max-content; /* Prispôsobí šírku obsahu */
+    opacity: 0;
+    transform: translateY(10px); /* Pre animáciu zhora nadol */
+    transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+    pointer-events: none;
+}
+
+/* Pravidlo pre zobrazenie dropdownu pomocou JS */
+#addOptions.add-options-dropdown.show {
+    display: flex;
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+/* Tlačidlá vo vnútri dropdownu - JEDINÁ SPRÁVNA DEFINÍCIA */
+#addOptions.add-options-dropdown button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    text-align: left;
+    font-size: 0.9em;
+    white-space: nowrap;
+    /* width: 100%; - ODSTRÁNENÉ, aby sa nerozťahovali */
+}
+
+#addOptions.add-options-dropdown button:hover {
+    background-color: #0056b3;
+}
+
+/* Ostatné modálne štýly a tlačidlá, ktoré zostali */
 .modal-content {
     background-color: #fefefe;
     margin: 5% auto; /* 5% od vrchu a centrované */
@@ -804,98 +848,3 @@ td:last-child {
 .delete-date-btn:hover, .delete-location-btn:hover {
     opacity: 1;
 }
-
-
-
-
-
-
-
-/* Kontajner pre tlačidlo "+" a jeho možnosti */
-#controlsContainer {
-    position: fixed; /* Zabezpečí, že sa bude fixovať v rohu obrazovky */
-    top: 30px; /* Vzdialenosť od horného okraja */
-    left: 30px; /* Vzdialenosť od ľavého okraja */
-    z-index: 1000; /* Zabezpečí, že je nad ostatným obsahom */
-    width: 60px; /* Šírka kontajnera rovná šírke tlačidla */
-    height: 60px; /* Výška kontajnera rovná výške tlačidla */
-}
-
-/* Tlačidlo "+" */
-#addButton {
-    width: 60px;
-    height: 60px;
-    background-color: #4CAF50;
-    color: white;
-    font-size: 2.5em;
-    border: none;
-    border-radius: 50%;
-    display: flex; /* Pre centrovanie '+' */
-    justify-content: center;
-    align-items: center;
-    cursor: pointer;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-    transition: background-color 0.3s ease, transform 0.2s ease;
-    z-index: 1001;
-    position: relative; /* Dôležité pre z-index */
-}
-
-#addButton:hover {
-    background-color: #45a049;
-    transform: scale(1.05);
-}
-
-/* Dropdown možnosti */
-#addOptions.add-options-dropdown {
-    position: absolute; /* Absolútne pozicovanie vzhľadom na #controlsContainer */
-    bottom: 100%; /* <<-- OPRAVENÉ: Toto umiestni spodný okraj dropdownu na horný okraj rodiča */
-    margin-bottom: 15px; /* Vytvorí medzeru medzi dropdownom a tlačidlom */
-    right: 0; /* Pravý okraj dropdownu sa zarovná s pravým okrajom tlačidla */
-    
-    /* Vlastnosti pre odstránenie obdĺžnika */
-    /* background-color: white; */ /* Odstránené pozadie */
-    /* border: 1px solid #ddd; */ /* Odstránený rámik */
-    border-radius: 5px; /* Ponechané, ak chcete zaoblené rohy tlačidiel */
-    /* box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); */ /* Odstránený tieň */
-    padding: 0; /* Odstránený vnútorný priestor */
-    
-    z-index: 1000;
-    display: none;
-    flex-direction: column;
-    gap: 8px; /* Medzera medzi tlačidlami zostane */
-    min-width: 180px; /* Minimálna šírka pre text */
-    width: max-content; /* Prispôsobí šírku obsahu */
-    opacity: 0;
-    transform: translateY(10px); /* Pre animáciu zhora nadol */
-    transition: opacity 0.2s ease-out, transform 0.2s ease-out;
-    pointer-events: none;
-}
-
-/* Pravidlo pre zobrazenie dropdownu pomocou JS */
-#addOptions.add-options-dropdown.show {
-    display: flex;
-    opacity: 1;
-    transform: translateY(0);
-    pointer-events: auto;
-}
-
-/* Tlačidlá vo vnútri dropdownu */
-#addOptions.add-options-dropdown button {
-    background-color: #007bff;
-    color: white;
-    border: none;
-    padding: 8px 12px;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-    text-align: left;
-    font-size: 0.9em;
-    white-space: nowrap;
-    /* width: 100%; - ODSTRÁNENÉ, aby sa nerozťahovali */
-}
-
-#addOptions.add-options-dropdown button:hover {
-    background-color: #0056b3;
-}
-
-/* Ostatné CSS... */
