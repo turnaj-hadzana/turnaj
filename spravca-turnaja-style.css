@@ -321,17 +321,16 @@ td:last-child {
     background-color: #c46f50;
 }
 .modal {
-    display: none;
-    position: fixed;
-    z-index: 1001;
+    display: none; /* Skryté predvolene */
+    position: fixed; /* Zostať na mieste */
+    z-index: 2000; /* Prekryť všetko */
     left: 0;
     top: 0;
     width: 100%;
     height: 100%;
-    overflow: auto;
-    background-color: rgba(0, 0, 0, 0.4);
-    justify-content: center;
-    align-items: center;
+    overflow: auto; /* Povoliť rolovanie, ak je obsah príliš veľký */
+    background-color: rgba(0,0,0,0.4); /* Čierne s priehľadnosťou */
+    padding-top: 60px;
 }
 .modal-content {
     background-color: #fefefe;
@@ -695,4 +694,97 @@ td:last-child {
 .schedule-cell-actions .delete-btn {
     background-color: #dc3545;
     color: white;
+}
+
+
+//----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+#controlsContainer {
+    position: relative;
+    margin-bottom: 20px;
+    display: flex; /* Aby tlačidlo "+" a dropdown boli vedľa seba */
+    align-items: center;
+}
+.add-options-dropdown {
+    position: absolute;
+    top: 0; /* Zarovnať s vrchnou časťou tlačidla + */
+    left: 60px; /* Posunúť doprava od tlačidla + */
+    display: none; /* Predvolene skryté */
+    flex-direction: column;
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    z-index: 1000;
+    min-width: 180px; /* Dostatočná šírka pre text */
+    padding: 5px 0;
+}
+.add-options-dropdown button {
+    background: none;
+    border: none;
+    padding: 10px 15px;
+    text-align: left;
+    cursor: pointer;
+    font-size: 1em;
+    color: #333;
+    width: 100%;
+}
+.add-options-dropdown button:hover {
+    background-color: #f0f0f0;
+}
+.modal-content {
+    background-color: #fefefe;
+    margin: 5% auto; /* 5% od vrchu a centrované */
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%; /* Mohlo by sa zmeniť na max-width pre lepšiu odozvu */
+    max-width: 500px; /* Maximálna šírka pre formuláre */
+    border-radius: 8px;
+    position: relative;
+    box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2), 0 6px 20px 0 rgba(0,0,0,0.19);
+}
+.close-button {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
+.close-button:hover,
+.close-button:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
+.form-group {
+    margin-bottom: 15px;
+}
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+.form-group input[type="text"],
+.form-group input[type="date"],
+.form-group input[type="time"],
+.form-group input[type="number"],
+.form-group input[type="url"],
+.form-group select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box; /* Zabezpečí, že padding a border sú zahrnuté vo width */
+}
+.modal-content button[type="submit"] {
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1em;
+}
+.modal-content button[type="submit"]:hover {
+    background-color: #45a049;
 }
