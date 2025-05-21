@@ -127,8 +127,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function findFirstAvailableTime() {
         const selectedDate = matchDateSelect.value;
         const selectedLocation = matchLocationSelect.value;
-        const duration = parseInt(matchDurationInput.value) || 60; // Predvolené trvanie 60 minút
-        const bufferTime = parseInt(matchBufferTimeInput.value) || 5; // Predvolené ochranné pásmo 5 minút
+        const duration = parseInt(matchDurationInput.value) || ''; 
+        const bufferTime = parseInt(matchBufferTimeInput.value) || 5;
 
         // Ak nie sú vybrané dátum alebo miesto, nemôžeme hľadať voľný slot
         if (!selectedDate || !selectedLocation) {
