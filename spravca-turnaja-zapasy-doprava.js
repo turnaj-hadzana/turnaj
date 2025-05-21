@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const busDateSelect = document.getElementById('busDateSelect');
     const busStartLocationSelect = document.getElementById('busStartLocationSelect');
     const busStartTimeInput = document.getElementById('busStartTimeInput');
-    const busEndLocationSelect = document.getElementById('busEndLocationSelect');
+    const busEndLocationSelect = document = document.getElementById('busEndLocationSelect');
     const busEndTimeInput = document.getElementById('busEndTimeInput');
     const busNotesInput = document.getElementById('busNotesInput');
     const deleteBusButtonModal = document.getElementById('deleteBusButtonModal'); // NOVÉ: Tlačidlo Vymazať v modale
@@ -627,7 +627,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 matchModalTitle.textContent = 'Upraviť zápas';
 
                 await populatePlayingDaysSelect(matchDateSelect, matchData.date);
-                await populateSportHallsSelect(matchLocationSelect, matchData.data.location);
+                // Opravená chyba: matchData.data.location na matchData.location
+                await populateSportHallsSelect(matchLocationSelect, matchData.location);
 
                 matchStartTimeInput.value = matchData.startTime || '';
                 matchDurationInput.value = matchData.duration || 60;
