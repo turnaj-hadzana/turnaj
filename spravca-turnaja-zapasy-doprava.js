@@ -266,13 +266,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                         matchEndTime.setHours(startH, startM + durationInMinutes, 0, 0);
                         const formattedEndTime = matchEndTime.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' });
 
-                        // NOVÉ: Pridanie vizuálneho bloku pre ochranné pásmo PRED blokom zápasu, aby ho mohol prekryť
+                        // Pridanie vizuálneho bloku pre ochranné pásmo
+                        // Je dôležité, aby bol tento div VYKRESLENÝ PRED divom zápasu,
+                        // ak má ochranné pásmo prekrývať časť zápasu.
+                        // Z-index 6 pre buffer, z-index 5 pre zápas.
                         if (bufferInMinutes > 0) {
                             scheduleHtml += `
                                 <div class="schedule-cell-buffer"
                                     style="left: ${bufferBlockLeftPx}px; width: ${bufferBlockWidthPx}px; top: ${topPx}px; height: ${ITEM_HEIGHT_PX}px; background-color: #ffcccc; border: 1px dashed #ff9999; z-index: 6;">
-                                    <p style="font-size: 0.6em; color: #cc0000; text-align: center; margin-top: 5px;">Pásmo</p>
-                                </div>
+                                    </div>
                             `;
                         }
 
