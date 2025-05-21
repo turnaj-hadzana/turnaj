@@ -581,6 +581,8 @@ td:last-child {
     white-space: nowrap; /* Zabezpečí, že čas zostane v jednom riadku */
     overflow: hidden;
     text-overflow: ellipsis; /* Ak je čas príliš dlhý (nemalo by sa stať) */
+    border-left: 1px solid #ddd; /* Jemná ľavá čiara */
+    border-right: 1px solid #ddd; /* Jemná pravá čiara */
 }
 
 /* Štýly pre prázdne bunky */
