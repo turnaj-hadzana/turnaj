@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const matchForm = document.getElementById('matchForm');
     const matchIdInput = document.getElementById('matchId');
     const matchDateSelect = document.getElementById('matchDateSelect');
-    const matchLocationSelect = document.getElementById('matchLocationSelect');
+    const matchLocationSelect = document = document.getElementById('matchLocationSelect');
     const matchStartTimeInput = document.getElementById('matchStartTime');
     const matchDurationInput = document.getElementById('matchDuration');
     const matchBufferTimeInput = document.getElementById('matchBufferTime'); // NOVÉ: Input pre ochranné pásmo
@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // NOVÉ: Modálne okno pre autobus
     const busModal = document.getElementById('busModal');
-    const closeBusModalButton = document.getElementById('closeBusModal'); // OPRAVENÉ: Odstránené duplicitné 'document ='
+    const closeBusModalButton = document.getElementById('closeBusModal');
     const busForm = document.getElementById('busForm');
     const busIdInput = document.getElementById('busId');
     const busModalTitle = document.getElementById('busModalTitle');
@@ -132,10 +132,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         matchesContainer.insertAdjacentHTML('afterbegin', '<p>Načítavam logistiku turnaja...</p>');
         
         // Definície konštánt pre výpočet pozícií a rozmerov
-        const CELL_WIDTH_PX = 350;
+        const CELL_WIDTH_PX = 300;
         const MINUTES_PER_HOUR = 60;
         const PIXELS_PER_MINUTE = CELL_WIDTH_PX / MINUTES_PER_HOUR;
-        const ITEM_HEIGHT_PX = 140;
+        const ITEM_HEIGHT_PX = 140; 
 
         try {
             // Načítame zápasy
@@ -242,6 +242,22 @@ document.addEventListener('DOMContentLoaded', async () => {
                     scheduleHtml += `<span></span>`; // Placeholder for empty day
                 }
                 scheduleHtml += '</div>';
+
+                // PÔVODNÉ: Informácie o autobusoch boli tu, teraz ich presúvame späť do SVG
+                // const busesForDate = allBuses.filter(bus => bus.date === date);
+                // if (busesForDate.length > 0) {
+                //     scheduleHtml += '<div class="schedule-bus-header-info">';
+                //     busesForDate.sort((a, b) => {
+                //         const [aH, aM] = a.startTime.split(':').map(Number);
+                //         const [bH, bM] = b.startTime.split(':').map(Number);
+                //         return (aH * 60 + aM) - (bH * 60 + bM);
+                //     });
+                //     busesForDate.forEach(bus => {
+                //         scheduleHtml += `<p>${bus.busName}: ${bus.startLocation} &rarr; ${bus.endLocation} (${bus.startTime} - ${bus.endTime})</p>`;
+                //     });
+                //     scheduleHtml += '</div>';
+                // }
+
                 scheduleHtml += '</th>';
             });
             scheduleHtml += '</tr></thead><tbody>';
@@ -418,7 +434,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
 
 
-                const busWidthPx = durationInMinutes * PIXELS_PER_MINUTE;
+                const busWidthPx = (durationInMinutes * PIXELS_PER_MINUTE) / 2; // ZMENENÉ: Polovičná šírka autobusu
 
                 // Slant parameters
                 const slantOffset = 30; // How much the bottom points are shifted horizontally compared to top points
@@ -474,8 +490,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 polygon.setAttribute("points", points);
                 svgElement.appendChild(polygon);
 
-                // Add text elements
-                // Text positions need to be relative to the SVG's viewBox and adjusted for the slant
+                // Add text elements - VRÁTENÉ SPÄŤ DO SVG
                 const textYBase = svgHeight / 2; 
                 const textXBase = svgWidth / 2; // Center of the SVG viewBox
 
