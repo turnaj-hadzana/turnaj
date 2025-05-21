@@ -420,6 +420,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         // --- KONTROLA: Tímy v rovnakej kategórii a skupine nemôžu hrať proti sebe viackrát ---
         try {
             // Skontrolujeme v oboch smeroch (Tím 1 vs Tím 2 A Tím 2 vs Tím 1)
+            console.log("Kontrola duplicity pre kategóriu:", matchCategory, "skupinu:", matchGroup, "tímy:", team1Number, team2Number);
+            console.log("currentMatchId:", currentMatchId);
             const q1 = query(
                 matchesCollectionRef,
                 where("categoryId", "==", matchCategory),
@@ -437,7 +439,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             const snapshot1 = await getDocs(q1);
             const snapshot2 = await getDocs(q2);
-
+            
+            console.log("Snapshot 1 isEmpty:", snapshot1.empty, "Počet dokumentov:", snapshot1.docs.length);
+            snapshot1.docs.forEach(doc => console.log("  Doc 1 ID:", doc.id, "Data:", doc.data()));
+            console.log("Snapshot 2 isEmpty:", snapshot2.empty, "Počet dokumentov:", snapshot2.docs.length);
+            snapshot2.docs.forEach(doc => console.log("  Doc 2 ID:", doc.id, "Data:", doc.data()));
+            
             let alreadyPlayed = false;
             // Filter pre existujúce zápasy, aby sa vylúčil aktuálny upravovaný zápas
             if (snapshot1.docs.some(doc => doc.id !== currentMatchId) || snapshot2.docs.some(doc => doc.id !== currentMatchId)) {
