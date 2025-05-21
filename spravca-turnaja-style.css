@@ -191,7 +191,7 @@ td:last-child {
     transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
-<!--
+/*
 .action-button:not(.delete-button) {
     background-color: #007bff;
     color: white;
@@ -204,7 +204,7 @@ td:last-child {
     background-color: #004085;
     border-color: #002752;
 }
--->
+*/
 
 .action-button.delete-button {
     background-color: #dc3545;
@@ -529,8 +529,6 @@ td:last-child {
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     background-color: #fff;
-    /* width: 36%;  ODSTRÁNIŤ TOTO */
-    /* margin: 0 auto; ODSTRÁNIŤ TOTO */
     width: 80vw; /* Tabuľka vyplní dostupnú šírku rodiča main, ktorý je flex-grow: 1 */
     margin: 20px 0px 20px 0px;
 }
@@ -538,7 +536,6 @@ td:last-child {
 /* Základná tabuľka rozvrhu */
 .match-schedule-table {
     border-collapse: collapse;
-/*    width: 2500px;*/
     table-layout: fixed; /* Kľúčové pre vynútenie pevných šírok stĺpcov */
     min-width: fit-content;
 }
@@ -551,8 +548,6 @@ td:last-child {
     text-align: center;
     vertical-align: top;
     position: relative; /* Dôležité pre absolútne pozicionovanie zápasov */
-/*    min-width: 260px; /* Použite min-width, aby sa stĺpec mohol prispôsobiť, ale nie byť menší */
-/*    width: 260px; /* Nastavte pevnú šírku */
     box-sizing: border-box;
 }
 
@@ -565,7 +560,6 @@ td:last-child {
 /* Špecifické štýly pre bunky (td) */
 .match-schedule-table td {
     height: 160px; /* Stála výška riadku pre bunky */
-    /* overflow: hidden; */ /* Odstránené, aby sa tlačidlá a obsah zápasu mohli zobraziť. Ak text stále preteká, je potrebné zvážiť zväčšenie height alebo riešenie v schedule-cell-content */
 }
 
 
@@ -673,30 +667,53 @@ td:last-child {
     display: flex;
     flex-direction: column; /* Položky sú usporiadané vertikálne */
     justify-content: space-between; /* Obsah hore, tlačidlá dole */
-    z-index: 5;
+    z-index: 1; /* Zápasy budú mať z-index 1 */
     cursor: pointer;
-    /* overflow: hidden;  <-- ODSTRÁNIL SOM TOTO, aby sa posuvník na schedule-cell-content mohol zobraziť, ak je to potrebné */
 }
 
-/* NOVÉ: Štýly pre blok autobusu vo vnútri bunky */
-.schedule-cell-bus {
+/* NOVÉ: Štýly pre kontajner SVG autobusu */
+.schedule-cell-bus-svg-container {
     position: absolute;
     top: 0;
     /* left a width sú nastavené JS dynamicky */
     height: 100%; /* Zaberá celú výšku rodičovskej TD */
-    border-radius: 4px;
-    padding: 5px;
-    margin: 2px 0;
-    box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
-    justify-content: center; /* Centruje obsah vertikálne */
-    align-items: center; /* Centruje obsah horizontálne */
-    z-index: 6; /* Zvýšený z-index, aby bol nad zápasmi */
+    background-color: transparent; /* Kontajner je transparentný */
+    border: none; /* Kontajner nemá vlastný okraj */
+    box-shadow: none;
+    padding: 0;
+    margin: 0; /* Uistite sa, že nemá margin, aby neovplyvňoval pozíciu SVG */
+    z-index: 2; /* Zvýšený z-index, aby bol nad zápasmi */
+    cursor: pointer;
+}
 
-    /* NOVÉ: Vizuálna úprava pre "štvoruholník" s výraznými okrajmi */
-    background-color: #f0e68c; /* Khaki - svetlo žltá výplň */
-    border: 2px solid #daa520; /* Výrazný zlatý okraj pre "štvoruholník" */
+/* NOVÉ: Štýly pre samotný polygón autobusu */
+.schedule-bus-polygon {
+    fill: #5cb85c; /* Zelená farba pre autobus, ako na obrázku */
+    stroke: #449d44; /* Tmavšia zelená pre okraj */
+    stroke-width: 1;
+    opacity: 0.8; /* Mierna priehľadnosť, ak je to potrebné */
+}
+
+/* NOVÉ: Štýly pre text v SVG autobuse */
+.schedule-bus-text,
+.schedule-bus-route-text,
+.schedule-bus-time-text, /* Pridaný štýl pre čas v autobuse */
+.schedule-bus-notes-text {
+    fill: white; /* Farba textu na autobuse */
+    font-size: 12px; /* Menšie písmo pre detaily */
+    font-weight: bold;
+    pointer-events: none; /* Aby text neblokoval kliknutie na polygón */
+}
+
+.schedule-bus-route-text {
+    font-size: 10px; /* Ešte menšie pre trasu */
+}
+.schedule-bus-time-text { /* Štýl pre čas v autobuse */
+    font-size: 9px;
+    font-weight: normal;
+}
+.schedule-bus-notes-text {
+    font-size: 9px; /* Najmenšie pre poznámky */
 }
 
 
@@ -711,7 +728,7 @@ td:last-child {
 
 /* Odstránenie predvolených marginov z p elementov vnútri zápasu */
 .schedule-cell-match p,
-.schedule-cell-bus p { /* Aplikujeme aj na autobus */
+.schedule-cell-bus-svg-container p { /* Aplikujeme aj na autobus */
     margin: 0;
     padding: 0 3px; /* Malý horizontálny padding pre text */
     overflow-wrap: break-word;
@@ -742,24 +759,9 @@ td:last-child {
     white-space: normal;
 }
 
-/* NOVÉ: Štýly pre text v bloku autobusu */
-.schedule-cell-bus-name {
-    font-weight: bold;
-    color: #8b4513; /* Hnedá */
-    font-size: 0.9em; /* Zväčšené písmo, keďže je to jediný text */
-    text-align: center;
-}
-
-.schedule-cell-bus-route,
-.schedule-cell-bus-notes {
-    display: none; /* Skryjeme, ak má byť zobrazený len názov autobusu */
-}
-
 
 /* Akčné tlačidlá vo vnútri bloku zápasu */
 .schedule-cell-actions {
-    /* position: absolute;  <-- TOTO JE KĽÚČOVÉ: ODSTRÁNIŤ */
-    /* bottom: 0; left: 0; right: 0;  <-- Tieto vlastnosti sú už zbytočné bez absolute */
     display: flex;
     justify-content: space-around;
     gap: 2px;
@@ -794,34 +796,6 @@ td:last-child {
     background-color: #dc3545;
     color: white;
 }
-
-.schedule-bus-polygon {
-    fill: #FFD700; 
-    stroke: #DAA520;
-    stroke-width: 1;
-    opacity: 0.7;
-    cursor: pointer; 
-}
-.schedule-cell-bus-svg-container{
-    z-index: 7;
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 .add-options-dropdown {
     position: fixed;
