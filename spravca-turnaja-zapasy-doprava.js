@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const matchDateSelect = document.getElementById('matchDateSelect');
     const matchLocationSelect = document.getElementById('matchLocationSelect');
     const matchStartTimeInput = document.getElementById('matchStartTime');
-    const matchDurationInput = document.getElementById('matchDuration');
+    const matchDurationInput = document = document.getElementById('matchDuration');
     const matchBufferTimeInput = document.getElementById('matchBufferTime'); 
     const matchCategorySelect = document.getElementById('matchCategory');
     const matchGroupSelect = document.getElementById('matchGroup');
@@ -46,7 +46,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Modálne okno pre miesto (pôvodne športová hala)
     const placeModal = document.getElementById('placeModal');
     const closePlaceModalButton = document.getElementById('closePlaceModal');
-    const placeForm = document.getElementById('placeForm');
+    const placeForm = document = document.getElementById('placeForm');
     const placeIdInput = document.getElementById('placeId');
     const placeTypeSelect = document.getElementById('placeTypeSelect');
     const placeNameInput = document.getElementById('placeName');
@@ -203,114 +203,43 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             console.log('Načítavam kluby pre select box...');
             const clubsSnapshot = await getDocs(query(clubsCollectionRef, orderBy("name", "asc")));
+            const allClubs = clubsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
             const uniqueBaseClubNames = new Set();
-            
-            clubsSnapshot.forEach((doc) => {
-                const team = doc.data();
-                if (team.name) {
-                    // Ak názov tímu obsahuje '⁄', považuje sa za samostatný základný názov klubu
-                    if (team.name.includes('⁄')) {
-                        uniqueBaseClubNames.add(team.name);
-                    } else {
-                        // Inak odstránenie suffixov ako " A", " B", " C" atď.
-                        const baseClubName = team.name.replace(/\s[A-Z]$/, '');
-                        uniqueBaseClubNames.add(baseClubName);
-                    }
-                }
-            });
-            console.log('Unikátne základné názvy klubov:', Array.from(uniqueBaseClubNames)); // Log pre unikátne základné názvy klubov
+            const clubToTeamIdsMap = new Map(); // Mapa základného názvu klubu na pole ID jeho tímov
 
-            Array.from(uniqueBaseClubNames).sort().forEach(clubName => {
-                const option = document.createElement('option');
-                option.value = clubName;
-                option.textContent = clubName;
-                if (selectedClubName === clubName) {
-                    option.selected = true;
-                }
-                selectElement.appendChild(option);
-            });
-
-            if (uniqueBaseClubNames.size === 0) {
-                const option = document.createElement('option');
-                option.value = '';
-                option.textContent = '-- Žiadne kluby nenájdené --';
-                option.disabled = true;
-                selectElement.appendChild(option);
-                console.warn("No clubs found in Firestore.");
-            }
-        } catch (error) {
-            console.error("Chyba pri načítaní klubov pre select: ", error);
-            const option = document.createElement('option');
-            option.value = '';
-            option.textContent = '-- Chyba pri načítaní klubov --';
-            option.disabled = true;
-            selectElement.appendChild(option);
-        }
-    }
-
-    // Funkcia na plnenie druhého select boxu (konkrétne tímy pre vybraný klub)
-    async function populateSpecificTeamSelect(selectElement, baseClubName, selectedTeamId = '') {
-        if (!selectElement) return; // Pridaná kontrola
-        selectElement.innerHTML = '<option value="">-- Vyberte konkrétny tím (nepovinné) --</option>'; // Pridaná predvolená možnosť
-        if (!baseClubName) {
-            selectElement.disabled = true;
-            return;
-        }
-        selectElement.disabled = false;
-        try {
-            console.log(`Načítavam tímy pre základný klub: ${baseClubName}...`);
-            const allTeamsSnapshot = await getDocs(clubsCollectionRef);
-            let filteredTeams = [];
-
-            // Načítame všetky skupiny a kategórie raz, aby sme sa vyhli opakovaným volaniam getDoc v cykle
-            const groupsSnapshot = await getDocs(groupsCollectionRef);
-            const groupsMap = new Map();
-            groupsSnapshot.forEach(doc => {
-                groupsMap.set(doc.id, doc.data().name);
-            });
-
-            const categoriesSnapshot = await getDocs(categoriesCollectionRef);
-            const categoriesMap = new Map();
-            categoriesSnapshot.forEach(doc => {
-                categoriesMap.set(doc.id, doc.data().name);
-            });
-
-            allTeamsSnapshot.forEach((doc) => {
-                const team = { id: doc.id, ...doc.data() };
-                
-                if (baseClubName.includes('⁄')) {
-                    // Ak základný názov klubu obsahuje '⁄', hľadáme presnú zhodu
-                    if (team.name === baseClubName) {
-                        filteredTeams.push(team);
-                    }
+            allClubs.forEach(team => {
+                let baseClubName;
+                if (team.name.includes('⁄')) {
+                    baseClubName = team.name;
                 } else {
-                    // Ak základný názov klubu neobsahuje '⁄', hľadáme varianty s písmenami na konci
-                    // Regulárny výraz `^${baseClubName}(?:\\s[A-Z])?$` zodpovedá:
-                    // - presnému názvu klubu (napr. "MŠK IUVENTA Michalovce")
-                    // - alebo názvu klubu s medzerou a jedným veľkým písmenom na konci (napr. "MŠK IUVENTA Michalovce A")
-                    if (team.name.match(new RegExp(`^${baseClubName}(?:\\s[A-Z])?$`))) {
-                        filteredTeams.push(team);
-                    }
+                    baseClubName = team.name.replace(/\s[A-Z]$/, '');
                 }
-            });
-            console.log(`Filtrované tímy pre základný klub "${baseClubName}":`, filteredTeams); // Log pre filtrované tímy
+                uniqueBaseClubNames.add(baseClubName);
 
-            // NEW LOGIC: Filter out already assigned teams for the selected date range
-            const currentAssignmentId = assignmentIdInput.value; // Get ID of assignment being edited
+                if (!clubToTeamIdsMap.has(baseClubName)) {
+                    clubToTeamIdsMap.set(baseClubName, []);
+                }
+                clubToTeamIdsMap.get(baseClubName).push(team.id);
+            });
+
+            const currentAssignmentId = assignmentIdInput.value;
             const selectedDateFrom = assignmentDateFromSelect.value;
             const selectedDateTo = assignmentDateToSelect.value;
 
+            let clubsToExclude = new Set(); // Uchováva základné názvy klubov, ktoré sa majú vylúčiť
+
             if (selectedDateFrom && selectedDateTo) {
-                const assignedTeamsForDateRange = new Set();
                 const accommodationsSnapshot = await getDocs(teamAccommodationsCollectionRef);
+                const assignedTeamIdsForDateRange = new Set();
 
                 accommodationsSnapshot.docs.forEach(doc => {
                     const assignment = doc.data();
                     const assignmentId = doc.id;
 
-                    // If we are editing this specific assignment, its teams should still be available
+                    // Ak upravujeme toto konkrétne priradenie, jeho tímy by mali byť stále dostupné
                     if (currentAssignmentId && currentAssignmentId === assignmentId) {
-                        return; // Skip filtering out teams from the current assignment being edited
+                        return; // Preskočiť filtrovanie tímov z aktuálne upravovaného priradenia
                     }
 
                     const existingDateFrom = new Date(assignment.dateFrom);
@@ -318,50 +247,60 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const newDateFrom = new Date(selectedDateFrom);
                     const newDateTo = new Date(selectedDateTo);
 
-                    // Check for date overlap: Overlap exists if (start1 <= end2) AND (end1 >= start2)
+                    // Kontrola prekrývania dátumov: Prekrývanie existuje, ak (začiatok1 <= koniec2) A (koniec1 >= začiatok2)
                     if (newDateFrom <= existingDateTo && newDateTo >= existingDateFrom) {
                         assignment.teams.forEach(team => {
-                            assignedTeamsForDateRange.add(team.teamId);
+                            assignedTeamIdsForDateRange.add(team.teamId);
                         });
                     }
                 });
 
-                // Filter out teams that are already assigned for the overlapping date range
-                filteredTeams = filteredTeams.filter(team => !assignedTeamsForDateRange.has(team.id));
+                // Teraz skontrolujte, ktoré základné kluby majú VŠETKY svoje tímy priradené
+                for (const [baseClubName, teamIds] of clubToTeamIdsMap.entries()) {
+                    const allTeamsAssigned = teamIds.every(teamId => assignedTeamIdsForDateRange.has(teamId));
+                    if (allTeamsAssigned) {
+                        clubsToExclude.add(baseClubName);
+                    }
+                }
             }
 
+            const sortedUniqueBaseClubNames = Array.from(uniqueBaseClubNames).sort();
 
-            if (filteredTeams.length === 0 && !selectedTeamId) { // If no teams found AND not editing a specific team
+            if (sortedUniqueBaseClubNames.length === 0) {
                 const option = document.createElement('option');
                 option.value = '';
-                option.textContent = `-- Žiadne dostupné tímy pre tento klub v danom rozsahu dátumov --`;
+                option.textContent = '-- Žiadne kluby nenájdené --';
                 option.disabled = true;
                 selectElement.appendChild(option);
-                console.warn(`No teams found for base club: ${baseClubName} in Firestore for the selected date range.`);
+                console.warn("No clubs found in Firestore.");
             } else {
-                filteredTeams.sort((a, b) => {
-                    // Triedenie podľa celého názvu tímu pre špecifické tímy
-                    if (a.name < b.name) return -1;
-                    if (a.name > b.name) return 1;
-                    return 0;
-                }).forEach(team => {
-                    const option = document.createElement('option');
-                    option.value = team.id;
-                    // Získame názov skupiny a kategórie z máp, alebo použijeme ID ak názov neexistuje
-                    const groupName = groupsMap.get(team.groupId) || team.groupId;
-                    const categoryName = categoriesMap.get(team.categoryId) || team.categoryId;
-                    option.textContent = `${team.name} (${categoryName}, ${groupName})`; 
-                    if (selectedTeamId === team.id) {
-                        option.selected = true;
+                sortedUniqueBaseClubNames.forEach(clubName => {
+                    // Pridajte len ak nie je vo vylúčenom zozname ALEBO ak je to aktuálne vybraný klub (pre úpravu)
+                    if (!clubsToExclude.has(clubName) || selectedClubName === clubName) {
+                        const option = document.createElement('option');
+                        option.value = clubName;
+                        option.textContent = clubName;
+                        if (selectedClubName === clubName) {
+                            option.selected = true;
+                        }
+                        selectElement.appendChild(option);
                     }
-                    selectElement.appendChild(option);
                 });
+                // Ak po filtrovaní nie je selectedClubName v zozname, ale bol predtým vybraný,
+                // musíme ho explicitne pridať, aby bolo možné upravovať existujúce priradenia.
+                if (selectedClubName && !selectElement.querySelector(`option[value="${selectedClubName}"]`)) {
+                     const option = document.createElement('option');
+                     option.value = selectedClubName;
+                     option.textContent = selectedClubName;
+                     option.selected = true;
+                     selectElement.appendChild(option);
+                }
             }
         } catch (error) {
-            console.error(`Chyba pri načítaní tímov pre klub ${baseClubName}: `, error);
+            console.error("Chyba pri načítaní klubov pre select: ", error);
             const option = document.createElement('option');
             option.value = '';
-            option.textContent = '-- Chyba pri načítaní tímov --';
+            option.textContent = '-- Chyba pri načítaní klubov --';
             option.disabled = true;
             selectElement.appendChild(option);
         }
@@ -494,7 +433,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const existingEvents = existingMatchesSnapshot.docs.map(doc => {
                 const data = doc.data();
                 const [eventStartH, eventStartM] = data.startTime.split(':').map(Number);
-                const startInMinutes = eventStartH * 60 + eventStartM;
+                const startInMinutes = eventStartH * 60 + startM;
                 const endInMinutes = startInMinutes + (data.duration || 0) + (data.bufferTime || 0);
                 return { start: startInMinutes, end: endInMinutes };
             });
@@ -1362,6 +1301,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     }
                 }
                 
+                // Zavolajte populateClubSelect tu, odovzdajte assignedClubName
                 await populateClubSelect(clubSelect, assignedClubName); // Naplníme kluby a vyberieme priradený základný klub
 
                 if (assignedClubName) {
@@ -1487,6 +1427,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Naplníme oba dátumové select boxy
         await populatePlayingDaysSelect(assignmentDateFromSelect);
         await populatePlayingDaysSelect(assignmentDateToSelect);
+        // Zavolajte populateClubSelect po naplnení dátumov, pretože od nich závisí
         await populateClubSelect(clubSelect); 
         if (specificTeamSelect) { 
             specificTeamSelect.innerHTML = '<option value="">-- Vyberte konkrétny tím (nepovinné) --</option>';
@@ -1562,9 +1503,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // NEW: Add event listeners for date range changes to update specificTeamSelect
+    // NOVÉ: Pridajte poslucháčov udalostí pre zmeny rozsahu dátumov na aktualizáciu specificTeamSelect
+    // Tieto teraz musia aktualizovať aj populateClubSelect
     if (assignmentDateFromSelect) {
         assignmentDateFromSelect.addEventListener('change', async () => {
+            // Najprv znova naplňte kluby, pretože dostupné kluby sa môžu zmeniť
+            await populateClubSelect(clubSelect, clubSelect.value); // Odovzdajte aktuálnu hodnotu, aby ste sa ju pokúsili znova vybrať
             const selectedClubName = clubSelect.value;
             await populateSpecificTeamSelect(specificTeamSelect, selectedClubName);
         });
@@ -1572,6 +1516,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (assignmentDateToSelect) {
         assignmentDateToSelect.addEventListener('change', async () => {
+            // Najprv znova naplňte kluby, pretože dostupné kluby sa môžu zmeniť
+            await populateClubSelect(clubSelect, clubSelect.value); // Odovzdajte aktuálnu hodnotu, aby ste sa ju pokúsili znova vybrať
             const selectedClubName = clubSelect.value;
             await populateSpecificTeamSelect(specificTeamSelect, selectedClubName);
         });
