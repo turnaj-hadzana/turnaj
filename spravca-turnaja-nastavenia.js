@@ -80,7 +80,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <label for="duration-${categoryId}">Trvanie zápasu (minúty):</label>
                     <input type="number" id="duration-${categoryId}" data-category-id="${categoryId}" data-setting-type="duration" value="${categoryData.duration}" min="1" required>
                     
-                    <label for="buffer-${categoryId}">Ochranné pásmo (minúty):</label>
+                    <label for="buffer-${categoryId}">Prestávka po zápase (minúty):</label>
                     <input type="number" id="buffer-${categoryId}" data-category-id="${categoryId}" data-setting-type="bufferTime" value="${categoryData.bufferTime}" min="0" required>
                 `;
                 categorySettingsContainer.appendChild(categoryDiv);
