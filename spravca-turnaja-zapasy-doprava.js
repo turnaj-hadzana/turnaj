@@ -442,29 +442,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             const uniqueDates = new Set([...existingPlayingDays]);
 
-            allEvents.forEach(event => {
-                uniqueDates.add(event.date);
-                if (event.type === 'bus') {
-                    uniqueLocations.add(event.startLocation); 
-                    uniqueLocations.add(event.endLocation);   
-                } else if (event.type === 'match') {
-                    const matchPlaceData = existingPlacesData.find(p => p.name === event.location && p.type === 'Športová hala');
-                    if (matchPlaceData) {
-                        uniqueLocations.add(`${matchPlaceData.name}:::${matchPlaceData.type}`);
-                    }
-                } else if (event.type === 'accommodation') { 
-                    const accPlaceData = existingPlacesData.find(p => p.id === event.accommodationId && p.type === 'Ubytovanie');
-                    if (accPlaceData) {
-                        uniqueLocations.add(`${accPlaceData.name}:::${accPlaceData.type}`);
-                    }
-                }
-            });
-
-            const sortedLocations = Array.from(uniqueLocations).sort();
-            const sortedDates = Array.from(uniqueDates).sort();
+            // Filter events for time range calculation: only matches and buses
+            const eventsForTimeRangeCalculation = allEvents.filter(event => event.type === 'match' || event.type === 'bus');
 
             const dailyTimeRanges = new Map();
-            allEvents.forEach(event => {
+            eventsForTimeRangeCalculation.forEach(event => { // Use filtered events here
                 const date = event.date;
                 let startTimeInMinutes, endTimeInMinutes;
 
@@ -481,10 +463,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     if (endTimeInMinutes < startTimeInMinutes) {
                         endTimeInMinutes += 24 * 60; 
                     }
-                } else if (event.type === 'accommodation') { 
-                    startTimeInMinutes = 0 * 60;
-                    endTimeInMinutes = 24 * 60;
                 }
+                // Accommodation events are explicitly excluded from this calculation
 
                 let actualEndHour = Math.ceil(endTimeInMinutes / 60);
 
@@ -494,6 +474,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const range = dailyTimeRanges.get(date);
                     range.minHour = Math.min(range.minHour, Math.floor(startTimeInMinutes / 60));
                     range.maxHour = Math.max(range.maxHour, actualEndHour);
+                }
+            });
+
+            // If a date has no matches or buses, set a default time range (e.g., 8:00-18:00)
+            sortedDates.forEach(date => {
+                if (!dailyTimeRanges.has(date)) {
+                    dailyTimeRanges.set(date, { minHour: 8, maxHour: 18 }); // Default range for dates with no matches/buses
                 }
             });
 
@@ -1389,7 +1376,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const groupDoc = await getDoc(doc(groupsCollectionRef, groupId));
             let groupData = null; 
             if (groupDoc.exists()) {
-                groupData = groupDoc.data(); 
+                groupData = groupData(); 
             }
             const groupName = groupData ? (groupData.name || groupId) : groupId;
 
@@ -1824,7 +1811,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             for (const teamId of selectedTeamIds) {
                 const teamDoc = await getDoc(doc(clubsCollectionRef, teamId));
                 if (teamDoc.exists()) {
-                    const team = team.data();
+                    const team = teamDoc.data();
                     teamsData.push({
                         teamId: teamId,
                         teamName: `${team.name} (Kat: ${team.categoryName}, Skup: ${team.groupName}, Tím: ${team.orderInGroup})`
