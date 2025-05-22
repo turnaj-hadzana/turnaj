@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const matchDateSelect = document.getElementById('matchDateSelect');
     const matchLocationSelect = document.getElementById('matchLocationSelect');
     const matchStartTimeInput = document.getElementById('matchStartTime');
-    const matchDurationInput = document.getElementById('matchDuration');
+    const matchDurationInput = document = document.getElementById('matchDuration');
     const matchBufferTimeInput = document.getElementById('matchBufferTime'); 
     const matchCategorySelect = document.getElementById('matchCategory');
     const matchGroupSelect = document.getElementById('matchGroup');
@@ -101,6 +101,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         selectElement.innerHTML = '<option value="">-- Vyberte dátum --</option>';
         try {
             const querySnapshot = await getDocs(query(playingDaysCollectionRef, orderBy("date", "asc")));
+            console.log('Načítané hracie dni:', querySnapshot.docs.map(doc => doc.data())); // Log pre hracie dni
             querySnapshot.forEach((doc) => {
                 const day = doc.data();
                 const option = document.createElement('option');
@@ -126,6 +127,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         selectElement.innerHTML = '<option value="">-- Vyberte miesto (športovú halu) --</option>';
         try {
             const querySnapshot = await getDocs(query(placesCollectionRef, where("type", "==", "Športová hala"), orderBy("name", "asc")));
+            console.log('Načítané športové haly:', querySnapshot.docs.map(doc => doc.data())); // Log pre športové haly
             if (querySnapshot.empty) {
                 const option = document.createElement('option');
                 option.value = '';
@@ -162,6 +164,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             // Táto časť kódu načítava VŠETKY miesta bez ohľadu na typ
             const querySnapshot = await getDocs(query(placesCollectionRef, orderBy("name", "asc")));
+            console.log('Načítané všetky miesta:', querySnapshot.docs.map(doc => doc.data())); // Log pre všetky miesta
             if (querySnapshot.empty) {
                 const option = document.createElement('option');
                 option.value = '';
@@ -208,6 +211,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     uniqueBaseClubNames.add(baseClubName);
                 }
             });
+            console.log('Unikátne základné názvy klubov:', Array.from(uniqueBaseClubNames)); // Log pre unikátne základné názvy klubov
 
             Array.from(uniqueBaseClubNames).sort().forEach(clubName => {
                 const option = document.createElement('option');
@@ -256,10 +260,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const team = { id: doc.id, ...doc.data() };
                 // Kontrolujeme, či názov tímu začína s vybraným základným názvom klubu
                 // a či nie je presne rovnaký ako základný názov (ak existuje tím s presne takým názvom)
-                if (team.name.startsWith(baseClubName) && (team.name === baseClubName || team.name.match(new RegExp(`^${baseClubName}\\s[A-Z]$`)))) {
+                // Regulárny výraz `^${baseClubName}(?:\\s[A-Z])?$` zodpovedá:
+                // - presnému názvu klubu (napr. "MŠK IUVENTA Michalovce")
+                // - alebo názvu klubu s medzerou a jedným veľkým písmenom na konci (napr. "MŠK IUVENTA Michalovce A")
+                if (team.name.match(new RegExp(`^${baseClubName}(?:\\s[A-Z])?$`))) {
                     filteredTeams.push(team);
                 }
             });
+            console.log(`Filtrované tímy pre základný klub "${baseClubName}":`, filteredTeams); // Log pre filtrované tímy
 
             if (filteredTeams.length === 0) {
                 const option = document.createElement('option');
@@ -300,6 +308,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         selectElement.innerHTML = '<option value="">-- Vyberte ubytovňu --</option>';
         try {
             const querySnapshot = await getDocs(query(placesCollectionRef, where("type", "==", "Ubytovanie"), orderBy("name", "asc")));
+            console.log('Načítané ubytovne:', querySnapshot.docs.map(doc => doc.data())); // Log pre ubytovne
             if (querySnapshot.empty) {
                 const option = document.createElement('option');
                 option.value = '';
@@ -1920,7 +1929,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const team = doc.data();
                     // Kontrolujeme, či názov tímu začína s vybraným základným názvom klubu
                     // a či nie je presne rovnaký ako základný názov (ak existuje tím s presne takým názvom)
-                    if (team.name.startsWith(selectedClubName) && (team.name === selectedClubName || team.name.match(new RegExp(`^${selectedClubName}\\s[A-Z]$`)))) {
+                    if (team.name.match(new RegExp(`^${selectedClubName}(?:\\s[A-Z])?$`))) {
                         teamsForBaseClub.push({
                             teamId: doc.id,
                             teamName: `${team.name} (Kat: ${team.categoryName}, Skup: ${team.groupName}, Tím: ${team.orderInGroup})`
