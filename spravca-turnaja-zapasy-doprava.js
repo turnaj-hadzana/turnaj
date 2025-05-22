@@ -202,6 +202,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             } else {
                 clubsSnapshot.forEach((doc) => {
                     const team = { id: doc.id, ...doc.data() };
+                    // Vypísanie údajov o kategórii a skupine do konzoly
+                    console.log(`Tím: ${team.name}, Kategória: ${team.categoryName}, Skupina: ${team.groupName}, Poradie v skupine: ${team.orderInGroup}`);
                     const option = document.createElement('option');
                     option.value = team.id;
                     option.textContent = `${team.name} (Kat: ${team.categoryName}, Skup: ${team.groupName}, Tím: ${team.orderInGroup})`;
@@ -1571,7 +1573,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 alert('Zápas úspešne aktualizovaný!');
             } else {
                 await addDoc(matchesCollectionRef, matchData);
-                alert('Nový zápas úspešne pridaný!');
+                alert('Nová zápas úspešne pridaný!');
             }
             closeModal(matchModal);
             await displayMatchesAsSchedule();
