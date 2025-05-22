@@ -1932,3 +1932,4 @@ document.addEventListener('DOMContentLoaded', async () => {
             alert("Chyba pri ukladaní priradenia ubytovania. Pozrite konzolu pre detaily.");
         }
     });
+});
