@@ -1463,14 +1463,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ZMENENÉ: Pôvodne sportHallForm.addEventListener
     placeForm.addEventListener('submit', async (e) => { // ZMENENÉ: sportHallForm na placeForm
         e.preventDefault();
-        const id = placeIdInput.value; // NOVÉ: Získame ID pre úpravu
-        const type = placeTypeSelect.value; // NOVÉ: Získame typ miesta
-        const name = placeNameInput.value.trim(); // ZMENENÉ: hallNameInput na placeNameInput
-        const address = placeAddressInput.value.trim(); // ZMENENÉ: hallAddressInput na placeAddressInput
-        const googleMapsUrl = placeGoogleMapsUrlInput.value.trim(); // ZMENENÉ: hallGoogleMapsUrlInput na placeGoogleMapsUrlInput
+        const id = placeIdInput.value; // ID miesta, ktoré sa upravuje (prázdne, ak sa pridáva nové)
+        const type = placeTypeSelect.value;
+        const name = placeNameInput.value.trim();
+        const address = placeAddressInput.value.trim();
+        const googleMapsUrl = placeGoogleMapsUrlInput.value.trim();
 
-        if (!type || !name || !address || !googleMapsUrl) { // NOVÉ: Kontrola typu
-            alert('Prosím, vyplňte všetky polia (Typ miesta, Názov miesta, Adresa, Odkaz na Google Maps).'); // ZMENENÉ
+        if (!type || !name || !address || !googleMapsUrl) {
+            alert('Prosím, vyplňte všetky polia (Typ miesta, Názov miesta, Adresa, Odkaz na Google Maps).');
             return;
         }
 
@@ -1482,27 +1482,48 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         try {
-            // Kontrola duplicity názvu miesta (bez ohľadu na typ, ak chceme globálne unikátne názvy miest)
-            const q = query(placesCollectionRef, where("name", "==", name)); // ZMENENÉ: sportHallsCollectionRef na placesCollectionRef
+            const q = query(placesCollectionRef, where("name", "==", name));
             const querySnapshot = await getDocs(q);
 
-            if (!querySnapshot.empty && querySnapshot.docs[0].id !== id) { // Pridaná kontrola ID pre úpravu
-                alert('Miesto s týmto názvom už existuje!'); // ZMENENÉ
-                return;
+            let targetDocId = id; // Predpokladáme, že aktualizujeme aktuálne ID, ak existuje
+
+            if (!querySnapshot.empty) {
+                // Dokument s týmto názvom už existuje
+                const existingDoc = querySnapshot.docs[0];
+                if (id && existingDoc.id !== id) {
+                    // Upravujeme, ale nový názov je v konflikte s iným existujúcim miestom
+                    alert('Miesto s týmto názvom už existuje a patrí inému záznamu. Prosím, zvoľte iný názov.');
+                    return;
+                } else if (!id) {
+                    // Pridávame nové miesto, ale miesto s týmto názvom už existuje.
+                    // Používateľ chce aktualizovať existujúce.
+                    const confirmUpdate = confirm(`Miesto s názvom "${name}" už existuje. Chcete aktualizovať existujúce miesto?`);
+                    if (confirmUpdate) {
+                        targetDocId = existingDoc.id; // Použijeme ID existujúceho dokumentu
+                    } else {
+                        return; // Používateľ zrušil operáciu
+                    }
+                }
+                // Ak je ID prítomné a existingDoc.id === ID, ide o rovnaký dokument, ktorý sa upravuje, žiadny konflikt.
             }
 
-            if (id) { // Ak existuje ID, ide o úpravu
-                await setDoc(doc(db, 'places', id), { type, name, address, googleMapsUrl }, { merge: true }); // NOVÉ: Ukladáme aj type
-                alert('Miesto úspešne aktualizované!'); // ZMENENÉ
-            } else { // Inak ide o pridanie nového miesta
-                await addDoc(placesCollectionRef, { type, name, address, googleMapsUrl, createdAt: new Date() }); // NOVÉ: Ukladáme aj type
-                alert('Miesto úspešne pridané!'); // ZMENENÉ
+            const placeData = { type, name, address, googleMapsUrl };
+
+            if (targetDocId) {
+                // Ak je targetDocId nastavené (buď z pôvodného ID alebo ID existujúceho dokumentu), aktualizujeme
+                await setDoc(doc(placesCollectionRef, targetDocId), placeData, { merge: true });
+                alert('Miesto úspešne aktualizované!');
+            } else {
+                // Ak je targetDocId stále prázdne, znamená to, že ide o skutočne nové miesto a nenašiel sa žiadny konflikt
+                await addDoc(placesCollectionRef, { ...placeData, createdAt: new Date() });
+                alert('Miesto úspešne pridané!');
             }
-            closeModal(placeModal); // ZMENENÉ: sportHallModal na placeModal
-            await displayMatchesAsSchedule(); 
+            
+            closeModal(placeModal);
+            await displayMatchesAsSchedule();
         } catch (error) {
-            console.error("Chyba pri ukladaní miesta: ", error); // ZMENENÉ
-            alert("Chyba pri ukladaní miesta. Pozrite konzolu pre detaily."); // ZMENENÉ
+            console.error("Chyba pri ukladaní miesta: ", error);
+            alert("Chyba pri ukladaní miesta. Pozrite konzolu pre detaily.");
         }
     });
 });
