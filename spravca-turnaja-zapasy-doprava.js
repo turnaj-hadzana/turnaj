@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const matchForm = document.getElementById('matchForm');
     const matchIdInput = document.getElementById('matchId');
     const matchDateSelect = document.getElementById('matchDateSelect');
-    const matchLocationSelect = document.getElementById('matchLocationSelect');
+    const matchLocationSelect = document = document.getElementById('matchLocationSelect');
     const matchStartTimeInput = document.getElementById('matchStartTime');
     const matchDurationInput = document.getElementById('matchDuration');
     const matchBufferTimeInput = document.getElementById('matchBufferTime'); 
@@ -188,26 +188,49 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Funkcia na plnenie selectu tímami (zmenené z multi-selectu)
-    async function populateTeamSelect(selectElement, selectedTeamId = '') { // Zmenený parameter
+    async function populateTeamSelect(selectElement, currentAssignedTeamId = '', assignmentDate = '') { // Added assignmentDate
         selectElement.innerHTML = '<option value="">-- Vyberte tím --</option>'; // Pridaná predvolená možnosť
         try {
             const clubsSnapshot = await getDocs(query(clubsCollectionRef, orderBy("name", "asc")));
-            if (clubsSnapshot.empty) {
+            let availableTeams = clubsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+            if (assignmentDate) {
+                // Fetch all accommodations for the specific date, excluding the current assignment being edited
+                const accommodationsQuery = query(teamAccommodationsCollectionRef, where("date", "==", assignmentDate));
+                const accommodationsSnapshot = await getDocs(accommodationsQuery);
+                
+                const assignedTeamIdsForDate = new Set();
+                accommodationsSnapshot.forEach(doc => {
+                    const accommodationData = doc.data();
+                    // If this is the assignment currently being edited, skip it from the filter set
+                    if (doc.id === assignmentIdInput.value) { // assignmentIdInput.value holds the ID of the current assignment being edited
+                        return; // Don't add teams from this specific assignment to the assigned set
+                    }
+                    accommodationData.teams.forEach(team => {
+                        assignedTeamIdsForDate.add(team.teamId);
+                    });
+                });
+
+                // Filter out teams that are already assigned accommodation for this date by other assignments
+                // But always include the team that is currently selected for the assignment being edited (if any)
+                availableTeams = availableTeams.filter(team => !assignedTeamIdsForDate.has(team.id) || team.id === currentAssignedTeamId); 
+            }
+
+            if (availableTeams.length === 0) {
                 const option = document.createElement('option');
                 option.value = '';
-                option.textContent = '-- Žiadne tímy nenájdené --';
+                option.textContent = '-- Žiadne tímy nenájdené alebo všetky už majú priradené ubytovanie pre tento dátum --';
                 option.disabled = true;
                 selectElement.appendChild(option);
-                console.warn("No teams found in Firestore.");
+                console.warn("No teams found or all already assigned accommodation for this date.");
             } else {
-                clubsSnapshot.forEach((doc) => {
-                    const team = { id: doc.id, ...doc.data() };
+                availableTeams.forEach((team) => {
                     // Vypísanie všetkých údajov o tíme do konzoly
                     console.log('Údaje o tíme pred pridaním do select boxu:', team);
                     const option = document.createElement('option');
                     option.value = team.id;
                     option.textContent = `${team.name} (Kat: ${team.categoryName}, Skup: ${team.groupName}, Tím: ${team.orderInGroup})`;
-                    if (selectedTeamId === team.id) { // Upravená podmienka pre jeden výber
+                    if (currentAssignedTeamId === team.id) { // Upravená podmienka pre jeden výber
                         option.selected = true;
                     }
                     selectElement.appendChild(option);
@@ -1199,7 +1222,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 
                 // Predpokladáme, že pre úpravu ubytovania je vždy priradený len jeden tím
                 const selectedTeamId = assignmentData.teams[0]?.teamId || ''; 
-                await populateTeamSelect(teamSelect, selectedTeamId); // Použitie novej funkcie a ID
+                // Pass the assignmentDate to populateTeamSelect for filtering
+                await populateTeamSelect(teamSelect, selectedTeamId, assignmentData.date); 
                 
                 await populateAccommodationSelect(accommodationSelect, assignmentData.accommodationId);
 
@@ -1311,11 +1335,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         assignmentIdInput.value = '';
         assignAccommodationModalTitle.textContent = 'Priradiť ubytovanie';
         await populatePlayingDaysSelect(assignmentDateSelect);
-        await populateTeamSelect(teamSelect); // Použitie novej funkcie a ID
+        // Initially populate teams without a date filter, then filter on date change
+        await populateTeamSelect(teamSelect); 
         await populateAccommodationSelect(accommodationSelect);
         deleteAssignmentButtonModal.style.display = 'none';
         openModal(assignAccommodationModal);
         addOptions.classList.remove('show');
+    });
+
+    // Event listener pre zmenu dátumu v modálnom okne priradenia ubytovania
+    assignmentDateSelect.addEventListener('change', async () => {
+        const selectedDate = assignmentDateSelect.value;
+        // When date changes, re-populate teams based on the new date
+        const currentAssignedTeamId = assignmentIdInput.value ? (await getDoc(doc(teamAccommodationsCollectionRef, assignmentIdInput.value))).data().teams[0]?.teamId : '';
+        await populateTeamSelect(teamSelect, currentAssignedTeamId, selectedDate);
     });
 
 
