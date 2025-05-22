@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const matchDateSelect = document.getElementById('matchDateSelect');
     const matchLocationSelect = document.getElementById('matchLocationSelect');
     const matchStartTimeInput = document.getElementById('matchStartTime');
-    const matchDurationInput = document.getElementById('matchDuration');
+    const matchDurationInput = document = document.getElementById('matchDuration');
     const matchBufferTimeInput = document.getElementById('matchBufferTime'); 
     const matchCategorySelect = document.getElementById('matchCategory');
     const matchGroupSelect = document.getElementById('matchGroup');
@@ -260,6 +260,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             const allTeamsSnapshot = await getDocs(clubsCollectionRef);
             const filteredTeams = [];
 
+            // Načítame všetky skupiny raz, aby sme sa vyhli opakovaným volaniam getDoc v cykle
+            const groupsSnapshot = await getDocs(groupsCollectionRef);
+            const groupsMap = new Map();
+            groupsSnapshot.forEach(doc => {
+                groupsMap.set(doc.id, doc.data().name);
+            });
+
             allTeamsSnapshot.forEach((doc) => {
                 const team = { id: doc.id, ...doc.data() };
                 
@@ -296,8 +303,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }).forEach(team => {
                     const option = document.createElement('option');
                     option.value = team.id;
-                    // Zmenené zobrazenie: iba názov tímu a názov skupiny
-                    option.textContent = `${team.name} ${team.groupName}`; 
+                    // Získame názov skupiny z groupsMap
+                    const groupName = groupsMap.get(team.groupId) || 'Neznáma skupina';
+                    option.textContent = `${team.name} ${groupName}`; 
                     if (selectedTeamId === team.id) {
                         option.selected = true;
                     }
