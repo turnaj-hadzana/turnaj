@@ -1080,7 +1080,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         busModalTitle.textContent = 'Pridať autobusovú linku';
         await populatePlayingDaysSelect(busDateSelect);
         await populatePlaceSelects(busStartLocationSelect); // ZMENENÉ: populateSportHallsSelect na populatePlaceSelects
-        await populatePlaceSelects(busEndLocationSelect); // ZMENENÉ: populateSportHallsSelect na populatePlaceSelects
+        await populatePlaceSelects(busEndLocationSelect, busData.endLocation); // ZMENENÉ: populateSportHallsSelect na populatePlaceSelects
         deleteBusButtonModal.style.display = 'none'; // Skryť tlačidlo Vymazať pri pridávaní
         openModal(busModal);
         addOptions.classList.remove('show'); // Skryť dropdown po výbere
