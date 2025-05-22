@@ -911,3 +911,35 @@ td:last-child {
 .match-schedule-table .schedule-location-header.place-type-catering .hall-address a {
     color: #333; /* Tmavší text */
 }
+.schedule-cell-accommodation {
+    position: absolute;
+    background-color: #e6ffe6; /* Svetlo zelená farba pre ubytovanie */
+    border: 1px solid #4CAF50;
+    border-radius: 8px;
+    padding: 8px;
+    box-sizing: border-box;
+    overflow: hidden;
+    white-space: normal;
+    text-overflow: ellipsis;
+    z-index: 5; /* Nižšie ako zápasy, ak sa prekrývajú */
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    font-size: 0.8em;
+    color: #333;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.schedule-cell-accommodation .schedule-cell-title {
+    font-weight: bold;
+    margin-bottom: 5px;
+    color: #2e7d32; /* Tmavšia zelená pre názov */
+}
+
+.schedule-cell-accommodation .schedule-cell-teams {
+    font-size: 0.9em;
+    line-height: 1.2;
+}
