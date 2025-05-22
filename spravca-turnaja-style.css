@@ -371,7 +371,7 @@ td:last-child {
 }
 
 .modal {
-    display: none;
+    display: none !important;
     position: fixed;
     z-index: 1001;
     left: 0;
@@ -452,6 +452,9 @@ td:last-child {
 }
 .modal-content .form-group {
     margin-bottom: 15px;
+}
+.modal-overlay{
+    display: none;
 }
 @media (max-width: 768px) {
     .content-wrapper {
