@@ -477,8 +477,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             });
 
+            const sortedLocations = Array.from(uniqueLocations).sort();
+            const sortedDates = Array.from(uniqueDates).sort(); // Line 479
+
+            console.log("Sorted Dates before iteration:", sortedDates); // Added for debugging
+
             // If a date has no matches or buses, set a default time range (e.g., 8:00-18:00)
-            sortedDates.forEach(date => {
+            sortedDates.forEach(date => { // Line 481
                 if (!dailyTimeRanges.has(date)) {
                     dailyTimeRanges.set(date, { minHour: 8, maxHour: 18 }); // Default range for dates with no matches/buses
                 }
@@ -1376,7 +1381,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const groupDoc = await getDoc(doc(groupsCollectionRef, groupId));
             let groupData = null; 
             if (groupDoc.exists()) {
-                groupData = groupData(); 
+                groupData = groupDoc.data(); // Opravená typografická chyba: groupData() na groupDoc.data()
             }
             const groupName = groupData ? (groupData.name || groupId) : groupId;
 
