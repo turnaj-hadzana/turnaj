@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const matchLocationSelect = document.getElementById('matchLocationSelect'); // ZMENENÉ: Pôvodne matchSportHallSelect
     const matchStartTimeInput = document.getElementById('matchStartTime');
     const matchDurationInput = document.getElementById('matchDuration');
-    const matchBufferTimeInput = document.getElementById('matchBufferTime'); // Opravené: bolo 'document ='
+    const matchBufferTimeInput = document = document.getElementById('matchBufferTime'); // Opravené: bolo 'document ='
     const matchCategorySelect = document.getElementById('matchCategory');
     const matchGroupSelect = document.getElementById('matchGroup');
     const matchModalTitle = document.getElementById('matchModalTitle');
@@ -486,9 +486,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 switch (placeType) {
                     case 'Športová hala':
                         typeClass = 'place-type-sport-hall';
+                        specificBackgroundColor = 'background-color: #007bff;'; // Modrá farba pre športovú halu
                         break;
                     case 'Stravovacie zariadenie':
                         typeClass = 'place-type-catering';
+                        specificBackgroundColor = 'background-color: #ffc107;'; // Oranžová farba pre stravovacie zariadenie
                         break;
                     case 'Ubytovanie':
                         typeClass = 'place-type-accommodation';
