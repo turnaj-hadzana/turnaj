@@ -437,7 +437,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             // To je kľúčové pre správne posúvanie SVG elementov vo vnútri
             let scheduleHtml = '<div class="schedule-table-container" style="position: relative; overflow: auto;">'; 
             scheduleHtml += '<table class="match-schedule-table"><thead><tr>';
-            scheduleHtml += '<th class="fixed-column">Miesto / Čas</th>';
+            // Top-left corner cell: sticky both horizontally and vertically
+            scheduleHtml += `<th class="fixed-column" style="position: sticky; top: 0; left: 0; z-index: 101; background-color: #d0d0d0;">Miesto / Čas</th>`;
 
             sortedDates.forEach(date => {
                 const range = dailyTimeRanges.get(date);
@@ -456,7 +457,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 const colspan = hoursForDate.length > 0 ? hoursForDate.length : 1;
 
-                scheduleHtml += `<th colspan="${colspan}" class="date-header-clickable" data-date="${date}" title="Kliknutím upravíte hrací deň ${formattedDisplayDate}">`; 
+                // Date headers: sticky horizontally
+                scheduleHtml += `<th colspan="${colspan}" class="date-header-clickable" data-date="${date}" title="Kliknutím upravíte hrací deň ${formattedDisplayDate}" style="position: sticky; top: 0; z-index: 100; background-color: #d0d0d0;">`; 
                 scheduleHtml += `<div class="schedule-date-header-content">${formattedDisplayDate}</div>`;
                 scheduleHtml += '<div class="schedule-times-row">';
                 if (hoursForDate.length > 0) {
@@ -480,7 +482,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const placeType = placeData.type; 
 
                 let typeClass = '';
-                let inlineStyle = ''; // NOVÉ: Pre inline štýly
+                let specificBackgroundColor = ''; // Stores the type-specific background color
                 switch (placeType) {
                     case 'Športová hala':
                         typeClass = 'place-type-sport-hall';
@@ -490,15 +492,20 @@ document.addEventListener('DOMContentLoaded', async () => {
                         break;
                     case 'Ubytovanie':
                         typeClass = 'place-type-accommodation';
-                        inlineStyle = 'background-color: #4CAF50;'; // Zelená farba pre ubytovanie
+                        specificBackgroundColor = 'background-color: #4CAF50;'; // Zelená farba pre ubytovanie
                         break;
                     default:
                         typeClass = ''; 
                 }
 
+                // Base sticky styles for the first column.
+                // The specificBackgroundColor will override the default background if present.
+                const stickyColumnStyles = `position: sticky; left: 0; z-index: 100; background-color: #e0e0e0;`; 
+                const finalColumnStyle = `${stickyColumnStyles} ${specificBackgroundColor}`;
+
                 scheduleHtml += '<tr>';
-                // Pridaný data-type atribút a inline štýl
-                scheduleHtml += `<th class="fixed-column schedule-location-header delete-location-header ${typeClass}" data-location="${locationName}" data-type="${placeType}" title="Kliknutím upravíte miesto ${locationName} (${placeType})" style="${inlineStyle}">
+                // Pridaný data-type atribút a inline štýl pre sticky stĺpec
+                scheduleHtml += `<th class="fixed-column schedule-location-header delete-location-header ${typeClass}" data-location="${locationName}" data-type="${placeType}" title="Kliknutím upravíte miesto ${locationName} (${placeType})" style="${finalColumnStyle}">
                     <div class="hall-name">${locationName} (${placeType})</div> <div class="hall-address">
                         <a href="${placeGoogleMapsUrl}" target="_blank" rel="noopener noreferrer">${placeAddress}</a>
                     </div>
@@ -1227,7 +1234,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const groupDoc = await getDoc(doc(groupsCollectionRef, groupId));
             let groupData = null; 
             if (groupDoc.exists()) {
-                groupData = groupDoc.data(); 
+                groupData = groupData(); 
             }
             const groupName = groupData ? (groupData.name || groupId) : groupId;
 
