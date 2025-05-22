@@ -1,12 +1,12 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js';
 import { getFirestore, collection, doc, setDoc, getDoc, getDocs, deleteDoc, query, where, addDoc, updateDoc, writeBatch, orderBy } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js';
 const firebaseConfig = {
-    apiKey: "AIzaSyD0h0rQZiIGi0-UDb4-YU_JihRGiIlfz40", // Použite váš skutočný API kľúč
-    authDomain: "turnaj-a28c5.firebaseapp.com",
-    projectId: "turnaj-a28c5",
-    storageBucket: "turnaj-a28c5.appspot.com",
-    messagingSenderId: "13732191148",
-    appId: "1:13732191148:web:5ad78eaef2ad452a10f809"
+  apiKey: "AIzaSyD0h0rQZiIGi0-UDb4-YU_JihRGpIlfz40",
+  authDomain: "turnaj-a28c5.firebaseapp.com",
+  projectId: "turnaj-a28c5",
+  storageBucket: "turnaj-a28c5.firebasestorage.app",
+  messagingSenderId: "13732191148",
+  appId: "1:13732191148:web:5ad78eaef2ad452a10f809"
 };
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
