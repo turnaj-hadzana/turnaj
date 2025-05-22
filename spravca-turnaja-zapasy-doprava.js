@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const matchForm = document.getElementById('matchForm');
     const matchIdInput = document.getElementById('matchId');
     const matchDateSelect = document.getElementById('matchDateSelect');
-    const matchLocationSelect = document.getElementById('matchLocationSelect');
+    const matchLocationSelect = document = document.getElementById('matchLocationSelect');
     const matchStartTimeInput = document.getElementById('matchStartTime');
     const matchDurationInput = document.getElementById('matchDuration');
     const matchBufferTimeInput = document.getElementById('matchBufferTime'); 
@@ -202,8 +202,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             } else {
                 clubsSnapshot.forEach((doc) => {
                     const team = { id: doc.id, ...doc.data() };
-                    // Vypísanie údajov o kategórii a skupine do konzoly
-                    console.log(`Tím: ${team.name}, Kategória: ${team.categoryName}, Skupina: ${team.groupName}, Poradie v skupine: ${team.orderInGroup}`);
+                    // Vypísanie všetkých údajov o tíme do konzoly
+                    console.log('Údaje o tíme pred pridaním do select boxu:', team);
                     const option = document.createElement('option');
                     option.value = team.id;
                     option.textContent = `${team.name} (Kat: ${team.categoryName}, Skup: ${team.groupName}, Tím: ${team.orderInGroup})`;
