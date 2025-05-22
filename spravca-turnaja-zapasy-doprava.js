@@ -260,11 +260,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             const allTeamsSnapshot = await getDocs(clubsCollectionRef);
             const filteredTeams = [];
 
-            // Načítame všetky skupiny raz, aby sme sa vyhli opakovaným volaniam getDoc v cykle
+            // Načítame všetky skupiny a kategórie raz, aby sme sa vyhli opakovaným volaniam getDoc v cykle
             const groupsSnapshot = await getDocs(groupsCollectionRef);
             const groupsMap = new Map();
             groupsSnapshot.forEach(doc => {
                 groupsMap.set(doc.id, doc.data().name);
+            });
+
+            const categoriesSnapshot = await getDocs(categoriesCollectionRef);
+            const categoriesMap = new Map();
+            categoriesSnapshot.forEach(doc => {
+                categoriesMap.set(doc.id, doc.data().name);
             });
 
             allTeamsSnapshot.forEach((doc) => {
@@ -303,9 +309,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }).forEach(team => {
                     const option = document.createElement('option');
                     option.value = team.id;
-                    // Získame názov skupiny z groupsMap
+                    // Získame názov skupiny a kategórie z máp
                     const groupName = groupsMap.get(team.groupId) || 'Neznáma skupina';
-                    option.textContent = `${team.name} ${groupName}`; 
+                    const categoryName = categoriesMap.get(team.categoryId) || 'Neznáma kategória';
+                    option.textContent = `${team.name} (${categoryName}, ${groupName})`; 
                     if (selectedTeamId === team.id) {
                         option.selected = true;
                     }
