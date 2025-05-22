@@ -1,4 +1,4 @@
-import { db, categoriesCollectionRef, groupsCollectionRef, clubsCollectionRef, matchesCollectionRef, playingDaysCollectionRef, placesCollectionRef, busesCollectionRef, teamAccommodationsCollectionRef, openModal, closeModal, populateCategorySelect, populateGroupSelect, getDocs, doc, setDoc, addDoc, getDoc, query, where, orderBy, deleteDoc, writeBatch, settingsCollectionRef } from './spravca-turnaja-common.js';
+import { db, categoriesCollectionRef, groupsCollectionRef, clubsCollectionRef, matchesCollectionRef, playingDaysCollectionRef, placesCollectionRef, busesCollectionRef, teamAccommodationsCollectionRef, /* openModal, closeModal, */ populateCategorySelect, populateGroupSelect, getDocs, doc, setDoc, addDoc, getDoc, query, where, orderBy, deleteDoc, writeBatch, settingsCollectionRef } from './spravca-turnaja-common.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     const loggedInUsername = localStorage.getItem('username');
@@ -7,16 +7,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
+    // Odkazy na HTML elementy
     const categoriesContentSection = document.getElementById('categoriesContentSection');
-    const addButton = document.getElementById('addButton');
-    const addOptions = document.getElementById('addOptions');
-    const addPlayingDayButton = document.getElementById('addPlayingDayButton');
-    const addPlaceButton = document.getElementById('addPlaceButton');
-    const addMatchButton = document.getElementById('addMatchButton');
-    const addBusButton = document.getElementById('addBusButton');
-    const assignAccommodationButton = document.getElementById('assignAccommodationButton');
+    const addButton = document.getElementById('addButton'); // Toto je tlačidlo '+'
+    const addOptionsDropdown = document.getElementById('addOptions'); // Toto je kontajner pre tlačidlá výberu modálu
+    const modals = document.querySelectorAll('.modal'); // Všetky elementy, ktoré sú modálne okná
 
-    // Modálne okno pre zápas
+    // Modálne okná a ich tlačidlá
     const matchModal = document.getElementById('matchModal');
     const closeMatchModalButton = document.getElementById('closeMatchModal');
     const matchForm = document.getElementById('matchForm');
@@ -25,7 +22,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const matchLocationSelect = document.getElementById('matchLocationSelect');
     const matchStartTimeInput = document.getElementById('matchStartTime');
     const matchDurationInput = document.getElementById('matchDuration');
-    const matchBufferTimeInput = document.getElementById('matchBufferTime'); 
+    const matchBufferTimeInput = document.getElementById('matchBufferTime');
     const matchCategorySelect = document.getElementById('matchCategory');
     const matchGroupSelect = document.getElementById('matchGroup');
     const matchModalTitle = document.getElementById('matchModalTitle');
@@ -81,8 +78,87 @@ document.addEventListener('DOMContentLoaded', async () => {
     const assignAccommodationModalTitle = document.getElementById('assignAccommodationModalTitle');
     const deleteAssignmentButtonModal = document.getElementById('deleteAssignmentButtonModal');
 
+    // Elementy pre vlastné modálne okno správ
+    const messageModal = document.getElementById('messageModal');
+    const messageModalTitle = document.getElementById('messageModalTitle');
+    const messageModalText = document.getElementById('messageModalText');
+    const messageModalOkButton = document.getElementById('messageModalOkButton');
+    const messageModalConfirmButton = document.getElementById('messageModalConfirmButton');
+    const messageModalCancelButton = document.getElementById('messageModalCancelButton');
+    let resolveMessageModalPromise; // Na vyriešenie Promise pre potvrdenie/zrušenie
+
     // Konštantné ID dokumentu pre nastavenia (musí byť rovnaké ako v spravca-turnaja-nastavenia.js)
     const SETTINGS_DOC_ID = 'matchTimeSettings';
+
+
+    // Funkcia na zobrazenie vlastného modálneho okna pre správy/potvrdenia
+    function showMessageModal(title, message, type = 'alert') {
+        messageModalTitle.textContent = title;
+        messageModalText.textContent = message;
+
+        // Reset stavov tlačidiel
+        messageModalOkButton.style.display = 'none';
+        messageModalConfirmButton.style.display = 'none';
+        messageModalCancelButton.style.display = 'none';
+
+        return new Promise(resolve => {
+            resolveMessageModalPromise = resolve;
+
+            if (type === 'confirm') {
+                messageModalConfirmButton.style.display = 'inline-block';
+                messageModalCancelButton.style.display = 'inline-block';
+                messageModalConfirmButton.onclick = () => {
+                    hideAllModals(); // Zatvorí modálne okno správy
+                    resolve(true);
+                };
+                messageModalCancelButton.onclick = () => {
+                    hideAllModals(); // Zatvorí modálne okno správy
+                    resolve(false);
+                };
+            } else { // Typ 'alert'
+                messageModalOkButton.style.display = 'inline-block';
+                messageModalOkButton.onclick = () => {
+                    hideAllModals(); // Zatvorí modálne okno správy
+                    resolve(true); // Vždy vyrieši true pre alert
+                };
+            }
+            showModal(messageModal); // Použije všeobecnú funkciu showModal
+        });
+    }
+
+
+    // Funkcia na skrytie všetkých modálnych okien
+    function hideAllModals() {
+        modals.forEach(modal => {
+            modal.classList.remove('show');
+            modal.style.display = 'none'; // Zabezpečuje úplné skrytie
+        });
+        // Skryjeme aj dropdown pre výber modálu
+        if (addOptionsDropdown) {
+            addOptionsDropdown.classList.remove('show');
+            addOptionsDropdown.style.display = 'none'; // Zabezpečí, že je skrytý
+        }
+    }
+
+    // Funkcia na zobrazenie konkrétneho modálneho okna
+    function showModal(modalElement) {
+        if (modalElement) {
+            hideAllModals(); // Najprv skryjeme všetky ostatné otvorené modály
+            modalElement.style.display = 'flex'; // Zviditeľníme ho ako flex kontajner pre centrovanie
+            // Použijeme setTimeout, aby sa zabezpečilo, že display:flex sa aplikuje pred pridaním 'show' pre CSS prechody
+            setTimeout(() => {
+                modalElement.classList.add('show');
+            }, 10);
+        }
+    }
+
+    // --- Počiatočné nastavenie pri načítaní stránky ---
+    // 1. Okamžite skryjeme všetky modálne okná a dropdown
+    hideAllModals();
+    // Zabezpečíme, že addOptionsDropdown je na začiatku skrytý
+    if (addOptionsDropdown) {
+        addOptionsDropdown.style.display = 'none';
+    }
 
 
     if (categoriesContentSection) {
@@ -104,15 +180,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const day = doc.data();
                 const option = document.createElement('option');
                 option.value = day.date;
-                
+
                 const dateObj = new Date(day.date);
                 const formattedDate = `${String(dateObj.getDate()).padStart(2, '0')}. ${String(dateObj.getMonth() + 1).padStart(2, '0')}. ${dateObj.getFullYear()}`;
                 option.textContent = formattedDate;
-                
+
                 selectElement.appendChild(option);
             });
             if (selectedDate) {
-                selectElement.value = selectedDate; 
+                selectElement.value = selectedDate;
             }
         } catch (error) {
             console.error("Error loading playing days: ", error);
@@ -225,7 +301,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function populateTeamDetailsSelect(selectElement, clubName, assignmentDate, currentAssignedEntityId = '') {
         selectElement.innerHTML = '<option value="_ENTIRE_CLUB_">-- Celý klub --</option>'; // Predvolená možnosť pre celý klub
         selectElement.disabled = true; // Predvolene zakázané, povolené po výbere klubu
-        
+
         if (!clubName) { // Teraz očakávame názov klubu
             return;
         }
@@ -238,7 +314,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (assignmentDate) {
                 const accommodationsQuery = query(teamAccommodationsCollectionRef, where("date", "==", assignmentDate));
                 const accommodationsSnapshot = await getDocs(accommodationsQuery);
-                
+
                 const assignedEntityIdsForDate = new Set();
                 accommodationsSnapshot.forEach(doc => {
                     const accommodationData = doc.data();
@@ -255,7 +331,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 });
 
                 // Odfiltrujeme tímy, ktoré už majú priradené ubytovanie pre tento dátum
-                teamsInClub = teamsInClub.filter(team => !assignedEntityIdsForDate.has(team.id) || team.id === currentAssignedEntityId); 
+                teamsInClub = teamsInClub.filter(team => !assignedEntityIdsForDate.has(team.id) || team.id === currentAssignedEntityId);
             }
 
             if (teamsInClub.length === 0 && currentAssignedEntityId === '') { // Iba ak pridávame nové a nie sú dostupné žiadne tímy
@@ -379,7 +455,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const bufferTime = parseInt(matchBufferTimeInput.value) || 5;
 
         if (!selectedDate || !selectedLocationName) {
-            matchStartTimeInput.value = ''; 
+            matchStartTimeInput.value = '';
             return;
         }
 
@@ -420,7 +496,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             existingEvents.sort((a, b) => a.start - b.start);
 
             for (let hour = startH; hour <= endSearchHour; hour++) {
-                const currentMinuteStart = (hour === startH) ? startM : 0; 
+                const currentMinuteStart = (hour === startH) ? startM : 0;
                 for (let minute = currentMinuteStart; minute < 60; minute += intervalMinutes) {
                     const potentialStartInMinutes = hour * 60 + minute;
                     const potentialEndInMinutes = potentialStartInMinutes + duration + bufferTime;
@@ -442,7 +518,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             }
 
-            matchStartTimeInput.value = ''; 
+            matchStartTimeInput.value = '';
             console.warn("Nenašiel sa žiadny voľný časový slot pre zápas v daný deň a hale v rozsahu 08:00 - 22:00.");
 
         } catch (error) {
@@ -455,9 +531,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function displayMatchesAsSchedule() {
         if (!matchesContainer) return;
 
-        matchesContainer.innerHTML = ''; 
+        matchesContainer.innerHTML = '';
         matchesContainer.insertAdjacentHTML('afterbegin', '<p>Načítavam logistiku turnaja...</p>');
-        
+
         const CELL_WIDTH_PX = 350;
         const MINUTES_PER_HOUR = 60;
         const PIXELS_PER_MINUTE = CELL_WIDTH_PX / MINUTES_PER_HOUR;
@@ -480,13 +556,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             const allEvents = [...allMatches, ...allBuses, ...allAccommodations];
 
             const playingDaysSnapshot = await getDocs(query(playingDaysCollectionRef, orderBy("date", "asc")));
-            const placesSnapshot = await getDocs(query(placesCollectionRef, orderBy("name", "asc"))); 
+            const placesSnapshot = await getDocs(query(placesCollectionRef, orderBy("name", "asc")));
 
             const existingPlayingDays = playingDaysSnapshot.docs.map(doc => doc.data().date);
-            const existingPlacesData = placesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })); 
+            const existingPlacesData = placesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
             const uniquePlacesForRows = [];
-            const addedPlaceKeys = new Set(); 
+            const addedPlaceKeys = new Set();
 
             existingPlacesData.forEach(place => {
                 const placeKey = `${place.name}:::${place.type}`;
@@ -504,7 +580,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return 0;
             });
 
-            const uniqueLocations = new Set(); 
+            const uniqueLocations = new Set();
             uniquePlacesForRows.forEach(place => uniqueLocations.add(`${place.name}:::${place.type}`));
 
             const uniqueDates = new Set([...existingPlayingDays]);
@@ -528,7 +604,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     startTimeInMinutes = startH * 60 + startM;
                     endTimeInMinutes = endH * 60 + endM;
                     if (endTimeInMinutes < startTimeInMinutes) {
-                        endTimeInMinutes += 24 * 60; 
+                        endTimeInMinutes += 24 * 60;
                     }
                 }
                 // Accommodation events are explicitly excluded from this calculation
@@ -545,20 +621,20 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
 
             const sortedLocations = Array.from(uniqueLocations).sort();
-            const sortedDates = Array.from(uniqueDates).sort(); 
+            const sortedDates = Array.from(uniqueDates).sort();
 
-            console.log("Sorted Dates before iteration:", sortedDates); 
+            console.log("Sorted Dates before iteration:", sortedDates);
 
             // If a date has no matches or buses, set a default time range (e.g., 8:00-18:00)
-            sortedDates.forEach(date => { 
+            sortedDates.forEach(date => {
                 if (!dailyTimeRanges.has(date)) {
                     dailyTimeRanges.set(date, { minHour: 8, maxHour: 18 }); // Default range for dates with no matches/buses
                 }
             });
 
-            matchesContainer.innerHTML = ''; 
+            matchesContainer.innerHTML = '';
 
-            let scheduleHtml = '<div class="schedule-table-container" style="position: relative; overflow: auto;">'; 
+            let scheduleHtml = '<div class="schedule-table-container" style="position: relative; overflow: auto;">';
             scheduleHtml += '<table class="match-schedule-table"><thead><tr>';
             scheduleHtml += `<th class="fixed-column" style="position: sticky; top: 0; left: 0; z-index: 101; background-color: #d0d0d0;">Miesto / Čas</th>`;
 
@@ -579,7 +655,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 const colspan = hoursForDate.length > 0 ? hoursForDate.length : 1;
 
-                scheduleHtml += `<th colspan="${colspan}" class="date-header-clickable" data-date="${date}" title="Kliknutím upravíte hrací deň ${formattedDisplayDate}" style="position: sticky; top: 0; z-index: 100; background-color: #d0d0d0;">`; 
+                scheduleHtml += `<th colspan="${colspan}" class="date-header-clickable" data-date="${date}" title="Kliknutím upravíte hrací deň ${formattedDisplayDate}" style="position: sticky; top: 0; z-index: 100; background-color: #d0d0d0;">`;
                 scheduleHtml += `<div class="schedule-date-header-content">${formattedDisplayDate}</div>`;
                 scheduleHtml += '<div class="schedule-times-row">';
                 if (hoursForDate.length > 0) {
@@ -587,7 +663,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         scheduleHtml += `<span>${String(hour % 24).padStart(2, '0')}:00</span>`;
                     });
                 } else {
-                    scheduleHtml += `<span></span>`; 
+                    scheduleHtml += `<span></span>`;
                 }
                 scheduleHtml += '</div>';
 
@@ -595,32 +671,32 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
             scheduleHtml += '</tr></thead><tbody>';
 
-            uniquePlacesForRows.forEach(placeData => { 
+            uniquePlacesForRows.forEach(placeData => {
                 const locationName = placeData.name;
                 const placeAddress = placeData.address;
                 const placeGoogleMapsUrl = placeData.googleMapsUrl;
-                const placeType = placeData.type; 
+                const placeType = placeData.type;
 
                 let typeClass = '';
-                let specificBackgroundColor = ''; 
+                let specificBackgroundColor = '';
                 switch (placeType) {
                     case 'Športová hala':
                         typeClass = 'place-type-sport-hall';
-                        specificBackgroundColor = 'background-color: #007bff;'; 
+                        specificBackgroundColor = 'background-color: #007bff;';
                         break;
                     case 'Stravovacie zariadenie':
                         typeClass = 'place-type-catering';
-                        specificBackgroundColor = 'background-color: #ffc107;'; 
+                        specificBackgroundColor = 'background-color: #ffc107;';
                         break;
                     case 'Ubytovanie':
                         typeClass = 'place-type-accommodation';
-                        specificBackgroundColor = 'background-color: #4CAF50;'; 
+                        specificBackgroundColor = 'background-color: #4CAF50;';
                         break;
                     default:
-                        typeClass = ''; 
+                        typeClass = '';
                 }
 
-                const stickyColumnStyles = `position: sticky; left: 0; z-index: 100; background-color: #e0e0e0;`; 
+                const stickyColumnStyles = `position: sticky; left: 0; z-index: 100; background-color: #e0e0e0;`;
                 const finalColumnStyle = `${stickyColumnStyles} ${specificBackgroundColor}`;
 
                 scheduleHtml += '<tr>';
@@ -637,7 +713,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                     scheduleHtml += `<td colspan="${colspan}" style="position: relative; background-color: #f7f7f7;">`;
 
-                    // Separate matches and accommodations for distinct rendering logic within the cell
+                    // Oddelené zápasy a ubytovania pre odlišnú logiku vykresľovania v bunke
                     const matchesInCell = allEvents.filter(event => {
                         return event.type === 'match' && event.date === date && placeType === 'Športová hala' && event.location === locationName;
                     });
@@ -645,7 +721,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         return event.type === 'accommodation' && event.date === date && placeType === 'Ubytovanie' && event.accommodationName === locationName;
                     });
 
-                    // Render matches (current logic)
+                    // Vykreslenie zápasov (aktuálna logika)
                     matchesInCell.sort((a, b) => {
                         const [aH, aM] = a.startTime.split(':').map(Number);
                         const [bH, bM] = b.startTime.split(':').map(Number);
@@ -655,7 +731,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     matchesInCell.forEach(event => {
                         const [startH, startM] = event.startTime.split(':').map(Number);
                         const absoluteStartMin = startH * 60 + startM;
-                        
+
                         const relativeStartMinInCell = absoluteStartMin - (range.minHour * 60);
 
                         const matchBlockLeftPx = relativeStartMinInCell * PIXELS_PER_MINUTE;
@@ -675,7 +751,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             clubNamesHtml += `${team1ClubNameDisplay}`;
                         }
                         if (team2ClubNameDisplay) {
-                            if (clubNamesHtml) clubNamesHtml += `<br>`; 
+                            if (clubNamesHtml) clubNamesHtml += `<br>`;
                             clubNamesHtml += `${team2ClubNameDisplay}`;
                         }
 
@@ -705,10 +781,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                         }
                     });
 
-                    // Render accommodations (new logic for side-by-side)
+                    // Vykreslenie ubytovaní (nová logika pre zobrazenie vedľa seba)
                     const totalAccommodationsInCell = accommodationsInCell.length;
                     if (totalAccommodationsInCell > 0) {
-                        const cellWidth = (range.maxHour - range.minHour) * CELL_WIDTH_PX; // Total width of the td cell
+                        const cellWidth = (range.maxHour - range.minHour) * CELL_WIDTH_PX; // Celková šírka td bunky
                         const blockWidth = cellWidth / totalAccommodationsInCell;
 
                         accommodationsInCell.forEach((event, index) => {
@@ -734,17 +810,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                 scheduleHtml += '</tr>';
             });
             scheduleHtml += '</tbody></table>';
-            scheduleHtml += '</div>'; 
+            scheduleHtml += '</div>';
 
             matchesContainer.insertAdjacentHTML('beforeend', scheduleHtml);
 
             const scheduleTableContainer = matchesContainer.querySelector('.schedule-table-container');
             const scheduleTable = matchesContainer.querySelector('.match-schedule-table');
-            
+
             if (!scheduleTableContainer || !scheduleTable) {
                 console.error("Schedule table container or table not found. Cannot render buses or calculate offsets.");
                 matchesContainer.innerHTML = '<p>Chyba pri zobrazení rozvrhu. Chýbajú komponenty tabuľky.</p>';
-                return; 
+                return;
             }
 
             const scheduleTableContainerRect = scheduleTableContainer.getBoundingClientRect();
@@ -752,26 +828,26 @@ document.addEventListener('DOMContentLoaded', async () => {
             const busOverlayContainer = document.createElement('div');
             busOverlayContainer.id = 'busOverlayContainer';
             busOverlayContainer.style.cssText = `
-                    position: absolute; 
-                    top: 0; 
-                    left: 0; 
-                    width: ${scheduleTable.offsetWidth}px; 
-                    height: ${scheduleTable.offsetHeight}px; 
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: ${scheduleTable.offsetWidth}px;
+                    height: ${scheduleTable.offsetHeight}px;
                     pointer-events: none;
-                `; 
-            scheduleTableContainer.appendChild(busOverlayContainer); 
+                `;
+            scheduleTableContainer.appendChild(busOverlayContainer);
 
-            const locationRowTopOffsets = new Map(); 
+            const locationRowTopOffsets = new Map();
             scheduleTable.querySelectorAll('tbody tr').forEach(row => {
                 const locationHeader = row.querySelector('th.fixed-column');
                 if (locationHeader) {
                     const locationName = locationHeader.dataset.location;
                     const locationType = locationHeader.dataset.type;
-                    locationRowTopOffsets.set(`${locationName}:::${locationType}`, locationHeader.getBoundingClientRect().top - scheduleTableContainerRect.top); 
+                    locationRowTopOffsets.set(`${locationName}:::${locationType}`, locationHeader.getBoundingClientRect().top - scheduleTableContainerRect.top);
                 }
             });
 
-            const timeColumnLeftOffsets = new Map(); 
+            const timeColumnLeftOffsets = new Map();
             const firstTimeHeader = scheduleTable.querySelector('thead th:not(.fixed-column)');
             if (firstTimeHeader) {
                 sortedDates.forEach(date => {
@@ -783,7 +859,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         const firstHourInDay = range ? range.minHour : 0;
 
                         timeSpans.forEach((span, index) => {
-                            const hour = firstHourInDay + index; 
+                            const hour = firstHourInDay + index;
                             hourOffsets.push({
                                 hour: hour,
                                 left: (dateHeader.getBoundingClientRect().left - scheduleTableContainerRect.left) + (index * CELL_WIDTH_PX)
@@ -795,8 +871,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
 
             allBuses.forEach(bus => {
-                const startLocationKey = bus.startLocation; 
-                const endLocationKey = bus.endLocation;     
+                const startLocationKey = bus.startLocation;
+                const endLocationKey = bus.endLocation;
                 const date = bus.date;
 
                 let busStartY, busEndY;
@@ -822,7 +898,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const startTimeInMinutes = startH * 60 + startM;
                 let endTimeInMinutes = endH * 60 + endM;
                 if (endTimeInMinutes < startTimeInMinutes) {
-                    endTimeInMinutes += 24 * 60; 
+                    endTimeInMinutes += 24 * 60;
                 }
 
                 const durationInMinutes = endTimeInMinutes - startTimeInMinutes;
@@ -836,7 +912,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 let busLeftPx = 0;
                 const range = dailyTimeRanges.get(date);
                 const firstHourOfDate = range ? range.minHour : 0;
-                
+
                 const firstHourDataForDate = dateHours.find(h => h.hour === firstHourOfDate);
                 if (firstHourDataForDate) {
                     busLeftPx = firstHourDataForDate.left + ((startTimeInMinutes - (firstHourOfDate * 60)) * PIXELS_PER_MINUTE);
@@ -845,8 +921,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     busLeftPx = dateHours[0].left + ((startTimeInMinutes - (dateHours[0].hour * 60)) * PIXELS_PER_MINUTE);
                 }
 
-                const busWidthPx = (durationInMinutes * PIXELS_PER_MINUTE) / 4; 
-                const slantOffset = 30; 
+                const busWidthPx = (durationInMinutes * PIXELS_PER_MINUTE) / 4;
+                const slantOffset = 30;
 
                 const svgWidth = busWidthPx + Math.abs(slantOffset);
                 const svgHeight = Math.abs(busEndY - busStartY);
@@ -881,8 +957,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 polygon.setAttribute("points", points);
                 svgElement.appendChild(polygon);
 
-                const textYBase = svgHeight / 2; 
-                const textXBase = svgWidth / 2; 
+                const textYBase = svgHeight / 2;
+                const textXBase = svgWidth / 2;
 
                 const busNameText = document.createElementNS("http://www.w3.org/2000/svg", "text");
                 busNameText.setAttribute("class", "schedule-bus-text");
@@ -899,7 +975,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 busRouteText.setAttribute("y", textYBase);
                 busRouteText.setAttribute("text-anchor", "middle");
                 busRouteText.setAttribute("dominant-baseline", "middle");
-                busRouteText.textContent = `${bus.startLocation.split(':::')[0]} → ${bus.endLocation.split(':::')[0]}`; 
+                busRouteText.textContent = `${bus.startLocation.split(':::')[0]} → ${bus.endLocation.split(':::')[0]}`;
                 svgElement.appendChild(busRouteText);
 
                 const busTimeText = document.createElementNS("http://www.w3.org/2000/svg", "text");
@@ -928,14 +1004,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Pridanie event listenerov pre kliknutie na zápas/autobus/UBYTOVANIE pre úpravu
             matchesContainer.querySelectorAll('.schedule-cell-match').forEach(element => {
                 element.addEventListener('click', (event) => {
-                    const id = event.currentTarget.dataset.id; 
+                    const id = event.currentTarget.dataset.id;
                     editMatch(id);
                 });
             });
 
             busOverlayContainer.querySelectorAll('.bus-svg').forEach(element => {
                 element.addEventListener('click', (event) => {
-                    const id = event.currentTarget.dataset.id; 
+                    const id = event.currentTarget.dataset.id;
                     editBus(id);
                 });
             });
@@ -948,26 +1024,26 @@ document.addEventListener('DOMContentLoaded', async () => {
                 });
             });
 
-            matchesContainer.querySelectorAll('.date-header-clickable').forEach(header => { 
-                header.addEventListener('click', (event) => {
-                    if (event.target.tagName === 'A' || event.target.closest('.hall-address')) { 
-                        return; 
+            matchesContainer.querySelectorAll('.date-header-clickable').forEach(header => {
+                header.addEventListener('click', async (event) => {
+                    if (event.target.tagName === 'A' || event.target.closest('.hall-address')) {
+                        return;
                     }
-                    if (event.target === header || event.target.closest('.schedule-date-header-content')) { 
+                    if (event.target === header || event.target.closest('.schedule-date-header-content')) {
                         const dateToEdit = header.dataset.date;
-                        editPlayingDay(dateToEdit); 
+                        await editPlayingDay(dateToEdit);
                     }
                 });
             });
             matchesContainer.querySelectorAll('.delete-location-header').forEach(header => {
-                header.addEventListener('click', (event) => {
+                header.addEventListener('click', async (event) => {
                     if (event.target.tagName === 'A' || event.target.closest('.hall-address')) {
-                        return; 
+                        return;
                     }
-                    if (event.target === header || event.target.closest('.hall-name')) { 
-                        const locationToEdit = header.dataset.location; 
-                        const locationTypeToEdit = header.dataset.type; 
-                        editPlace(locationToEdit, locationTypeToEdit); 
+                    if (event.target === header || event.target.closest('.hall-name')) {
+                        const locationToEdit = header.dataset.location;
+                        const locationTypeToEdit = header.dataset.type;
+                        await editPlace(locationToEdit, locationTypeToEdit);
                     }
                 });
             });
@@ -980,7 +1056,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 
     async function deletePlayingDay(dateToDelete) {
-        if (confirm(`Naozaj chcete vymazať hrací deň ${dateToDelete} a VŠETKY zápasy a autobusové linky, ktoré sa konajú v tento deň?`)) {
+        const confirmed = await showMessageModal('Potvrdenie zmazania', `Naozaj chcete vymazať hrací deň ${dateToDelete} a VŠETKY zápasy a autobusové linky, ktoré sa konajú v tento deň?`, 'confirm');
+        if (confirmed) {
             try {
                 const batch = writeBatch(db);
 
@@ -1017,35 +1094,36 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 
                 await batch.commit();
-                alert(`Hrací deň ${dateToDelete} a všetky súvisiace zápasy, autobusové linky a priradenia ubytovania boli úspešne vymazané!`);
-                closeModal(playingDayModal);
+                await showMessageModal('Úspech', `Hrací deň ${dateToDelete} a všetky súvisiace zápasy, autobusové linky a priradenia ubytovania boli úspešne vymazané!`);
+                hideAllModals();
                 await displayMatchesAsSchedule();
             } catch (error) {
                 console.error(`Chyba pri mazaní hracieho dňa ${dateToDelete}: `, error);
-                alert(`Chyba pri mazaní hracieho dňa ${dateToDelete}. Pozrite konzolu pre detaily.`);
+                await showMessageModal('Chyba', `Chyba pri mazaní hracieho dňa ${dateToDelete}. Pozrite konzolu pre detaily.`);
             }
         }
     }
 
     // Funkcia na mazanie miesta (teraz prijíma aj typ miesta pre presné mazanie)
-    async function deletePlace(placeNameToDelete, placeTypeToDelete) { 
-        if (confirm(`Naozaj chcete vymazať miesto ${placeNameToDelete} (${placeTypeToDelete}) a VŠETKY zápasy a autobusové linky, ktoré sa viažu na toto miesto?`)) { 
+    async function deletePlace(placeNameToDelete, placeTypeToDelete) {
+        const confirmed = await showMessageModal('Potvrdenie zmazania', `Naozaj chcete vymazať miesto ${placeNameToDelete} (${placeTypeToDelete}) a VŠETKY zápasy a autobusové linky, ktoré sa viažu na toto miesto?`, 'confirm');
+        if (confirmed) {
             try {
                 const batch = writeBatch(db);
 
                 // Kontrola na základe názvu a typu, aby sa vymazalo správne miesto
                 const placeQuery = query(placesCollectionRef, where("name", "==", placeNameToDelete), where("type", "==", placeTypeToDelete));
-                const placeSnapshot = await getDocs(placeQuery); 
+                const placeSnapshot = await getDocs(placeQuery);
                 if (!placeSnapshot.empty) {
                     placeSnapshot.docs.forEach(docToDelete => {
-                        batch.delete(doc(placesCollectionRef, docToDelete.id)); 
+                        batch.delete(doc(placesCollectionRef, docToDelete.id));
                     });
                 } else {
-                    console.warn(`Miesto ${placeNameToDelete} (${placeTypeToDelete}) sa nenašlo, ale pokračujem v mazaní súvisiacich zápasov a autobusov.`); 
+                    console.warn(`Miesto ${placeNameToDelete} (${placeTypeToDelete}) sa nenašlo, ale pokračujem v mazaní súvisiacich zápasov a autobusov.`);
                 }
 
                 // Vymazanie súvisiacich zápasov (teraz filtruje aj podľa typu miesta)
-                const matchesQuery = query(matchesCollectionRef, where("location", "==", placeNameToDelete), where("locationType", "==", placeTypeToDelete)); 
+                const matchesQuery = query(matchesCollectionRef, where("location", "==", placeNameToDelete), where("locationType", "==", placeTypeToDelete));
                 const matchesSnapshot = await getDocs(matchesQuery);
                 matchesSnapshot.docs.forEach(matchDoc => {
                     batch.delete(doc(matchesCollectionRef, matchDoc.id));
@@ -1053,13 +1131,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 // Vymazanie súvisiacich autobusov (teraz filtruje podľa kombinovaného reťazca "názov:::typ")
                 const combinedPlaceKey = `${placeNameToDelete}:::${placeTypeToDelete}`;
-                const busesStartQuery = query(busesCollectionRef, where("startLocation", "==", combinedPlaceKey)); 
+                const busesStartQuery = query(busesCollectionRef, where("startLocation", "==", combinedPlaceKey));
                 const busesStartSnapshot = await getDocs(busesStartQuery);
                 busesStartSnapshot.docs.forEach(busDoc => {
                     batch.delete(doc(busesCollectionRef, busDoc.id));
                 });
 
-                const busesEndQuery = query(busesCollectionRef, where("endLocation", "==", combinedPlaceKey)); 
+                const busesEndQuery = query(busesCollectionRef, where("endLocation", "==", combinedPlaceKey));
                 const busesEndSnapshot = await getDocs(busesEndQuery);
                 busesEndSnapshot.docs.forEach(busDoc => {
                     batch.delete(doc(busesCollectionRef, busDoc.id));
@@ -1067,20 +1145,23 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 // Vymazanie súvisiacich priradení ubytovania, ak je vymazané miesto typu "Ubytovanie"
                 if (placeTypeToDelete === 'Ubytovanie') {
-                    const accommodationsQuery = query(teamAccommodationsCollectionRef, where("accommodationId", "==", placeSnapshot.docs[0].id));
-                    const accommodationsSnapshot = await getDocs(accommodationsQuery);
-                    accommodationsSnapshot.docs.forEach(accDoc => {
-                        batch.delete(doc(teamAccommodationsCollectionRef, accDoc.id));
-                    });
+                    // Predpokladáme, že placeSnapshot.docs[0].id existuje, ak sa našlo miesto
+                    if (!placeSnapshot.empty) {
+                        const accommodationsQuery = query(teamAccommodationsCollectionRef, where("accommodationId", "==", placeSnapshot.docs[0].id));
+                        const accommodationsSnapshot = await getDocs(accommodationsQuery);
+                        accommodationsSnapshot.docs.forEach(accDoc => {
+                            batch.delete(doc(teamAccommodationsCollectionRef, accDoc.id));
+                        });
+                    }
                 }
 
                 await batch.commit();
-                alert(`Miesto ${placeNameToDelete} (${placeTypeToDelete}) a všetky súvisiace zápasy, autobusové linky a priradenia ubytovania boli úspešne vymazané!`); 
-                closeModal(placeModal); 
+                await showMessageModal('Úspech', `Miesto ${placeNameToDelete} (${placeTypeToDelete}) a všetky súvisiace zápasy, autobusové linky a priradenia ubytovania boli úspešne vymazané!`);
+                hideAllModals();
                 await displayMatchesAsSchedule();
             } catch (error) {
-                console.error(`Chyba pri mazaní miesta ${placeNameToDelete} (${placeTypeToDelete}): `, error); 
-                alert(`Chyba pri mazaní miesta ${placeNameToDelete} (${placeTypeToDelete}). Pozrite konzolu pre detaily.`); 
+                console.error(`Chyba pri mazaní miesta ${placeNameToDelete} (${placeTypeToDelete}): `, error);
+                await showMessageModal('Chyba', `Chyba pri mazaní miesta ${placeNameToDelete} (${placeTypeToDelete}). Pozrite konzolu pre detaily.`);
             }
         }
     }
@@ -1098,19 +1179,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 playingDayIdInput.value = playingDayId;
                 playingDayDateInput.value = playingDayData.date || '';
-                playingDayModalTitle.textContent = 'Upraviť hrací deň'; 
+                playingDayModalTitle.textContent = 'Upraviť hrací deň';
 
                 // Zobrazenie tlačidla Vymazať v modale
                 deletePlayingDayButtonModal.style.display = 'inline-block';
-                deletePlayingDayButtonModal.onclick = () => deletePlayingDay(playingDayData.date); 
+                deletePlayingDayButtonModal.onclick = async () => await deletePlayingDay(playingDayData.date);
 
-                openModal(playingDayModal);
+                showModal(playingDayModal);
             } else {
-                alert("Hrací deň sa nenašiel.");
+                await showMessageModal('Chyba', "Hrací deň sa nenašiel.");
             }
         } catch (error) {
             console.error("Chyba pri načítavaní dát hracieho dňa pre úpravu: ", error);
-            alert("Vyskytla sa chyba pri načítavaní dát hracieho dňa. Skúste to znova.");
+            await showMessageModal('Chyba', "Vyskytla sa chyba pri načítavaní dát hracieho dňa. Skúste to znova.");
         }
     }
 
@@ -1134,15 +1215,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 // Zobrazenie tlačidla Vymazať v modale
                 deletePlaceButtonModal.style.display = 'inline-block';
-                deletePlaceButtonModal.onclick = () => deletePlace(placeData.name, placeData.type);
+                deletePlaceButtonModal.onclick = async () => await deletePlace(placeData.name, placeData.type);
 
-                openModal(placeModal);
+                showModal(placeModal);
             } else {
-                alert("Miesto sa nenašlo.");
+                await showMessageModal('Chyba', "Miesto sa nenašlo.");
             }
         } catch (error) {
             console.error("Chyba pri načítavaní dát miesta pre úpravu: ", error);
-            alert("Vyskytla sa chyba pri načítavaní dát miesta. Skúste to znova.");
+            await showMessageModal('Chyba', "Vyskytla sa chyba pri načítavaní dát miesta. Skúste to znova.");
         }
     }
 
@@ -1178,28 +1259,29 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 // Zobrazenie tlačidla Vymazať v modale
                 deleteMatchButtonModal.style.display = 'inline-block';
-                deleteMatchButtonModal.onclick = () => deleteMatch(matchId);
+                deleteMatchButtonModal.onclick = async () => await deleteMatch(matchId);
 
-                openModal(matchModal);
+                showModal(matchModal);
             } else {
-                alert("Zápas sa nenašiel.");
+                await showMessageModal('Chyba', "Zápas sa nenašiel.");
             }
         } catch (error) {
             console.error("Chyba pri načítavaní dát zápasu pre úpravu: ", error);
-            alert("Vyskytla sa chyba pri načítavaní dát zápasu. Skúste to znova.");
+            await showMessageModal('Chyba', "Vyskytla sa chyba pri načítavaní dát zápasu. Skúste to znova.");
         }
     }
 
     async function deleteMatch(matchId) {
-        if (confirm('Naozaj chcete vymazať tento zápas?')) {
+        const confirmed = await showMessageModal('Potvrdenie zmazania', 'Naozaj chcete vymazať tento zápas?', 'confirm');
+        if (confirmed) {
             try {
                 await deleteDoc(doc(matchesCollectionRef, matchId));
-                alert('Zápas úspešne vymazaný!');
-                closeModal(matchModal);
+                await showMessageModal('Úspech', 'Zápas úspešne vymazaný!');
+                hideAllModals();
                 displayMatchesAsSchedule();
             } catch (error) {
                 console.error("Chyba pri mazaní zápasu: ", error);
-                alert("Chyba pri mazaní zápasu. Pozrite konzolu pre detaily.");
+                await showMessageModal('Chyba', "Chyba pri mazaní zápasu. Pozrite konzolu pre detaily.");
             }
         }
     }
@@ -1226,28 +1308,29 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 // Zobrazenie tlačidla Vymazať v modale
                 deleteBusButtonModal.style.display = 'inline-block';
-                deleteBusButtonModal.onclick = () => deleteBus(busId);
+                deleteBusButtonModal.onclick = async () => await deleteBus(busId);
 
-                openModal(busModal);
+                showModal(busModal);
             } else {
-                alert("Autobusová linka sa nenašla.");
+                await showMessageModal('Chyba', "Autobusová linka sa nenašla.");
             }
         } catch (error) {
             console.error("Chyba pri načítavaní dát autobusu pre úpravu: ", error);
-            alert("Vyskytla sa chyba pri načítavaní dát autobusu. Skúste to znova.");
+            await showMessageModal('Chyba', "Vyskytla sa chyba pri načítavaní dát autobusu. Skúste to znova.");
         }
     }
 
     async function deleteBus(busId) {
-        if (confirm('Naozaj chcete vymazať túto autobusovú linku?')) {
+        const confirmed = await showMessageModal('Potvrdenie zmazania', 'Naozaj chcete vymazať túto autobusovú linku?', 'confirm');
+        if (confirmed) {
             try {
                 await deleteDoc(doc(busesCollectionRef, busId));
-                alert('Autobusová linka úspešne vymazaná!');
-                closeModal(busModal);
+                await showMessageModal('Úspech', 'Autobusová linka úspešne vymazaná!');
+                hideAllModals();
                 displayMatchesAsSchedule();
             } catch (error) {
                 console.error("Chyba pri mazaní autobusovej linky: ", error);
-                alert("Chyba pri mazaní autobusovej linky. Pozrite konzolu pre detaily.");
+                await showMessageModal('Chyba', "Chyba pri mazaní autobusovej linky. Pozrite konzolu pre detaily.");
             }
         }
     }
@@ -1264,7 +1347,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 assignAccommodationModalTitle.textContent = 'Upraviť priradenie ubytovania';
 
                 await populatePlayingDaysSelect(assignmentDateSelect, assignmentData.date);
-                
+
                 // Určíme, či ide o priradenie celého klubu alebo konkrétneho tímu
                 const assignedEntityType = assignmentData.assignedEntityType;
                 const assignedEntityId = assignmentData.assignedEntityId; // Pre klub to bude názov klubu, pre tím ID tímu
@@ -1286,33 +1369,34 @@ document.addEventListener('DOMContentLoaded', async () => {
                     teamDetailsSelect.innerHTML = '<option value="_ENTIRE_CLUB_">-- Celý klub --</option>';
                     teamDetailsSelect.disabled = true;
                 }
-                
+
                 await populateAccommodationSelect(accommodationSelect, assignmentData.accommodationId);
 
                 // Zobrazenie tlačidla Vymazať v modale
                 deleteAssignmentButtonModal.style.display = 'inline-block';
-                deleteAssignmentButtonModal.onclick = () => deleteAccommodationAssignment(assignmentId);
+                deleteAssignmentButtonModal.onclick = async () => await deleteAccommodationAssignment(assignmentId);
 
-                openModal(assignAccommodationModal);
+                showModal(assignAccommodationModal);
             } else {
-                alert("Priradenie ubytovania sa nenašlo.");
+                await showMessageModal('Chyba', "Priradenie ubytovania sa nenašlo.");
             }
         } catch (error) {
             console.error("Chyba pri načítavaní dát priradenia ubytovania pre úpravu: ", error);
-            alert("Vyskytla sa chyba pri načítavaní dát priradenia ubytovania. Skúste to znova.");
+            await showMessageModal('Chyba', "Vyskytla sa chyba pri načítavaní dát priradenia ubytovania. Skúste to znova.");
         }
     }
 
     async function deleteAccommodationAssignment(assignmentId) {
-        if (confirm('Naozaj chcete vymazať toto priradenie ubytovania?')) {
+        const confirmed = await showMessageModal('Potvrdenie zmazania', 'Naozaj chcete vymazať toto priradenie ubytovania?', 'confirm');
+        if (confirmed) {
             try {
                 await deleteDoc(doc(teamAccommodationsCollectionRef, assignmentId));
-                alert('Priradenie ubytovania úspešne vymazané!');
-                closeModal(assignAccommodationModal);
+                await showMessageModal('Úspech', 'Priradenie ubytovania úspešne vymazané!');
+                hideAllModals();
                 displayMatchesAsSchedule();
             } catch (error) {
                 console.error("Chyba pri mazaní priradenia ubytovania: ", error);
-                alert("Chyba pri mazaní priradenia ubytovania. Pozrite konzolu pre detaily.");
+                await showMessageModal('Chyba', "Chyba pri mazaní priradenia ubytovania. Pozrite konzolu pre detaily.");
             }
         }
     }
@@ -1323,38 +1407,44 @@ document.addEventListener('DOMContentLoaded', async () => {
     // --- Logika pre tlačidlo '+' a dropdown ---
     addButton.addEventListener('click', (event) => {
         event.stopPropagation();
-        addOptions.classList.toggle('show');
+        // Prepínanie zobrazenia dropdownu
+        if (addOptionsDropdown.style.display === 'flex') {
+            addOptionsDropdown.style.display = 'none';
+        } else {
+            addOptionsDropdown.style.display = 'flex';
+        }
     });
 
     // Skryť dropdown, ak kliknem mimo neho alebo jeho možností
     document.addEventListener('click', (event) => {
-        if (!addButton.contains(event.target) && !addOptions.contains(event.target)) {
-            addOptions.classList.remove('show');
+        if (!addButton.contains(event.target) && !addOptionsDropdown.contains(event.target)) {
+            addOptionsDropdown.style.display = 'none';
         }
     });
 
-    addPlayingDayButton.addEventListener('click', () => {
+    // Event listenery pre tlačidlá vo vnútri addOptionsDropdown
+    document.getElementById('addPlayingDayButton').addEventListener('click', () => {
         playingDayForm.reset();
         playingDayIdInput.value = '';
         playingDayModalTitle.textContent = 'Pridať hrací deň';
         deletePlayingDayButtonModal.style.display = 'none';
-        openModal(playingDayModal);
-        addOptions.classList.remove('show');
+        showModal(playingDayModal); // Použi showModal
+        addOptionsDropdown.style.display = 'none'; // Skry dropdown
     });
 
-    addPlaceButton.addEventListener('click', () => { 
-        placeForm.reset(); 
-        placeIdInput.value = ''; 
-        placeTypeSelect.value = ''; 
-        placeNameInput.value = ''; 
-        placeAddressInput.value = ''; 
-        placeGoogleMapsUrlInput.value = ''; 
+    document.getElementById('addPlaceButton').addEventListener('click', () => {
+        placeForm.reset();
+        placeIdInput.value = '';
+        placeTypeSelect.value = '';
+        placeNameInput.value = '';
+        placeAddressInput.value = '';
+        placeGoogleMapsUrlInput.value = '';
         deletePlaceButtonModal.style.display = 'none';
-        openModal(placeModal); 
-        addOptions.classList.remove('show');
+        showModal(placeModal); // Použi showModal
+        addOptionsDropdown.style.display = 'none'; // Skry dropdown
     });
 
-    addMatchButton.addEventListener('click', async () => {
+    document.getElementById('addMatchButton').addEventListener('click', async () => {
         matchForm.reset();
         matchIdInput.value = '';
         matchModalTitle.textContent = 'Pridať nový zápas';
@@ -1365,34 +1455,34 @@ document.addEventListener('DOMContentLoaded', async () => {
         matchGroupSelect.disabled = true;
         team1NumberInput.value = '';
         team2NumberInput.value = '';
-        matchDurationInput.value = ''; 
-        matchBufferTimeInput.value = ''; 
+        matchDurationInput.value = '';
+        matchBufferTimeInput.value = '';
         deleteMatchButtonModal.style.display = 'none';
-        openModal(matchModal);
-        addOptions.classList.remove('show');
+        showModal(matchModal); // Použi showModal
+        addOptionsDropdown.style.display = 'none'; // Skry dropdown
         if (matchCategorySelect.value) {
             await updateMatchDurationAndBuffer();
         } else {
-            await findFirstAvailableTime(); 
+            await findFirstAvailableTime();
         }
     });
 
     // Event listener pre tlačidlo Pridať autobus
-    addBusButton.addEventListener('click', async () => {
+    document.getElementById('addBusButton').addEventListener('click', async () => {
         busForm.reset();
         busIdInput.value = '';
         busModalTitle.textContent = 'Pridať autobusovú linku';
         // Tieto volania funkcií už načítavajú VŠETKY miesta
         await populatePlayingDaysSelect(busDateSelect);
         await populateAllPlaceSelects(busStartLocationSelect);
-        await populateAllPlaceSelects(busEndLocationSelect, ''); 
+        await populateAllPlaceSelects(busEndLocationSelect, '');
         deleteBusButtonModal.style.display = 'none';
-        openModal(busModal);
-        addOptions.classList.remove('show');
+        showModal(busModal); // Použi showModal
+        addOptionsDropdown.style.display = 'none'; // Skry dropdown
     });
 
     // Event listener pre tlačidlo Priradiť ubytovanie
-    assignAccommodationButton.addEventListener('click', async () => {
+    document.getElementById('assignAccommodationButton').addEventListener('click', async () => {
         assignAccommodationForm.reset();
         assignmentIdInput.value = '';
         assignAccommodationModalTitle.textContent = 'Priradiť ubytovanie';
@@ -1402,8 +1492,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         teamDetailsSelect.disabled = true; // Zakážeme druhý select na začiatku
         await populateAccommodationSelect(accommodationSelect);
         deleteAssignmentButtonModal.style.display = 'none';
-        openModal(assignAccommodationModal);
-        addOptions.classList.remove('show');
+        showModal(assignAccommodationModal); // Použi showModal
+        addOptionsDropdown.style.display = 'none'; // Skry dropdown
     });
 
     // Event listener pre zmenu dátumu v modálnom okne priradenia ubytovania
@@ -1441,38 +1531,38 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // --- Zatváranie modálnych okien ---
     closePlayingDayModalButton.addEventListener('click', () => {
-        closeModal(playingDayModal);
+        hideAllModals(); // Použi hideAllModals
         displayMatchesAsSchedule();
     });
 
-    closePlaceModalButton.addEventListener('click', () => { 
-        closeModal(placeModal); 
+    closePlaceModalButton.addEventListener('click', () => {
+        hideAllModals(); // Použi hideAllModals
         displayMatchesAsSchedule();
     });
 
     closeMatchModalButton.addEventListener('click', () => {
-        closeModal(matchModal);
+        hideAllModals(); // Použi hideAllModals
         displayMatchesAsSchedule();
     });
 
     // Zatváranie modálneho okna pre autobus
     closeBusModalButton.addEventListener('click', () => {
-        closeModal(busModal);
+        hideAllModals(); // Použi hideAllModals
         displayMatchesAsSchedule();
     });
 
     // Zatváranie modálneho okna pre priradenie ubytovania
     closeAssignAccommodationModalButton.addEventListener('click', () => {
-        closeModal(assignAccommodationModal);
+        hideAllModals(); // Použi hideAllModals
         displayMatchesAsSchedule();
     });
 
-    matchCategorySelect.addEventListener('change', async () => { 
+    matchCategorySelect.addEventListener('change', async () => {
         const selectedCategoryId = matchCategorySelect.value;
         if (selectedCategoryId) {
-            await populateGroupSelect(selectedCategoryId, matchGroupSelect); 
+            await populateGroupSelect(selectedCategoryId, matchGroupSelect);
             matchGroupSelect.disabled = false;
-            await updateMatchDurationAndBuffer(); 
+            await updateMatchDurationAndBuffer();
         } else {
             matchGroupSelect.innerHTML = '<option value="">-- Vyberte skupinu --</option>';
             matchGroupSelect.disabled = true;
@@ -1501,14 +1591,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             const categoryName = categoryDoc.exists() ? (categoryDoc.data().name || categoryId) : categoryId;
 
             const groupDoc = await getDoc(doc(groupsCollectionRef, groupId));
-            let groupData = null; 
+            let groupData = null;
             if (groupDoc.exists()) {
-                groupData = groupDoc.data(); 
+                groupData = groupDoc.data();
             }
             const groupName = groupData ? (groupData.name || groupId) : groupId;
 
             let clubName = `Tím ${teamNumber}`;
-            let clubId = null; 
+            let clubId = null;
 
             const clubsQuery = query(
                 clubsCollectionRef,
@@ -1566,18 +1656,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         const matchLocationName = matchLocationSelect.value;
         const matchStartTime = matchStartTimeInput.value;
         const matchDuration = parseInt(matchDurationInput.value);
-        const matchBufferTime = parseInt(matchBufferTimeInput.value); 
+        const matchBufferTime = parseInt(matchBufferTimeInput.value);
 
 
         const currentMatchId = matchIdInput.value;
 
         if (!matchCategory || !matchGroup || isNaN(team1Number) || isNaN(team2Number) || !matchDate || !matchLocationName || !matchStartTime || isNaN(matchDuration) || isNaN(matchBufferTime)) {
-            alert('Prosím, vyplňte všetky povinné polia (Kategória, Skupina, Poradové číslo tímu 1 a 2, Dátum, Miesto, Čas začiatku, Trvanie, Prestávka po zápase).');
+            await showMessageModal('Chyba', 'Prosím, vyplňte všetky povinné polia (Kategória, Skupina, Poradové číslo tímu 1 a 2, Dátum, Miesto, Čas začiatku, Trvanie, Prestávka po zápase).');
             return;
         }
 
         if (team1Number === team2Number) {
-            alert('Tímy nemôžu hrať sami proti sebe. Prosím, zadajte rôzne poradové čísla tímov.');
+            await showMessageModal('Chyba', 'Tímy nemôžu hrať sami proti sebe. Prosím, zadajte rôzne poradové čísla tímov.');
             return;
         }
 
@@ -1589,18 +1679,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             team2Result = await getTeamName(matchCategory, matchGroup, team2Number);
         } catch (error) {
             console.error("Chyba pri získavaní názvov tímov:", error);
-            alert("Vyskytla sa chyba pri získavaní názvov tímov. Skúste to znova.");
+            await showMessageModal('Chyba', "Vyskytla sa chyba pri získavaní názvov tímov. Skúste to znova.");
             return;
         }
 
         if (!team1Result || !team1Result.fullDisplayName || !team2Result || !team2Result.fullDisplayName) {
-            alert('Jeden alebo oba tímy sa nenašli. Skontrolujte poradové čísla v danej kategórii a skupine.');
+            await showMessageModal('Chyba', 'Jeden alebo oba tímy sa nenašli. Skontrolujte poradové čísla v danej kategórii a skupine.');
             return;
         }
 
         const [newStartHour, newStartMinute] = matchStartTime.split(':').map(Number);
         const newMatchStartInMinutes = newStartHour * 60 + newStartMinute;
-        const newMatchEndInMinutesWithBuffer = newMatchStartInMinutes + matchDuration + matchBufferTime; 
+        const newMatchEndInMinutesWithBuffer = newMatchStartInMinutes + matchDuration + matchBufferTime;
 
         try {
             const existingMatchesQuery = query(
@@ -1628,25 +1718,25 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (newMatchStartInMinutes < existingMatchEndInMinutesWithBuffer && newMatchEndInMinutesWithBuffer > existingMatchStartInMinutes) {
                     overlapFound = true;
                     overlappingMatchDetails = existingMatch;
-                    return; 
+                    return;
                 }
             });
 
             if (overlapFound) {
                 const [existingStartHour, existingStartMinute] = overlappingMatchDetails.startTime.split(':').map(Number);
-                const existingMatchEndTimeObj = new Date(); 
+                const existingMatchEndTimeObj = new Date();
                 existingMatchEndTimeObj.setHours(existingStartHour, existingStartMinute + (overlappingMatchDetails.duration || 0), 0, 0);
                 const formattedExistingEndTime = existingMatchEndTimeObj.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit'});
 
-                alert(`Zápas sa prekrýva s existujúcim zápasom v mieste "${matchLocationName}" dňa ${matchDate}:\n\n` + 
+                await showMessageModal('Prekrývanie zápasov', `Zápas sa prekrýva s existujúcim zápasom v mieste "${matchLocationName}" dňa ${matchDate}:\n\n` +
                       `Existujúci zápas: ${overlappingMatchDetails.startTime} - ${formattedExistingEndTime}\n` +
                       `Tímy: ${overlappingMatchDetails.team1DisplayName} vs ${overlappingMatchDetails.team2DisplayName}\n\n` +
                       `Prosím, upravte čas začiatku alebo trvanie nového zápasu, alebo prestávku po zápase.`);
-                return; 
+                return;
             }
         } catch (error) {
             console.error("Chyba pri kontrole prekrývania zápasov: ", error);
-            alert("Vyskytla sa chyba pri kontrole prekrývania zápasov. Skúste to znova.");
+            await showMessageModal('Chyba', "Vyskytla sa chyba pri kontrole prekrývania zápasov. Skúste to znova.");
             return;
         }
 
@@ -1660,7 +1750,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             date: matchDate,
             startTime: matchStartTime,
             duration: matchDuration,
-            bufferTime: matchBufferTime, 
+            bufferTime: matchBufferTime,
             location: matchLocationName,
             locationType: matchLocationType,
             categoryId: matchCategory,
@@ -1690,16 +1780,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             if (currentMatchId) {
                 await setDoc(doc(matchesCollectionRef, currentMatchId), matchData, { merge: true });
-                alert('Zápas úspešne aktualizovaný!');
+                await showMessageModal('Úspech', 'Zápas úspešne aktualizovaný!');
             } else {
                 await addDoc(matchesCollectionRef, matchData);
-                alert('Nová zápas úspešne pridaný!');
+                await showMessageModal('Úspech', 'Nová zápas úspešne pridaný!');
             }
-            closeModal(matchModal);
+            hideAllModals();
             await displayMatchesAsSchedule();
         } catch (error) {
             console.error("Chyba pri ukladaní zápasu: ", error);
-            alert("Chyba pri ukladaní zápasu. Pozrite konzolu pre detaily.");
+            await showMessageModal('Chyba', "Chyba pri ukladaní zápasu. Pozrite konzolu pre detaily.");
         }
     });
 
@@ -1718,12 +1808,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         const currentBusId = busIdInput.value;
 
         if (!busName || !busDate || !busStartLocationCombined || !busStartTime || !busEndLocationCombined || !busEndTime) {
-            alert('Prosím, vyplňte všetky povinné polia (Názov autobusu, Dátum, Miesto začiatku, Čas odchodu, Miesto cieľa, Čas príchodu).');
+            await showMessageModal('Chyba', 'Prosím, vyplňte všetky povinné polia (Názov autobusu, Dátum, Miesto začiatku, Čas odchodu, Miesto cieľa, Čas príchodu).');
             return;
         }
 
         if (busStartLocationCombined === busEndLocationCombined) {
-            alert('Miesto začiatku a miesto cieľa nemôžu byť rovnaké. Prosím, zvoľte rôzne miesta.');
+            await showMessageModal('Chyba', 'Miesto začiatku a miesto cieľa nemôžu byť rovnaké. Prosím, zvoľte rôzne miesta.');
             return;
         }
 
@@ -1733,12 +1823,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         let endTimeInMinutes = endH * 60 + endM;
 
         if (endTimeInMinutes < startTimeInMinutes) {
-            endTimeInMinutes += 24 * 60; 
+            endTimeInMinutes += 24 * 60;
         }
 
         const durationInMinutes = endTimeInMinutes - startTimeInMinutes;
         if (durationInMinutes <= 0) {
-            alert('Čas príchodu musí byť po čase odchodu.');
+            await showMessageModal('Chyba', 'Čas príchodu musí byť po čase odchodu.');
             return;
         }
 
@@ -1747,7 +1837,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const existingBusesQuery = query(
                 busesCollectionRef,
                 where("date", "==", busDate),
-                where("busName", "==", busName) 
+                where("busName", "==", busName)
             );
             const existingBusesSnapshot = await getDocs(existingBusesQuery);
 
@@ -1773,19 +1863,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (startTimeInMinutes < existingBusEndInMinutes && endTimeInMinutes > existingBusStartInMinutes) {
                     overlapFound = true;
                     overlappingBusDetails = existingBus;
-                    return; 
+                    return;
                 }
             });
 
             if (overlapFound) {
-                alert(`Autobus "${busName}" sa prekrýva s existujúcou linkou dňa ${busDate}:\n\n` +
+                await showMessageModal('Prekrývanie autobusových liniek', `Autobus "${busName}" sa prekrýva s existujúcou linkou dňa ${busDate}:\n\n` +
                       `Existujúca linka: ${overlappingBusDetails.startTime} - ${overlappingBusDetails.endTime} (${overlappingBusDetails.startLocation.split(':::')[0]} -> ${overlappingBusDetails.endLocation.split(':::')[0]})\n\n` +
                       `Prosím, upravte čas odchodu alebo príchodu novej linky.`);
-                return; 
+                return;
             }
         } catch (error) {
             console.error("Chyba pri kontrole prekrývania autobusových liniek: ", error);
-            alert("Vyskytla sa chyba pri kontrole prekrývania autobusových liniek. Skúste to znova.");
+            await showMessageModal('Chyba', "Vyskytla sa chyba pri kontrole prekrývania autobusových liniek. Skúste to znova.");
             return;
         }
 
@@ -1804,42 +1894,42 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         try {
             if (currentBusId) {
-                console.log('Aktualizujem autobusovú linku s ID:', currentBusId, 'Dáta:', busData); 
+                console.log('Aktualizujem autobusovú linku s ID:', currentBusId, 'Dáta:', busData);
                 await setDoc(doc(busesCollectionRef, currentBusId), busData, { merge: true });
-                alert('Autobusová linka úspešne aktualizovaná!');
+                await showMessageModal('Úspech', 'Autobusová linka úspešne aktualizovaná!');
             } else {
-                console.log('Pridávam novú autobusovú linku s dátami:', busData); 
+                console.log('Pridávam novú autobusovú linku s dátami:', busData);
                 await addDoc(busesCollectionRef, busData);
-                alert('Nová autobusová linka úspešne pridaná!');
+                await showMessageModal('Úspech', 'Nová autobusová linka úspešne pridaná!');
             }
-            closeModal(busModal);
+            hideAllModals();
             await displayMatchesAsSchedule();
         } catch (error) {
             console.error("Chyba pri ukladaní autobusovej linky: ", error);
-            alert("Chyba pri ukladaní autobusovej linky. Pozrite konzolu pre detaily.");
+            await showMessageModal('Chyba', "Chyba pri ukladaní autobusovej linky. Pozrite konzolu pre detaily.");
         }
     });
 
 
     // Listener pre odoslanie formulára miesta
     placeForm.addEventListener('submit', async (e) => {
-        e.preventDefault(); 
+        e.preventDefault();
 
-        const id = placeIdInput.value; 
+        const id = placeIdInput.value;
         const type = placeTypeSelect.value.trim();
         const name = placeNameInput.value.trim();
         const address = placeAddressInput.value.trim();
         const googleMapsUrl = placeGoogleMapsUrlInput.value.trim();
 
         if (!type || !name || !address || !googleMapsUrl) {
-            alert('Prosím, vyplňte všetky polia (Typ miesta, Názov miesta, Adresa, Odkaz na Google Maps).');
+            await showMessageModal('Chyba', 'Prosím, vyplňte všetky polia (Typ miesta, Názov miesta, Adresa, Odkaz na Google Maps).');
             return;
         }
 
         try {
-            new URL(googleMapsUrl); 
+            new URL(googleMapsUrl);
         } catch (_) {
-            alert('Odkaz na Google Maps musí byť platná URL adresa.');
+            await showMessageModal('Chyba', 'Odkaz na Google Maps musí byť platná URL adresa.');
             return;
         }
 
@@ -1849,7 +1939,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const querySnapshot = await getDocs(q);
 
             if (!querySnapshot.empty && querySnapshot.docs[0].id !== id) {
-                alert(`Miesto s názvom "${name}" a typom "${type}" už existuje!`);
+                await showMessageModal('Chyba', `Miesto s názvom "${name}" a typom "${type}" už existuje!`);
                 return;
             }
 
@@ -1861,33 +1951,33 @@ document.addEventListener('DOMContentLoaded', async () => {
                 createdAt: new Date()
             };
 
-            console.log('Dáta miesta na uloženie:', placeData); 
+            console.log('Dáta miesta na uloženie:', placeData);
 
             if (id) {
-                console.log('Aktualizujem miesto s ID:', id, 'Dáta:', placeData); 
+                console.log('Aktualizujem miesto s ID:', id, 'Dáta:', placeData);
                 await setDoc(doc(placesCollectionRef, id), placeData, { merge: true });
-                alert('Miesto úspešne aktualizované!');
+                await showMessageModal('Úspech', 'Miesto úspešne aktualizované!');
             } else {
                 await addDoc(placesCollectionRef, placeData);
-                alert('Miesto úspešne pridané!');
+                await showMessageModal('Úspech', 'Miesto úspešne pridané!');
             }
-            
-            closeModal(placeModal);
-            await displayMatchesAsSchedule(); 
+
+            hideAllModals();
+            await displayMatchesAsSchedule();
         } catch (error) {
-            console.error("Chyba pri ukladaní miesta: ", error); 
-            alert("Chyba pri ukladaní miesta. Pozrite konzolu pre detaily.");
+            console.error("Chyba pri ukladaní miesta: ", error);
+            await showMessageModal('Chyba', "Chyba pri ukladaní miesta. Pozrite konzolu pre detaily.");
         }
     });
 
 
     playingDayForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const id = playingDayIdInput.value; 
+        const id = playingDayIdInput.value;
         const date = playingDayDateInput.value;
 
         if (!date) {
-            alert('Prosím, zadajte dátum hracieho dňa.');
+            await showMessageModal('Chyba', 'Prosím, zadajte dátum hracieho dňa.');
             return;
         }
 
@@ -1895,8 +1985,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             const q = query(playingDaysCollectionRef, where("date", "==", date));
             const querySnapshot = await getDocs(q);
 
-            if (!querySnapshot.empty && querySnapshot.docs[0].id !== id) { 
-                alert('Hrací deň s týmto dátumom už existuje!');
+            if (!querySnapshot.empty && querySnapshot.docs[0].id !== id) {
+                await showMessageModal('Chyba', 'Hrací deň s týmto dátumom už existuje!');
                 return;
             }
 
@@ -1904,17 +1994,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             if (id) {
                 await setDoc(doc(playingDaysCollectionRef, id), playingDayData, { merge: true });
-                alert('Hrací deň úspešne aktualizovaný!');
+                await showMessageModal('Úspech', 'Hrací deň úspešne aktualizovaný!');
             } else {
                 await addDoc(playingDaysCollectionRef, { ...playingDayData, createdAt: new Date() });
-                alert('Hrací deň úspešne pridaný!');
+                await showMessageModal('Úspech', 'Hrací deň úspešne pridaný!');
             }
-            
-            closeModal(playingDayModal);
-            await displayMatchesAsSchedule(); 
+
+            hideAllModals();
+            await displayMatchesAsSchedule();
         } catch (error) {
             console.error("Chyba pri ukladaní hracieho dňa: ", error);
-            alert("Chyba pri ukladaní hracieho dňa. Pozrite konzolu pre detaily.");
+            await showMessageModal('Chyba', "Chyba pri ukladaní hracieho dňa. Pozrite konzolu pre detaily.");
         }
     });
 
@@ -1929,14 +2019,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         const selectedAccommodationId = accommodationSelect.value;
 
         if (!assignmentDate || !selectedClubName || !selectedAccommodationId) {
-            alert('Prosím, vyplňte všetky povinné polia (Dátum priradenia, Klub, Ubytovňa).');
+            await showMessageModal('Chyba', 'Prosím, vyplňte všetky povinné polia (Dátum priradenia, Klub, Ubytovňa).');
             return;
         }
 
         let assignedEntityType;
         let assignedEntityId;
         let assignedEntityName;
-        
+
         // Získame názov klubu (už ho máme zo selectedClubName)
         const clubNameForAssignment = selectedClubName;
 
@@ -1953,7 +2043,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const team = teamDoc.data();
                 assignedEntityName = `${team.name} (Kat: ${team.categoryName || 'N/A'}, Skup: ${team.groupName || team.groupId || 'N/A'}, Tím: ${team.orderInGroup || 'N/A'})`;
             } else {
-                alert('Vybraný tím sa nenašiel v databáze.');
+                await showMessageModal('Chyba', 'Vybraný tím sa nenašiel v databáze.');
                 return;
             }
         }
@@ -1963,7 +2053,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (accommodationDoc.exists()) {
             accommodationName = accommodationDoc.data().name;
         } else {
-            alert('Vybraná ubytovňa sa nenašla v databáze.');
+            await showMessageModal('Chyba', 'Vybraná ubytovňa sa nenašla v databáze.');
             return;
         }
 
@@ -1984,17 +2074,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (id) {
                 console.log('Aktualizujem priradenie ubytovania s ID:', id, 'Dáta:', assignmentData);
                 await setDoc(doc(teamAccommodationsCollectionRef, id), assignmentData, { merge: true });
-                alert('Priradenie ubytovania úspešne aktualizované!');
+                await showMessageModal('Úspech', 'Priradenie ubytovania úspešne aktualizované!');
             } else {
                 await addDoc(teamAccommodationsCollectionRef, assignmentData);
-                alert('Nové priradenie ubytovania úspešne pridané!');
+                await showMessageModal('Úspech', 'Nové priradenie ubytovania úspešne pridané!');
             }
 
-            closeModal(assignAccommodationModal);
+            hideAllModals();
             await displayMatchesAsSchedule();
         } catch (error) {
             console.error("Chyba pri ukladaní priradenia ubytovania: ", error);
-            alert("Chyba pri ukladaní priradenia ubytovania. Pozrite konzolu pre detaily.");
+            await showMessageModal('Chyba', "Chyba pri ukladaní priradenia ubytovania. Pozrite konzolu pre detaily.");
         }
     });
 });
