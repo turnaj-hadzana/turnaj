@@ -52,14 +52,6 @@
                     <input type="time" id="matchStartTime" required>
                 </div>
                 <div class="form-group">
-                    <label for="matchDuration">Trvanie zápasu (minúty):</label>
-                    <input type="number" id="matchDuration" min="1" value="60" required>
-                </div>
-                <div class="form-group">
-                    <label for="matchBufferTime">Prestávka po zápase (minúty):</label>
-                    <input type="number" id="matchBufferTime" min="0" value="5" required>
-                </div>
-                <div class="form-group">
                     <label for="matchCategory">Kategória:</label>
                     <select id="matchCategory" required></select>
                 </div>
@@ -74,6 +66,14 @@
                 <div class="form-group">
                     <label for="team2NumberInput">Poradové číslo tímu 2:</label>
                     <input type="number" id="team2NumberInput" min="1" required>
+                </div>
+                <div class="form-group">
+                    <label for="matchDuration">Trvanie zápasu (minúty):</label>
+                    <input type="number" id="matchDuration" min="1" value="60" required>
+                </div>
+                <div class="form-group">
+                    <label for="matchBufferTime">Prestávka po zápase (minúty):</label>
+                    <input type="number" id="matchBufferTime" min="0" value="5" required>
                 </div>
                 <button type="submit">Uložiť zápas</button>
                 <button type="button" id="deleteMatchButtonModal" class="action-button delete-button" style="display: none; margin-left: 10px;">Vymazať</button>
