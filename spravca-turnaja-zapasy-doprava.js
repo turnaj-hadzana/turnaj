@@ -1080,7 +1080,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         busModalTitle.textContent = 'Pridať autobusovú linku';
         await populatePlayingDaysSelect(busDateSelect);
         await populatePlaceSelects(busStartLocationSelect); // ZMENENÉ: populateSportHallsSelect na populatePlaceSelects
-        await populatePlaceSelects(busEndLocationSelect, busData.endLocation); // ZMENENÉ: populateSportHallsSelect na populatePlaceSelects
+        await populatePlaceSelects(busEndLocationSelect, ''); // OPRAVENÉ: busData.endLocation na ''
         deleteBusButtonModal.style.display = 'none'; // Skryť tlačidlo Vymazať pri pridávaní
         openModal(busModal);
         addOptions.classList.remove('show'); // Skryť dropdown po výbere
@@ -1489,9 +1489,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         try {
             if (currentBusId) {
+                console.log('Aktualizujem autobusovú linku s ID:', currentBusId, 'Dáta:', busData); // LOG
                 await setDoc(doc(busesCollectionRef, currentBusId), busData, { merge: true });
                 alert('Autobusová linka úspešne aktualizovaná!');
             } else {
+                console.log('Pridávam novú autobusovú linku s dátami:', busData); // LOG
                 await addDoc(busesCollectionRef, busData);
                 alert('Nová autobusová linka úspešne pridaná!');
             }
@@ -1500,6 +1502,67 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (error) {
             console.error("Chyba pri ukladaní autobusovej linky: ", error);
             alert("Chyba pri ukladaní autobusovej linky. Pozrite konzolu pre detaily.");
+        }
+    });
+
+
+    // OPRAVENÉ: placeForm submit listener
+    placeForm.addEventListener('submit', async (e) => {
+        e.preventDefault(); // Zabezpečí, že sa stránka nenačíta
+
+        const id = placeIdInput.value; // Získame ID miesta (ak existuje, ide o úpravu)
+        const type = placeTypeSelect.value.trim();
+        const name = placeNameInput.value.trim();
+        const address = placeAddressInput.value.trim();
+        const googleMapsUrl = placeGoogleMapsUrlInput.value.trim();
+
+        if (!type || !name || !address || !googleMapsUrl) {
+            alert('Prosím, vyplňte všetky polia (Typ miesta, Názov miesta, Adresa, Odkaz na Google Maps).');
+            return;
+        }
+
+        try {
+            new URL(googleMapsUrl); 
+        } catch (_) {
+            alert('Odkaz na Google Maps musí byť platná URL adresa.');
+            return;
+        }
+
+        try {
+            // Kontrola duplicity názvu miesta (ak nie je to isté miesto, ktoré upravujeme)
+            const q = query(placesCollectionRef, where("name", "==", name));
+            const querySnapshot = await getDocs(q);
+
+            if (!querySnapshot.empty && querySnapshot.docs[0].id !== id) {
+                alert('Miesto s týmto názvom už existuje!');
+                return;
+            }
+
+            const placeData = {
+                type: type,
+                name: name,
+                address: address,
+                googleMapsUrl: googleMapsUrl,
+                createdAt: new Date()
+            };
+
+            console.log('Dáta miesta na uloženie:', placeData); // LOG
+
+            if (id) { // Ak existuje ID, ide o úpravu
+                console.log('Aktualizujem miesto s ID:', id, 'Dáta:', placeData); // LOG
+                await setDoc(doc(placesCollectionRef, id), placeData, { merge: true });
+                alert('Miesto úspešne aktualizované!');
+            } else { // Inak ide o pridanie nového miesta
+                console.log('Pridávam nové miesto s dátami:', placeData); // LOG
+                await addDoc(placesCollectionRef, placeData);
+                alert('Miesto úspešne pridané!');
+            }
+            
+            closeModal(placeModal);
+            await displayMatchesAsSchedule(); 
+        } catch (error) {
+            console.error("Chyba pri ukladaní miesta: ", error); // LOG
+            alert("Chyba pri ukladaní miesta. Pozrite konzolu pre detaily.");
         }
     });
 
