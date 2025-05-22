@@ -721,10 +721,10 @@ td:last-child {
 
 /* NOVÉ: Štýly pre samotný polygón autobusu */
 .schedule-bus-polygon {
-    fill: #5cb85c; /* Zelená farba pre autobus, ako na obrázku */
-    stroke: #449d44; /* Tmavšia zelená pre okraj */
+    fill: #d896ff; 
+    stroke: #be29ec; 
     stroke-width: 1;
-    opacity: 0.5; /* Mierna priehľadnosť zmenená na 0.5 */
+    opacity: 0.5;
 }
 
 /* NOVÉ: Štýly pre text v SVG autobuse */
