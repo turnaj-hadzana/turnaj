@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const matchDateSelect = document.getElementById('matchDateSelect');
     const matchLocationSelect = document.getElementById('matchLocationSelect');
     const matchStartTimeInput = document.getElementById('matchStartTime');
-    const matchDurationInput = document.getElementById('matchDuration');
+    const matchDurationInput = document = document.getElementById('matchDuration');
     const matchBufferTimeInput = document.getElementById('matchBufferTime'); 
     const matchCategorySelect = document.getElementById('matchCategory');
     const matchGroupSelect = document.getElementById('matchGroup');
@@ -46,7 +46,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Modálne okno pre miesto (pôvodne športová hala)
     const placeModal = document.getElementById('placeModal');
     const closePlaceModalButton = document.getElementById('closePlaceModal');
-    const placeForm = document.getElementById('placeForm');
+    const placeForm = document = document.getElementById('placeForm');
     const placeIdInput = document.getElementById('placeId');
     const placeTypeSelect = document.getElementById('placeTypeSelect');
     const placeNameInput = document.getElementById('placeName');
@@ -74,9 +74,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     const closeAssignAccommodationModalButton = document.getElementById('closeAssignAccommodationModal');
     const assignAccommodationForm = document.getElementById('assignAccommodationForm');
     const assignmentIdInput = document.getElementById('assignmentId');
-    const assignmentDateSelect = document.getElementById('assignmentDateSelect');
-    const clubSelect = document.getElementById('clubSelect'); // Zmenené z teamSelect
-    const specificTeamSelect = document.getElementById('specificTeamSelect'); // Nový select box
+    // Zmenené na assignmentDateFromSelect a pridané assignmentDateToSelect
+    const assignmentDateFromSelect = document.getElementById('assignmentDateFromSelect'); 
+    const assignmentDateToSelect = document.getElementById('assignmentDateToSelect'); 
+    const clubSelect = document.getElementById('clubSelect'); 
+    const specificTeamSelect = document.getElementById('specificTeamSelect');
     const accommodationSelect = document.getElementById('accommodationSelect');
     const assignAccommodationModalTitle = document.getElementById('assignAccommodationModalTitle');
     const deleteAssignmentButtonModal = document.getElementById('deleteAssignmentButtonModal');
@@ -516,16 +518,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             const busesSnapshot = await getDocs(busesQuery);
             const allBuses = busesSnapshot.docs.map(doc => ({ id: doc.id, type: 'bus', ...doc.data() }));
 
-            const accommodationsQuery = query(teamAccommodationsCollectionRef, orderBy("date", "asc"), orderBy("accommodationName", "asc"));
-            const accommodationsSnapshot = await getDocs(accommodationsQuery);
+            // Upravená logika pre načítanie ubytovaní: teraz nemajú pole 'date', ale 'dateFrom'
+            const accommodationsSnapshot = await getDocs(query(teamAccommodationsCollectionRef, orderBy("dateFrom", "asc"), orderBy("accommodationName", "asc")));
             const allAccommodations = accommodationsSnapshot.docs.map(doc => ({ id: doc.id, type: 'accommodation', ...doc.data() }));
 
-            const allEvents = [...allMatches, ...allBuses, ...allAccommodations];
-
+            // Získame všetky hracie dni, aby sme prešli všetky dátumy, pre ktoré máme vytvárať stĺpce
             const playingDaysSnapshot = await getDocs(query(playingDaysCollectionRef, orderBy("date", "asc")));
-            const placesSnapshot = await getDocs(query(placesCollectionRef, orderBy("name", "asc"))); 
-
             const existingPlayingDays = playingDaysSnapshot.docs.map(doc => doc.data().date);
+
+            const placesSnapshot = await getDocs(query(placesCollectionRef, orderBy("name", "asc"))); 
             const existingPlacesData = placesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })); 
 
             const uniquePlacesForRows = [];
@@ -550,13 +551,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             const uniqueLocations = new Set(); 
             uniquePlacesForRows.forEach(place => uniqueLocations.add(`${place.name}:::${place.type}`));
 
-            const uniqueDates = new Set([...existingPlayingDays]);
+            // Zoznam všetkých unikátnych dátumov, ktoré sa majú zobraziť v rozvrhu (z hracích dní)
+            const sortedDates = Array.from(new Set(existingPlayingDays)).sort(); 
+
+            console.log("Sorted Dates for schedule:", sortedDates); 
 
             // Filter events for time range calculation: only matches and buses
-            const eventsForTimeRangeCalculation = allEvents.filter(event => event.type === 'match' || event.type === 'bus');
+            const eventsForTimeRangeCalculation = [...allMatches, ...allBuses]; // Ubytovanie tu vynechávame
 
             const dailyTimeRanges = new Map();
-            eventsForTimeRangeCalculation.forEach(event => { // Use filtered events here
+            eventsForTimeRangeCalculation.forEach(event => { 
                 const date = event.date;
                 let startTimeInMinutes, endTimeInMinutes;
 
@@ -574,7 +578,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                         endTimeInMinutes += 24 * 60; 
                     }
                 }
-                // Accommodation events are explicitly excluded from this calculation
 
                 let actualEndHour = Math.ceil(endTimeInMinutes / 60);
 
@@ -586,16 +589,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                     range.maxHour = Math.max(range.maxHour, actualEndHour);
                 }
             });
-
-            const sortedLocations = Array.from(uniqueLocations).sort();
-            const sortedDates = Array.from(uniqueDates).sort(); 
-
-            console.log("Sorted Dates before iteration:", sortedDates); 
-
-            // If a date has no matches or buses, set a default time range (e.g., 8:00-18:00)
+            
+            // Ak dátum nemá žiadne zápasy alebo autobusy, nastavíme predvolený časový rozsah
             sortedDates.forEach(date => { 
                 if (!dailyTimeRanges.has(date)) {
-                    dailyTimeRanges.set(date, { minHour: 8, maxHour: 18 }); // Default range for dates with no matches/buses
+                    dailyTimeRanges.set(date, { minHour: 8, maxHour: 18 }); // Predvolený rozsah
                 }
             });
 
@@ -617,7 +615,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const displayDateObj = new Date(date);
                 const displayDay = String(displayDateObj.getDate()).padStart(2, '0');
                 const displayMonth = String(displayDateObj.getMonth() + 1).padStart(2, '0');
-                const displayYear = String(displayDateObj.getFullYear());
+                const displayYear = displayDateObj.getFullYear();
                 const formattedDisplayDate = `${displayDay}. ${displayMonth}. ${displayYear}`;
 
                 const colspan = hoursForDate.length > 0 ? hoursForDate.length : 1;
@@ -657,7 +655,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         break;
                     case 'Ubytovanie':
                         typeClass = 'place-type-accommodation';
-                        specificBackgroundColor = 'background-color: #4CAF50;'; 
+                        specificBackgroundColor = 'background-color: #4CAF50;'; // Zmenená farba pre ubytovanie
                         break;
                     default:
                         typeClass = ''; 
@@ -680,12 +678,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                     scheduleHtml += `<td colspan="${colspan}" style="position: relative; background-color: #f7f7f7;">`;
 
-                    // Separate matches and accommodations for distinct rendering logic within the cell
-                    const matchesInCell = allEvents.filter(event => {
-                        return event.type === 'match' && event.date === date && placeType === 'Športová hala' && event.location === locationName;
+                    // Filter matches for the current cell
+                    const matchesInCell = allMatches.filter(event => {
+                        return event.date === date && placeType === 'Športová hala' && event.location === locationName;
                     });
-                    const accommodationsInCell = allEvents.filter(event => {
-                        return event.type === 'accommodation' && event.date === date && placeType === 'Ubytovanie' && event.accommodationName === locationName;
+
+                    // Filter accommodations for the current cell, checking date range
+                    const accommodationsInCell = allAccommodations.filter(assignment => {
+                        const dateFrom = new Date(assignment.dateFrom);
+                        const dateTo = new Date(assignment.dateTo);
+                        const currentDate = new Date(date);
+                        // Kontrola, či aktuálny dátum spadá do rozsahu ubytovania
+                        return currentDate >= dateFrom && currentDate <= dateTo && placeType === 'Ubytovanie' && assignment.accommodationName === locationName;
                     });
 
                     // Render matches (current logic)
@@ -752,14 +756,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const totalAccommodationsInCell = accommodationsInCell.length;
                     if (totalAccommodationsInCell > 0) {
                         const cellWidth = (range.maxHour - range.minHour) * CELL_WIDTH_PX; // Total width of the td cell
-                        const blockWidth = cellWidth / totalAccommodationsInCell;
+                        // Prispôsobíme šírku bloku tak, aby sa zmestili všetky záznamy
+                        const blockWidth = totalAccommodationsInCell > 0 ? (cellWidth / totalAccommodationsInCell) : cellWidth; 
 
-                        accommodationsInCell.forEach((event, index) => {
+                        accommodationsInCell.forEach((assignment, index) => {
                             const blockLeft = index * blockWidth;
-                            const teamNames = event.teams.map(team => team.teamName).join(', ');
+                            // Zobrazenie tímov, ktoré sú ubytované
+                            const teamNames = assignment.teams.map(team => team.teamName.split('(')[0].trim()).join(', '); // Zobraziť len názov tímu
+                            const accommodationId = assignment.id; // Použijeme ID záznamu o ubytovaní
+
                             scheduleHtml += `
                                 <div class="schedule-cell-accommodation"
-                                    data-id="${event.id}" data-type="${event.type}"
+                                    data-id="${accommodationId}" data-type="${assignment.type}"
                                     style="position: absolute; left: ${blockLeft}px; width: ${blockWidth}px; top: 0; height: 100%;">
                                     <div class="schedule-cell-content">
                                         <p class="schedule-cell-title">Ubytovanie</p>
@@ -833,7 +841,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     }
                 });
             }
-
+            
             allBuses.forEach(bus => {
                 const startLocationKey = bus.startLocation; 
                 const endLocationKey = bus.endLocation;     
@@ -882,6 +890,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                     points = `${slantOffset},0 ${svgWidth},0 ${busWidthPx},${svgHeight} 0,${svgHeight}`.trim();
                     svgLeftOffset = slantOffset;
                 }
+
+                // Nájdeme správnu pozíciu X pre autobus na základe času a rozsahu pre daný dátum
+                const timeOffsets = timeColumnLeftOffsets.get(date);
+                let busLeftPx = 0;
+                if (timeOffsets && timeOffsets.length > 0) {
+                    const firstHourInDay = dailyTimeRanges.get(date) ? dailyTimeRanges.get(date).minHour : 0;
+                    const relativeStartMin = startTimeInMinutes - (firstHourInDay * 60);
+                    busLeftPx = timeOffsets[0].left + (relativeStartMin * PIXELS_PER_MINUTE);
+                } else {
+                    console.warn(`Nemôžem vypočítať pozíciu X pre autobus ${bus.busName} na dátum ${date}.`);
+                    return; // Skip rendering this bus if X position cannot be determined
+                }
+
 
                 const svgElement = document.createElementNS("http://www.w3.org/2000/svg", "svg");
                 svgElement.setAttribute("class", "bus-svg");
@@ -1029,16 +1050,20 @@ document.addEventListener('DOMContentLoaded', async () => {
                     batch.delete(doc(busesCollectionRef, busDoc.id));
                 });
 
-                // Vymazanie súvisiacich priradení ubytovania
-                const accommodationsQuery = query(teamAccommodationsCollectionRef, where("date", "==", dateToDelete));
+                // Úprava pre mazanie priradení ubytovania:
+                // Ak je záznam o ubytovaní v rozsahu, vymaže sa celý záznam.
+                const accommodationsQuery = query(
+                    teamAccommodationsCollectionRef,
+                    where("dateFrom", "<=", dateToDelete), // Začína pred alebo v deň mazania
+                    where("dateTo", ">=", dateToDelete)    // Končí po alebo v deň mazania
+                );
                 const accommodationsSnapshot = await getDocs(accommodationsQuery);
                 accommodationsSnapshot.docs.forEach(accDoc => {
                     batch.delete(doc(teamAccommodationsCollectionRef, accDoc.id));
                 });
 
-
                 await batch.commit();
-                alert(`Hrací deň ${dateToDelete} a všetky súvisiace zápasy, autobusové linky a priradenia ubytovania boli úspešne vymazané!`);
+                alert(`Hrací deň ${dateToDelete} a všetky súvisiace zápasy, autobusové linky a priradenia ubytovania, ktoré sa prekrývali s týmto dňom, boli úspešne vymazané!`);
                 closeModal(playingDayModal);
                 await displayMatchesAsSchedule();
             } catch (error) {
@@ -1240,9 +1265,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                 await populatePlayingDaysSelect(busDateSelect, busData.date);
                 // Tieto volania funkcií už načítavajú VŠETKY miesta
                 await populateAllPlaceSelects(busStartLocationSelect);
+                busStartLocationSelect.value = busData.startLocation || ''; // Predvyplniť hodnotu
                 busStartTimeInput.value = busData.startTime || '';
                 await populateAllPlaceSelects(busEndLocationSelect, ''); 
-                deleteBusButtonModal.style.display = 'none';
+                busEndLocationSelect.value = busData.endLocation || ''; // Predvyplniť hodnotu
+                busEndTimeInput.value = busData.endTime || '';
+                busNotesInput.value = busData.notes || '';
+
+                deleteBusButtonModal.style.display = 'inline-block';
+                deleteBusButtonModal.onclick = () => deleteBus(busId);
                 openModal(busModal);
             } else {
                 alert("Autobusová linka sa nenašla.");
@@ -1278,7 +1309,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 assignmentIdInput.value = assignmentId;
                 assignAccommodationModalTitle.textContent = 'Upraviť priradenie ubytovania';
 
-                await populatePlayingDaysSelect(assignmentDateSelect, assignmentData.date);
+                // Naplníme oba select boxy dátumov
+                await populatePlayingDaysSelect(assignmentDateFromSelect, assignmentData.dateFrom);
+                await populatePlayingDaysSelect(assignmentDateToSelect, assignmentData.dateTo);
                 
                 // Predpokladáme, že assignmentData.teams je pole, aj keď pre zjednodušenie ukladáme len jeden tím
                 const assignedTeam = assignmentData.teams[0];
@@ -1415,9 +1448,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         assignAccommodationForm.reset();
         assignmentIdInput.value = '';
         assignAccommodationModalTitle.textContent = 'Priradiť ubytovanie';
-        await populatePlayingDaysSelect(assignmentDateSelect);
-        await populateClubSelect(clubSelect); // Použitie novej funkcie
-        if (specificTeamSelect) { // Pridaná kontrola
+        // Naplníme oba dátumové select boxy
+        await populatePlayingDaysSelect(assignmentDateFromSelect);
+        await populatePlayingDaysSelect(assignmentDateToSelect);
+        await populateClubSelect(clubSelect); 
+        if (specificTeamSelect) { 
             specificTeamSelect.innerHTML = '<option value="">-- Vyberte konkrétny tím (nepovinné) --</option>';
             specificTeamSelect.disabled = true;
         }
@@ -1546,7 +1581,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             return {
                 fullDisplayName: fullDisplayName,
-                clubName: clubName, // Toto je stále plný názov tímu, ako je uložený
+                clubName: clubName, 
                 clubId: clubId
             };
         } catch (error) {
@@ -1673,14 +1708,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             team1Group: matchGroup,
             team1Number: team1Number,
             team1DisplayName: team1Result.fullDisplayName,
-            team1ClubName: team1Result.clubName, // Toto je stále plný názov tímu
+            team1ClubName: team1Result.clubName, 
             team1ClubId: team1Result.clubId,
 
             team2Category: matchCategory,
             team2Group: matchGroup,
             team2Number: team2Number,
             team2DisplayName: team2Result.fullDisplayName,
-            team2ClubName: team2Result.clubName, // Toto je stále plný názov tímu
+            team2ClubName: team2Result.clubName, 
             team2ClubId: team2Result.clubId,
 
             createdAt: new Date()
@@ -1924,13 +1959,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         e.preventDefault();
 
         const id = assignmentIdInput.value;
-        const assignmentDate = assignmentDateSelect.value;
-        const selectedClubName = clubSelect.value; // Získanie základného názvu klubu
-        const selectedSpecificTeamId = specificTeamSelect.value; // Získanie ID konkrétneho tímu (voliteľné)
+        const assignmentDateFrom = assignmentDateFromSelect.value; // Nové
+        const assignmentDateTo = assignmentDateToSelect.value;     // Nové
+        const selectedClubName = clubSelect.value; 
+        const selectedSpecificTeamId = specificTeamSelect.value; 
         const selectedAccommodationId = accommodationSelect.value;
 
-        if (!assignmentDate || !selectedClubName || !selectedAccommodationId) {
-            alert('Prosím, vyplňte všetky povinné polia (Dátum priradenia, Klub, Ubytovňa).');
+        if (!assignmentDateFrom || !assignmentDateTo || !selectedClubName || !selectedAccommodationId) {
+            alert('Prosím, vyplňte všetky povinné polia (Dátum od, Dátum do, Klub, Ubytovňa).');
+            return;
+        }
+
+        // Validácia rozsahu dátumov
+        if (new Date(assignmentDateFrom) > new Date(assignmentDateTo)) {
+            alert('Dátum "Od" nemôže byť po dátume "Do".');
             return;
         }
 
@@ -1944,7 +1986,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const team = teamDoc.data(); 
                     teamsData.push({
                         teamId: selectedSpecificTeamId,
-                        teamName: `${team.name} (${categoryName}, ${groupName})`,
+                        teamName: `${team.name} (Kat: ${team.categoryName}, Skup: ${team.groupName}, Tím: ${team.orderInGroup})`
                     });
                 } else {
                     alert('Vybraný konkrétny tím sa nenašiel v databáze.');
@@ -1963,14 +2005,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                         if (team.name === selectedClubName) {
                             teamsForBaseClub.push({
                                 teamId: doc.id,
-                                teamName: `${team.name} (${categoryName}, ${groupName})`,
+                                teamName: `${team.name} (Kat: ${team.categoryName}, Skup: ${team.groupName}, Tím: ${team.orderInGroup})`
                             });
                         }
                     } else {
                         if (team.name.match(new RegExp(`^${selectedClubName}(?:\\s[A-Z])?$`))) {
                             teamsForBaseClub.push({
                                 teamId: doc.id,
-                                teamName: `${team.name} (${categoryName}, ${groupName})`,
+                                teamName: `${team.name} (Kat: ${team.categoryName}, Skup: ${team.groupName}, Tím: ${team.orderInGroup})`
                             });
                         }
                     }
@@ -1994,8 +2036,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
 
             const assignmentData = {
-                date: assignmentDate,
-                teams: teamsData, // Teraz môže obsahovať jeden alebo viac tímov
+                dateFrom: assignmentDateFrom, // Ukladáme dátum od
+                dateTo: assignmentDateTo,     // Ukladáme dátum do
+                teams: teamsData, 
                 accommodationId: selectedAccommodationId,
                 accommodationName: accommodationName,
                 createdAt: new Date()
