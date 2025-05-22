@@ -1784,6 +1784,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         try {
             if (currentMatchId) {
+                console.log('Aktualizujem zápas s ID:', currentMatchId, 'Dáta:', matchData);
                 await setDoc(doc(matchesCollectionRef, currentMatchId), matchData, { merge: true });
                 await showMessageModal('Úspech', 'Zápas úspešne aktualizovaný!');
             } else {
@@ -2002,7 +2003,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 await showMessageModal('Úspech', 'Hrací deň úspešne aktualizovaný!');
             } else {
                 await addDoc(playingDaysCollectionRef, { ...playingDayData, createdAt: new Date() });
-                await showMessageModal('Úspech', 'Hrací deň úspešne pridaný!');
+                await showMessageModal('Úspech', 'Nová hrací deň úspešne pridaný!');
             }
 
             hideAllModals();
