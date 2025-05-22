@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const matchForm = document.getElementById('matchForm');
     const matchIdInput = document.getElementById('matchId');
     const matchDateSelect = document.getElementById('matchDateSelect');
-    const matchLocationSelect = document.getElementById('matchLocationSelect');
+    const matchLocationSelect = document = document.getElementById('matchLocationSelect');
     const matchStartTimeInput = document.getElementById('matchStartTime');
     const matchDurationInput = document.getElementById('matchDuration');
     const matchBufferTimeInput = document.getElementById('matchBufferTime'); 
@@ -229,7 +229,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     console.log('Údaje o tíme pred pridaním do select boxu:', team);
                     const option = document.createElement('option');
                     option.value = team.id;
-                    option.textContent = `${team.name} (Kat: ${team.categoryName}, Skup: ${team.groupName}, Tím: ${team.orderInGroup})`;
+                    // Upravená podmienka pre zobrazenie groupId, ak groupName chýba
+                    option.textContent = `${team.name} (Kat: ${team.categoryName || 'N/A'}, Skup: ${team.groupName || team.groupId || 'N/A'}, Tím: ${team.orderInGroup || 'N/A'})`;
                     if (currentAssignedTeamId === team.id) { // Upravená podmienka pre jeden výber
                         option.selected = true;
                     }
