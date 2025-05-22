@@ -1305,9 +1305,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 busNameInput.value = busData.busName || '';
                 await populatePlayingDaysSelect(busDateSelect, busData.date);
                 // Tieto volania funkcií už načítavajú VŠETKY miesta
-                await populateAllPlaceSelects(busStartLocationSelect, busData.startLocation);
+                await populateAllPlaceSelects(busStartLocationSelect);
                 busStartTimeInput.value = busData.startTime || '';
-                await populateAllPlaceSelects(busEndLocationSelect, busData.endLocation);
+                await populateAllPlaceSelects(busEndLocationSelect, '');
                 busEndTimeInput.value = busData.endTime || '';
                 busNotesInput.value = busData.notes || '';
 
