@@ -75,7 +75,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const assignAccommodationForm = document.getElementById('assignAccommodationForm');
     const assignmentIdInput = document.getElementById('assignmentId');
     const assignmentDateSelect = document.getElementById('assignmentDateSelect');
-    const teamMultiSelect = document.getElementById('teamMultiSelect');
+    const teamSelect = document.getElementById('teamSelect'); // Zmenené z teamMultiSelect
     const accommodationSelect = document.getElementById('accommodationSelect');
     const assignAccommodationModalTitle = document.getElementById('assignAccommodationModalTitle');
     const deleteAssignmentButtonModal = document.getElementById('deleteAssignmentButtonModal');
@@ -187,9 +187,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Funkcia na plnenie multi-selectu tímami
-    async function populateTeamMultiSelect(selectElement, selectedTeamIds = []) {
-        selectElement.innerHTML = '';
+    // Funkcia na plnenie selectu tímami (zmenené z multi-selectu)
+    async function populateTeamSelect(selectElement, selectedTeamId = '') { // Zmenený parameter
+        selectElement.innerHTML = '<option value="">-- Vyberte tím --</option>'; // Pridaná predvolená možnosť
         try {
             const clubsSnapshot = await getDocs(query(clubsCollectionRef, orderBy("name", "asc")));
             if (clubsSnapshot.empty) {
@@ -205,14 +205,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const option = document.createElement('option');
                     option.value = team.id;
                     option.textContent = `${team.name} (Kat: ${team.categoryName}, Skup: ${team.groupName}, Tím: ${team.orderInGroup})`;
-                    if (selectedTeamIds.includes(team.id)) {
+                    if (selectedTeamId === team.id) { // Upravená podmienka pre jeden výber
                         option.selected = true;
                     }
                     selectElement.appendChild(option);
                 });
             }
         } catch (error) {
-            console.error("Chyba pri načítaní tímov pre multi-select: ", error);
+            console.error("Chyba pri načítaní tímov pre select: ", error);
             const option = document.createElement('option');
             option.value = '';
             option.textContent = '-- Chyba pri načítaní tímov --';
@@ -1196,8 +1196,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 await populatePlayingDaysSelect(assignmentDateSelect, assignmentData.date);
                 
-                const selectedTeamIds = assignmentData.teams.map(team => team.teamId);
-                await populateTeamMultiSelect(teamMultiSelect, selectedTeamIds);
+                // Predpokladáme, že pre úpravu ubytovania je vždy priradený len jeden tím
+                const selectedTeamId = assignmentData.teams[0]?.teamId || ''; 
+                await populateTeamSelect(teamSelect, selectedTeamId); // Použitie novej funkcie a ID
                 
                 await populateAccommodationSelect(accommodationSelect, assignmentData.accommodationId);
 
@@ -1309,7 +1310,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         assignmentIdInput.value = '';
         assignAccommodationModalTitle.textContent = 'Priradiť ubytovanie';
         await populatePlayingDaysSelect(assignmentDateSelect);
-        await populateTeamMultiSelect(teamMultiSelect);
+        await populateTeamSelect(teamSelect); // Použitie novej funkcie a ID
         await populateAccommodationSelect(accommodationSelect);
         deleteAssignmentButtonModal.style.display = 'none';
         openModal(assignAccommodationModal);
@@ -1802,26 +1803,27 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const id = assignmentIdInput.value;
         const assignmentDate = assignmentDateSelect.value;
-        const selectedTeamIds = Array.from(teamMultiSelect.selectedOptions).map(option => option.value);
+        const selectedTeamId = teamSelect.value; // Získanie hodnoty z jedného select boxu
         const selectedAccommodationId = accommodationSelect.value;
 
-        if (!assignmentDate || selectedTeamIds.length === 0 || !selectedAccommodationId) {
-            alert('Prosím, vyplňte všetky povinné polia (Dátum priradenia, Tímy, Ubytovňa).');
+        if (!assignmentDate || !selectedTeamId || !selectedAccommodationId) { // Upravená kontrola
+            alert('Prosím, vyplňte všetky povinné polia (Dátum priradenia, Tím, Ubytovňa).'); // Upravená správa
             return;
         }
 
         try {
-            // Získame názvy tímov a ubytovne pre uloženie
+            // Získame názvy tímu a ubytovne pre uloženie
             const teamsData = [];
-            for (const teamId of selectedTeamIds) {
-                const teamDoc = await getDoc(doc(clubsCollectionRef, teamId));
-                if (teamDoc.exists()) {
-                    const team = teamDoc.data(); // Opravená chyba: team.data() na teamDoc.data()
-                    teamsData.push({
-                        teamId: teamId,
-                        teamName: `${team.name} (Kat: ${team.categoryName}, Skup: ${team.groupName}, Tím: ${team.orderInGroup})`
-                    });
-                }
+            const teamDoc = await getDoc(doc(clubsCollectionRef, selectedTeamId)); // Získanie jedného tímu
+            if (teamDoc.exists()) {
+                const team = teamDoc.data(); 
+                teamsData.push({
+                    teamId: selectedTeamId,
+                    teamName: `${team.name} (Kat: ${team.categoryName}, Skup: ${team.groupName}, Tím: ${team.orderInGroup})`
+                });
+            } else {
+                alert('Vybraný tím sa nenašiel v databáze.');
+                return;
             }
 
             const accommodationDoc = await getDoc(doc(placesCollectionRef, selectedAccommodationId));
@@ -1835,7 +1837,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             const assignmentData = {
                 date: assignmentDate,
-                teams: teamsData,
+                teams: teamsData, // Teraz obsahuje len jeden tím
                 accommodationId: selectedAccommodationId,
                 accommodationName: accommodationName,
                 createdAt: new Date()
