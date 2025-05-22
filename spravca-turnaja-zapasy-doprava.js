@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const matchForm = document.getElementById('matchForm');
     const matchIdInput = document.getElementById('matchId');
     const matchDateSelect = document.getElementById('matchDateSelect');
-    const matchLocationSelect = document.getElementById('matchLocationSelect');
+    const matchLocationSelect = document = document.getElementById('matchLocationSelect');
     const matchStartTimeInput = document.getElementById('matchStartTime');
     const matchDurationInput = document.getElementById('matchDuration');
     const matchBufferTimeInput = document.getElementById('matchBufferTime'); 
@@ -189,25 +189,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // NOVÁ FUNKCIA: Plní prvý select box základnými názvami klubov
-    async function populateClubSelect(selectElement, selectedClubId = '') {
+    async function populateClubSelect(selectElement, selectedClubName = '') { // Zmenené selectedClubId na selectedClubName
         selectElement.innerHTML = '<option value="">-- Vyberte klub --</option>';
         try {
             const clubsSnapshot = await getDocs(query(clubsCollectionRef, orderBy("name", "asc")));
-            const uniqueClubs = new Map(); // Použijeme Map na uchovanie unikátnych klubov podľa ID
+            const uniqueClubNames = new Set(); // Použijeme Set na uchovanie unikátnych názvov klubov
 
             clubsSnapshot.forEach(doc => {
-                const club = { id: doc.id, ...doc.data() };
-                // Použijeme club.id ako kľúč, aby sme zabezpečili unikátnosť klubov
-                if (!uniqueClubs.has(club.id)) {
-                    uniqueClubs.set(club.id, club);
+                const clubData = doc.data();
+                if (clubData.name) { // Predpokladáme, že 'name' pole obsahuje názov klubu
+                    uniqueClubNames.add(clubData.name);
                 }
             });
 
-            uniqueClubs.forEach(club => {
+            Array.from(uniqueClubNames).sort().forEach(clubName => { // Zoradíme unikátne názvy klubov
                 const option = document.createElement('option');
-                option.value = club.id;
-                option.textContent = club.name;
-                if (selectedClubId === club.id) {
+                option.value = clubName; // Hodnota je názov klubu
+                option.textContent = clubName;
+                if (selectedClubName === clubName) {
                     option.selected = true;
                 }
                 selectElement.appendChild(option);
@@ -223,63 +222,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // NOVÁ FUNKCIA: Plní druhý select box konkrétnymi tímami pre vybraný klub
-    async function populateTeamDetailsSelect(selectElement, clubId, assignmentDate, currentAssignedEntityId = '') {
+    async function populateTeamDetailsSelect(selectElement, clubName, assignmentDate, currentAssignedEntityId = '') {
         selectElement.innerHTML = '<option value="_ENTIRE_CLUB_">-- Celý klub --</option>'; // Predvolená možnosť pre celý klub
         selectElement.disabled = true; // Predvolene zakázané, povolené po výbere klubu
         
-        if (!clubId) {
+        if (!clubName) { // Teraz očakávame názov klubu
             return;
         }
 
         try {
-            // Načítame všetky tímy patriace pod vybraný klub
-            const teamsInClubQuery = query(
-                clubsCollectionRef,
-                where(doc.id, "==", clubId) // Toto je chyba, potrebujeme filtrovať podľa clubId, ak je v dokumente tímu
-                                            // Predpokladám, že clubId je uložené priamo v dokumente tímu
-            );
-            // Ak je clubsCollectionRef už kolekcia tímov, tak potrebujeme filtrovať podľa parent ID alebo ak je clubId v dokumente tímu
-            // Pre tento prípad predpokladám, že clubId je ID dokumentu v clubsCollectionRef a tímy sú podkolekcie alebo majú referenciu na clubId
-            // Ak clubsCollectionRef obsahuje priamo tímy a clubId je ich ID, tak to je v poriadku.
-            // Ak clubsCollectionRef obsahuje kluby a tímy sú v podkolekcii, potrebovali by sme:
-            // const teamsCollectionRefForClub = collection(db, 'tournamentData', 'mainTournamentData', 'clubs', clubId, 'teams');
-            // const teamsSnapshot = await getDocs(query(teamsCollectionRefForClub, orderBy("orderInGroup", "asc")));
-
-            // Pre zjednodušenie a na základe predchádzajúceho kódu (kde clubsCollectionRef bola kolekcia tímov s clubId ako ich ID),
-            // budem predpokladať, že clubsCollectionRef obsahuje všetky tímy a clubId je ID konkrétneho tímu.
-            // Ak je clubId ID KLUBU (nadradeného), potom potrebujeme filtrovať podľa `clubId` poľa v dokumente tímu.
-            // Z predchádzajúceho kontextu sa zdá, že `clubsCollectionRef` obsahuje priamo tímy.
-            // Takže, ak `clubId` je ID konkrétneho tímu, potom by sa nemal volať `populateTeamDetailsSelect` s `clubId`, ale s `teamId`.
-
-            // PREPREPRACOVANIE:
-            // Pôvodná populateTeamSelect brala `team.id` ako hodnotu.
-            // Ak chceme vyberať klub a potom jeho tímy, tak `clubsCollectionRef` by mala obsahovať KLUBY, a nie tímy.
-            // A tímy by mali mať referenciu na ID svojho klubu.
-
-            // Ak `clubsCollectionRef` obsahuje tímy, kde `id` je ID tímu a `name` je názov klubu (napr. "HC DAC Dunajská Streda"),
-            // a zároveň majú polia `categoryName`, `groupName`, `orderInGroup`,
-            // potom "klub" v prvom select boxe je len unikátny názov klubu.
-            // A druhý select box by mal filtrovať tímy podľa tohto názvu klubu.
-
-            // Predpokladám, že `clubsCollectionRef` obsahuje dokumenty pre *každý jednotlivý tím*,
-            // a každý takýto dokument má pole `clubName` (napr. "HC DAC Dunajská Streda") a `clubId` (ID tohto konkrétneho klubu).
-            // A `team.name` je to isté ako `clubName`. Toto je trochu mätúce.
-
-            // Zjednodušenie na základe predchádzajúceho kódu:
-            // `clubsCollectionRef` obsahuje dokumenty, kde každý dokument je JEDEN TÍM.
-            // Každý tím má `id`, `name` (názov klubu), `categoryName`, `groupName`, `orderInGroup`.
-            // Ak chceme vyberať "klub" a potom "tím", potrebujeme, aby `clubsCollectionRef` obsahovala aj dokumenty "klubov" (nadradených).
-            // A dokumenty "tímov" by mali mať referenciu na ID svojho nadradeného "klubu".
-
-            // Ak to chceme urobiť s existujúcou štruktúrou (kde `clubsCollectionRef` sú tímy),
-            // potom prvý select box by mal zobrazovať unikátne `team.name` (čo je názov klubu).
-            // A druhý select box by mal filtrovať tímy s rovnakým `team.name`.
-
-            // Upravím to tak, aby prvý select box zobrazoval unikátne názvy klubov (z poľa `name` v clubsCollectionRef)
-            // a druhý select box zobrazoval tímy patriace k tomuto názvu klubu.
-            // Toto znamená, že `populateClubSelect` už nebude brať `club.id` ale `club.name` ako hodnotu.
-
-            const teamsSnapshot = await getDocs(query(clubsCollectionRef, where("name", "==", clubId), orderBy("orderInGroup", "asc"))); // clubId je tu názov klubu
+            // Načítame všetky tímy patriace pod vybraný klub (filtrovanie podľa názvu klubu)
+            const teamsSnapshot = await getDocs(query(clubsCollectionRef, where("name", "==", clubName), orderBy("orderInGroup", "asc")));
             let teamsInClub = teamsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
             if (assignmentDate) {
@@ -289,23 +242,23 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const assignedEntityIdsForDate = new Set();
                 accommodationsSnapshot.forEach(doc => {
                     const accommodationData = doc.data();
-                    if (doc.id === assignmentIdInput.value) { // Skip current assignment being edited
+                    if (doc.id === assignmentIdInput.value) { // Preskočí aktuálne upravované priradenie
                         return;
                     }
-                    // Check if it's a club-level assignment or a specific team assignment
-                    if (accommodationData.assignedEntityType === 'club' && accommodationData.assignedEntityId === clubId) { // clubId je názov klubu
-                        // If the whole club is assigned, no teams from this club should be selectable
+                    // Skontrolujeme, či ide o priradenie na úrovni klubu alebo konkrétneho tímu
+                    if (accommodationData.assignedEntityType === 'club' && accommodationData.assignedEntityName === clubName) { // Kontrola podľa názvu klubu
+                        // Ak je priradený celý klub, žiadne tímy z tohto klubu by nemali byť voliteľné
                         teamsInClub.forEach(team => assignedEntityIdsForDate.add(team.id));
                     } else if (accommodationData.assignedEntityType === 'team') {
-                        assignedEntityIdsForDate.add(accommodationData.assignedEntityId); // Add specific team ID
+                        assignedEntityIdsForDate.add(accommodationData.assignedEntityId); // Pridáme ID konkrétneho tímu
                     }
                 });
 
-                // Filter out teams that are already assigned accommodation for this date
+                // Odfiltrujeme tímy, ktoré už majú priradené ubytovanie pre tento dátum
                 teamsInClub = teamsInClub.filter(team => !assignedEntityIdsForDate.has(team.id) || team.id === currentAssignedEntityId); 
             }
 
-            if (teamsInClub.length === 0 && currentAssignedEntityId === '') { // Only if adding new and no teams available
+            if (teamsInClub.length === 0 && currentAssignedEntityId === '') { // Iba ak pridávame nové a nie sú dostupné žiadne tímy
                 const option = document.createElement('option');
                 option.value = '';
                 option.textContent = '-- Žiadne tímy pre tento klub/dátum --';
@@ -316,7 +269,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     console.log('Údaje o tíme pre druhý select box:', team);
                     const option = document.createElement('option');
                     option.value = team.id;
-                    option.textContent = `${team.groupName || team.groupId}`;
+                    option.textContent = `Kat: ${team.categoryName || 'N/A'}, Skup: ${team.groupName || team.groupId || 'N/A'}, Tím: ${team.orderInGroup || 'N/A'}`;
                     if (currentAssignedEntityId === team.id) {
                         option.selected = true;
                     }
@@ -1314,19 +1267,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                 
                 // Určíme, či ide o priradenie celého klubu alebo konkrétneho tímu
                 const assignedEntityType = assignmentData.assignedEntityType;
-                const assignedEntityId = assignmentData.assignedEntityId;
-                const clubIdForTeam = assignmentData.clubId; // Ak je to tím, potrebujeme ID klubu
+                const assignedEntityId = assignmentData.assignedEntityId; // Pre klub to bude názov klubu, pre tím ID tímu
+                const clubNameForTeam = assignmentData.clubName; // Názov klubu, ak je to tím
 
                 // Najprv naplníme select klubov
                 if (assignedEntityType === 'club') {
-                    await populateClubSelect(clubSelect, assignedEntityId);
+                    await populateClubSelect(clubSelect, assignedEntityId); // assignedEntityId je tu názov klubu
                     // Ak je to klub, druhý select bude mať vybranú možnosť "Celý klub"
-                    await populateTeamDetailsSelect(teamDetailsSelect, assignedEntityId, assignmentData.date, assignedEntityId); // Pass clubId as assignedEntityId
+                    await populateTeamDetailsSelect(teamDetailsSelect, assignedEntityId, assignmentData.date, assignedEntityId); // Pass clubName as assignedEntityId for filtering
                     teamDetailsSelect.value = '_ENTIRE_CLUB_';
                 } else if (assignedEntityType === 'team') {
-                    await populateClubSelect(clubSelect, clubIdForTeam);
+                    await populateClubSelect(clubSelect, clubNameForTeam); // Naplníme klub názvom klubu tímu
                     // Ak je to tím, naplníme druhý select a vyberieme konkrétny tím
-                    await populateTeamDetailsSelect(teamDetailsSelect, clubIdForTeam, assignmentData.date, assignedEntityId);
+                    await populateTeamDetailsSelect(teamDetailsSelect, clubNameForTeam, assignmentData.date, assignedEntityId);
                 } else {
                     // Fallback pre staršie dáta alebo neznámy typ
                     await populateClubSelect(clubSelect, '');
@@ -1456,11 +1409,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Event listener pre zmenu dátumu v modálnom okne priradenia ubytovania
     assignmentDateSelect.addEventListener('change', async () => {
         const selectedDate = assignmentDateSelect.value;
-        const selectedClubId = clubSelect.value; // Získame vybraný klub
+        const selectedClubName = clubSelect.value; // Získame vybraný názov klubu
         // Ak je vybraný klub, aktualizujeme druhý select
-        if (selectedClubId) {
-            const currentAssignedEntityId = assignmentIdInput.value ? (await getDoc(doc(teamAccommodationsCollectionRef, assignmentIdInput.value))).data().assignedEntityId : '';
-            await populateTeamDetailsSelect(teamDetailsSelect, selectedClubId, selectedDate, currentAssignedEntityId);
+        if (selectedClubName) {
+            const currentAssignmentDoc = assignmentIdInput.value ? await getDoc(doc(teamAccommodationsCollectionRef, assignmentIdInput.value)) : null;
+            const currentAssignedEntityId = currentAssignmentDoc && currentAssignmentDoc.exists() ? currentAssignmentDoc.data().assignedEntityId : '';
+            await populateTeamDetailsSelect(teamDetailsSelect, selectedClubName, selectedDate, currentAssignedEntityId);
         } else {
             teamDetailsSelect.innerHTML = '<option value="_ENTIRE_CLUB_">-- Celý klub --</option>';
             teamDetailsSelect.disabled = true;
@@ -1469,13 +1423,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // NOVÝ Event listener pre zmenu klubu v modálnom okne priradenia ubytovania
     clubSelect.addEventListener('change', async () => {
-        const selectedClubId = clubSelect.value;
+        const selectedClubName = clubSelect.value; // Získame vybraný názov klubu
         const selectedDate = assignmentDateSelect.value;
 
-        if (selectedClubId && selectedDate) {
+        if (selectedClubName && selectedDate) {
             // Ak je vybraný klub aj dátum, naplníme druhý select
-            const currentAssignedEntityId = assignmentIdInput.value ? (await getDoc(doc(teamAccommodationsCollectionRef, assignmentIdInput.value))).data().assignedEntityId : '';
-            await populateTeamDetailsSelect(teamDetailsSelect, selectedClubId, selectedDate, currentAssignedEntityId);
+            const currentAssignmentDoc = assignmentIdInput.value ? await getDoc(doc(teamAccommodationsCollectionRef, assignmentIdInput.value)) : null;
+            const currentAssignedEntityId = currentAssignmentDoc && currentAssignmentDoc.exists() ? currentAssignmentDoc.data().assignedEntityId : '';
+            await populateTeamDetailsSelect(teamDetailsSelect, selectedClubName, selectedDate, currentAssignedEntityId);
         } else {
             // Ak nie je vybraný klub, vyčistíme a zakážeme druhý select
             teamDetailsSelect.innerHTML = '<option value="_ENTIRE_CLUB_">-- Celý klub --</option>';
@@ -1969,11 +1924,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const id = assignmentIdInput.value;
         const assignmentDate = assignmentDateSelect.value;
-        const selectedClubId = clubSelect.value; // Získanie ID vybraného klubu
+        const selectedClubName = clubSelect.value; // Získanie NÁZVU vybraného klubu
         const selectedTeamDetailId = teamDetailsSelect.value; // Získanie ID konkrétneho tímu alebo '_ENTIRE_CLUB_'
         const selectedAccommodationId = accommodationSelect.value;
 
-        if (!assignmentDate || !selectedClubId || !selectedAccommodationId) {
+        if (!assignmentDate || !selectedClubName || !selectedAccommodationId) {
             alert('Prosím, vyplňte všetky povinné polia (Dátum priradenia, Klub, Ubytovňa).');
             return;
         }
@@ -1981,29 +1936,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         let assignedEntityType;
         let assignedEntityId;
         let assignedEntityName;
-        let clubNameForAssignment; // Názov klubu pre uloženie
-
-        // Získame názov klubu
-        const clubDoc = await getDoc(doc(clubsCollectionRef, selectedClubId));
-        if (clubDoc.exists()) {
-            clubNameForAssignment = clubDoc.data().name; // Predpokladáme, že 'name' je názov klubu
-        } else {
-            alert('Vybraný klub sa nenašiel v databáze.');
-            return;
-        }
+        
+        // Získame názov klubu (už ho máme zo selectedClubName)
+        const clubNameForAssignment = selectedClubName;
 
         if (selectedTeamDetailId === '_ENTIRE_CLUB_') {
             assignedEntityType = 'club';
-            assignedEntityId = selectedClubId;
+            assignedEntityId = selectedClubName; // ID je názov klubu
             assignedEntityName = clubNameForAssignment;
         } else {
             assignedEntityType = 'team';
-            assignedEntityId = selectedTeamDetailId;
+            assignedEntityId = selectedTeamDetailId; // ID je ID konkrétneho tímu
             // Získame plný názov tímu pre zobrazenie
             const teamDoc = await getDoc(doc(clubsCollectionRef, selectedTeamDetailId));
             if (teamDoc.exists()) {
                 const team = teamDoc.data();
-                assignedEntityName = `${team.name} - ${team.groupName || team.groupId}`;
+                assignedEntityName = `${team.name} (Kat: ${team.categoryName || 'N/A'}, Skup: ${team.groupName || team.groupId || 'N/A'}, Tím: ${team.orderInGroup || 'N/A'})`;
             } else {
                 alert('Vybraný tím sa nenašiel v databáze.');
                 return;
@@ -2024,7 +1972,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             assignedEntityType: assignedEntityType,
             assignedEntityId: assignedEntityId,
             assignedEntityName: assignedEntityName,
-            clubId: selectedClubId, // Uložíme ID klubu pre ľahšie filtrovanie
+            clubName: clubNameForAssignment, // Uložíme názov klubu pre ľahšie filtrovanie/zobrazenie
             accommodationId: selectedAccommodationId,
             accommodationName: accommodationName,
             createdAt: new Date()
