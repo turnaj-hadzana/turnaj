@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const matchForm = document.getElementById('matchForm');
     const matchIdInput = document.getElementById('matchId');
     const matchDateSelect = document.getElementById('matchDateSelect');
-    const matchLocationSelect = document.getElementById('matchLocationSelect');
+    const matchLocationSelect = document = document.getElementById('matchLocationSelect');
     const matchStartTimeInput = document.getElementById('matchStartTime');
     const matchDurationInput = document.getElementById('matchDuration');
     const matchBufferTimeInput = document.getElementById('matchBufferTime'); 
@@ -191,6 +191,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function populateTeamSelect(selectElement, selectedTeamId = '') { // Zmenený parameter
         selectElement.innerHTML = '<option value="">-- Vyberte tím --</option>'; // Pridaná predvolená možnosť
         try {
+            console.log('Načítavam tímy pre select box...'); // Nový výpis pred načítaním dát
             const clubsSnapshot = await getDocs(query(clubsCollectionRef, orderBy("name", "asc")));
             if (clubsSnapshot.empty) {
                 const option = document.createElement('option');
@@ -202,8 +203,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             } else {
                 clubsSnapshot.forEach((doc) => {
                     const team = { id: doc.id, ...doc.data() };
-                    // Vypísanie údajov o kategórii a skupine do konzoly
-                    console.log(`Tím: ${team.name}, Kategória: ${team.categoryName}, Skupina: ${team.groupName}, Poradie v skupine: ${team.orderInGroup}`);
+                    // Vypísanie všetkých údajov o tíme do konzoly pred pridaním do select boxu
+                    console.log('Načítavam tím pre select box:', team);
                     const option = document.createElement('option');
                     option.value = team.id;
                     option.textContent = `${team.name} (Kat: ${team.categoryName}, Skup: ${team.groupName}, Tím: ${team.orderInGroup})`;
@@ -758,25 +759,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
 
                 const durationInMinutes = endTimeInMinutes - startTimeInMinutes;
-
-                const dateHours = timeColumnLeftOffsets.get(date);
-                if (!dateHours || dateHours.length === 0) {
-                    console.warn(`Nenašiel som časové stĺpce pre dátum: ${date}`);
-                    return;
-                }
-
-                let busLeftPx = 0;
-                const range = dailyTimeRanges.get(date);
-                const firstHourOfDate = range ? range.minHour : 0;
-                
-                const firstHourDataForDate = dateHours.find(h => h.hour === firstHourOfDate);
-                if (firstHourDataForDate) {
-                    busLeftPx = firstHourDataForDate.left + ((startTimeInMinutes - (firstHourOfDate * 60)) * PIXELS_PER_MINUTE);
-                } else {
-                    console.warn(`Nepodarilo sa nájsť špecifické údaje o hodine pre dátum ${date} a hodinu ${firstHourOfDate}. Používam prvé dostupné.`);
-                    busLeftPx = dateHours[0].left + ((startTimeInMinutes - (dateHours[0].hour * 60)) * PIXELS_PER_MINUTE);
-                }
-
                 const busWidthPx = (durationInMinutes * PIXELS_PER_MINUTE) / 4; 
                 const slantOffset = 30; 
 
@@ -1632,7 +1614,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const existingBusesSnapshot = await getDocs(existingBusesQuery);
 
             let overlapFound = false;
-            let overlappingBusDetails = null;
+            let overlappingBusDetails = null;;
 
             existingBusesSnapshot.docs.forEach(doc => {
                 const existingBus = doc.data();
