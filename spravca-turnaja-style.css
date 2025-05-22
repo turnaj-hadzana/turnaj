@@ -600,8 +600,9 @@ td:last-child {
     white-space: normal; /* Povoliť zalomenie textu, ak je názov miesta dlhý */
 }
 
+/* Pôvodné štýly pre hlavičku miesta */
 .match-schedule-table .schedule-location-header {
-    background-color: #007bff;
+    background-color: #007bff; /* Predvolená modrá */
     color: white;
     font-size: 1em;
     padding: 5px;
@@ -886,24 +887,27 @@ td:last-child {
 }
 
 /* NOVÉ: Štýly pre rôzne typy miest */
-.place-type-sport-hall {
+/* Zvýšenie špecifickosti pre typy miest */
+.match-schedule-table .schedule-location-header.place-type-sport-hall {
     background-color: #007bff; /* Modrá */
     border: 1px solid #0056b3;
+    color: white; /* Zabezpečí biely text */
 }
 
-.place-type-catering {
+.match-schedule-table .schedule-location-header.place-type-catering {
     background-color: #ffc107; /* Oranžová */
     border: 1px solid #e0a800;
     color: #333; /* Tmavší text pre lepší kontrast */
 }
 
-.place-type-accommodation {
+.match-schedule-table .schedule-location-header.place-type-accommodation {
     background-color: #17a2b8; /* Tyrkysová */
     border: 1px solid #138496;
+    color: white; /* Zabezpečí biely text */
 }
 
 /* Zabezpečí, aby text v hlavičke miesta bol čitateľný na oranžovom pozadí */
-.place-type-catering .hall-name,
-.place-type-catering .hall-address a {
+.match-schedule-table .schedule-location-header.place-type-catering .hall-name,
+.match-schedule-table .schedule-location-header.place-type-catering .hall-address a {
     color: #333; /* Tmavší text */
 }
