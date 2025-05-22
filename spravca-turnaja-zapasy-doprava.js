@@ -478,12 +478,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
 
             const sortedLocations = Array.from(uniqueLocations).sort();
-            const sortedDates = Array.from(uniqueDates).sort(); // Line 479
+            const sortedDates = Array.from(uniqueDates).sort(); 
 
-            console.log("Sorted Dates before iteration:", sortedDates); // Added for debugging
+            console.log("Sorted Dates before iteration:", sortedDates); 
 
             // If a date has no matches or buses, set a default time range (e.g., 8:00-18:00)
-            sortedDates.forEach(date => { // Line 481
+            sortedDates.forEach(date => { 
                 if (!dailyTimeRanges.has(date)) {
                     dailyTimeRanges.set(date, { minHour: 8, maxHour: 18 }); // Default range for dates with no matches/buses
                 }
@@ -1381,7 +1381,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const groupDoc = await getDoc(doc(groupsCollectionRef, groupId));
             let groupData = null; 
             if (groupDoc.exists()) {
-                groupData = groupDoc.data(); // Opravená typografická chyba: groupData() na groupDoc.data()
+                groupData = groupDoc.data(); 
             }
             const groupName = groupData ? (groupData.name || groupId) : groupId;
 
@@ -1816,7 +1816,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             for (const teamId of selectedTeamIds) {
                 const teamDoc = await getDoc(doc(clubsCollectionRef, teamId));
                 if (teamDoc.exists()) {
-                    const team = teamDoc.data();
+                    const team = teamDoc.data(); // Opravená chyba: team.data() na teamDoc.data()
                     teamsData.push({
                         teamId: teamId,
                         teamName: `${team.name} (Kat: ${team.categoryName}, Skup: ${team.groupName}, Tím: ${team.orderInGroup})`
