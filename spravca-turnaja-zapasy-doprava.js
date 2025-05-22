@@ -1944,7 +1944,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const team = teamDoc.data(); 
                     teamsData.push({
                         teamId: selectedSpecificTeamId,
-                        teamName: `${team.name} (${categoryName}, ${groupName})`;
+                        teamName: `${team.name} (${categoryName}, ${groupName})`,
                     });
                 } else {
                     alert('Vybraný konkrétny tím sa nenašiel v databáze.');
@@ -1963,14 +1963,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                         if (team.name === selectedClubName) {
                             teamsForBaseClub.push({
                                 teamId: doc.id,
-                                teamName: `${team.name} (${categoryName}, ${groupName})`;
+                                teamName: `${team.name} (${categoryName}, ${groupName})`,
                             });
                         }
                     } else {
                         if (team.name.match(new RegExp(`^${selectedClubName}(?:\\s[A-Z])?$`))) {
                             teamsForBaseClub.push({
                                 teamId: doc.id,
-                                teamName: `${team.name} (${categoryName}, ${groupName})`;
+                                teamName: `${team.name} (${categoryName}, ${groupName})`,
                             });
                         }
                     }
