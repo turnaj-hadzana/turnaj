@@ -736,8 +736,28 @@ async function displayMatchesAsSchedule() {
 
                     accommodationsInCell.forEach((assignment, index) => {
                         const blockLeft = index * blockWidth;
-                        const teamNames = assignment.teams.map(team => team.teamName.split('(')[0].trim()).join(', ');
                         const accommodationId = assignment.id;
+
+                        // Logika pre zobrazenie názvu klubu namiesto všetkých tímov
+                        const baseClubNames = new Set();
+                        assignment.teams.forEach(team => {
+                            let baseName;
+                            const fullTeamName = team.teamName.split('(')[0].trim();
+                            if (fullTeamName.includes('⁄')) {
+                                baseName = fullTeamName;
+                            } else {
+                                baseName = fullTeamName.replace(/\s[A-Z]$/, '');
+                            }
+                            baseClubNames.add(baseName);
+                        });
+
+                        let displayText;
+                        if (baseClubNames.size === 1) {
+                            displayText = Array.from(baseClubNames)[0]; // Zobrazí len základný názov klubu
+                        } else {
+                            // Zobrazí zoznam tímov (ako predtým), ak nie sú všetky z rovnakého klubu
+                            displayText = assignment.teams.map(team => team.teamName.split('(')[0].trim()).join(', ');
+                        }
 
                         scheduleHtml += `
                             <div class="schedule-cell-accommodation"
@@ -745,7 +765,7 @@ async function displayMatchesAsSchedule() {
                                 style="position: absolute; left: ${blockLeft}px; width: ${blockWidth}px; top: 0; height: 100%;">
                                 <div class="schedule-cell-content">
                                     <p class="schedule-cell-title">Ubytovanie</p>
-                                    <p class="schedule-cell-teams">${teamNames}</p>
+                                    <p class="schedule-cell-teams">${displayText}</p>
                                 </div>
                             </div>
                         `;
