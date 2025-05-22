@@ -19,7 +19,7 @@ export const groupsCollectionRef = collection(db, 'tournamentData', 'mainTournam
 export const clubsCollectionRef = collection(db, 'tournamentData', 'mainTournamentData', 'clubs');
 export const matchesCollectionRef = collection(db, 'tournamentData', 'mainTournamentData', 'matches');
 export const playingDaysCollectionRef = collection(db, 'tournamentData', 'mainTournamentData', 'playingDays');
-export const placesCollectionRef = collection(db, 'tournamentData', 'mainTournamentData', 'places'); // ZMENENÉ: sportHallsCollectionRef na placesCollectionRef
+export const placesCollectionRef = collection(db, 'tournamentData', 'mainTournamentData', 'sportHalls'); // ZMENENÉ: 'places' na 'sportHalls'
 export const busesCollectionRef = collection(db, 'tournamentData', 'mainTournamentData', 'buses'); 
 export const settingsCollectionRef = collection(db, `artifacts/${appId}/public/data/settings`); // NOVÉ: Export pre kolekciu nastavení
 
