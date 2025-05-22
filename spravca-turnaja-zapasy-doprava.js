@@ -560,6 +560,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             const scheduleTableContainer = matchesContainer.querySelector('.schedule-table-container');
             const scheduleTable = matchesContainer.querySelector('.match-schedule-table');
             
+            // NOVÉ: Definícia scheduleTableContainerRect je presunutá sem, aby bola dostupná
+            const scheduleTableContainerRect = scheduleTableContainer.getBoundingClientRect();
+
             // Vytvoríme a pridáme busOverlayContainer teraz, keď je tabuľka v DOM
             const busOverlayContainer = document.createElement('div');
             busOverlayContainer.id = 'busOverlayContainer';
@@ -793,8 +796,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
 
         } catch (error) {
-            console.error("Chyba pri načítaní: ", error);
-            matchesContainer.innerHTML = '<p>Chyba pri načítaní. Skontrolujte konzolu pre detaily a uistite sa, že máte vytvorené potrebné indexy vo Firestore.</p>';
+            console.error("Chyba pri načítaní rozvrhu zápasov: ", error);
+            matchesContainer.innerHTML = '<p>Chyba pri načítaní rozvrhu zápasov. Skontrolujte konzolu pre detaily a uistite sa, že máte vytvorené potrebné indexy vo Firestore.</p>';
         }
     }
 
