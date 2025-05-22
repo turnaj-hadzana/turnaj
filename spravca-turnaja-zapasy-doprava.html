@@ -110,7 +110,6 @@
                         <option value="Športová hala">Športová hala</option>
                         <option value="Ubytovanie">Ubytovanie</option>
                         <option value="Stravovacie zariadenie">Stravovacie zariadenie</option>
-                        <option value="Iné">Iné</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -183,24 +182,30 @@
             <h2 id="assignAccommodationModalTitle">Priradiť ubytovanie</h2>
             <form id="assignAccommodationForm">
                 <input type="hidden" id="assignmentId">
-                <div class="form-group">
-                    <label for="assignmentDateSelect">Dátum priradenia:</label>
-                    <select id="assignmentDateSelect" required>
-                        <option value="">-- Vyberte dátum --</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="teamSelect">Vyberte tím:</label>
-                    <select id="teamSelect" required>
-                        <option value="">-- Vyberte tím --</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="accommodationSelect">Vyberte ubytovňu:</label>
-                    <select id="accommodationSelect" required>
-                        <option value="">-- Vyberte ubytovňu --</option>
-                    </select>
-                </div>
+                    <div class="form-group">
+                        <label for="assignmentDateSelect">Dátum priradenia:</label>
+                        <select id="assignmentDateSelect" required>
+                            <option value="">-- Vyberte dátum --</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="clubSelect">Vyberte klub:</label>
+                        <select id="clubSelect" required>
+                            <option value="">-- Vyberte klub --</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="specificTeamSelect">Vyberte konkrétny tím (nepovinné):</label>
+                        <select id="specificTeamSelect" disabled>
+                            <option value="">-- Vyberte konkrétny tím (nepovinné) --</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="accommodationSelect">Vyberte ubytovňu:</label>
+                        <select id="accommodationSelect" required>
+                            <option value="">-- Vyberte ubytovňu --</option>
+                        </select>
+                    </div>
                 <button type="submit">Uložiť priradenie</button>
                 <button type="button" id="deleteAssignmentButtonModal" class="action-button delete-button" style="display: none; margin-left: 10px;">Vymazať</button>
             </form>
