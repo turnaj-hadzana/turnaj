@@ -37,23 +37,25 @@
     <div id="playingDayModal" class="modal">
         <div class="modal-content">
             <button class="close" id="closePlayingDayModal" type="button">×</button>
-            <h2>Pridať hrací deň</h2>
-            <form id="playingDayForm">
-                <div class="form-group">
+            <h2 id="playingDayModalTitle">Pridať hrací deň</h2> <form id="playingDayForm">
+                <input type="hidden" id="playingDayId"> <div class="form-group">
                     <label for="playingDayDate">Dátum:</label>
                     <input type="date" id="playingDayDate" required>
                 </div>
                 <button type="submit">Uložiť deň</button>
-            </form>
+                <button type="button" id="deletePlayingDayButtonModal" class="action-button delete-button" style="display: none; margin-left: 10px;">Vymazať</button> </form>
         </div>
     </div>
 
     <div id="placeModal" class="modal">
         <div class="modal-content">
             <button class="close group-modal-close" id="closePlaceModal" type="button">×</button>
-            <h2>Pridať/Upraviť miesto</h2> <form id="placeForm">
-                <input type="hidden" id="placeId"> <div class="form-group">
-                    <label for="placeTypeSelect">Typ miesta:</label> <select id="placeTypeSelect" required>
+            <h2>Pridať/Upraviť miesto</h2>
+            <form id="placeForm">
+                <input type="hidden" id="placeId">
+                <div class="form-group">
+                    <label for="placeTypeSelect">Typ miesta:</label>
+                    <select id="placeTypeSelect" required>
                         <option value="">-- Vyberte typ --</option>
                         <option value="Športová hala">Športová hala</option>
                         <option value="Stravovacie zariadenie">Stravovacie zariadenie</option>
@@ -61,15 +63,20 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="placeName">Názov miesta:</label> <input type="text" id="placeName" required>
+                    <label for="placeName">Názov miesta:</label>
+                    <input type="text" id="placeName" required>
                 </div>
                 <div class="form-group">
-                    <label for="placeAddress">Adresa:</label> <input type="text" id="placeAddress" required>
+                    <label for="placeAddress">Adresa:</label>
+                    <input type="text" id="placeAddress" required>
                 </div>
                 <div class="form-group">
-                    <label for="placeGoogleMapsUrl">Odkaz na Google Maps (URL):</label> <input type="url" id="placeGoogleMapsUrl" placeholder="napr. http://maps.google.com/..." required>
+                    <label for="placeGoogleMapsUrl">Odkaz na Google Maps (URL):</label>
+                    <input type="url" id="placeGoogleMapsUrl" placeholder="napr. http://maps.google.com/..." required>
                 </div>
-                <button type="submit">Uložiť miesto</button> <button type="button" id="deletePlaceButtonModal" class="action-button delete-button" style="display: none; margin-left: 10px;">Vymazať</button> </form>
+                <button type="submit">Uložiť miesto</button>
+                <button type="button" id="deletePlaceButtonModal" class="action-button delete-button" style="display: none; margin-left: 10px;">Vymazať</button>
+            </form>
         </div>
     </div>
 
@@ -106,8 +113,10 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="matchLocationSelect">Miesto:</label> <select id="matchLocationSelect" required>
-                        <option value="">-- Vyberte miesto --</option> </select>
+                    <label for="matchLocationSelect">Miesto:</label>
+                    <select id="matchLocationSelect" required>
+                        <option value="">-- Vyberte miesto --</option>
+                    </select>
                 </div>
                 <div class="form-group">
                     <label for="matchStartTime">Čas začiatku:</label>
@@ -146,7 +155,8 @@
                 <div class="form-group">
                     <label for="busStartLocationSelect">Miesto odchodu:</label>
                     <select id="busStartLocationSelect" required>
-                        <option value="">-- Vyberte miesto --</option> </select>
+                        <option value="">-- Vyberte miesto --</option>
+                    </select>
                 </div>
                 <div class="form-group">
                     <label for="busStartTimeInput">Čas odchodu:</label>
@@ -155,7 +165,8 @@
                 <div class="form-group">
                     <label for="busEndLocationSelect">Miesto príchodu:</label>
                     <select id="busEndLocationSelect" required>
-                        <option value="">-- Vyberte miesto --</option> </select>
+                        <option value="">-- Vyberte miesto --</option>
+                    </select>
                 </div>
                 <div class="form-group">
                     <label for="busEndTimeInput">Čas príchodu:</label>
@@ -175,7 +186,8 @@
         <button id="addButton" class="add-button">+</button>
         <div id="addOptions" class="add-options-dropdown">
             <button id="addPlayingDayButton">Pridať hrací deň</button>
-            <button id="addPlaceButton">Pridať miesto</button> <button id="addMatchButton">Pridať zápas</button>
+            <button id="addPlaceButton">Pridať miesto</button>
+            <button id="addMatchButton">Pridať zápas</button>
             <button id="addBusButton">Pridať autobus</button> 
         </div>
     </div>
