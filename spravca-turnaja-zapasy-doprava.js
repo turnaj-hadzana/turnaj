@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const matchDateSelect = document.getElementById('matchDateSelect');
     const matchLocationSelect = document.getElementById('matchLocationSelect');
     const matchStartTimeInput = document.getElementById('matchStartTime');
-    const matchDurationInput = document.getElementById('matchDuration');
+    const matchDurationInput = document = document.getElementById('matchDuration');
     const matchBufferTimeInput = document.getElementById('matchBufferTime'); 
     const matchCategorySelect = document.getElementById('matchCategory');
     const matchGroupSelect = document.getElementById('matchGroup');
@@ -309,9 +309,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }).forEach(team => {
                     const option = document.createElement('option');
                     option.value = team.id;
-                    // Získame názov skupiny a kategórie z máp
-                    const groupName = groupsMap.get(team.groupId) || 'Neznáma skupina';
-                    const categoryName = categoriesMap.get(team.categoryId) || 'Neznáma kategória';
+                    // Získame názov skupiny a kategórie z máp, alebo použijeme ID ak názov neexistuje
+                    const groupName = groupsMap.get(team.groupId) || team.groupId;
+                    const categoryName = categoriesMap.get(team.categoryId) || team.categoryId;
                     option.textContent = `${team.name} (${categoryName}, ${groupName})`; 
                     if (selectedTeamId === team.id) {
                         option.selected = true;
