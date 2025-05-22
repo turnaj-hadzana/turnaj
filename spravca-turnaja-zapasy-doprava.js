@@ -1,4 +1,4 @@
-import { db, categoriesCollectionRef, groupsCollectionRef, clubsCollectionRef, matchesCollectionRef, playingDaysCollectionRef, placesCollectionRef, busesCollectionRef, openModal, closeModal, populateCategorySelect, populateGroupSelect, getDocs, doc, setDoc, addDoc, getDoc, query, where, orderBy, deleteDoc, writeBatch, settingsCollectionRef } from './spravca-turnaja-common.js'; // ZMENENÉ: sportHallsCollectionRef na placesCollectionRef
+import { db, categoriesCollectionRef, groupsCollectionRef, clubsCollectionRef, matchesCollectionRef, playingDaysCollectionRef, placesCollectionRef, busesCollectionRef, teamAccommodationsCollectionRef, openModal, closeModal, populateCategorySelect, populateGroupSelect, getDocs, doc, setDoc, addDoc, getDoc, query, where, orderBy, deleteDoc, writeBatch, settingsCollectionRef } from './spravca-turnaja-common.js'; // ZMENENÉ: Pridaný import teamAccommodationsCollectionRef
 
 document.addEventListener('DOMContentLoaded', async () => {
     const loggedInUsername = localStorage.getItem('username');
@@ -11,9 +11,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const addButton = document.getElementById('addButton');
     const addOptions = document.getElementById('addOptions'); // Správne získanie odkazu na dropdown
     const addPlayingDayButton = document.getElementById('addPlayingDayButton');
-    const addPlaceButton = document.getElementById('addPlaceButton'); // ZMENENÉ: Pôvodne addSportHallButton
+    const addPlaceButton = document.getElementById('addPlaceButton');
     const addMatchButton = document.getElementById('addMatchButton');
     const addBusButton = document.getElementById('addBusButton');
+    const assignAccommodationButton = document.getElementById('assignAccommodationButton'); // NOVÉ: Tlačidlo pre priradenie ubytovania
 
     // Modálne okno pre zápas
     const matchModal = document.getElementById('matchModal');
@@ -21,7 +22,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const matchForm = document.getElementById('matchForm');
     const matchIdInput = document.getElementById('matchId');
     const matchDateSelect = document.getElementById('matchDateSelect');
-    const matchLocationSelect = document.getElementById('matchLocationSelect'); // ZMENENÉ: Pôvodne matchSportHallSelect
+    const matchLocationSelect = document.getElementById('matchLocationSelect');
     const matchStartTimeInput = document.getElementById('matchStartTime');
     const matchDurationInput = document.getElementById('matchDuration');
     const matchBufferTimeInput = document.getElementById('matchBufferTime'); // Opravené: bolo 'document ='
@@ -37,21 +38,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     const playingDayModal = document.getElementById('playingDayModal');
     const closePlayingDayModalButton = document.getElementById('closePlayingDayModal');
     const playingDayForm = document.getElementById('playingDayForm');
-    const playingDayIdInput = document.getElementById('playingDayId'); // NOVÉ
+    const playingDayIdInput = document.getElementById('playingDayId');
     const playingDayDateInput = document.getElementById('playingDayDate');
-    const playingDayModalTitle = document.getElementById('playingDayModalTitle'); // NOVÉ
-    const deletePlayingDayButtonModal = document.getElementById('deletePlayingDayButtonModal'); // NOVÉ
+    const playingDayModalTitle = document.getElementById('playingDayModalTitle');
+    const deletePlayingDayButtonModal = document.getElementById('deletePlayingDayButtonModal');
 
     // Modálne okno pre miesto (pôvodne športová hala)
-    const placeModal = document.getElementById('placeModal'); // ZMENENÉ: Pôvodne sportHallModal
-    const closePlaceModalButton = document.getElementById('closePlaceModal'); // ZMENENÉ
-    const placeForm = document.getElementById('placeForm'); // ZMENENÉ
-    const placeIdInput = document.getElementById('placeId'); // ZMENENÉ
-    const placeTypeSelect = document.getElementById('placeTypeSelect'); // NOVÉ
-    const placeNameInput = document.getElementById('placeName'); // ZMENENÉ
-    const placeAddressInput = document.getElementById('placeAddress'); // ZMENENÉ
-    const placeGoogleMapsUrlInput = document.getElementById('placeGoogleMapsUrl'); // ZMENENÉ
-    const deletePlaceButtonModal = document.getElementById('deletePlaceButtonModal'); // NOVÉ: Tlačidlo Vymazať v modale
+    const placeModal = document.getElementById('placeModal');
+    const closePlaceModalButton = document.getElementById('closePlaceModal');
+    const placeForm = document.getElementById('placeForm');
+    const placeIdInput = document.getElementById('placeId');
+    const placeTypeSelect = document.getElementById('placeTypeSelect');
+    const placeNameInput = document.getElementById('placeName');
+    const placeAddressInput = document.getElementById('placeAddress');
+    const placeGoogleMapsUrlInput = document.getElementById('placeGoogleMapsUrl');
+    const deletePlaceButtonModal = document.getElementById('deletePlaceButtonModal');
 
     // Modálne okno pre autobus
     const busModal = document.getElementById('busModal');
@@ -67,6 +68,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     const busEndTimeInput = document.getElementById('busEndTimeInput');
     const busNotesInput = document.getElementById('busNotesInput');
     const deleteBusButtonModal = document.getElementById('deleteBusButtonModal');
+
+    // NOVÉ: Modálne okno pre priradenie ubytovania
+    const assignAccommodationModal = document.getElementById('assignAccommodationModal');
+    const closeAssignAccommodationModalButton = document.getElementById('closeAssignAccommodationModal');
+    const assignAccommodationForm = document.getElementById('assignAccommodationForm');
+    const assignmentIdInput = document.getElementById('assignmentId');
+    const assignmentDateSelect = document.getElementById('assignmentDateSelect'); // Dátum priradenia
+    const teamMultiSelect = document.getElementById('teamMultiSelect');
+    const accommodationSelect = document.getElementById('accommodationSelect');
+    const assignAccommodationModalTitle = document.getElementById('assignAccommodationModalTitle');
+    const deleteAssignmentButtonModal = document.getElementById('deleteAssignmentButtonModal');
+    const accommodationAssignmentsContainer = document.getElementById('accommodationAssignmentsContainer'); // Kontajner pre zobrazenie priradení
 
     // Konštantné ID dokumentu pre nastavenia (musí byť rovnaké ako v spravca-turnaja-nastavenia.js)
     const SETTINGS_DOC_ID = 'matchTimeSettings';
@@ -106,7 +119,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // NOVÁ Funkcia: Plní select boxy iba športovými halami (pre zápasy)
+    // Funkcia: Plní select boxy iba športovými halami (pre zápasy)
     async function populateSportHallSelects(selectElement, selectedPlaceName = '') {
         selectElement.innerHTML = '<option value="">-- Vyberte miesto (športovú halu) --</option>';
         try {
@@ -140,7 +153,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // NOVÁ Funkcia: Plní select boxy všetkými typmi miest (pre autobusy)
+    // Funkcia: Plní select boxy všetkými typmi miest (pre autobusy)
     async function populateAllPlaceSelects(selectElement, selectedPlaceCombined = '') {
         selectElement.innerHTML = '<option value="">-- Vyberte miesto --</option>';
         try {
@@ -169,6 +182,76 @@ document.addEventListener('DOMContentLoaded', async () => {
             const option = document.createElement('option');
             option.value = '';
             option.textContent = '-- Chyba pri načítaní miest --';
+            option.disabled = true;
+            selectElement.appendChild(option);
+        }
+    }
+
+    // NOVÉ: Funkcia na plnenie multi-selectu tímami
+    async function populateTeamMultiSelect(selectElement, selectedTeamIds = []) {
+        selectElement.innerHTML = ''; // Vyčistíme predchádzajúce možnosti
+        try {
+            // Načítame všetky kluby (tímy)
+            const clubsSnapshot = await getDocs(query(clubsCollectionRef, orderBy("name", "asc")));
+            if (clubsSnapshot.empty) {
+                const option = document.createElement('option');
+                option.value = '';
+                option.textContent = '-- Žiadne tímy nenájdené --';
+                option.disabled = true;
+                selectElement.appendChild(option);
+                console.warn("No teams found in Firestore.");
+            } else {
+                clubsSnapshot.forEach((doc) => {
+                    const team = { id: doc.id, ...doc.data() };
+                    const option = document.createElement('option');
+                    option.value = team.id; // Hodnota bude ID tímu
+                    option.textContent = `${team.name} (Kat: ${team.categoryName}, Skup: ${team.groupName}, Tím: ${team.orderInGroup})`;
+                    if (selectedTeamIds.includes(team.id)) {
+                        option.selected = true;
+                    }
+                    selectElement.appendChild(option);
+                });
+            }
+        } catch (error) {
+            console.error("Chyba pri načítaní tímov pre multi-select: ", error);
+            const option = document.createElement('option');
+            option.value = '';
+            option.textContent = '-- Chyba pri načítaní tímov --';
+            option.disabled = true;
+            selectElement.appendChild(option);
+        }
+    }
+
+    // NOVÉ: Funkcia na plnenie selectu ubytovňami
+    async function populateAccommodationSelect(selectElement, selectedAccommodationId = '') {
+        selectElement.innerHTML = '<option value="">-- Vyberte ubytovňu --</option>';
+        try {
+            // Načítame miesta typu "Ubytovanie"
+            const querySnapshot = await getDocs(query(placesCollectionRef, where("type", "==", "Ubytovanie"), orderBy("name", "asc")));
+            if (querySnapshot.empty) {
+                const option = document.createElement('option');
+                option.value = '';
+                option.textContent = '-- Žiadne ubytovne nenájdené --';
+                option.disabled = true;
+                selectElement.appendChild(option);
+                console.warn("No accommodation places found in Firestore.");
+            } else {
+                querySnapshot.forEach((doc) => {
+                    const place = { id: doc.id, ...doc.data() };
+                    const option = document.createElement('option');
+                    option.value = place.id; // Hodnota bude ID ubytovne
+                    option.textContent = place.name; // Zobrazíme názov ubytovne
+                    if (selectedAccommodationId === place.id) {
+                        option.selected = true;
+                    }
+                    selectElement.appendChild(option);
+                });
+            }
+        } catch (error) {
+            console.error("Chyba pri načítaní ubytovní: ", error);
+            const option = document.createElement('option');
+            option.value = '';
+            option.textContent = '-- Chyba pri načítaní ubytovní --';
             option.disabled = true;
             selectElement.appendChild(option);
         }
@@ -488,9 +571,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                         typeClass = 'place-type-sport-hall';
                         specificBackgroundColor = 'background-color: #007bff;'; // Modrá farba pre športovú halu
                         break;
-                    case 'Stravovanie':
+                    case 'Stravovacie zariadenie':
                         typeClass = 'place-type-catering';
-                        specificBackgroundColor = 'background-color: #ffc107;'; // Oranžová farba pre Stravovanie
+                        specificBackgroundColor = 'background-color: #ffc107;'; // Oranžová farba pre stravovacie zariadenie
                         break;
                     case 'Ubytovanie':
                         typeClass = 'place-type-accommodation';
@@ -846,6 +929,68 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    // NOVÉ: Funkcia na zobrazenie priradených ubytovaní
+    async function displayAccommodationAssignments() {
+        if (!accommodationAssignmentsContainer) return;
+
+        accommodationAssignmentsContainer.innerHTML = '<p>Načítavam priradené ubytovania...</p>';
+
+        try {
+            const assignmentsSnapshot = await getDocs(query(teamAccommodationsCollectionRef, orderBy("date", "asc"), orderBy("accommodationName", "asc")));
+            const allAssignments = assignmentsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+            if (allAssignments.length === 0) {
+                accommodationAssignmentsContainer.innerHTML = '<p>Žiadne priradené ubytovania.</p>';
+                return;
+            }
+
+            let assignmentsHtml = '<table class="data-table"><thead><tr>';
+            assignmentsHtml += '<th>Dátum</th><th>Ubytovňa</th><th>Tímy</th><th>Akcie</th>';
+            assignmentsHtml += '</tr></thead><tbody>';
+
+            allAssignments.forEach(assignment => {
+                const dateObj = new Date(assignment.date);
+                const formattedDate = `${String(dateObj.getDate()).padStart(2, '0')}. ${String(dateObj.getMonth() + 1).padStart(2, '0')}. ${dateObj.getFullYear()}`;
+                
+                // Získanie názvov tímov
+                const teamNames = assignment.teams.map(team => team.teamName).join(', ');
+
+                assignmentsHtml += `
+                    <tr>
+                        <td>${formattedDate}</td>
+                        <td>${assignment.accommodationName}</td>
+                        <td>${teamNames}</td>
+                        <td>
+                            <button class="action-button edit-button" data-id="${assignment.id}" data-type="accommodationAssignment">Upraviť</button>
+                            <button class="action-button delete-button" data-id="${assignment.id}" data-type="accommodationAssignment">Vymazať</button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            assignmentsHtml += '</tbody></table>';
+            accommodationAssignmentsContainer.innerHTML = assignmentsHtml;
+
+            // Pridanie event listenerov pre úpravu a vymazanie
+            accommodationAssignmentsContainer.querySelectorAll('.edit-button[data-type="accommodationAssignment"]').forEach(button => {
+                button.addEventListener('click', (event) => {
+                    editAccommodationAssignment(event.target.dataset.id);
+                });
+            });
+
+            accommodationAssignmentsContainer.querySelectorAll('.delete-button[data-type="accommodationAssignment"]').forEach(button => {
+                button.addEventListener('click', (event) => {
+                    deleteAccommodationAssignment(event.target.dataset.id);
+                });
+            });
+
+        } catch (error) {
+            console.error("Chyba pri načítaní priradených ubytovaní: ", error);
+            accommodationAssignmentsContainer.innerHTML = '<p>Chyba pri načítaní priradených ubytovaní. Skontrolujte konzolu pre detaily.</p>';
+        }
+    }
+
+
     async function deletePlayingDay(dateToDelete) {
         if (confirm(`Naozaj chcete vymazať hrací deň ${dateToDelete} a VŠETKY zápasy a autobusové linky, ktoré sa konajú v tento deň?`)) {
             try {
@@ -875,10 +1020,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                     batch.delete(doc(busesCollectionRef, busDoc.id));
                 });
 
+                // NOVÉ: Vymazanie súvisiacich priradení ubytovania
+                const accommodationsQuery = query(teamAccommodationsCollectionRef, where("date", "==", dateToDelete));
+                const accommodationsSnapshot = await getDocs(accommodationsQuery);
+                accommodationsSnapshot.docs.forEach(accDoc => {
+                    batch.delete(doc(teamAccommodationsCollectionRef, accDoc.id));
+                });
+
+
                 await batch.commit();
-                alert(`Hrací deň ${dateToDelete} a všetky súvisiace zápasy a autobusové linky boli úspešne vymazané!`);
+                alert(`Hrací deň ${dateToDelete} a všetky súvisiace zápasy, autobusové linky a priradenia ubytovania boli úspešne vymazané!`);
                 closeModal(playingDayModal); // NOVÉ: Zatvoríme modal po vymazaní
                 await displayMatchesAsSchedule();
+                await displayAccommodationAssignments(); // NOVÉ: Aktualizujeme zobrazenie ubytovaní
             } catch (error) {
                 console.error(`Chyba pri mazaní hracieho dňa ${dateToDelete}: `, error);
                 alert(`Chyba pri mazaní hracieho dňa ${dateToDelete}. Pozrite konzolu pre detaily.`);
@@ -924,10 +1078,20 @@ document.addEventListener('DOMContentLoaded', async () => {
                     batch.delete(doc(busesCollectionRef, busDoc.id));
                 });
 
+                // NOVÉ: Vymazanie súvisiacich priradení ubytovania, ak je vymazané miesto typu "Ubytovanie"
+                if (placeTypeToDelete === 'Ubytovanie') {
+                    const accommodationsQuery = query(teamAccommodationsCollectionRef, where("accommodationId", "==", placeSnapshot.docs[0].id)); // Použijeme ID ubytovne
+                    const accommodationsSnapshot = await getDocs(accommodationsQuery);
+                    accommodationsSnapshot.docs.forEach(accDoc => {
+                        batch.delete(doc(teamAccommodationsCollectionRef, accDoc.id));
+                    });
+                }
+
                 await batch.commit();
-                alert(`Miesto ${placeNameToDelete} (${placeTypeToDelete}) a všetky súvisiace zápasy a autobusové linky boli úspešne vymazané!`); 
+                alert(`Miesto ${placeNameToDelete} (${placeTypeToDelete}) a všetky súvisiace zápasy, autobusové linky a priradenia ubytovania boli úspešne vymazané!`); 
                 closeModal(placeModal); 
                 await displayMatchesAsSchedule();
+                await displayAccommodationAssignments(); // NOVÉ: Aktualizujeme zobrazenie ubytovaní
             } catch (error) {
                 console.error(`Chyba pri mazaní miesta ${placeNameToDelete} (${placeTypeToDelete}): `, error); 
                 alert(`Chyba pri mazaní miesta ${placeNameToDelete} (${placeTypeToDelete}). Pozrite konzolu pre detaily.`); 
@@ -1101,7 +1265,55 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    // NOVÉ: Funkcie pre úpravu a mazanie priradenia ubytovania
+    async function editAccommodationAssignment(assignmentId) {
+        try {
+            const assignmentDocRef = doc(teamAccommodationsCollectionRef, assignmentId);
+            const assignmentDoc = await getDoc(assignmentDocRef);
+
+            if (assignmentDoc.exists()) {
+                const assignmentData = assignmentDoc.data();
+                assignmentIdInput.value = assignmentId;
+                assignAccommodationModalTitle.textContent = 'Upraviť priradenie ubytovania';
+
+                await populatePlayingDaysSelect(assignmentDateSelect, assignmentData.date);
+                
+                // Získanie ID tímov z uložených dát
+                const selectedTeamIds = assignmentData.teams.map(team => team.teamId);
+                await populateTeamMultiSelect(teamMultiSelect, selectedTeamIds);
+                
+                await populateAccommodationSelect(accommodationSelect, assignmentData.accommodationId);
+
+                // Zobrazenie tlačidla Vymazať v modale
+                deleteAssignmentButtonModal.style.display = 'inline-block';
+                deleteAssignmentButtonModal.onclick = () => deleteAccommodationAssignment(assignmentId);
+
+                openModal(assignAccommodationModal);
+            } else {
+                alert("Priradenie ubytovania sa nenašlo.");
+            }
+        } catch (error) {
+            console.error("Chyba pri načítavaní dát priradenia ubytovania pre úpravu: ", error);
+            alert("Vyskytla sa chyba pri načítavaní dát priradenia ubytovania. Skúste to znova.");
+        }
+    }
+
+    async function deleteAccommodationAssignment(assignmentId) {
+        if (confirm('Naozaj chcete vymazať toto priradenie ubytovania?')) {
+            try {
+                await deleteDoc(doc(teamAccommodationsCollectionRef, assignmentId));
+                alert('Priradenie ubytovania úspešne vymazané!');
+                closeModal(assignAccommodationModal); // Zatvorí modal po vymazaní
+                displayAccommodationAssignments(); // Aktualizuje zobrazenie
+            } catch (error) {
+                console.error("Chyba pri mazaní priradenia ubytovania: ", error);
+                alert("Chyba pri mazaní priradenia ubytovania. Pozrite konzolu pre detaily.");
+            }
+        }
+    }
+
     await displayMatchesAsSchedule();
+    await displayAccommodationAssignments(); // NOVÉ: Načítame a zobrazíme priradenia ubytovaní
 
 
     // --- Logika pre tlačidlo '+' a dropdown ---
@@ -1177,15 +1389,31 @@ document.addEventListener('DOMContentLoaded', async () => {
         addOptions.classList.remove('show'); // Skryť dropdown po výbere
     });
 
+    // NOVÉ: Event listener pre tlačidlo Priradiť ubytovanie
+    assignAccommodationButton.addEventListener('click', async () => {
+        assignAccommodationForm.reset();
+        assignmentIdInput.value = '';
+        assignAccommodationModalTitle.textContent = 'Priradiť ubytovanie';
+        await populatePlayingDaysSelect(assignmentDateSelect); // Naplníme dátumy
+        await populateTeamMultiSelect(teamMultiSelect); // Naplníme tímy
+        await populateAccommodationSelect(accommodationSelect); // Naplníme ubytovne
+        deleteAssignmentButtonModal.style.display = 'none'; // Skryť tlačidlo Vymazať
+        openModal(assignAccommodationModal);
+        addOptions.classList.remove('show'); // Skryť dropdown po výbere
+    });
+
+
     // --- Zatváranie modálnych okien ---
     closePlayingDayModalButton.addEventListener('click', () => {
         closeModal(playingDayModal);
         displayMatchesAsSchedule();
+        displayAccommodationAssignments(); // Aktualizujeme zobrazenie ubytovaní
     });
 
     closePlaceModalButton.addEventListener('click', () => { 
         closeModal(placeModal); 
         displayMatchesAsSchedule();
+        displayAccommodationAssignments(); // Aktualizujeme zobrazenie ubytovaní
     });
 
     closeMatchModalButton.addEventListener('click', () => {
@@ -1197,6 +1425,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     closeBusModalButton.addEventListener('click', () => {
         closeModal(busModal);
         displayMatchesAsSchedule();
+    });
+
+    // NOVÉ: Zatváranie modálneho okna pre priradenie ubytovania
+    closeAssignAccommodationModalButton.addEventListener('click', () => {
+        closeModal(assignAccommodationModal);
+        displayAccommodationAssignments(); // Aktualizujeme zobrazenie
     });
 
     matchCategorySelect.addEventListener('change', async () => { 
@@ -1236,7 +1470,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const groupDoc = await getDoc(doc(groupsCollectionRef, groupId));
             let groupData = null; 
             if (groupDoc.exists()) {
-                groupData = groupData(); 
+                groupData = groupDoc.data(); 
             }
             const groupName = groupData ? (groupData.name || groupId) : groupId;
 
@@ -1607,6 +1841,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             closeModal(placeModal);
             await displayMatchesAsSchedule(); 
+            await displayAccommodationAssignments(); // NOVÉ: Aktualizujeme zobrazenie ubytovaní
         } catch (error) {
             console.error("Chyba pri ukladaní miesta: ", error); 
             alert("Chyba pri ukladaní miesta. Pozrite konzolu pre detaily.");
@@ -1645,9 +1880,74 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             closeModal(playingDayModal);
             await displayMatchesAsSchedule(); 
+            await displayAccommodationAssignments(); // NOVÉ: Aktualizujeme zobrazenie ubytovaní
         } catch (error) {
             console.error("Chyba pri ukladaní hracieho dňa: ", error);
             alert("Chyba pri ukladaní hracieho dňa. Pozrite konzolu pre detaily.");
+        }
+    });
+
+    // NOVÉ: Listener pre odoslanie formulára priradenia ubytovania
+    assignAccommodationForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const id = assignmentIdInput.value;
+        const assignmentDate = assignmentDateSelect.value;
+        const selectedTeamIds = Array.from(teamMultiSelect.selectedOptions).map(option => option.value);
+        const selectedAccommodationId = accommodationSelect.value;
+
+        if (!assignmentDate || selectedTeamIds.length === 0 || !selectedAccommodationId) {
+            alert('Prosím, vyplňte všetky povinné polia (Dátum priradenia, Tímy, Ubytovňa).');
+            return;
+        }
+
+        try {
+            // Získame názvy tímov a ubytovne pre uloženie
+            const teamsData = [];
+            for (const teamId of selectedTeamIds) {
+                const teamDoc = await getDoc(doc(clubsCollectionRef, teamId));
+                if (teamDoc.exists()) {
+                    const team = teamDoc.data();
+                    teamsData.push({
+                        teamId: teamId,
+                        teamName: `${team.name} (Kat: ${team.categoryName}, Skup: ${team.groupName}, Tím: ${team.orderInGroup})`
+                    });
+                }
+            }
+
+            const accommodationDoc = await getDoc(doc(placesCollectionRef, selectedAccommodationId));
+            let accommodationName = '';
+            if (accommodationDoc.exists()) {
+                accommodationName = accommodationDoc.data().name;
+            } else {
+                alert('Vybraná ubytovňa sa nenašla v databáze.');
+                return;
+            }
+
+            const assignmentData = {
+                date: assignmentDate,
+                teams: teamsData, // Pole objektov { teamId, teamName }
+                accommodationId: selectedAccommodationId,
+                accommodationName: accommodationName,
+                createdAt: new Date()
+            };
+
+            console.log('Dáta priradenia ubytovania na uloženie:', assignmentData);
+
+            if (id) { // Ak existuje ID, ide o úpravu
+                console.log('Aktualizujem priradenie ubytovania s ID:', id, 'Dáta:', assignmentData);
+                await setDoc(doc(teamAccommodationsCollectionRef, id), assignmentData, { merge: true });
+                alert('Priradenie ubytovania úspešne aktualizované!');
+            } else { // Inak ide o pridanie nového priradenia
+                await addDoc(teamAccommodationsCollectionRef, assignmentData);
+                alert('Nové priradenie ubytovania úspešne pridané!');
+            }
+
+            closeModal(assignAccommodationModal);
+            await displayAccommodationAssignments(); // Aktualizujeme zobrazenie
+        } catch (error) {
+            console.error("Chyba pri ukladaní priradenia ubytovania: ", error);
+            alert("Chyba pri ukladaní priradenia ubytovania. Pozrite konzolu pre detaily.");
         }
     });
 });
