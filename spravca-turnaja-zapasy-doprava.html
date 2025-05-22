@@ -29,6 +29,7 @@
             font-size: 0.8em;
             color: #333;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: 100%; /* NOVÉ: Vyplní celú výšku riadku */
         }
 
         .schedule-cell-accommodation .schedule-cell-title {
@@ -40,6 +41,19 @@
         .schedule-cell-accommodation .schedule-cell-teams {
             font-size: 0.9em;
             line-height: 1.2;
+        }
+
+        /* NOVÉ: Nastavenie výšky riadkov tabuľky */
+        .match-schedule-table tr {
+            height: 140px; /* Nastavená výška riadku pre najvyšší element (zápas) */
+        }
+
+        /* NOVÉ: Zabezpečenie, aby zápasy vyplnili celú výšku riadku */
+        .schedule-cell-match {
+            height: 100%; /* Vyplní celú výšku riadku */
+        }
+        .schedule-cell-buffer {
+            height: 100%; /* Vyplní celú výšku riadku */
         }
     </style>
 </head>
@@ -64,15 +78,7 @@
                 <div id="matchesContainer" class="schedule-container">
                     </div>
 
-                <!--
-                <section id="accommodationAssignmentsSection" class="section-block" style="margin-top: 30px;">
-                    <h3>Priradené ubytovania</h3>
-                    <div id="accommodationAssignmentsContainer">
-                        <p>Načítavam priradené ubytovania...</p>
-                    </div>
                 </section>
-                -->
-            </section>
         </main>
     </div>
 
