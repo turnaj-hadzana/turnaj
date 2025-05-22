@@ -111,18 +111,32 @@ document.addEventListener('DOMContentLoaded', async () => {
         selectElement.innerHTML = '<option value="">-- Vyberte miesto (športovú halu) --</option>';
         try {
             const querySnapshot = await getDocs(query(placesCollectionRef, where("type", "==", "Športová hala"), orderBy("name", "asc")));
-            querySnapshot.forEach((doc) => {
-                const place = { id: doc.id, ...doc.data() };
+            if (querySnapshot.empty) {
                 const option = document.createElement('option');
-                option.value = place.name; // Pre zápasy ukladáme len názov haly
-                option.textContent = `${place.name}`; // Zobrazíme len názov
+                option.value = '';
+                option.textContent = '-- Žiadne športové haly nenájdené --';
+                option.disabled = true;
                 selectElement.appendChild(option);
-            });
+                console.warn("No sport halls found in Firestore.");
+            } else {
+                querySnapshot.forEach((doc) => {
+                    const place = { id: doc.id, ...doc.data() };
+                    const option = document.createElement('option');
+                    option.value = place.name; // Pre zápasy ukladáme len názov haly
+                    option.textContent = `${place.name}`; // Zobrazíme len názov
+                    selectElement.appendChild(option);
+                });
+            }
             if (selectedPlaceName) {
                 selectElement.value = selectedPlaceName;
             }
         } catch (error) {
             console.error("Error loading sport halls: ", error);
+            const option = document.createElement('option');
+            option.value = '';
+            option.textContent = '-- Chyba pri načítaní hál --';
+            option.disabled = true;
+            selectElement.appendChild(option);
         }
     }
 
@@ -131,18 +145,32 @@ document.addEventListener('DOMContentLoaded', async () => {
         selectElement.innerHTML = '<option value="">-- Vyberte miesto --</option>';
         try {
             const querySnapshot = await getDocs(query(placesCollectionRef, orderBy("name", "asc")));
-            querySnapshot.forEach((doc) => {
-                const place = { id: doc.id, ...doc.data() };
+            if (querySnapshot.empty) {
                 const option = document.createElement('option');
-                option.value = `${place.name}:::${place.type}`; // Uložíme kombináciu názvu a typu ako hodnotu
-                option.textContent = `${place.name} (${place.type})`; // Zobrazíme názov miesta a jeho typ
+                option.value = '';
+                option.textContent = '-- Žiadne miesta nenájdené --';
+                option.disabled = true;
                 selectElement.appendChild(option);
-            });
+                console.warn("No places found in Firestore.");
+            } else {
+                querySnapshot.forEach((doc) => {
+                    const place = { id: doc.id, ...doc.data() };
+                    const option = document.createElement('option');
+                    option.value = `${place.name}:::${place.type}`; // Uložíme kombináciu názvu a typu ako hodnotu
+                    option.textContent = `${place.name} (${place.type})`; // Zobrazíme názov miesta a jeho typ
+                    selectElement.appendChild(option);
+                });
+            }
             if (selectedPlaceCombined) {
                 selectElement.value = selectedPlaceCombined;
             }
         } catch (error) {
             console.error("Error loading places: ", error);
+            const option = document.createElement('option');
+            option.value = '';
+            option.textContent = '-- Chyba pri načítaní miest --';
+            option.disabled = true;
+            selectElement.appendChild(option);
         }
     }
     // --- Koniec funkcií pre plnenie select boxov ---
@@ -560,7 +588,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             const scheduleTableContainer = matchesContainer.querySelector('.schedule-table-container');
             const scheduleTable = matchesContainer.querySelector('.match-schedule-table');
             
-            // NOVÉ: Definícia scheduleTableContainerRect je presunutá sem, aby bola dostupná
+            // NOVÉ: Kontrola existencie elementov pred ich použitím
+            if (!scheduleTableContainer || !scheduleTable) {
+                console.error("Schedule table container or table not found. Cannot render buses or calculate offsets.");
+                matchesContainer.innerHTML = '<p>Chyba pri zobrazení rozvrhu. Chýbajú komponenty tabuľky.</p>';
+                return; // Ukončíme funkciu, ak elementy chýbajú
+            }
+
             const scheduleTableContainerRect = scheduleTableContainer.getBoundingClientRect();
 
             // Vytvoríme a pridáme busOverlayContainer teraz, keď je tabuľka v DOM
