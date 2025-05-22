@@ -206,7 +206,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             clubsSnapshot.forEach((doc) => {
                 const team = doc.data();
                 if (team.name) {
-                    // Ak názov tímu obsahuje '/', považuje sa za samostatný základný názov klubu
+                    // Ak názov tímu obsahuje '⁄', považuje sa za samostatný základný názov klubu
                     if (team.name.includes('⁄')) {
                         uniqueBaseClubNames.add(team.name);
                     } else {
@@ -264,12 +264,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const team = { id: doc.id, ...doc.data() };
                 
                 if (baseClubName.includes('⁄')) {
-                    // Ak základný názov klubu obsahuje '/', hľadáme presnú zhodu
+                    // Ak základný názov klubu obsahuje '⁄', hľadáme presnú zhodu
                     if (team.name === baseClubName) {
                         filteredTeams.push(team);
                     }
                 } else {
-                    // Ak základný názov klubu neobsahuje '/', hľadáme varianty s písmenami na konci
+                    // Ak základný názov klubu neobsahuje '⁄', hľadáme varianty s písmenami na konci
                     // Regulárny výraz `^${baseClubName}(?:\\s[A-Z])?$` zodpovedá:
                     // - presnému názvu klubu (napr. "MŠK IUVENTA Michalovce")
                     // - alebo názvu klubu s medzerou a jedným veľkým písmenom na konci (napr. "MŠK IUVENTA Michalovce A")
@@ -296,7 +296,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }).forEach(team => {
                     const option = document.createElement('option');
                     option.value = team.id;
-                    option.textContent = `${team.name} (Kat: ${team.categoryName}, Skup: ${team.groupName}, Tím: ${team.orderInGroup})`;
+                    // Zmenené zobrazenie: iba názov tímu a názov skupiny
+                    option.textContent = `${team.name} ${team.groupName}`; 
                     if (selectedTeamId === team.id) {
                         option.selected = true;
                     }
@@ -587,7 +588,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             let scheduleHtml = '<div class="schedule-table-container" style="position: relative; overflow: auto;">'; 
             scheduleHtml += '<table class="match-schedule-table"><thead><tr>';
-            scheduleHtml += `<th class="fixed-column" style="position: sticky; top: 0; left: 0; z-index: 101; background-color: #d0d0d0;">Miesto / Čas</th>`;
+            scheduleHtml += `<th class="fixed-column" style="position: sticky; top: 0; left: 0; z-index: 101; background-color: #d0d0d0;">Miesto ⁄ Čas</th>`;
 
             sortedDates.forEach(date => {
                 const range = dailyTimeRanges.get(date);
@@ -828,7 +829,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const endLocationTop = locationRowTopOffsets.get(endLocationKey);
 
                 if (startLocationTop === undefined || endLocationTop === undefined) {
-                    console.warn(`Nenašiel som pozíciu pre začiatok alebo koniec trasy autobusu: ${bus.busName} (${startLocationKey} -> ${endLocationKey}). Možno chýba typ miesta v uložených dátach autobusu.`);
+                    console.warn(`Nenašiel som pozíciu pre začiatok alebo koniec trasy autobusu: ${bus.busName} (${startLocationKey} → ${endLocationKey}). Možno chýba typ miesta v uložených dátach autobusu.`);
                     return;
                 }
 
@@ -1223,16 +1224,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 busNameInput.value = busData.busName || '';
                 await populatePlayingDaysSelect(busDateSelect, busData.date);
                 // Tieto volania funkcií už načítavajú VŠETKY miesta
-                await populateAllPlaceSelects(busStartLocationSelect, busData.startLocation);
+                await populateAllPlaceSelects(busStartLocationSelect);
                 busStartTimeInput.value = busData.startTime || '';
-                await populateAllPlaceSelects(busEndLocationSelect, busData.endLocation);
-                busEndTimeInput.value = busData.endTime || '';
-                busNotesInput.value = busData.notes || '';
-
-                // Zobrazenie tlačidla Vymazať v modale
-                deleteBusButtonModal.style.display = 'inline-block';
-                deleteBusButtonModal.onclick = () => deleteBus(busId);
-
+                await populateAllPlaceSelects(busEndLocationSelect, ''); 
+                deleteBusButtonModal.style.display = 'none';
                 openModal(busModal);
             } else {
                 alert("Autobusová linka sa nenašla.");
@@ -1274,7 +1269,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const assignedTeam = assignmentData.teams[0];
                 let assignedClubName = '';
                 if (assignedTeam && assignedTeam.teamName) {
-                    // Ak názov tímu obsahuje '/', použijeme ho celý ako základný názov klubu
+                    // Ak názov tímu obsahuje '⁄', použijeme ho celý ako základný názov klubu
                     if (assignedTeam.teamName.includes('⁄')) {
                         assignedClubName = assignedTeam.teamName.split('(')[0].trim();
                     } else {
@@ -1770,7 +1765,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             if (overlapFound) {
                 alert(`Autobus "${busName}" sa prekrýva s existujúcou linkou dňa ${busDate}:\n\n` +
-                      `Existujúca linka: ${overlappingBusDetails.startTime} - ${overlappingBusDetails.endTime} (${overlappingBusDetails.startLocation.split(':::')[0]} -> ${overlappingBusDetails.endLocation.split(':::')[0]})\n\n` +
+                      `Existujúca linka: ${overlappingBusDetails.startTime} - ${overlappingBusDetails.endTime} (${overlappingBusDetails.startLocation.split(':::')[0]} → ${overlappingBusDetails.endLocation.split(':::')[0]})\n\n` +
                       `Prosím, upravte čas odchodu alebo príchodu novej linky.`);
                 return; 
             }
@@ -1898,7 +1893,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 alert('Hrací deň úspešne aktualizovaný!');
             } else {
                 await addDoc(playingDaysCollectionRef, { ...playingDayData, createdAt: new Date() });
-                alert('Hrací deň úspešne pridaný!');
+                alert('Nová hrací deň úspešne pridaný!');
             }
             
             closeModal(playingDayModal);
