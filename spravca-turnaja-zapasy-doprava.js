@@ -46,7 +46,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Modálne okno pre miesto (pôvodne športová hala)
     const placeModal = document.getElementById('placeModal');
     const closePlaceModalButton = document.getElementById('closePlaceModal');
-    const placeForm = document = document.getElementById('placeForm');
+    const placeForm = document.getElementById('placeForm');
     const placeIdInput = document.getElementById('placeId');
     const placeTypeSelect = document.getElementById('placeTypeSelect');
     const placeNameInput = document.getElementById('placeName');
