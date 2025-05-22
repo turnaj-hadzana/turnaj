@@ -570,96 +570,95 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                     scheduleHtml += `<td colspan="${colspan}" style="position: relative; background-color: #f7f7f7;">`;
 
-                    const eventsForCell = allEvents.filter(event => {
-                        if (event.date !== date) return false;
-
-                        if (event.type === 'match' && placeType === 'Športová hala' && event.location === locationName) {
-                            return true;
-                        }
-                        if (event.type === 'accommodation' && placeType === 'Ubytovanie' && event.accommodationName === locationName) {
-                            return true;
-                        }
-                        return false;
+                    // Separate matches and accommodations for distinct rendering logic within the cell
+                    const matchesInCell = allEvents.filter(event => {
+                        return event.type === 'match' && event.date === date && placeType === 'Športová hala' && event.location === locationName;
+                    });
+                    const accommodationsInCell = allEvents.filter(event => {
+                        return event.type === 'accommodation' && event.date === date && placeType === 'Ubytovanie' && event.accommodationName === locationName;
                     });
 
-                    // Sort events for consistent display, accommodations first (as they are all-day), then matches by time
-                    eventsForCell.sort((a, b) => {
-                        if (a.type === 'accommodation' && b.type === 'match') return -1;
-                        if (a.type === 'match' && b.type === 'accommodation') return 1;
-                        if (a.type === 'match' && b.type === 'match') {
-                            const [aH, aM] = a.startTime.split(':').map(Number);
-                            const [bH, bM] = b.startTime.split(':').map(Number);
-                            return (aH * 60 + aM) - (bH * 60 + bM);
-                        }
-                        return 0; 
+                    // Render matches (current logic)
+                    matchesInCell.sort((a, b) => {
+                        const [aH, aM] = a.startTime.split(':').map(Number);
+                        const [bH, bM] = b.startTime.split(':').map(Number);
+                        return (aH * 60 + aM) - (bH * 60 + bM);
                     });
 
-                    eventsForCell.forEach(event => {
-                        if (event.type === 'match') {
-                            const [startH, startM] = event.startTime.split(':').map(Number);
-                            const absoluteStartMin = startH * 60 + startM;
-                            
-                            const relativeStartMinInCell = absoluteStartMin - (range.minHour * 60);
+                    matchesInCell.forEach(event => {
+                        const [startH, startM] = event.startTime.split(':').map(Number);
+                        const absoluteStartMin = startH * 60 + startM;
+                        
+                        const relativeStartMinInCell = absoluteStartMin - (range.minHour * 60);
 
-                            const matchBlockLeftPx = relativeStartMinInCell * PIXELS_PER_MINUTE;
-                            const matchBlockWidthPx = event.duration * PIXELS_PER_MINUTE;
-                            const bufferBlockLeftPx = matchBlockLeftPx + matchBlockWidthPx;
-                            const bufferBlockWidthPx = event.bufferTime * PIXELS_PER_MINUTE;
+                        const matchBlockLeftPx = relativeStartMinInCell * PIXELS_PER_MINUTE;
+                        const matchBlockWidthPx = event.duration * PIXELS_PER_MINUTE;
+                        const bufferBlockLeftPx = matchBlockLeftPx + matchBlockWidthPx;
+                        const bufferBlockWidthPx = event.bufferTime * PIXELS_PER_MINUTE;
 
-                            const matchEndTime = new Date();
-                            matchEndTime.setHours(startH, startM + event.duration, 0, 0);
-                            const formattedEndTime = matchEndTime.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' });
+                        const matchEndTime = new Date();
+                        matchEndTime.setHours(startH, startM + event.duration, 0, 0);
+                        const formattedEndTime = matchEndTime.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' });
 
-                            let team1ClubNameDisplay = event.team1ClubName ? `${event.team1ClubName}` : '';
-                            let team2ClubNameDisplay = event.team2ClubName ? `${event.team2ClubName}` : '';
+                        let team1ClubNameDisplay = event.team1ClubName ? `${event.team1ClubName}` : '';
+                        let team2ClubNameDisplay = event.team2ClubName ? `${event.team2ClubName}` : '';
 
-                            let clubNamesHtml = '';
-                            if (team1ClubNameDisplay) {
-                                clubNamesHtml += `${team1ClubNameDisplay}`;
-                            }
-                            if (team2ClubNameDisplay) {
-                                if (clubNamesHtml) clubNamesHtml += `<br>`; 
-                                clubNamesHtml += `${team2ClubNameDisplay}`;
-                            }
+                        let clubNamesHtml = '';
+                        if (team1ClubNameDisplay) {
+                            clubNamesHtml += `${team1ClubNameDisplay}`;
+                        }
+                        if (team2ClubNameDisplay) {
+                            if (clubNamesHtml) clubNamesHtml += `<br>`; 
+                            clubNamesHtml += `${team2ClubNameDisplay}`;
+                        }
 
-                            const finalClubNamesHtml = clubNamesHtml ? `<span style="font-weight: normal;">${clubNamesHtml}</span>` : '';
+                        const finalClubNamesHtml = clubNamesHtml ? `<span style="font-weight: normal;">${clubNamesHtml}</span>` : '';
 
+                        scheduleHtml += `
+                            <div class="schedule-cell-match"
+                                data-id="${event.id}" data-type="${event.type}"
+                                style="left: ${matchBlockLeftPx}px; width: ${matchBlockWidthPx}px; top: 0;">
+                                <div class="schedule-cell-content">
+                                    <p class="schedule-cell-time">${event.startTime} - ${formattedEndTime}</p>
+                                    <p class="schedule-cell-category">${event.categoryName || 'N/A'}${event.groupName ? ` ${event.groupName}` : ''}</p>
+                                    <p class="schedule-cell-teams">
+                                        ${event.team1DisplayName}<br>
+                                        ${event.team2DisplayName}<br>
+                                        ${finalClubNamesHtml}
+                                    </p>
+                                </div>
+                            </div>
+                        `;
+                        if (event.bufferTime > 0) {
                             scheduleHtml += `
-                                <div class="schedule-cell-match"
-                                    data-id="${event.id}" data-type="${event.type}"
-                                    style="left: ${matchBlockLeftPx}px; width: ${matchBlockWidthPx}px; top: 0;">
-                                    <div class="schedule-cell-content">
-                                        <p class="schedule-cell-time">${event.startTime} - ${formattedEndTime}</p>
-                                        <p class="schedule-cell-category">${event.categoryName || 'N/A'}${event.groupName ? ` ${event.groupName}` : ''}</p>
-                                        <p class="schedule-cell-teams">
-                                            ${event.team1DisplayName}<br>
-                                            ${event.team2DisplayName}<br>
-                                            ${finalClubNamesHtml}
-                                        </p>
-                                    </div>
+                                <div class="schedule-cell-buffer"
+                                    style="left: ${bufferBlockLeftPx}px; width: ${bufferBlockWidthPx}px; top: 0;">
                                 </div>
                             `;
-                            if (event.bufferTime > 0) {
-                                scheduleHtml += `
-                                    <div class="schedule-cell-buffer"
-                                        style="left: ${bufferBlockLeftPx}px; width: ${bufferBlockWidthPx}px; top: 0;">
-                                    </div>
-                                `;
-                            }
-                        } else if (event.type === 'accommodation') { 
+                        }
+                    });
+
+                    // Render accommodations (new logic for side-by-side)
+                    const totalAccommodationsInCell = accommodationsInCell.length;
+                    if (totalAccommodationsInCell > 0) {
+                        const cellWidth = (range.maxHour - range.minHour) * CELL_WIDTH_PX; // Total width of the td cell
+                        const blockWidth = cellWidth / totalAccommodationsInCell;
+
+                        accommodationsInCell.forEach((event, index) => {
+                            const blockLeft = index * blockWidth;
                             const teamNames = event.teams.map(team => team.teamName).join(', ');
                             scheduleHtml += `
                                 <div class="schedule-cell-accommodation"
                                     data-id="${event.id}" data-type="${event.type}"
-                                    style="left: 0; width: 100%; top: 0;">
+                                    style="position: absolute; left: ${blockLeft}px; width: ${blockWidth}px; top: 0; height: 100%;">
                                     <div class="schedule-cell-content">
                                         <p class="schedule-cell-title">Ubytovanie</p>
                                         <p class="schedule-cell-teams">${teamNames}</p>
                                     </div>
                                 </div>
                             `;
-                        }
-                    });
+                        });
+                    }
                     scheduleHtml += '</td>';
                 });
                 scheduleHtml += '</tr>';
