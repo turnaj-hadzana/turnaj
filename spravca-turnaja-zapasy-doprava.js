@@ -230,7 +230,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const option = document.createElement('option');
                     option.value = team.id;
                     // Upravená podmienka pre zobrazenie groupId, ak groupName chýba
-                    option.textContent = `${team.name} (Kat: ${team.categoryName || 'N/A'}, Skup: ${team.groupName || team.groupId || 'N/A'}, Tím: ${team.orderInGroup || 'N/A'})`;
+                    option.textContent = `${team.name} - ${team.groupName || team.groupId})`;
                     if (currentAssignedTeamId === team.id) { // Upravená podmienka pre jeden výber
                         option.selected = true;
                     }
