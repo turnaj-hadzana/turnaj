@@ -3,18 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Správca Turnaja - Logistika</title>
+    <title>Správca turnaja - Logistika</title>
     <link rel="icon" href="favicon.ico" type="image/x-icon">    
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="spravca-turnaja-style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
 </head>
 <body>
-<!--
     <script type="module" src="auth.js"></script>
     <script src="script.js"></script>
--->    
-    <h1>Správca Turnaja</h1>
+    <h1>Správca turnaja</h1>
     <div class="content-wrapper">
         <nav class="left-menu">
             <ul>
@@ -22,7 +19,7 @@
                 <li><a href="spravca-turnaja-skupiny.html">Vytvorenie skupín</a></li>
                 <li><a href="spravca-turnaja-zoznam-timov.html">Vytvorenie tímov</a></li>
                 <li><a href="zobrazenie-skupin.html">Zobrazenie skupín</a></li>
-                <li><a href="spravca-turnaja-zapasy-doprava.html" class="active">Logistika</a></li>
+                <li><a href="spravca-turnaja-zapasy-doprava.html">Logistika</a></li>
                 <li><a href="spravca-turnaja-nastavenia.html">Nastavenia</a></li>
             </ul>
         </nav>
@@ -36,7 +33,7 @@
         </main>
     </div>
 
-    <div id="matchModal" class="modal-overlay">
+    <div id="matchModal" class="modal">
         <div class="modal-content">
             <span class="close-button" id="closeMatchModal">&times;</span>
             <h2 id="matchModalTitle">Pridať nový zápas</h2>
@@ -84,7 +81,7 @@
         </div>
     </div>
 
-    <div id="playingDayModal" class="modal-overlay">
+    <div id="playingDayModal" class="modal">
         <div class="modal-content">
             <span class="close-button" id="closePlayingDayModal">&times;</span>
             <h2 id="playingDayModalTitle">Pridať hrací deň</h2>
@@ -100,7 +97,7 @@
         </div>
     </div>
 
-    <div id="placeModal" class="modal-overlay">
+    <div id="placeModal" class="modal">
         <div class="modal-content">
             <span class="close-button" id="closePlaceModal">&times;</span>
             <h2>Pridať nové miesto</h2>
@@ -113,6 +110,7 @@
                         <option value="Športová hala">Športová hala</option>
                         <option value="Ubytovanie">Ubytovanie</option>
                         <option value="Stravovacie zariadenie">Stravovacie zariadenie</option>
+                        <option value="Iné">Iné</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -133,7 +131,7 @@
         </div>
     </div>
 
-    <div id="busModal" class="modal-overlay">
+    <div id="busModal" class="modal">
         <div class="modal-content">
             <span class="close-button" id="closeBusModal">&times;</span>
             <h2 id="busModalTitle">Pridať autobusovú linku</h2>
@@ -179,7 +177,7 @@
         </div>
     </div>
 
-    <div id="assignAccommodationModal" class="modal-overlay">
+    <div id="assignAccommodationModal" class="modal">
         <div class="modal-content">
             <span class="close-button" id="closeAssignAccommodationModal">&times;</span>
             <h2 id="assignAccommodationModalTitle">Priradiť ubytovanie</h2>
@@ -192,15 +190,9 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="clubSelect">Klub:</label>
-                    <select id="clubSelect" required>
-                        <option value="">-- Vyberte klub --</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="teamDetailsSelect">Konkrétny tím (voliteľné):</label>
-                    <select id="teamDetailsSelect">
-                        <option value="_ENTIRE_CLUB_">-- Celý klub --</option>
+                    <label for="teamSelect">Vyberte tím:</label>
+                    <select id="teamSelect" required>
+                        <option value="">-- Vyberte tím --</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -223,20 +215,6 @@
             <button id="addMatchButton">Pridať zápas</button>
             <button id="addBusButton">Pridať autobus</button>
             <button id="assignAccommodationButton">Priradiť ubytovanie</button>
-        </div>
-    </div>
-
-
-    <div id="messageModal" class="modal">
-        <div class="modal-content">
-            <span class="close" id="closeMessageModal">&times;</span>
-            <h2 id="messageModalTitle">Názov správy</h2>
-            <p id="messageModalText">Text správy.</p>
-            <div class="flex justify-end gap-4 mt-6">
-                <button id="messageModalOkButton" class="action-button">OK</button>
-                <button id="messageModalConfirmButton" class="action-button edit-btn">Potvrdiť</button>
-                <button id="messageModalCancelButton" class="action-button delete-btn">Zrušiť</button>
-            </div>
         </div>
     </div>
 
