@@ -97,6 +97,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // --- Funkcie pre plnenie select boxov ---
     async function populatePlayingDaysSelect(selectElement, selectedDate = '') {
+        if (!selectElement) return; // Pridaná kontrola
         selectElement.innerHTML = '<option value="">-- Vyberte dátum --</option>';
         try {
             const querySnapshot = await getDocs(query(playingDaysCollectionRef, orderBy("date", "asc")));
@@ -121,6 +122,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Funkcia: Plní select boxy iba športovými halami (pre zápasy)
     async function populateSportHallSelects(selectElement, selectedPlaceName = '') {
+        if (!selectElement) return; // Pridaná kontrola
         selectElement.innerHTML = '<option value="">-- Vyberte miesto (športovú halu) --</option>';
         try {
             const querySnapshot = await getDocs(query(placesCollectionRef, where("type", "==", "Športová hala"), orderBy("name", "asc")));
@@ -155,6 +157,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Funkcia: Plní select boxy všetkými typmi miest (pre autobusy)
     async function populateAllPlaceSelects(selectElement, selectedPlaceCombined = '') {
+        if (!selectElement) return; // Pridaná kontrola
         selectElement.innerHTML = '<option value="">-- Vyberte miesto --</option>';
         try {
             // Táto časť kódu načítava VŠETKY miesta bez ohľadu na typ
@@ -190,6 +193,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Funkcia na plnenie prvého select boxu (kluby)
     async function populateClubSelect(selectElement, selectedClubName = '') {
+        if (!selectElement) return; // Pridaná kontrola
         selectElement.innerHTML = '<option value="">-- Vyberte klub --</option>'; // Pridaná predvolená možnosť
         try {
             console.log('Načítavam kluby pre select box...');
@@ -233,6 +237,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Funkcia na plnenie druhého select boxu (konkrétne tímy pre vybraný klub)
     async function populateSpecificTeamSelect(selectElement, clubName, selectedTeamId = '') {
+        if (!selectElement) return; // Pridaná kontrola
         selectElement.innerHTML = '<option value="">-- Vyberte konkrétny tím (nepovinné) --</option>'; // Pridaná predvolená možnosť
         if (!clubName) {
             selectElement.disabled = true;
@@ -276,6 +281,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Funkcia na plnenie selectu ubytovňami
     async function populateAccommodationSelect(selectElement, selectedAccommodationId = '') {
+        if (!selectElement) return; // Pridaná kontrola
         selectElement.innerHTML = '<option value="">-- Vyberte ubytovňu --</option>';
         try {
             const querySnapshot = await getDocs(query(placesCollectionRef, where("type", "==", "Ubytovanie"), orderBy("name", "asc")));
@@ -1238,8 +1244,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (assignedClubName) {
                     await populateSpecificTeamSelect(specificTeamSelect, assignedClubName, assignedTeam?.teamId || ''); // Naplníme tímy pre klub a vyberieme konkrétny tím
                 } else {
-                    specificTeamSelect.innerHTML = '<option value="">-- Vyberte konkrétny tím (nepovinné) --</option>';
-                    specificTeamSelect.disabled = true;
+                    if (specificTeamSelect) { // Pridaná kontrola
+                        specificTeamSelect.innerHTML = '<option value="">-- Vyberte konkrétny tím (nepovinné) --</option>';
+                        specificTeamSelect.disabled = true;
+                    }
                 }
                 
                 await populateAccommodationSelect(accommodationSelect, assignmentData.accommodationId);
@@ -1316,8 +1324,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         await populateCategorySelect(matchCategorySelect);
         await populatePlayingDaysSelect(matchDateSelect);
         await populateSportHallSelects(matchLocationSelect);
-        matchGroupSelect.innerHTML = '<option value="">-- Vyberte skupinu --</option>';
-        matchGroupSelect.disabled = true;
+        if (matchGroupSelect) { // Pridaná kontrola
+            matchGroupSelect.innerHTML = '<option value="">-- Vyberte skupinu --</option>';
+            matchGroupSelect.disabled = true;
+        }
         team1NumberInput.value = '';
         team2NumberInput.value = '';
         matchDurationInput.value = ''; 
@@ -1353,8 +1363,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         assignAccommodationModalTitle.textContent = 'Priradiť ubytovanie';
         await populatePlayingDaysSelect(assignmentDateSelect);
         await populateClubSelect(clubSelect); // Použitie novej funkcie
-        specificTeamSelect.innerHTML = '<option value="">-- Vyberte konkrétny tím (nepovinné) --</option>';
-        specificTeamSelect.disabled = true;
+        if (specificTeamSelect) { // Pridaná kontrola
+            specificTeamSelect.innerHTML = '<option value="">-- Vyberte konkrétny tím (nepovinné) --</option>';
+            specificTeamSelect.disabled = true;
+        }
         await populateAccommodationSelect(accommodationSelect);
         deleteAssignmentButtonModal.style.display = 'none';
         openModal(assignAccommodationModal);
@@ -1394,11 +1406,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         const selectedCategoryId = matchCategorySelect.value;
         if (selectedCategoryId) {
             await populateGroupSelect(selectedCategoryId, matchGroupSelect); 
-            matchGroupSelect.disabled = false;
+            if (matchGroupSelect) { // Pridaná kontrola
+                matchGroupSelect.disabled = false;
+            }
             await updateMatchDurationAndBuffer(); 
         } else {
-            matchGroupSelect.innerHTML = '<option value="">-- Vyberte skupinu --</option>';
-            matchGroupSelect.disabled = true;
+            if (matchGroupSelect) { // Pridaná kontrola
+                matchGroupSelect.innerHTML = '<option value="">-- Vyberte skupinu --</option>';
+                matchGroupSelect.disabled = true;
+            }
             team1NumberInput.value = '';
             team2NumberInput.value = '';
             matchDurationInput.value = 60;
@@ -1414,10 +1430,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     matchBufferTimeInput.addEventListener('change', findFirstAvailableTime);
 
     // Nový event listener pre zmenu výberu klubu
-    clubSelect.addEventListener('change', async () => {
-        const selectedClubName = clubSelect.value;
-        await populateSpecificTeamSelect(specificTeamSelect, selectedClubName);
-    });
+    if (clubSelect) { // Pridaná kontrola
+        clubSelect.addEventListener('change', async () => {
+            const selectedClubName = clubSelect.value;
+            await populateSpecificTeamSelect(specificTeamSelect, selectedClubName);
+        });
+    }
 
 
     const getTeamName = async (categoryId, groupId, teamNumber) => {
@@ -1758,7 +1776,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const type = placeTypeSelect.value.trim();
         const name = placeNameInput.value.trim();
         const address = placeAddressInput.value.trim();
-        const googleMapsUrl = placeGoogleMapsUrlInput.value.trim(); // Opravená premenná
+        const googleMapsUrl = placeGoogleMapsUrlInput.value.trim();
 
         if (!type || !name || !address || !googleMapsUrl) {
             alert('Prosím, vyplňte všetky polia (Typ miesta, Názov miesta, Adresa, Odkaz na Google Maps).');
