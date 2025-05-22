@@ -428,7 +428,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
 
                 scheduleHtml += '<tr>';
-                scheduleHtml += `<th class="fixed-column schedule-location-header delete-location-header ${typeClass}" data-location="${locationName}" title="Kliknutím upravíte miesto ${locationName}">
+                // ZMENENÉ: Pridaný data-type atribút
+                scheduleHtml += `<th class="fixed-column schedule-location-header delete-location-header ${typeClass}" data-location="${locationName}" data-type="${placeType}" title="Kliknutím upravíte miesto ${locationName}">
                     <div class="hall-name">${locationName} (${placeType})</div> <div class="hall-address">
                         <a href="${placeGoogleMapsUrl}" target="_blank" rel="noopener noreferrer">${placeAddress}</a>
                     </div>
@@ -746,7 +747,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     // Ak to nie je odkaz a kliknutie je na samotnej hlavičke alebo div s názvom haly, pokračujte s úpravou
                     if (event.target === header || event.target.closest('.hall-name')) { 
                         const locationToEdit = header.dataset.location; // ZMENENÉ: locationToDelete na locationToEdit
-                        editPlace(locationToEdit); // ZMENENÉ: deletePlace na editPlace
+                        const locationTypeToEdit = header.dataset.type; // NOVÉ: Získame typ miesta
+                        editPlace(locationToEdit, locationTypeToEdit); // ZMENENÉ: Odovzdávame aj typ miesta
                     }
                 });
             });
@@ -803,14 +805,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             try {
                 const batch = writeBatch(db);
 
-                const placeQuery = query(placesCollectionRef, where("name", "==", placeNameToDelete)); // ZMENENÉ: sportHallsCollectionRef na placesCollectionRef
-                const placeSnapshot = await getDocs(placeQuery); // ZMENENÉ
+                // ZMENENÉ: Kontrola na základe názvu a typu, aby sa vymazalo správne miesto
+                const placeQuery = query(placesCollectionRef, where("name", "==", placeNameToDelete)); 
+                const placeSnapshot = await getDocs(placeQuery); 
                 if (!placeSnapshot.empty) {
                     placeSnapshot.docs.forEach(docToDelete => {
-                        batch.delete(doc(placesCollectionRef, docToDelete.id)); // ZMENENÉ
+                        batch.delete(doc(placesCollectionRef, docToDelete.id)); 
                     });
                 } else {
-                    console.warn(`Miesto ${placeNameToDelete} sa nenašlo, ale pokračujem v mazaní zápasov a autobusov.`); // ZMENENÉ
+                    console.warn(`Miesto ${placeNameToDelete} sa nenašlo, ale pokračujem v mazaní zápasov a autobusov.`); 
                 }
 
                 // Vymazanie súvisiacich zápasov
@@ -873,11 +876,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // NOVÁ FUNKCIA: editPlace
-    async function editPlace(placeName) {
+    // NOVÁ FUNKCIA: editPlace (ZMENENÉ: Prijíma názov a typ)
+    async function editPlace(placeName, placeType) {
         try {
-            // Nájdeme miesto podľa názvu
-            const q = query(placesCollectionRef, where("name", "==", placeName));
+            // Nájdeme miesto podľa názvu A TYPU
+            const q = query(placesCollectionRef, where("name", "==", placeName), where("type", "==", placeType));
             const querySnapshot = await getDocs(q);
 
             if (!querySnapshot.empty) {
@@ -1191,7 +1194,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 clubId: clubId
             };
         } catch (error) {
-            console.error("Chyba pri získavaní názvu tímu: ", error);
+            console.error("Chyba pri získavaní názvov tímov: ", error);
             return { fullDisplayName: `Chyba`, clubName: `Chyba`, clubId: null };
         }
     };
