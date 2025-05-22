@@ -738,25 +738,31 @@ async function displayMatchesAsSchedule() {
                         const blockLeft = index * blockWidth;
                         const accommodationId = assignment.id;
 
-                        // Logika pre zobrazenie názvu klubu namiesto všetkých tímov
-                        const baseClubNames = new Set();
-                        assignment.teams.forEach(team => {
-                            let baseName;
-                            const fullTeamName = team.teamName.split('(')[0].trim();
-                            if (fullTeamName.includes('⁄')) {
-                                baseName = fullTeamName;
-                            } else {
-                                baseName = fullTeamName.replace(/\s[A-Z]$/, '');
-                            }
-                            baseClubNames.add(baseName);
-                        });
-
                         let displayText;
-                        if (baseClubNames.size === 1) {
-                            displayText = Array.from(baseClubNames)[0]; // Zobrazí len základný názov klubu
+                        if (assignment.teams.length === 1) {
+                            // Ak je priradený iba jeden tím, zobrazíme jeho celý názov
+                            displayText = assignment.teams[0].teamName.split('(')[0].trim();
                         } else {
-                            // Zobrazí zoznam tímov (ako predtým), ak nie sú všetky z rovnakého klubu
-                            displayText = assignment.teams.map(team => team.teamName.split('(')[0].trim()).join(', ');
+                            // Ak je priradených viac tímov, skontrolujeme, či sú všetky z rovnakého základného klubu
+                            const baseClubNames = new Set();
+                            assignment.teams.forEach(team => {
+                                let baseName;
+                                const fullTeamName = team.teamName.split('(')[0].trim();
+                                if (fullTeamName.includes('⁄')) {
+                                    baseName = fullTeamName;
+                                } else {
+                                    baseName = fullTeamName.replace(/\s[A-Z]$/, '');
+                                }
+                                baseClubNames.add(baseName);
+                            });
+
+                            if (baseClubNames.size === 1) {
+                                // Ak sú všetky tímy z rovnakého základného klubu, zobrazíme iba názov klubu
+                                displayText = Array.from(baseClubNames)[0];
+                            } else {
+                                // Inak zobrazíme zoznam všetkých tímov
+                                displayText = assignment.teams.map(team => team.teamName.split('(')[0].trim()).join(', ');
+                            }
                         }
 
                         scheduleHtml += `
@@ -1174,7 +1180,7 @@ async function editPlace(placeName, placeType) {
 
             openModal(placeModal);
         } else {
-            alert("Miesto sa nenašlo.");
+                alert("Miesto sa nenašlo.");
         }
     } catch (error) {
         console.error("Chyba pri načítavaní dát miesta pre úpravu: ", error);
