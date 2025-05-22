@@ -260,7 +260,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             console.log(`Načítavam tímy pre základný klub: ${baseClubName}...`);
             const allTeamsSnapshot = await getDocs(clubsCollectionRef);
-            const filteredTeams = [];
+            let filteredTeams = [];
 
             // Načítame všetky skupiny a kategórie raz, aby sme sa vyhli opakovaným volaniam getDoc v cykle
             const groupsSnapshot = await getDocs(groupsCollectionRef);
@@ -295,13 +295,49 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
             console.log(`Filtrované tímy pre základný klub "${baseClubName}":`, filteredTeams); // Log pre filtrované tímy
 
-            if (filteredTeams.length === 0) {
+            // NEW LOGIC: Filter out already assigned teams for the selected date range
+            const currentAssignmentId = assignmentIdInput.value; // Get ID of assignment being edited
+            const selectedDateFrom = assignmentDateFromSelect.value;
+            const selectedDateTo = assignmentDateToSelect.value;
+
+            if (selectedDateFrom && selectedDateTo) {
+                const assignedTeamsForDateRange = new Set();
+                const accommodationsSnapshot = await getDocs(teamAccommodationsCollectionRef);
+
+                accommodationsSnapshot.docs.forEach(doc => {
+                    const assignment = doc.data();
+                    const assignmentId = doc.id;
+
+                    // If we are editing this specific assignment, its teams should still be available
+                    if (currentAssignmentId && currentAssignmentId === assignmentId) {
+                        return; // Skip filtering out teams from the current assignment being edited
+                    }
+
+                    const existingDateFrom = new Date(assignment.dateFrom);
+                    const existingDateTo = new Date(assignment.dateTo);
+                    const newDateFrom = new Date(selectedDateFrom);
+                    const newDateTo = new Date(selectedDateTo);
+
+                    // Check for date overlap: Overlap exists if (start1 <= end2) AND (end1 >= start2)
+                    if (newDateFrom <= existingDateTo && newDateTo >= existingDateFrom) {
+                        assignment.teams.forEach(team => {
+                            assignedTeamsForDateRange.add(team.teamId);
+                        });
+                    }
+                });
+
+                // Filter out teams that are already assigned for the overlapping date range
+                filteredTeams = filteredTeams.filter(team => !assignedTeamsForDateRange.has(team.id));
+            }
+
+
+            if (filteredTeams.length === 0 && !selectedTeamId) { // If no teams found AND not editing a specific team
                 const option = document.createElement('option');
                 option.value = '';
-                option.textContent = `-- Žiadne tímy pre tento klub nenájdené --`;
+                option.textContent = `-- Žiadne dostupné tímy pre tento klub v danom rozsahu dátumov --`;
                 option.disabled = true;
                 selectElement.appendChild(option);
-                console.warn(`No teams found for base club: ${baseClubName} in Firestore.`);
+                console.warn(`No teams found for base club: ${baseClubName} in Firestore for the selected date range.`);
             } else {
                 filteredTeams.sort((a, b) => {
                     // Triedenie podľa celého názvu tímu pre špecifické tímy
@@ -1522,6 +1558,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (clubSelect) { // Pridaná kontrola
         clubSelect.addEventListener('change', async () => {
             const selectedClubName = clubSelect.value; // Toto je teraz základný názov klubu
+            await populateSpecificTeamSelect(specificTeamSelect, selectedClubName);
+        });
+    }
+
+    // NEW: Add event listeners for date range changes to update specificTeamSelect
+    if (assignmentDateFromSelect) {
+        assignmentDateFromSelect.addEventListener('change', async () => {
+            const selectedClubName = clubSelect.value;
+            await populateSpecificTeamSelect(specificTeamSelect, selectedClubName);
+        });
+    }
+
+    if (assignmentDateToSelect) {
+        assignmentDateToSelect.addEventListener('change', async () => {
+            const selectedClubName = clubSelect.value;
             await populateSpecificTeamSelect(specificTeamSelect, selectedClubName);
         });
     }
