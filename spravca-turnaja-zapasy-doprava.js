@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const matchLocationSelect = document.getElementById('matchLocationSelect'); // ZMENENÉ: Pôvodne matchSportHallSelect
     const matchStartTimeInput = document.getElementById('matchStartTime');
     const matchDurationInput = document.getElementById('matchDuration');
-    const matchBufferTimeInput = document.getElementById('matchBufferTime');
+    const matchBufferTimeInput = document.getElementById('matchBufferTime'); // Opravené: bolo 'document ='
     const matchCategorySelect = document.getElementById('matchCategory');
     const matchGroupSelect = document.getElementById('matchGroup');
     const matchModalTitle = document.getElementById('matchModalTitle');
@@ -37,7 +37,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const playingDayModal = document.getElementById('playingDayModal');
     const closePlayingDayModalButton = document.getElementById('closePlayingDayModal');
     const playingDayForm = document.getElementById('playingDayForm');
+    const playingDayIdInput = document.getElementById('playingDayId'); // NOVÉ
     const playingDayDateInput = document.getElementById('playingDayDate');
+    const playingDayModalTitle = document.getElementById('playingDayModalTitle'); // NOVÉ
+    const deletePlayingDayButtonModal = document.getElementById('deletePlayingDayButtonModal'); // NOVÉ
 
     // Modálne okno pre miesto (pôvodne športová hala)
     const placeModal = document.getElementById('placeModal'); // ZMENENÉ: Pôvodne sportHallModal
@@ -379,7 +382,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 const colspan = hoursForDate.length > 0 ? hoursForDate.length : 1;
 
-                scheduleHtml += `<th colspan="${colspan}" class="delete-date-header" data-date="${date}" title="Kliknutím vymažete hrací deň ${formattedDisplayDate} a všetky jeho zápasy">`;
+                scheduleHtml += `<th colspan="${colspan}" class="date-header-clickable" data-date="${date}" title="Kliknutím upravíte hrací deň ${formattedDisplayDate}">`; // ZMENENÉ: class delete-date-header na date-header-clickable a title
                 scheduleHtml += `<div class="schedule-date-header-content">${formattedDisplayDate}</div>`;
                 scheduleHtml += '<div class="schedule-times-row">';
                 if (hoursForDate.length > 0) {
@@ -425,7 +428,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
 
                 scheduleHtml += '<tr>';
-                scheduleHtml += `<th class="fixed-column schedule-location-header delete-location-header ${typeClass}" data-location="${locationName}" title="Kliknutím vymažete miesto ${locationName} a všetky jeho zápasy">
+                scheduleHtml += `<th class="fixed-column schedule-location-header delete-location-header ${typeClass}" data-location="${locationName}" title="Kliknutím upravíte miesto ${locationName}">
                     <div class="hall-name">${locationName} (${placeType})</div> <div class="hall-address">
                         <a href="${placeGoogleMapsUrl}" target="_blank" rel="noopener noreferrer">${placeAddress}</a>
                     </div>
@@ -720,12 +723,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                 });
             });
 
-            // Pôvodné event listenery pre hlavičky zostávajú
-            matchesContainer.querySelectorAll('.delete-date-header').forEach(header => {
+            // ZMENENÉ: Event listener pre hlavičky dátumov
+            matchesContainer.querySelectorAll('.date-header-clickable').forEach(header => { // ZMENENÉ: .delete-date-header na .date-header-clickable
                 header.addEventListener('click', (event) => {
-                    if (event.target === header || event.target.closest('.delete-date-header') === header) {
-                        const dateToDelete = header.dataset.date;
-                        deletePlayingDay(dateToDelete);
+                    // Skontrolujte, či kliknutý element je odkaz alebo je vo vnútri odkazu
+                    if (event.target.tagName === 'A' || event.target.closest('.hall-address')) { // Toto je pre miesta, ale pre dáta to nie je relevantné
+                        return; 
+                    }
+                    // Ak to nie je odkaz a kliknutie je na samotnej hlavičke dátumu, pokračujte s úpravou
+                    if (event.target === header || event.target.closest('.schedule-date-header-content')) { 
+                        const dateToEdit = header.dataset.date;
+                        editPlayingDay(dateToEdit); // NOVÉ: Voláme editPlayingDay
                     }
                 });
             });
@@ -780,6 +788,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 await batch.commit();
                 alert(`Hrací deň ${dateToDelete} a všetky súvisiace zápasy a autobusové linky boli úspešne vymazané!`);
+                closeModal(playingDayModal); // NOVÉ: Zatvoríme modal po vymazaní
                 await displayMatchesAsSchedule();
             } catch (error) {
                 console.error(`Chyba pri mazaní hracieho dňa ${dateToDelete}: `, error);
@@ -826,11 +835,41 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 await batch.commit();
                 alert(`Miesto ${placeNameToDelete} a všetky súvisiace zápasy a autobusové linky boli úspešne vymazané!`); // ZMENENÉ
+                closeModal(placeModal); // NOVÉ: Zatvoríme modal po vymazaní
                 await displayMatchesAsSchedule();
             } catch (error) {
                 console.error(`Chyba pri mazaní miesta ${placeNameToDelete}: `, error); // ZMENENÉ
                 alert(`Chyba pri mazaní miesta ${placeNameToDelete}. Pozrite konzolu pre detaily.`); // ZMENENÉ
             }
+        }
+    }
+
+    // NOVÁ FUNKCIA: editPlayingDay
+    async function editPlayingDay(dateToEdit) {
+        try {
+            const q = query(playingDaysCollectionRef, where("date", "==", dateToEdit));
+            const querySnapshot = await getDocs(q);
+
+            if (!querySnapshot.empty) {
+                const playingDayDoc = querySnapshot.docs[0];
+                const playingDayData = playingDayDoc.data();
+                const playingDayId = playingDayDoc.id;
+
+                playingDayIdInput.value = playingDayId;
+                playingDayDateInput.value = playingDayData.date || '';
+                playingDayModalTitle.textContent = 'Upraviť hrací deň'; // NOVÉ
+
+                // Zobrazenie tlačidla Vymazať v modale
+                deletePlayingDayButtonModal.style.display = 'inline-block';
+                deletePlayingDayButtonModal.onclick = () => deletePlayingDay(playingDayData.date); 
+
+                openModal(playingDayModal);
+            } else {
+                alert("Hrací deň sa nenašiel.");
+            }
+        } catch (error) {
+            console.error("Chyba pri načítavaní dát hracieho dňa pre úpravu: ", error);
+            alert("Vyskytla sa chyba pri načítavaní dát hracieho dňa. Skúste to znova.");
         }
     }
 
@@ -989,6 +1028,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     addPlayingDayButton.addEventListener('click', () => {
         playingDayForm.reset();
+        playingDayIdInput.value = ''; // NOVÉ: Vyčistí ID
+        playingDayModalTitle.textContent = 'Pridať hrací deň'; // NOVÉ
+        deletePlayingDayButtonModal.style.display = 'none'; // NOVÉ: Skryť tlačidlo Vymazať
         openModal(playingDayModal);
         addOptions.classList.remove('show'); // Skryť dropdown po výbere
     });
@@ -1464,6 +1506,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     playingDayForm.addEventListener('submit', async (e) => {
         e.preventDefault();
+        const id = playingDayIdInput.value; // NOVÉ: Získame ID hracieho dňa
         const date = playingDayDateInput.value;
 
         if (!date) {
@@ -1475,88 +1518,26 @@ document.addEventListener('DOMContentLoaded', async () => {
             const q = query(playingDaysCollectionRef, where("date", "==", date));
             const querySnapshot = await getDocs(q);
 
-            if (!querySnapshot.empty) {
+            if (!querySnapshot.empty && querySnapshot.docs[0].id !== id) { // NOVÉ: Kontrola duplicity pre úpravu
                 alert('Hrací deň s týmto dátumom už existuje!');
                 return;
             }
 
-            await addDoc(playingDaysCollectionRef, {
-                date: date,
-                createdAt: new Date()
-            });
-            alert('Hrací deň úspešne pridaný!');
+            const playingDayData = { date: date };
+
+            if (id) { // Ak existuje ID, ide o úpravu
+                await setDoc(doc(playingDaysCollectionRef, id), playingDayData, { merge: true });
+                alert('Hrací deň úspešne aktualizovaný!');
+            } else { // Inak ide o pridanie nového hracieho dňa
+                await addDoc(playingDaysCollectionRef, { ...playingDayData, createdAt: new Date() });
+                alert('Hrací deň úspešne pridaný!');
+            }
+            
             closeModal(playingDayModal);
             await displayMatchesAsSchedule(); 
         } catch (error) {
             console.error("Chyba pri ukladaní hracieho dňa: ", error);
             alert("Chyba pri ukladaní hracieho dňa. Pozrite konzolu pre detaily.");
-        }
-    });
-
-    // ZMENENÉ: Pôvodne sportHallForm.addEventListener
-    placeForm.addEventListener('submit', async (e) => { // ZMENENÉ: sportHallForm na placeForm
-        e.preventDefault();
-        const id = placeIdInput.value; // ID miesta, ktoré sa upravuje (prázdne, ak sa pridáva nové)
-        const type = placeTypeSelect.value;
-        const name = placeNameInput.value.trim();
-        const address = placeAddressInput.value.trim();
-        const googleMapsUrl = placeGoogleMapsUrlInput.value.trim();
-
-        if (!type || !name || !address || !googleMapsUrl) {
-            alert('Prosím, vyplňte všetky polia (Typ miesta, Názov miesta, Adresa, Odkaz na Google Maps).');
-            return;
-        }
-
-        try {
-            new URL(googleMapsUrl); 
-        } catch (_) {
-            alert('Odkaz na Google Maps musí byť platná URL adresa.');
-            return;
-        }
-
-        try {
-            const q = query(placesCollectionRef, where("name", "==", name));
-            const querySnapshot = await getDocs(q);
-
-            let targetDocId = id; // Predpokladáme, že aktualizujeme aktuálne ID, ak existuje
-
-            if (!querySnapshot.empty) {
-                // Dokument s týmto názvom už existuje
-                const existingDoc = querySnapshot.docs[0];
-                if (id && existingDoc.id !== id) {
-                    // Upravujeme, ale nový názov je v konflikte s iným existujúcim miestom
-                    alert('Miesto s týmto názvom už existuje a patrí inému záznamu. Prosím, zvoľte iný názov.');
-                    return;
-                } else if (!id) {
-                    // Pridávame nové miesto, ale miesto s týmto názvom už existuje.
-                    // Používateľ chce aktualizovať existujúce.
-                    const confirmUpdate = confirm(`Miesto s názvom "${name}" už existuje. Chcete aktualizovať existujúce miesto?`);
-                    if (confirmUpdate) {
-                        targetDocId = existingDoc.id; // Použijeme ID existujúceho dokumentu
-                    } else {
-                        return; // Používateľ zrušil operáciu
-                    }
-                }
-                // Ak je ID prítomné a existingDoc.id === ID, ide o rovnaký dokument, ktorý sa upravuje, žiadny konflikt.
-            }
-
-            const placeData = { type, name, address, googleMapsUrl };
-
-            if (targetDocId) {
-                // Ak je targetDocId nastavené (buď z pôvodného ID alebo ID existujúceho dokumentu), aktualizujeme
-                await setDoc(doc(placesCollectionRef, targetDocId), placeData, { merge: true });
-                alert('Miesto úspešne aktualizované!');
-            } else {
-                // Ak je targetDocId stále prázdne, znamená to, že ide o skutočne nové miesto a nenašiel sa žiadny konflikt
-                await addDoc(placesCollectionRef, { ...placeData, createdAt: new Date() });
-                alert('Miesto úspešne pridané!');
-            }
-            
-            closeModal(placeModal);
-            await displayMatchesAsSchedule();
-        } catch (error) {
-            console.error("Chyba pri ukladaní miesta: ", error);
-            alert("Chyba pri ukladaní miesta. Pozrite konzolu pre detaily.");
         }
     });
 });
