@@ -19,8 +19,8 @@ export const groupsCollectionRef = collection(db, 'tournamentData', 'mainTournam
 export const clubsCollectionRef = collection(db, 'tournamentData', 'mainTournamentData', 'clubs');
 export const matchesCollectionRef = collection(db, 'tournamentData', 'mainTournamentData', 'matches');
 export const playingDaysCollectionRef = collection(db, 'tournamentData', 'mainTournamentData', 'playingDays');
-export const sportHallsCollectionRef = collection(db, 'tournamentData', 'mainTournamentData', 'sportHalls');
-export const busesCollectionRef = collection(db, 'tournamentData', 'mainTournamentData', 'buses'); // Ensure this is also correctly defined if used elsewhere
+export const placesCollectionRef = collection(db, 'tournamentData', 'mainTournamentData', 'places'); // ZMENENÉ: sportHallsCollectionRef na placesCollectionRef
+export const busesCollectionRef = collection(db, 'tournamentData', 'mainTournamentData', 'buses'); 
 export const settingsCollectionRef = collection(db, `artifacts/${appId}/public/data/settings`); // NOVÉ: Export pre kolekciu nastavení
 
 let openModalCount = 0;
@@ -193,4 +193,3 @@ export async function populateTeamNumberSelect(selectedCategoryId, selectedGroup
     }
 }
 export { db, query, where, getDocs, getDoc, setDoc, deleteDoc, updateDoc, writeBatch, addDoc, doc, orderBy };
-// export const busesCollectionRef = collection(db, 'buses'); // Pôvodný riadok, už definovaný vyššie
