@@ -156,6 +156,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function populateAllPlaceSelects(selectElement, selectedPlaceCombined = '') {
         selectElement.innerHTML = '<option value="">-- Vyberte miesto --</option>';
         try {
+            // Táto časť kódu načítava VŠETKY miesta bez ohľadu na typ
             const querySnapshot = await getDocs(query(placesCollectionRef, orderBy("name", "asc")));
             if (querySnapshot.empty) {
                 const option = document.createElement('option');
@@ -168,8 +169,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 querySnapshot.forEach((doc) => {
                     const place = { id: doc.id, ...doc.data() };
                     const option = document.createElement('option');
-                    option.value = `${place.name}:::${place.type}`;
-                    option.textContent = `${place.name} (${place.type})`;
+                    option.value = `${place.name}:::${place.type}`; // Uložíme kombináciu názvu a typu ako hodnotu
+                    option.textContent = `${place.name} (${place.type})`; // Zobrazíme názov miesta a jeho typ
                     selectElement.appendChild(option);
                 });
             }
@@ -1155,6 +1156,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 busNameInput.value = busData.busName || '';
                 await populatePlayingDaysSelect(busDateSelect, busData.date);
+                // Tieto volania funkcií už načítavajú VŠETKY miesta
                 await populateAllPlaceSelects(busStartLocationSelect, busData.startLocation);
                 busStartTimeInput.value = busData.startTime || '';
                 await populateAllPlaceSelects(busEndLocationSelect, busData.endLocation);
@@ -1300,6 +1302,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         busForm.reset();
         busIdInput.value = '';
         busModalTitle.textContent = 'Pridať autobusovú linku';
+        // Tieto volania funkcií už načítavajú VŠETKY miesta
         await populatePlayingDaysSelect(busDateSelect);
         await populateAllPlaceSelects(busStartLocationSelect);
         await populateAllPlaceSelects(busEndLocationSelect, ''); 
@@ -1821,7 +1824,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             for (const teamId of selectedTeamIds) {
                 const teamDoc = await getDoc(doc(clubsCollectionRef, teamId));
                 if (teamDoc.exists()) {
-                    const team = teamDoc.data();
+                    const team = team.data();
                     teamsData.push({
                         teamId: teamId,
                         teamName: `${team.name} (Kat: ${team.categoryName}, Skup: ${team.groupName}, Tím: ${team.orderInGroup})`
