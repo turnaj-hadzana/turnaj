@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const matchDateSelect = document.getElementById('matchDateSelect');
     const matchLocationSelect = document.getElementById('matchLocationSelect');
     const matchStartTimeInput = document.getElementById('matchStartTime');
-    const matchDurationInput = document.getElementById('matchDuration');
+    const matchDurationInput = document = document.getElementById('matchDuration');
     const matchBufferTimeInput = document.getElementById('matchBufferTime'); 
     const matchCategorySelect = document.getElementById('matchCategory');
     const matchGroupSelect = document.getElementById('matchGroup');
@@ -46,7 +46,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Modálne okno pre miesto (pôvodne športová hala)
     const placeModal = document.getElementById('placeModal');
     const closePlaceModalButton = document.getElementById('closePlaceModal');
-    const placeForm = document.getElementById('placeForm');
+    const placeForm = document = document.getElementById('placeForm');
     const placeIdInput = document.getElementById('placeId');
     const placeTypeSelect = document.getElementById('placeTypeSelect');
     const placeNameInput = document.getElementById('placeName');
@@ -1431,7 +1431,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         await populateClubSelect(clubSelect); 
         if (specificTeamSelect) { 
             specificTeamSelect.innerHTML = '<option value="">-- Vyberte konkrétny tím (nepovinné) --</option>';
-            specificTeamSelect.disabled = true;
+            // Zabezpečíme, že je disabled, kým nie je vybraný klub
+            specificTeamSelect.disabled = true; 
         }
         await populateAccommodationSelect(accommodationSelect);
         deleteAssignmentButtonModal.style.display = 'none';
@@ -1499,7 +1500,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (clubSelect) { // Pridaná kontrola
         clubSelect.addEventListener('change', async () => {
             const selectedClubName = clubSelect.value; // Toto je teraz základný názov klubu
+            console.log('clubSelect changed. selectedClubName:', selectedClubName); // Log pre debug
             await populateSpecificTeamSelect(specificTeamSelect, selectedClubName);
+            // Explicitne odblokovať/zablokovať na základe výberu
+            if (specificTeamSelect) {
+                specificTeamSelect.disabled = !selectedClubName; // Odblokuje, ak je vybraný klub, inak zablokuje
+                console.log('specificTeamSelect.disabled po zmene clubSelect:', specificTeamSelect.disabled); // Log pre debug
+            }
         });
     }
 
@@ -1511,6 +1518,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             await populateClubSelect(clubSelect, clubSelect.value); // Odovzdajte aktuálnu hodnotu, aby ste sa ju pokúsili znova vybrať
             const selectedClubName = clubSelect.value;
             await populateSpecificTeamSelect(specificTeamSelect, selectedClubName);
+            if (specificTeamSelect) {
+                specificTeamSelect.disabled = !selectedClubName;
+            }
         });
     }
 
@@ -1520,6 +1530,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             await populateClubSelect(clubSelect, clubSelect.value); // Odovzdajte aktuálnu hodnotu, aby ste sa ju pokúsili znova vybrať
             const selectedClubName = clubSelect.value;
             await populateSpecificTeamSelect(specificTeamSelect, selectedClubName);
+            if (specificTeamSelect) {
+                specificTeamSelect.disabled = !selectedClubName;
+            }
         });
     }
 
