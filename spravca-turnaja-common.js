@@ -19,139 +19,102 @@ export const groupsCollectionRef = collection(db, 'tournamentData', 'mainTournam
 export const clubsCollectionRef = collection(db, 'tournamentData', 'mainTournamentData', 'clubs');
 export const matchesCollectionRef = collection(db, 'tournamentData', 'mainTournamentData', 'matches');
 export const playingDaysCollectionRef = collection(db, 'tournamentData', 'mainTournamentData', 'playingDays');
-export const placesCollectionRef = collection(db, 'tournamentData', 'mainTournamentData', 'sportHalls'); // ZMENENÉ: 'places' na 'sportHalls'
-export const busesCollectionRef = collection(db, 'tournamentData', 'mainTournamentData', 'buses'); 
-export const settingsCollectionRef = collection(db, `artifacts/${appId}/public/data/settings`); // NOVÉ: Export pre kolekciu nastavení
+export const placesCollectionRef = collection(db, 'tournamentData', 'mainTournamentData', 'places'); // ZMENENÉ: Pôvodne sportHallsCollectionRef
+export const busesCollectionRef = collection(db, 'tournamentData', 'mainTournamentData', 'buses');
+export const settingsCollectionRef = collection(db, 'tournamentData', 'mainTournamentData', 'settings');
+export const teamAccommodationsCollectionRef = collection(db, 'tournamentData', 'mainTournamentData', 'teamAccommodations'); // NOVÉ: Kolekcia pre priradenia ubytovania
 
-let openModalCount = 0;
-export function openModal(modalElement) {
-    if (!modalElement) {
-        return;
-    }
-    openModalCount++;
-    modalElement.style.display = 'flex';
-    document.body.classList.add('modal-open');
+/**
+ * Otvorí modálne okno.
+ * @param {HTMLElement} modalElement Element modálneho okna.
+ */
+function openModal(modalElement) {
+    modalElement.style.display = 'block';
+    document.body.classList.add('modal-open'); // Pridá triedu pre zablokovanie scrollovania
 }
-export function closeModal(modalElement) {
-    if (!modalElement) {
-        return;
-    }
-    openModalCount--;
-    if (openModalCount <= 0) {
-        modalElement.style.display = 'none';
-        document.body.classList.remove('modal-open');
-        openModalCount = 0;
-    } else {
-        modalElement.style.display = 'none';
-    }
+
+/**
+ * Zatvorí modálne okno.
+ * @param {HTMLElement} modalElement Element modálneho okna.
+ */
+function closeModal(modalElement) {
+    modalElement.style.display = 'none';
+    document.body.classList.remove('modal-open'); // Odstráni triedu pre zablokovanie scrollovania
 }
-document.addEventListener('click', (event) => {
-    if (event.target.classList.contains('modal')) {
-        closeModal(event.target);
-    }
-});
-export async function populateCategorySelect(selectElement, selectedCategoryId = null) {
-    if (!selectElement) return;
+
+/**
+ * Naplní select element kategóriami z Firestore.
+ * @param {HTMLSelectElement} selectElement Element <select>, ktorý sa má naplniť.
+ * @param {string} [selectedCategoryId=''] Voliteľné ID kategórie, ktorá má byť predvybraná.
+ */
+async function populateCategorySelect(selectElement, selectedCategoryId = '') {
     selectElement.innerHTML = '<option value="">-- Vyberte kategóriu --</option>';
-    selectElement.disabled = true;
     try {
-        const querySnapshot = await getDocs(categoriesCollectionRef);
-        if (querySnapshot.empty) {
+        const querySnapshot = await getDocs(query(categoriesCollectionRef, orderBy("name", "asc")));
+        querySnapshot.forEach((doc) => {
+            const category = { id: doc.id, ...doc.data() };
             const option = document.createElement('option');
-            option.value = '';
-            option.textContent = '-- Žiadne kategórie --';
-            option.disabled = true;
+            option.value = category.id;
+            option.textContent = category.name;
             selectElement.appendChild(option);
-        } else {
-            querySnapshot.docs.sort((a, b) => {
-                const nameA = (a.data().name || a.id).toLowerCase();
-                const nameB = (b.data().name || b.id).toLowerCase();
-                return nameA.localeCompare(nameB);
-            }).forEach((doc) => {
-                const categoryId = doc.id;
-                const categoryData = doc.data();
-                const option = document.createElement('option');
-                option.value = categoryId;
-                option.textContent = categoryData.name || categoryId;
-                selectElement.appendChild(option);
-            });
-            if (selectedCategoryId && selectElement.querySelector(`option[value="${selectedCategoryId}"]`)) {
-                selectElement.value = selectedCategoryId;
-            } else {
-                selectElement.value = "";
-            }
+        });
+        if (selectedCategoryId) {
+            selectElement.value = selectedCategoryId;
         }
-        selectElement.disabled = false;
     } catch (error) {
-        const option = document.createElement('option');
-        option.value = '';
-        option.textContent = '-- Chyba pri načítaní --';
-        option.disabled = true;
-        selectElement.appendChild(option);
-        selectElement.disabled = true;
+        console.error("Error loading categories: ", error);
     }
 }
-export async function populateGroupSelect(selectedCategoryId, selectElement, selectedGroupId = null) {
-    if (!selectedCategoryId || !selectElement) {
-        selectElement.innerHTML = '<option value="">-- Vyberte kategóriu najprv --</option>';
-        selectElement.disabled = true;
-        return;
-    }
+
+/**
+ * Naplní select element skupinami pre danú kategóriu z Firestore.
+ * @param {string} categoryId ID vybranej kategórie.
+ * @param {HTMLSelectElement} selectElement Element <select>, ktorý sa má naplniť.
+ * @param {string} [selectedGroupId=''] Voliteľné ID skupiny, ktorá má byť predvybraná.
+ */
+async function populateGroupSelect(categoryId, selectElement, selectedGroupId = '') {
     selectElement.innerHTML = '<option value="">-- Vyberte skupinu --</option>';
-    selectElement.disabled = true;
-    try {
-        const q = query(groupsCollectionRef, where("categoryId", "==", selectedCategoryId));
-        const querySnapshot = await getDocs(q);
-        if (querySnapshot.empty) {
-            const option = document.createElement('option');
-            option.value = '';
-            option.textContent = '-- Žiadne skupiny pre túto kategóriu --';
-            option.disabled = true;
-            selectElement.appendChild(option);
-        } else {
-            const sortedDocs = querySnapshot.docs.sort((a, b) => {
-                const nameA = (a.data().name || a.id).toLowerCase();
-                const nameB = (b.data().name || b.id).toLowerCase();
-                return nameA.localeCompare(nameB);
-            });
-            sortedDocs.forEach((doc) => {
-                const groupId = doc.id;
-                const groupData = doc.data();
-                const groupName = groupData.name || groupId;
-                const option = document.createElement('option');
-                option.value = groupId;
-                option.textContent = groupName;
-                selectElement.appendChild(option);
-            });
-            if (selectedGroupId && selectElement.querySelector(`option[value="${selectedGroupId}"]`)) {
-                selectElement.value = selectedGroupId;
-            } else {
-                selectElement.value = "";
-            }
-        }
-        selectElement.disabled = false;
-    } catch (error) {
-        const option = document.createElement('option');
-        option.value = '';
-        option.textContent = '-- Chyba pri načítaní --';
-        option.disabled = true;
-        selectElement.appendChild(option);
-        selectElement.disabled = true;
-    }
-}
-export async function populateTeamNumberSelect(selectedCategoryId, selectedGroupId, selectElement, selectedTeamNumber = null) {
-    if (!selectedCategoryId || !selectedGroupId || !selectElement) {
-        selectElement.innerHTML = '<option value="">-- Vyberte kategóriu a skupinu --</option>';
+    if (!categoryId) {
         selectElement.disabled = true;
         return;
     }
-    selectElement.innerHTML = '<option value="">-- Vyberte poradové číslo --</option>';
+    selectElement.disabled = false;
+    try {
+        const q = query(groupsCollectionRef, where("categoryId", "==", categoryId), orderBy("name", "asc"));
+        const querySnapshot = await getDocs(q);
+        querySnapshot.forEach((doc) => {
+            const group = { id: doc.id, ...doc.data() };
+            const option = document.createElement('option');
+            option.value = group.id;
+            option.textContent = group.name;
+            selectElement.appendChild(option);
+        });
+        if (selectedGroupId) {
+            selectElement.value = selectedGroupId;
+        }
+    } catch (error) {
+        console.error("Error loading groups: ", error);
+    }
+}
+
+/**
+ * Naplní select element číslami tímov pre danú kategóriu a skupinu.
+ * @param {string} categoryId ID vybranej kategórie.
+ * @param {string} groupId ID vybranej skupiny.
+ * @param {HTMLSelectElement} selectElement Element <select>, ktorý sa má naplniť.
+ * @param {string} [selectedTeamNumber=''] Voliteľné číslo tímu, ktoré má byť predvybrané.
+ */
+async function populateTeamNumberSelect(categoryId, groupId, selectElement, selectedTeamNumber = '') {
+    selectElement.innerHTML = '<option value="">-- Vyberte číslo tímu --</option>';
     selectElement.disabled = true;
+    if (!categoryId || !groupId) {
+        return;
+    }
     try {
         const q = query(
             clubsCollectionRef,
-            where("categoryId", "==", selectedCategoryId),
-            where("groupId", "==", selectedGroupId)
+            where("categoryId", "==", categoryId),
+            where("groupId", "==", groupId)
         );
         const querySnapshot = await getDocs(q);
         if (querySnapshot.empty) {
@@ -163,7 +126,7 @@ export async function populateTeamNumberSelect(selectedCategoryId, selectedGroup
         } else {
             const teamNumbers = querySnapshot.docs.map(doc => {
                 const teamData = doc.data();
-                return teamData.orderNumber || teamData.teamNumber || doc.id;
+                return teamData.orderNumber || teamData.teamNumber || doc.id; // Použiť orderNumber, ak existuje, inak teamNumber, inak ID
             });
             teamNumbers.sort((a, b) => {
                 const numA = parseInt(a);
@@ -192,4 +155,5 @@ export async function populateTeamNumberSelect(selectedCategoryId, selectedGroup
         selectElement.disabled = true;
     }
 }
-export { db, query, where, getDocs, getDoc, setDoc, deleteDoc, updateDoc, writeBatch, addDoc, doc, orderBy };
+
+export { db, openModal, closeModal, populateCategorySelect, populateGroupSelect, populateTeamNumberSelect, query, where, getDocs, getDoc, setDoc, deleteDoc, updateDoc, writeBatch, addDoc, doc, orderBy };
