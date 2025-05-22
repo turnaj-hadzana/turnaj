@@ -206,9 +206,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             clubsSnapshot.forEach((doc) => {
                 const team = doc.data();
                 if (team.name) {
-                    // Odstránenie suffixov ako " A", " B", " C" atď.
-                    const baseClubName = team.name.replace(/\s[A-Z]$/, '');
-                    uniqueBaseClubNames.add(baseClubName);
+                    // Ak názov tímu obsahuje '/', považuje sa za samostatný základný názov klubu
+                    if (team.name.includes('⁄')) {
+                        uniqueBaseClubNames.add(team.name);
+                    } else {
+                        // Inak odstránenie suffixov ako " A", " B", " C" atď.
+                        const baseClubName = team.name.replace(/\s[A-Z]$/, '');
+                        uniqueBaseClubNames.add(baseClubName);
+                    }
                 }
             });
             console.log('Unikátne základné názvy klubov:', Array.from(uniqueBaseClubNames)); // Log pre unikátne základné názvy klubov
@@ -252,19 +257,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         selectElement.disabled = false;
         try {
             console.log(`Načítavam tímy pre základný klub: ${baseClubName}...`);
-            // Načítame všetky tímy a filtrujeme ich na strane klienta
             const allTeamsSnapshot = await getDocs(clubsCollectionRef);
             const filteredTeams = [];
 
             allTeamsSnapshot.forEach((doc) => {
                 const team = { id: doc.id, ...doc.data() };
-                // Kontrolujeme, či názov tímu začína s vybraným základným názvom klubu
-                // a či nie je presne rovnaký ako základný názov (ak existuje tím s presne takým názvom)
-                // Regulárny výraz `^${baseClubName}(?:\\s[A-Z])?$` zodpovedá:
-                // - presnému názvu klubu (napr. "MŠK IUVENTA Michalovce")
-                // - alebo názvu klubu s medzerou a jedným veľkým písmenom na konci (napr. "MŠK IUVENTA Michalovce A")
-                if (team.name.match(new RegExp(`^${baseClubName}(?:\\s[A-Z])?$`))) {
-                    filteredTeams.push(team);
+                
+                if (baseClubName.includes('⁄')) {
+                    // Ak základný názov klubu obsahuje '/', hľadáme presnú zhodu
+                    if (team.name === baseClubName) {
+                        filteredTeams.push(team);
+                    }
+                } else {
+                    // Ak základný názov klubu neobsahuje '/', hľadáme varianty s písmenami na konci
+                    // Regulárny výraz `^${baseClubName}(?:\\s[A-Z])?$` zodpovedá:
+                    // - presnému názvu klubu (napr. "MŠK IUVENTA Michalovce")
+                    // - alebo názvu klubu s medzerou a jedným veľkým písmenom na konci (napr. "MŠK IUVENTA Michalovce A")
+                    if (team.name.match(new RegExp(`^${baseClubName}(?:\\s[A-Z])?$`))) {
+                        filteredTeams.push(team);
+                    }
                 }
             });
             console.log(`Filtrované tímy pre základný klub "${baseClubName}":`, filteredTeams); // Log pre filtrované tímy
@@ -1261,8 +1272,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                 
                 // Predpokladáme, že assignmentData.teams je pole, aj keď pre zjednodušenie ukladáme len jeden tím
                 const assignedTeam = assignmentData.teams[0];
-                const assignedClubName = assignedTeam ? assignedTeam.teamName.split('(')[0].trim().replace(/\s[A-Z]$/, '') : ''; // Extrahujeme základný názov klubu
-
+                let assignedClubName = '';
+                if (assignedTeam && assignedTeam.teamName) {
+                    // Ak názov tímu obsahuje '/', použijeme ho celý ako základný názov klubu
+                    if (assignedTeam.teamName.includes('⁄')) {
+                        assignedClubName = assignedTeam.teamName.split('(')[0].trim();
+                    } else {
+                        // Inak odstránime suffixy ako " A", " B", " C" atď.
+                        assignedClubName = assignedTeam.teamName.split('(')[0].trim().replace(/\s[A-Z]$/, '');
+                    }
+                }
+                
                 await populateClubSelect(clubSelect, assignedClubName); // Naplníme kluby a vyberieme priradený základný klub
 
                 if (assignedClubName) {
@@ -1929,11 +1949,20 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const team = doc.data();
                     // Kontrolujeme, či názov tímu začína s vybraným základným názvom klubu
                     // a či nie je presne rovnaký ako základný názov (ak existuje tím s presne takým názvom)
-                    if (team.name.match(new RegExp(`^${selectedClubName}(?:\\s[A-Z])?$`))) {
-                        teamsForBaseClub.push({
-                            teamId: doc.id,
-                            teamName: `${team.name} (Kat: ${team.categoryName}, Skup: ${team.groupName}, Tím: ${team.orderInGroup})`
-                        });
+                    if (selectedClubName.includes('⁄')) {
+                        if (team.name === selectedClubName) {
+                            teamsForBaseClub.push({
+                                teamId: doc.id,
+                                teamName: `${team.name} (Kat: ${team.categoryName}, Skup: ${team.groupName}, Tím: ${team.orderInGroup})`
+                            });
+                        }
+                    } else {
+                        if (team.name.match(new RegExp(`^${selectedClubName}(?:\\s[A-Z])?$`))) {
+                            teamsForBaseClub.push({
+                                teamId: doc.id,
+                                teamName: `${team.name} (Kat: ${team.categoryName}, Skup: ${team.groupName}, Tím: ${team.orderInGroup})`
+                            });
+                        }
                     }
                 });
 
