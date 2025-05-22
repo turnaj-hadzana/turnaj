@@ -398,18 +398,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
             scheduleHtml += '</tr></thead><tbody>';
 
-            sortedLocations.forEach(locationName => {
-                // Nájdeme kompletné dáta miesta podľa názvu
-                const placeData = existingPlacesData.find(place => place.name === locationName); // ZMENENÉ: hallData na placeData, existingSportHallsData na existingPlacesData
-                // Ak názov miesta v sortedLocations nezodpovedá aktívnemu miestu, preskočíme tento riadok.
-                if (!placeData) { // ZMENENÉ: hallData na placeData
-                    console.warn(`Preskakujem riadok pre miesto "${locationName}", pretože to nie je aktívne miesto.`); // ZMENENÉ
-                    return; 
-                }
+            // NOVÉ: Filtrujeme miesta, aby sa v hlavnom rozvrhu zobrazovali len športové haly
+            const sportHallsForDisplay = existingPlacesData.filter(place => place.type === 'Športová hala');
 
-                const placeAddress = placeData.address; // ZMENENÉ
-                const placeGoogleMapsUrl = placeData.googleMapsUrl; // ZMENENÉ
-                const placeType = placeData.type; // NOVÉ: Získame typ miesta
+            sportHallsForDisplay.forEach(placeData => { // ZMENENÉ: Iterujeme cez filtrované športové haly
+                const locationName = placeData.name;
+                const placeAddress = placeData.address;
+                const placeGoogleMapsUrl = placeData.googleMapsUrl;
+                const placeType = placeData.type; // Toto bude vždy 'Športová hala' tu
 
                 // NOVÉ: Pridáme CSS triedu na základe typu miesta
                 let typeClass = '';
@@ -799,21 +795,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // ZMENENÉ: Pôvodne deleteSportHall
-    async function deletePlace(placeNameToDelete) { // ZMENENÉ: hallNameToDelete na placeNameToDelete
-        if (confirm(`Naozaj chcete vymazať miesto ${placeNameToDelete} a VŠETKY zápasy a autobusové linky, ktoré sa viažu na toto miesto?`)) { // ZMENENÉ
+    // ZMENENÉ: Pôvodne deleteSportHall (teraz prijíma aj typ miesta)
+    async function deletePlace(placeNameToDelete, placeTypeToDelete) { 
+        if (confirm(`Naozaj chcete vymazať miesto ${placeNameToDelete} (${placeTypeToDelete}) a VŠETKY zápasy a autobusové linky, ktoré sa viažu na toto miesto?`)) { 
             try {
                 const batch = writeBatch(db);
 
                 // ZMENENÉ: Kontrola na základe názvu a typu, aby sa vymazalo správne miesto
-                const placeQuery = query(placesCollectionRef, where("name", "==", placeNameToDelete)); 
+                const placeQuery = query(placesCollectionRef, where("name", "==", placeNameToDelete), where("type", "==", placeTypeToDelete));
                 const placeSnapshot = await getDocs(placeQuery); 
                 if (!placeSnapshot.empty) {
                     placeSnapshot.docs.forEach(docToDelete => {
                         batch.delete(doc(placesCollectionRef, docToDelete.id)); 
                     });
                 } else {
-                    console.warn(`Miesto ${placeNameToDelete} sa nenašlo, ale pokračujem v mazaní zápasov a autobusov.`); 
+                    console.warn(`Miesto ${placeNameToDelete} (${placeTypeToDelete}) sa nenašlo, ale pokračujem v mazaní zápasov a autobusov.`); 
                 }
 
                 // Vymazanie súvisiacich zápasov
@@ -837,12 +833,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 });
 
                 await batch.commit();
-                alert(`Miesto ${placeNameToDelete} a všetky súvisiace zápasy a autobusové linky boli úspešne vymazané!`); // ZMENENÉ
+                alert(`Miesto ${placeNameToDelete} (${placeTypeToDelete}) a všetky súvisiace zápasy a autobusové linky boli úspešne vymazané!`); // ZMENENÉ
                 closeModal(placeModal); // NOVÉ: Zatvoríme modal po vymazaní
                 await displayMatchesAsSchedule();
             } catch (error) {
-                console.error(`Chyba pri mazaní miesta ${placeNameToDelete}: `, error); // ZMENENÉ
-                alert(`Chyba pri mazaní miesta ${placeNameToDelete}. Pozrite konzolu pre detaily.`); // ZMENENÉ
+                console.error(`Chyba pri mazaní miesta ${placeNameToDelete} (${placeTypeToDelete}): `, error); // ZMENENÉ
+                alert(`Chyba pri mazaní miesta ${placeNameToDelete} (${placeTypeToDelete}). Pozrite konzolu pre detaily.`); // ZMENENÉ
             }
         }
     }
@@ -896,7 +892,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 // Zobrazenie tlačidla Vymazať v modale
                 deletePlaceButtonModal.style.display = 'inline-block';
-                deletePlaceButtonModal.onclick = () => deletePlace(placeData.name); // Voláme deletePlace s názvom miesta
+                deletePlaceButtonModal.onclick = () => deletePlace(placeData.name, placeData.type); // ZMENENÉ: Odovzdávame aj typ miesta
 
                 openModal(placeModal);
             } else {
