@@ -488,9 +488,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                         typeClass = 'place-type-sport-hall';
                         specificBackgroundColor = 'background-color: #007bff;'; // Modrá farba pre športovú halu
                         break;
-                    case 'Stravovacie zariadenie':
+                    case 'Stravovanie':
                         typeClass = 'place-type-catering';
-                        specificBackgroundColor = 'background-color: #ffc107;'; // Oranžová farba pre stravovacie zariadenie
+                        specificBackgroundColor = 'background-color: #ffc107;'; // Oranžová farba pre Stravovanie
                         break;
                     case 'Ubytovanie':
                         typeClass = 'place-type-accommodation';
