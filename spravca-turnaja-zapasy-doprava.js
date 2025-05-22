@@ -944,8 +944,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 
     async function deletePlayingDay(dateToDelete) {
-        // Používame vlastný potvrdzovací dialóg namiesto alert/confirm
-        showCustomConfirm(`Naozaj chcete vymazať hrací deň ${dateToDelete} a VŠETKY zápasy a autobusové linky, ktoré sa konajú v tento deň?`, async () => {
+        if (confirm(`Naozaj chcete vymazať hrací deň ${dateToDelete} a VŠETKY zápasy a autobusové linky, ktoré sa konajú v tento deň?`)) {
             try {
                 const batch = writeBatch(db);
 
@@ -982,19 +981,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 
                 await batch.commit();
-                showCustomAlert(`Hrací deň ${dateToDelete} a všetky súvisiace zápasy, autobusové linky a priradenia ubytovania boli úspešne vymazané!`);
+                alert(`Hrací deň ${dateToDelete} a všetky súvisiace zápasy, autobusové linky a priradenia ubytovania boli úspešne vymazané!`);
                 closeModal(playingDayModal);
                 await displayMatchesAsSchedule();
             } catch (error) {
                 console.error(`Chyba pri mazaní hracieho dňa ${dateToDelete}: `, error);
-                showCustomAlert(`Chyba pri mazaní hracieho dňa ${dateToDelete}. Pozrite konzolu pre detaily.`);
+                alert(`Chyba pri mazaní hracieho dňa ${dateToDelete}. Pozrite konzolu pre detaily.`);
             }
-        });
+        }
     }
 
     // Funkcia na mazanie miesta (teraz prijíma aj typ miesta pre presné mazanie)
     async function deletePlace(placeNameToDelete, placeTypeToDelete) { 
-        showCustomConfirm(`Naozaj chcete vymazať miesto ${placeNameToDelete} (${placeTypeToDelete}) a VŠETKY zápasy a autobusové linky, ktoré sa viažu na toto miesto?`, async () => { 
+        if (confirm(`Naozaj chcete vymazať miesto ${placeNameToDelete} (${placeTypeToDelete}) a VŠETKY zápasy a autobusové linky, ktoré sa viažu na toto miesto?`)) { 
             try {
                 const batch = writeBatch(db);
 
@@ -1040,14 +1039,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
 
                 await batch.commit();
-                showCustomAlert(`Miesto ${placeNameToDelete} (${placeTypeToDelete}) a všetky súvisiace zápasy, autobusové linky a priradenia ubytovania boli úspešne vymazané!`); 
+                alert(`Miesto ${placeNameToDelete} (${placeTypeToDelete}) a všetky súvisiace zápasy, autobusové linky a priradenia ubytovania boli úspešne vymazané!`); 
                 closeModal(placeModal); 
                 await displayMatchesAsSchedule();
             } catch (error) {
                 console.error(`Chyba pri mazaní miesta ${placeNameToDelete} (${placeTypeToDelete}): `, error); 
-                showCustomAlert(`Chyba pri mazaní miesta ${placeNameToDelete} (${placeTypeToDelete}). Pozrite konzolu pre detaily.`); 
+                alert(`Chyba pri mazaní miesta ${placeNameToDelete} (${placeTypeToDelete}). Pozrite konzolu pre detaily.`); 
             }
-        });
+        }
     }
 
     // Funkcia na úpravu hracieho dňa
@@ -1071,11 +1070,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 openModal(playingDayModal);
             } else {
-                showCustomAlert("Hrací deň sa nenašiel.");
+                alert("Hrací deň sa nenašiel.");
             }
         } catch (error) {
             console.error("Chyba pri načítavaní dát hracieho dňa pre úpravu: ", error);
-            showCustomAlert("Vyskytla sa chyba pri načítavaní dát hracieho dňa. Skúste to znova.");
+            alert("Vyskytla sa chyba pri načítavaní dát hracieho dňa. Skúste to znova.");
         }
     }
 
@@ -1103,11 +1102,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 openModal(placeModal);
             } else {
-                showCustomAlert("Miesto sa nenašlo.");
+                alert("Miesto sa nenašlo.");
             }
         } catch (error) {
             console.error("Chyba pri načítavaní dát miesta pre úpravu: ", error);
-            showCustomAlert("Vyskytla sa chyba pri načítavaní dát miesta. Skúste to znova.");
+            alert("Vyskytla sa chyba pri načítavaní dát miesta. Skúste to znova.");
         }
     }
 
@@ -1147,26 +1146,26 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 openModal(matchModal);
             } else {
-                showCustomAlert("Zápas sa nenašiel.");
+                alert("Zápas sa nenašiel.");
             }
         } catch (error) {
             console.error("Chyba pri načítavaní dát zápasu pre úpravu: ", error);
-            showCustomAlert("Vyskytla sa chyba pri načítavaní dát zápasu. Skúste to znova.");
+            alert("Vyskytla sa chyba pri načítavaní dát zápasu. Skúste to znova.");
         }
     }
 
     async function deleteMatch(matchId) {
-        showCustomConfirm('Naozaj chcete vymazať tento zápas?', async () => {
+        if (confirm('Naozaj chcete vymazať tento zápas?')) {
             try {
                 await deleteDoc(doc(matchesCollectionRef, matchId));
-                showCustomAlert('Zápas úspešne vymazaný!');
+                alert('Zápas úspešne vymazaný!');
                 closeModal(matchModal);
                 displayMatchesAsSchedule();
             } catch (error) {
                 console.error("Chyba pri mazaní zápasu: ", error);
-                showCustomAlert("Chyba pri mazaní zápasu. Pozrite konzolu pre detaily.");
+                alert("Chyba pri mazaní zápasu. Pozrite konzolu pre detaily.");
             }
-        });
+        }
     }
 
     // Funkcie pre úpravu a mazanie autobusu
@@ -1195,26 +1194,26 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 openModal(busModal);
             } else {
-                showCustomAlert("Autobusová linka sa nenašla.");
+                alert("Autobusová linka sa nenašla.");
             }
         } catch (error) {
             console.error("Chyba pri načítavaní dát autobusu pre úpravu: ", error);
-            showCustomAlert("Vyskytla sa chyba pri načítavaní dát autobusu. Skúste to znova.");
+            alert("Vyskytla sa chyba pri načítavaní dát autobusu. Skúste to znova.");
         }
     }
 
     async function deleteBus(busId) {
-        showCustomConfirm('Naozaj chcete vymazať túto autobusovú linku?', async () => {
+        if (confirm('Naozaj chcete vymazať túto autobusovú linku?')) {
             try {
                 await deleteDoc(doc(busesCollectionRef, busId));
-                showCustomAlert('Autobusová linka úspešne vymazaná!');
+                alert('Autobusová linka úspešne vymazaná!');
                 closeModal(busModal);
                 displayMatchesAsSchedule();
             } catch (error) {
                 console.error("Chyba pri mazaní autobusovej linky: ", error);
-                showCustomAlert("Chyba pri mazaní autobusovej linky. Pozrite konzolu pre detaily.");
+                alert("Chyba pri mazaní autobusovej linky. Pozrite konzolu pre detaily.");
             }
-        });
+        }
     }
 
     // Funkcie pre úpravu a mazanie priradenia ubytovania
@@ -1251,26 +1250,26 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 openModal(assignAccommodationModal);
             } else {
-                showCustomAlert("Priradenie ubytovania sa nenašlo.");
+                alert("Priradenie ubytovania sa nenašlo.");
             }
         } catch (error) {
             console.error("Chyba pri načítavaní dát priradenia ubytovania pre úpravu: ", error);
-            showCustomAlert("Vyskytla sa chyba pri načítavaní dát priradenia ubytovania. Skúste to znova.");
+            alert("Vyskytla sa chyba pri načítavaní dát priradenia ubytovania. Skúste to znova.");
         }
     }
 
     async function deleteAccommodationAssignment(assignmentId) {
-        showCustomConfirm('Naozaj chcete vymazať toto priradenie ubytovania?', async () => {
+        if (confirm('Naozaj chcete vymazať toto priradenie ubytovania?')) {
             try {
                 await deleteDoc(doc(teamAccommodationsCollectionRef, assignmentId));
-                showCustomAlert('Priradenie ubytovania úspešne vymazané!');
+                alert('Priradenie ubytovania úspešne vymazané!');
                 closeModal(assignAccommodationModal);
                 displayMatchesAsSchedule();
             } catch (error) {
                 console.error("Chyba pri mazaní priradenia ubytovania: ", error);
-                showCustomAlert("Chyba pri mazaní priradenia ubytovania. Pozrite konzolu pre detaily.");
+                alert("Chyba pri mazaní priradenia ubytovania. Pozrite konzolu pre detaily.");
             }
-        });
+        }
     }
 
     await displayMatchesAsSchedule();
@@ -1502,12 +1501,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         const currentMatchId = matchIdInput.value;
 
         if (!matchCategory || !matchGroup || isNaN(team1Number) || isNaN(team2Number) || !matchDate || !matchLocationName || !matchStartTime || isNaN(matchDuration) || isNaN(matchBufferTime)) {
-            showCustomAlert('Prosím, vyplňte všetky povinné polia (Kategória, Skupina, Poradové číslo tímu 1 a 2, Dátum, Miesto, Čas začiatku, Trvanie, Prestávka po zápase).');
+            alert('Prosím, vyplňte všetky povinné polia (Kategória, Skupina, Poradové číslo tímu 1 a 2, Dátum, Miesto, Čas začiatku, Trvanie, Prestávka po zápase).');
             return;
         }
 
         if (team1Number === team2Number) {
-            showCustomAlert('Tímy nemôžu hrať sami proti sebe. Prosím, zadajte rôzne poradové čísla tímov.');
+            alert('Tímy nemôžu hrať sami proti sebe. Prosím, zadajte rôzne poradové čísla tímov.');
             return;
         }
 
@@ -1519,12 +1518,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             team2Result = await getTeamName(matchCategory, matchGroup, team2Number);
         } catch (error) {
             console.error("Chyba pri získavaní názvov tímov:", error);
-            showCustomAlert("Vyskytla sa chyba pri získavaní názvov tímov. Skúste to znova.");
+            alert("Vyskytla sa chyba pri získavaní názvov tímov. Skúste to znova.");
             return;
         }
 
         if (!team1Result || !team1Result.fullDisplayName || !team2Result || !team2Result.fullDisplayName) {
-            showCustomAlert('Jeden alebo oba tímy sa nenašli. Skontrolujte poradové čísla v danej kategórii a skupine.');
+            alert('Jeden alebo oba tímy sa nenašli. Skontrolujte poradové čísla v danej kategórii a skupine.');
             return;
         }
 
@@ -1568,7 +1567,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 existingMatchEndTimeObj.setHours(existingStartHour, existingStartMinute + (overlappingMatchDetails.duration || 0), 0, 0);
                 const formattedExistingEndTime = existingMatchEndTimeObj.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit'});
 
-                showCustomAlert(`Zápas sa prekrýva s existujúcim zápasom v mieste "${matchLocationName}" dňa ${matchDate}:\n\n` + 
+                alert(`Zápas sa prekrýva s existujúcim zápasom v mieste "${matchLocationName}" dňa ${matchDate}:\n\n` + 
                       `Existujúci zápas: ${overlappingMatchDetails.startTime} - ${formattedExistingEndTime}\n` +
                       `Tímy: ${overlappingMatchDetails.team1DisplayName} vs ${overlappingMatchDetails.team2DisplayName}\n\n` +
                       `Prosím, upravte čas začiatku alebo trvanie nového zápasu, alebo prestávku po zápase.`);
@@ -1576,7 +1575,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         } catch (error) {
             console.error("Chyba pri kontrole prekrývania zápasov: ", error);
-            showCustomAlert("Vyskytla sa chyba pri kontrole prekrývania zápasov. Skúste to znova.");
+            alert("Vyskytla sa chyba pri kontrole prekrývania zápasov. Skúste to znova.");
             return;
         }
 
@@ -1620,16 +1619,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             if (currentMatchId) {
                 await setDoc(doc(matchesCollectionRef, currentMatchId), matchData, { merge: true });
-                showCustomAlert('Zápas úspešne aktualizovaný!');
+                alert('Zápas úspešne aktualizovaný!');
             } else {
                 await addDoc(matchesCollectionRef, matchData);
-                showCustomAlert('Nová zápas úspešne pridaný!');
+                alert('Nová zápas úspešne pridaný!');
             }
             closeModal(matchModal);
             await displayMatchesAsSchedule();
         } catch (error) {
             console.error("Chyba pri ukladaní zápasu: ", error);
-            showCustomAlert("Chyba pri ukladaní zápasu. Pozrite konzolu pre detaily.");
+            alert("Chyba pri ukladaní zápasu. Pozrite konzolu pre detaily.");
         }
     });
 
@@ -1648,12 +1647,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         const currentBusId = busIdInput.value;
 
         if (!busName || !busDate || !busStartLocationCombined || !busStartTime || !busEndLocationCombined || !busEndTime) {
-            showCustomAlert('Prosím, vyplňte všetky povinné polia (Názov autobusu, Dátum, Miesto začiatku, Čas odchodu, Miesto cieľa, Čas príchodu).');
+            alert('Prosím, vyplňte všetky povinné polia (Názov autobusu, Dátum, Miesto začiatku, Čas odchodu, Miesto cieľa, Čas príchodu).');
             return;
         }
 
         if (busStartLocationCombined === busEndLocationCombined) {
-            showCustomAlert('Miesto začiatku a miesto cieľa nemôžu byť rovnaké. Prosím, zvoľte rôzne miesta.');
+            alert('Miesto začiatku a miesto cieľa nemôžu byť rovnaké. Prosím, zvoľte rôzne miesta.');
             return;
         }
 
@@ -1668,7 +1667,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const durationInMinutes = endTimeInMinutes - startTimeInMinutes;
         if (durationInMinutes <= 0) {
-            showCustomAlert('Čas príchodu musí byť po čase odchodu.');
+            alert('Čas príchodu musí byť po čase odchodu.');
             return;
         }
 
@@ -1708,14 +1707,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
 
             if (overlapFound) {
-                showCustomAlert(`Autobus "${busName}" sa prekrýva s existujúcou linkou dňa ${busDate}:\n\n` +
+                alert(`Autobus "${busName}" sa prekrýva s existujúcou linkou dňa ${busDate}:\n\n` +
                       `Existujúca linka: ${overlappingBusDetails.startTime} - ${overlappingBusDetails.endTime} (${overlappingBusDetails.startLocation.split(':::')[0]} -> ${overlappingBusDetails.endLocation.split(':::')[0]})\n\n` +
                       `Prosím, upravte čas odchodu alebo príchodu novej linky.`);
                 return; 
             }
         } catch (error) {
             console.error("Chyba pri kontrole prekrývania autobusových liniek: ", error);
-            showCustomAlert("Vyskytla sa chyba pri kontrole prekrývania autobusových liniek. Skúste to znova.");
+            alert("Vyskytla sa chyba pri kontrole prekrývania autobusových liniek. Skúste to znova.");
             return;
         }
 
@@ -1736,17 +1735,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (currentBusId) {
                 console.log('Aktualizujem autobusovú linku s ID:', currentBusId, 'Dáta:', busData); 
                 await setDoc(doc(busesCollectionRef, currentBusId), busData, { merge: true });
-                showCustomAlert('Autobusová linka úspešne aktualizovaná!');
+                alert('Autobusová linka úspešne aktualizovaná!');
             } else {
                 console.log('Pridávam novú autobusovú linku s dátami:', busData); 
                 await addDoc(busesCollectionRef, busData);
-                showCustomAlert('Nová autobusová linka úspešne pridaná!');
+                alert('Nová autobusová linka úspešne pridaná!');
             }
             closeModal(busModal);
             await displayMatchesAsSchedule();
         } catch (error) {
             console.error("Chyba pri ukladaní autobusovej linky: ", error);
-            showCustomAlert("Chyba pri ukladaní autobusovej linky. Pozrite konzolu pre detaily.");
+            alert("Chyba pri ukladaní autobusovej linky. Pozrite konzolu pre detaily.");
         }
     });
 
@@ -1759,17 +1758,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         const type = placeTypeSelect.value.trim();
         const name = placeNameInput.value.trim();
         const address = placeAddressInput.value.trim();
-        const googleMapsUrl = googleMapsUrlInput.value.trim();
+        const googleMapsUrl = placeGoogleMapsUrlInput.value.trim(); // Opravená premenná
 
         if (!type || !name || !address || !googleMapsUrl) {
-            showCustomAlert('Prosím, vyplňte všetky polia (Typ miesta, Názov miesta, Adresa, Odkaz na Google Maps).');
+            alert('Prosím, vyplňte všetky polia (Typ miesta, Názov miesta, Adresa, Odkaz na Google Maps).');
             return;
         }
 
         try {
             new URL(googleMapsUrl); 
         } catch (_) {
-            showCustomAlert('Odkaz na Google Maps musí byť platná URL adresa.');
+            alert('Odkaz na Google Maps musí byť platná URL adresa.');
             return;
         }
 
@@ -1779,7 +1778,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const querySnapshot = await getDocs(q);
 
             if (!querySnapshot.empty && querySnapshot.docs[0].id !== id) {
-                showCustomAlert(`Miesto s názvom "${name}" a typom "${type}" už existuje!`);
+                alert(`Miesto s názvom "${name}" a typom "${type}" už existuje!`);
                 return;
             }
 
@@ -1796,17 +1795,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (id) {
                 console.log('Aktualizujem miesto s ID:', id, 'Dáta:', placeData); 
                 await setDoc(doc(placesCollectionRef, id), placeData, { merge: true });
-                showCustomAlert('Miesto úspešne aktualizované!');
+                alert('Miesto úspešne aktualizované!');
             } else {
                 await addDoc(placesCollectionRef, placeData);
-                showCustomAlert('Miesto úspešne pridané!');
+                alert('Miesto úspešne pridané!');
             }
             
             closeModal(placeModal);
             await displayMatchesAsSchedule(); 
         } catch (error) {
             console.error("Chyba pri ukladaní miesta: ", error); 
-            showCustomAlert("Chyba pri ukladaní miesta. Pozrite konzolu pre detaily.");
+            alert("Chyba pri ukladaní miesta. Pozrite konzolu pre detaily.");
         }
     });
 
@@ -1817,7 +1816,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const date = playingDayDateInput.value;
 
         if (!date) {
-            showCustomAlert('Prosím, zadajte dátum hracieho dňa.');
+            alert('Prosím, zadajte dátum hracieho dňa.');
             return;
         }
 
@@ -1826,7 +1825,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const querySnapshot = await getDocs(q);
 
             if (!querySnapshot.empty && querySnapshot.docs[0].id !== id) { 
-                showCustomAlert('Hrací deň s týmto dátumom už existuje!');
+                alert('Hrací deň s týmto dátumom už existuje!');
                 return;
             }
 
@@ -1834,17 +1833,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             if (id) {
                 await setDoc(doc(playingDaysCollectionRef, id), playingDayData, { merge: true });
-                showCustomAlert('Hrací deň úspešne aktualizovaný!');
+                alert('Hrací deň úspešne aktualizovaný!');
             } else {
                 await addDoc(playingDaysCollectionRef, { ...playingDayData, createdAt: new Date() });
-                showCustomAlert('Hrací deň úspešne pridaný!');
+                alert('Hrací deň úspešne pridaný!');
             }
             
             closeModal(playingDayModal);
             await displayMatchesAsSchedule(); 
         } catch (error) {
             console.error("Chyba pri ukladaní hracieho dňa: ", error);
-            showCustomAlert("Chyba pri ukladaní hracieho dňa. Pozrite konzolu pre detaily.");
+            alert("Chyba pri ukladaní hracieho dňa. Pozrite konzolu pre detaily.");
         }
     });
 
@@ -1859,7 +1858,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const selectedAccommodationId = accommodationSelect.value;
 
         if (!assignmentDate || !selectedClubName || !selectedAccommodationId) {
-            showCustomAlert('Prosím, vyplňte všetky povinné polia (Dátum priradenia, Klub, Ubytovňa).');
+            alert('Prosím, vyplňte všetky povinné polia (Dátum priradenia, Klub, Ubytovňa).');
             return;
         }
 
@@ -1876,7 +1875,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         teamName: `${team.name} (Kat: ${team.categoryName}, Skup: ${team.groupName}, Tím: ${team.orderInGroup})`
                     });
                 } else {
-                    showCustomAlert('Vybraný konkrétny tím sa nenašiel v databáze.');
+                    alert('Vybraný konkrétny tím sa nenašiel v databáze.');
                     return;
                 }
             } else {
@@ -1893,7 +1892,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         });
                     });
                 } else {
-                    showCustomAlert('Vybraný klub sa nenašiel v databáze.');
+                    alert('Vybraný klub sa nenašiel v databáze.');
                     return;
                 }
             }
@@ -1903,7 +1902,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (accommodationDoc.exists()) {
                 accommodationName = accommodationDoc.data().name;
             } else {
-                showCustomAlert('Vybraná ubytovňa sa nenašla v databáze.');
+                alert('Vybraná ubytovňa sa nenašla v databáze.');
                 return;
             }
 
@@ -1920,17 +1919,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (id) {
                 console.log('Aktualizujem priradenie ubytovania s ID:', id, 'Dáta:', assignmentData);
                 await setDoc(doc(teamAccommodationsCollectionRef, id), assignmentData, { merge: true });
-                showCustomAlert('Priradenie ubytovania úspešne aktualizované!');
+                alert('Priradenie ubytovania úspešne aktualizované!');
             } else {
                 await addDoc(teamAccommodationsCollectionRef, assignmentData);
-                showCustomAlert('Nové priradenie ubytovania úspešne pridané!');
+                alert('Nové priradenie ubytovania úspešne pridané!');
             }
 
             closeModal(assignAccommodationModal);
             await displayMatchesAsSchedule();
         } catch (error) {
             console.error("Chyba pri ukladaní priradenia ubytovania: ", error);
-            showCustomAlert("Chyba pri ukladaní priradenia ubytovania. Pozrite konzolu pre detaily.");
+            alert("Chyba pri ukladaní priradenia ubytovania. Pozrite konzolu pre detaily.");
         }
     });
-});
