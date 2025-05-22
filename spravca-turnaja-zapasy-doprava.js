@@ -770,7 +770,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     async function deleteSportHall(hallNameToDelete) {
-        if (confirm(`Naozaj chcete vymazať športovú halu ${hallNameToDelete} a VŠETKY zápasy a autobusové linky, ktoré sa konajú v tejto hale (ako štart alebo cieľ)?`)) {
+        if (confirm(`Naozaj chcete vymazať športovú halu ${hallNameToDelete} a VŠETKY zápasy a autobusové linky, ktoré sa viažu na túto halu?`)) {
             try {
                 const batch = writeBatch(db);
 
