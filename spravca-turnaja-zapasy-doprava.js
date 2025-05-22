@@ -897,11 +897,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 const startTimeInMinutes = startH * 60 + startM;
                 let endTimeInMinutes = endH * 60 + endM;
+
                 if (endTimeInMinutes < startTimeInMinutes) {
                     endTimeInMinutes += 24 * 60;
                 }
 
                 const durationInMinutes = endTimeInMinutes - startTimeInMinutes;
+                if (durationInMinutes <= 0) {
+                    console.warn(`Autobus s ID ${bus.id} má neplatné trvanie (čas príchodu <= čas odchodu).`);
+                    return;
+                }
 
                 const dateHours = timeColumnLeftOffsets.get(date);
                 if (!dateHours || dateHours.length === 0) {
@@ -1919,7 +1924,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const type = placeTypeSelect.value.trim();
         const name = placeNameInput.value.trim();
         const address = placeAddressInput.value.trim();
-        const googleMapsUrl = placeGoogleMapsUrlInput.value.trim();
+        const googleMapsUrl = googleMapsUrlInput.value.trim();
 
         if (!type || !name || !address || !googleMapsUrl) {
             await showMessageModal('Chyba', 'Prosím, vyplňte všetky polia (Typ miesta, Názov miesta, Adresa, Odkaz na Google Maps).');
