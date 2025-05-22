@@ -480,6 +480,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const placeType = placeData.type; 
 
                 let typeClass = '';
+                let inlineStyle = ''; // NOVÉ: Pre inline štýly
                 switch (placeType) {
                     case 'Športová hala':
                         typeClass = 'place-type-sport-hall';
@@ -489,14 +490,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                         break;
                     case 'Ubytovanie':
                         typeClass = 'place-type-accommodation';
+                        inlineStyle = 'background-color: #4CAF50;'; // Zelená farba pre ubytovanie
                         break;
                     default:
                         typeClass = ''; 
                 }
 
                 scheduleHtml += '<tr>';
-                // Pridaný data-type atribút
-                scheduleHtml += `<th class="fixed-column schedule-location-header delete-location-header ${typeClass}" data-location="${locationName}" data-type="${placeType}" title="Kliknutím upravíte miesto ${locationName} (${placeType})">
+                // Pridaný data-type atribút a inline štýl
+                scheduleHtml += `<th class="fixed-column schedule-location-header delete-location-header ${typeClass}" data-location="${locationName}" data-type="${placeType}" title="Kliknutím upravíte miesto ${locationName} (${placeType})" style="${inlineStyle}">
                     <div class="hall-name">${locationName} (${placeType})</div> <div class="hall-address">
                         <a href="${placeGoogleMapsUrl}" target="_blank" rel="noopener noreferrer">${placeAddress}</a>
                     </div>
@@ -1372,56 +1374,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        let existingMatchIdForTeams = null; 
-        try {
-            const q1 = query(
-                matchesCollectionRef,
-                where("categoryId", "==", matchCategory),
-                where("groupId", "==", matchGroup),
-                where("team1Number", "==", team1Number),
-                where("team2Number", "==", team2Number)
-            );
-            const q2 = query(
-                matchesCollectionRef,
-                where("categoryId", "==", matchCategory),
-                where("groupId", "==", matchGroup),
-                where("team1Number", "==", team2Number),
-                where("team2Number", "==", team1Number)
-            );
-
-            const snapshot1 = await getDocs(q1);
-            const snapshot2 = await getDocs(q2);
-
-            const foundDoc1 = snapshot1.docs.find(doc => doc.id !== currentMatchId);
-            const foundDoc2 = snapshot2.docs.find(doc => doc.id !== currentMatchId);
-
-            if (foundDoc1) {
-                existingMatchIdForTeams = foundDoc1.id;
-            } else if (foundDoc2) {
-                existingMatchIdForTeams = foundDoc2.id;
-            }
-
-            if (existingMatchIdForTeams) {
-                const confirmDelete = confirm(
-                    `Zápas medzi tímami ${team1Result.fullDisplayName} a ${team2Result.fullDisplayName} už existuje v tejto kategórii a skupine. ` +
-                    `Chcete existujúci zápas odstrániť a nahradiť ho novým?`
-                );
-                if (confirmDelete) {
-                    await deleteDoc(doc(matchesCollectionRef, existingMatchIdForTeams));
-                    console.log(`Existujúci zápas ${existingMatchIdForTeams} bol odstránený.`);
-                } else {
-                    alert('Operácia zrušená. Zápas nebol pridaný ani odstránený.');
-                    closeModal(matchModal);
-                    return;
-                }
-            }
-
-        } catch (error) {
-            console.error("Chyba pri kontrole alebo mazaní existujúceho zápasu (tímov):", error);
-            alert("Vyskytla sa chyba pri kontrole alebo mazaní existujúceho zápasu (tímov). Skúste to znova.");
-            return;
-        }
-
         // Získame typ miesta pre uloženie s dátami zápasu
         const allPlacesSnapshot = await getDocs(placesCollectionRef);
         const allPlaces = allPlacesSnapshot.docs.map(doc => doc.data());
@@ -1640,7 +1592,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 await setDoc(doc(placesCollectionRef, id), placeData, { merge: true });
                 alert('Miesto úspešne aktualizované!');
             } else { // Inak ide o pridanie nového miesta
-                console.log('Pridávam nové miesto s dátami:', placeData); 
                 await addDoc(placesCollectionRef, placeData);
                 alert('Miesto úspešne pridané!');
             }
