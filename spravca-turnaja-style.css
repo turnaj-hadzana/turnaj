@@ -884,3 +884,26 @@ td:last-child {
     padding-bottom: 0 !important;
     margin-bottom: 0 !important;
 }
+
+/* NOVÉ: Štýly pre rôzne typy miest */
+.place-type-sport-hall {
+    background-color: #007bff; /* Modrá */
+    border: 1px solid #0056b3;
+}
+
+.place-type-catering {
+    background-color: #ffc107; /* Oranžová */
+    border: 1px solid #e0a800;
+    color: #333; /* Tmavší text pre lepší kontrast */
+}
+
+.place-type-accommodation {
+    background-color: #17a2b8; /* Tyrkysová */
+    border: 1px solid #138496;
+}
+
+/* Zabezpečí, aby text v hlavičke miesta bol čitateľný na oranžovom pozadí */
+.place-type-catering .hall-name,
+.place-type-catering .hall-address a {
+    color: #333; /* Tmavší text */
+}
