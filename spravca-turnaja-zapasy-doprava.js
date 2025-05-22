@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const matchLocationSelect = document.getElementById('matchLocationSelect'); // ZMENENÉ: Pôvodne matchSportHallSelect
     const matchStartTimeInput = document.getElementById('matchStartTime');
     const matchDurationInput = document.getElementById('matchDuration');
-    const matchBufferTimeInput = document = document.getElementById('matchBufferTime'); // Opravené: bolo 'document ='
+    const matchBufferTimeInput = document.getElementById('matchBufferTime'); // Opravené: bolo 'document ='
     const matchCategorySelect = document.getElementById('matchCategory');
     const matchGroupSelect = document.getElementById('matchGroup');
     const matchModalTitle = document.getElementById('matchModalTitle');
