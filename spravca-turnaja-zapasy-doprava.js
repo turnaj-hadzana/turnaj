@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const matchLocationSelect = document.getElementById('matchLocationSelect'); // ZMENENÉ: Pôvodne matchSportHallSelect
     const matchStartTimeInput = document.getElementById('matchStartTime');
     const matchDurationInput = document.getElementById('matchDuration');
-    const matchBufferTimeInput = document.getElementById('matchBufferTime');
+    const matchBufferTimeInput = document = document.getElementById('matchBufferTime');
     const matchCategorySelect = document.getElementById('matchCategory');
     const matchGroupSelect = document.getElementById('matchGroup');
     const matchModalTitle = document.getElementById('matchModalTitle');
@@ -48,6 +48,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const placeNameInput = document.getElementById('placeName'); // ZMENENÉ
     const placeAddressInput = document.getElementById('placeAddress'); // ZMENENÉ
     const placeGoogleMapsUrlInput = document.getElementById('placeGoogleMapsUrl'); // ZMENENÉ
+    const deletePlaceButtonModal = document.getElementById('deletePlaceButtonModal'); // NOVÉ: Tlačidlo Vymazať v modale
 
     // Modálne okno pre autobus
     const busModal = document.getElementById('busModal');
@@ -734,10 +735,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                     if (event.target.tagName === 'A' || event.target.closest('.hall-address')) {
                         return; // Nerobte nič, ak bol kliknutý odkaz
                     }
-                    // Ak to nie je odkaz a kliknutie je na samotnej hlavičke alebo div s názvom haly, pokračujte s mazaním
+                    // Ak to nie je odkaz a kliknutie je na samotnej hlavičke alebo div s názvom haly, pokračujte s úpravou
                     if (event.target === header || event.target.closest('.hall-name')) { 
-                        const locationToDelete = header.dataset.location;
-                        deletePlace(locationToDelete); // ZMENENÉ: deleteSportHall na deletePlace
+                        const locationToEdit = header.dataset.location; // ZMENENÉ: locationToDelete na locationToEdit
+                        editPlace(locationToEdit); // ZMENENÉ: deletePlace na editPlace
                     }
                 });
             });
@@ -830,6 +831,38 @@ document.addEventListener('DOMContentLoaded', async () => {
                 console.error(`Chyba pri mazaní miesta ${placeNameToDelete}: `, error); // ZMENENÉ
                 alert(`Chyba pri mazaní miesta ${placeNameToDelete}. Pozrite konzolu pre detaily.`); // ZMENENÉ
             }
+        }
+    }
+
+    // NOVÁ FUNKCIA: editPlace
+    async function editPlace(placeName) {
+        try {
+            // Nájdeme miesto podľa názvu
+            const q = query(placesCollectionRef, where("name", "==", placeName));
+            const querySnapshot = await getDocs(q);
+
+            if (!querySnapshot.empty) {
+                const placeDoc = querySnapshot.docs[0];
+                const placeData = placeDoc.data();
+                const placeId = placeDoc.id;
+
+                placeIdInput.value = placeId;
+                placeTypeSelect.value = placeData.type || '';
+                placeNameInput.value = placeData.name || '';
+                placeAddressInput.value = placeData.address || '';
+                placeGoogleMapsUrlInput.value = placeData.googleMapsUrl || '';
+
+                // Zobrazenie tlačidla Vymazať v modale
+                deletePlaceButtonModal.style.display = 'inline-block';
+                deletePlaceButtonModal.onclick = () => deletePlace(placeData.name); // Voláme deletePlace s názvom miesta
+
+                openModal(placeModal);
+            } else {
+                alert("Miesto sa nenašlo.");
+            }
+        } catch (error) {
+            console.error("Chyba pri načítavaní dát miesta pre úpravu: ", error);
+            alert("Vyskytla sa chyba pri načítavaní dát miesta. Skúste to znova.");
         }
     }
 
@@ -967,7 +1000,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         placeNameInput.value = ''; // ZMENENÉ
         placeAddressInput.value = ''; // ZMENENÉ
         placeGoogleMapsUrlInput.value = ''; // ZMENENÉ
-        deletePlaceButtonModal.style.display = 'none'; // ZMENENÉ
+        deletePlaceButtonModal.style.display = 'none'; // Skryť tlačidlo Vymazať pri pridávaní
         openModal(placeModal); // ZMENENÉ
         addOptions.classList.remove('show'); // Skryť dropdown po výbere
     });
