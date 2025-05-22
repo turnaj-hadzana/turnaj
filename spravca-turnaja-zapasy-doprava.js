@@ -793,8 +793,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
 
         } catch (error) {
-            console.error("Chyba pri načítaní rozvrhu zápasov: ", error);
-            matchesContainer.innerHTML = '<p>Chyba pri načítaní rozvrhu zápasov. Skontrolujte konzolu pre detaily a uistite sa, že máte vytvorené potrebné indexy vo Firestore.</p>';
+            console.error("Chyba pri načítaní: ", error);
+            matchesContainer.innerHTML = '<p>Chyba pri načítaní. Skontrolujte konzolu pre detaily a uistite sa, že máte vytvorené potrebné indexy vo Firestore.</p>';
         }
     }
 
