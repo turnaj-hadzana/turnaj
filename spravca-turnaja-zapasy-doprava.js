@@ -1697,7 +1697,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const busModalTitle = document.getElementById('busModalTitle');
     const busNameInput = document.getElementById('busNameInput');
     const busDateSelect = document.getElementById('busDateSelect');
-    const busStartLocationSelect = document = document.getElementById('busStartLocationSelect');
+    const busStartLocationSelect = document.getElementById('busStartLocationSelect');
     const busStartTimeInput = document.getElementById('busStartTimeInput');
     const busEndLocationSelect = document.getElementById('busEndLocationSelect');
     const busEndTimeInput = document.getElementById('busEndTimeInput');
