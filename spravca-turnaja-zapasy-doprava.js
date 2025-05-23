@@ -324,7 +324,7 @@ async function populateSpecificTeamSelect(selectElement, baseClubName, selectedT
                 option.value = team.id;
                 const groupName = groupsMap.get(team.groupId) || team.groupId;
                 const categoryName = categoriesMap.get(team.categoryId) || team.categoryId;
-                option.textContent = `${team.name} (${categoryName}, ${groupName})`; 
+                option.textContent = `${team.name} (Kat: ${categoryName}, Skup: ${groupName}, Tím: ${team.orderInGroup})`; 
                 if (selectedTeamId === team.id) {
                     option.selected = true;
                 }
@@ -585,8 +585,13 @@ async function displayMatchesAsSchedule() {
             const team2Result = await getTeamName(match.categoryId, match.groupId, match.team2Number, teamMap, categoryMap, groupMap);
             
             // Získanie aktuálnych názvov priamo z máp, bez fallbacku na staré hodnoty v dokumente zápasu
-            const currentCategoryName = categoryMap.get(match.categoryId) || 'N/A'; // Ak sa ID nenájde, zobraz N/A
-            const currentGroupName = groupMap.get(match.groupId) || ''; // Ak sa ID nenájde, zobraz prázdny reťazec
+            const currentCategoryName = categoryMap.get(match.categoryId);
+            const currentGroupName = groupMap.get(match.groupId);
+
+            // Ak sa kategória nenájde, zobraz "N/A" a zaloguj pre ladenie
+            if (!currentCategoryName) {
+                console.warn(`N/A: Kategória s ID '${match.categoryId}' pre zápas ${match.id} sa nenašla v databáze kategórií. Aktuálna mapa kategórií:`, Array.from(categoryMap.entries()));
+            }
 
             // Získanie aktuálneho názvu miesta na základe jeho názvu a typu, nie ID (match.location je názov)
             const currentPlaceData = existingPlacesData.find(p => p.name === match.location && p.type === match.locationType);
@@ -594,8 +599,8 @@ async function displayMatchesAsSchedule() {
 
             return {
                 ...match,
-                categoryName: currentCategoryName,
-                groupName: currentGroupName,
+                categoryName: currentCategoryName || 'N/A', // Ak sa ID nenájde, zobraz N/A
+                groupName: currentGroupName || '', // Ak sa ID nenájde, zobraz prázdny reťazec
                 team1DisplayName: team1Result.fullDisplayName,
                 team1ClubName: team1Result.clubName,
                 team2DisplayName: team2Result.fullDisplayName,
@@ -1327,7 +1332,7 @@ async function editPlace(placeName, placeType) {
             placeGoogleMapsUrlInput.value = placeData.googleMapsUrl || '';
 
             deletePlaceButtonModal.style.display = 'inline-block';
-            deletePlaceButtonModal.onclick = () => deletePlace(placeData.name, placeData.type); // Opravené: placeData.data na placeData.type
+            deletePlaceButtonModal.onclick = () => deletePlace(placeData.name, placeData.type); 
 
             openModal(placeModal);
         } else {
@@ -1692,7 +1697,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const busModalTitle = document.getElementById('busModalTitle');
     const busNameInput = document.getElementById('busNameInput');
     const busDateSelect = document.getElementById('busDateSelect');
-    const busStartLocationSelect = document.getElementById('busStartLocationSelect');
+    const busStartLocationSelect = document = document.getElementById('busStartLocationSelect');
     const busStartTimeInput = document.getElementById('busStartTimeInput');
     const busEndLocationSelect = document.getElementById('busEndLocationSelect');
     const busEndTimeInput = document.getElementById('busEndTimeInput');
@@ -2017,6 +2022,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         const selectedPlaceData = allPlaces.find(p => p.name === matchLocationName && p.type === 'Športová hala');
         const matchLocationType = selectedPlaceData ? selectedPlaceData.type : 'Športová hala';
 
+        // Získanie aktuálnych názvov kategórie a skupiny z máp pre uloženie
+        const currentCategoryNameForSave = categoryMap.get(matchCategory) || 'N/A';
+        const currentGroupNameForSave = groupMap.get(matchGroup) ? groupMap.get(matchGroup).replace(/skupina /gi, '').trim() : '';
+
         const matchData = {
             date: matchDate,
             startTime: matchStartTime,
@@ -2025,9 +2034,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             location: matchLocationName,
             locationType: matchLocationType,
             categoryId: matchCategory,
-            categoryName: matchCategorySelect.options[matchCategorySelect.selectedIndex].text,
+            categoryName: currentCategoryNameForSave, // Použi dynamicky načítaný názov
             groupId: matchGroup || null,
-            groupName: matchGroup ? matchGroupSelect.options[matchGroupSelect.selectedIndex].text.replace(/skupina /gi, '').trim() : null,
+            groupName: currentGroupNameForSave,       // Použi dynamicky načítaný názov
 
             team1Category: matchCategory,
             team1Group: matchGroup,
