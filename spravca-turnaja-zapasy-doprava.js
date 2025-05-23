@@ -496,6 +496,19 @@ async function displayMatchesAsSchedule() {
     const ITEM_HEIGHT_PX = 140;
 
     try {
+        // Fetch all necessary reference data first
+        const categoriesSnapshot = await getDocs(categoriesCollectionRef);
+        const categoriesMap = new Map();
+        categoriesSnapshot.forEach(doc => categoriesMap.set(doc.id, doc.data()));
+
+        const groupsSnapshot = await getDocs(groupsCollectionRef);
+        const groupsMap = new Map();
+        groupsSnapshot.forEach(doc => groupsMap.set(doc.id, doc.data()));
+
+        const clubsSnapshot = await getDocs(clubsCollectionRef);
+        const clubsMap = new Map();
+        clubsSnapshot.forEach(doc => clubsMap.set(doc.id, doc.data()));
+
         const matchesQuery = query(matchesCollectionRef, orderBy("date", "asc"), orderBy("location", "asc"), orderBy("startTime", "asc"));
         const matchesSnapshot = await getDocs(matchesQuery);
         const allMatches = matchesSnapshot.docs.map(doc => ({ id: doc.id, type: 'match', ...doc.data() }));
@@ -691,16 +704,41 @@ async function displayMatchesAsSchedule() {
                     matchEndTime.setHours(startH, startM + event.duration, 0, 0);
                     const formattedEndTime = matchEndTime.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' });
 
-                    let team1ClubNameDisplay = event.team1ClubName ? `${event.team1ClubName}` : '';
-                    let team2ClubNameDisplay = event.team2ClubName ? `${event.team2ClubName}` : '';
+                    // Dynamically get current category and group names
+                    const currentCategory = categoriesMap.get(event.categoryId);
+                    const currentGroup = groupsMap.get(event.groupId);
+                    const currentCategoryName = currentCategory?.name || 'N/A';
+                    const currentGroupName = currentGroup?.name?.replace(/skupina /gi, '').trim() || '';
+
+                    // Dynamically get current team display names and club names
+                    const team1Club = clubsMap.get(event.team1ClubId);
+                    const team2Club = clubsMap.get(event.team2ClubId);
+
+                    let team1DisplayName = 'N/A';
+                    let team1ClubName = 'N/A';
+                    if (team1Club) {
+                        const shortCategoryName = currentCategoryName.replace(/U(\d+)\s*([CHZ])/i, 'U$1$2').toUpperCase();
+                        const shortGroupName = currentGroupName ? currentGroupName.match(/(?:skupina\s*)?([A-Z])/i)?.[1]?.toUpperCase() || '' : '';
+                        team1DisplayName = `${shortCategoryName} ${shortGroupName}${team1Club.orderInGroup}`;
+                        team1ClubName = team1Club.name;
+                    }
+
+                    let team2DisplayName = 'N/A';
+                    let team2ClubName = 'N/A';
+                    if (team2Club) {
+                        const shortCategoryName = currentCategoryName.replace(/U(\d+)\s*([CHZ])/i, 'U$1$2').toUpperCase();
+                        const shortGroupName = currentGroupName ? currentGroupName.match(/(?:skupina\s*)?([A-Z])/i)?.[1]?.toUpperCase() || '' : '';
+                        team2DisplayName = `${shortCategoryName} ${shortGroupName}${team2Club.orderInGroup}`;
+                        team2ClubName = team2Club.name;
+                    }
 
                     let clubNamesHtml = '';
-                    if (team1ClubNameDisplay) {
-                        clubNamesHtml += `${team1ClubNameDisplay}`;
+                    if (team1ClubName) { // Use the dynamically retrieved club name
+                        clubNamesHtml += `${team1ClubName}`;
                     }
-                    if (team2ClubNameDisplay) {
+                    if (team2ClubName) { // Use the dynamically retrieved club name
                         if (clubNamesHtml) clubNamesHtml += `<br>`; 
-                        clubNamesHtml += `${team2ClubNameDisplay}`;
+                        clubNamesHtml += `${team2ClubName}`;
                     }
 
                     const finalClubNamesHtml = clubNamesHtml ? `<span style="font-weight: normal;">${clubNamesHtml}</span>` : '';
@@ -711,10 +749,10 @@ async function displayMatchesAsSchedule() {
                             style="left: ${matchBlockLeftPx}px; width: ${matchBlockWidthPx}px; top: 0;">
                             <div class="schedule-cell-content">
                                 <p class="schedule-cell-time">${event.startTime} - ${formattedEndTime}</p>
-                                <p class="schedule-cell-category">${event.categoryName || 'N/A'}${event.groupName ? ` ${event.groupName}` : ''}</p>
+                                <p class="schedule-cell-category">${currentCategoryName}${currentGroupName ? ` ${currentGroupName}` : ''}</p>
                                 <p class="schedule-cell-teams">
-                                    ${event.team1DisplayName}<br>
-                                    ${event.team2DisplayName}<br>
+                                    ${team1DisplayName}<br>
+                                    ${team2DisplayName}<br>
                                     ${finalClubNamesHtml}
                                 </p>
                             </div>
@@ -739,15 +777,37 @@ async function displayMatchesAsSchedule() {
                         const accommodationId = assignment.id;
 
                         let displayText;
-                        if (assignment.teams.length === 1) {
-                            // Ak je priradený iba jeden tím, zobrazíme jeho celý názov
-                            displayText = assignment.teams[0].teamName.split('(')[0].trim();
+                        let currentAssignedTeamsData = [];
+
+                        for (const assignedTeam of assignment.teams) {
+                            const teamDataFromClubsMap = clubsMap.get(assignedTeam.teamId);
+                            if (teamDataFromClubsMap) {
+                                const categoryName = categoriesMap.get(teamDataFromClubsMap.categoryId)?.name || 'N/A';
+                                const groupName = groupsMap.get(teamDataFromClubsMap.groupId)?.name || 'N/A';
+                                currentAssignedTeamsData.push({
+                                    name: teamDataFromClubsMap.name,
+                                    categoryName: categoryName,
+                                    groupName: groupName,
+                                    orderInGroup: teamDataFromClubsMap.orderInGroup
+                                });
+                            } else {
+                                // Fallback if team not found in clubsMap (e.g., deleted team)
+                                currentAssignedTeamsData.push({
+                                    name: assignedTeam.teamName.split('(')[0].trim(), // Use original stored name part
+                                    categoryName: 'N/A',
+                                    groupName: 'N/A',
+                                    orderInGroup: ''
+                                });
+                            }
+                        }
+
+                        if (currentAssignedTeamsData.length === 1) {
+                            displayText = currentAssignedTeamsData[0].name.split('(')[0].trim();
                         } else {
-                            // Ak je priradených viac tímov, skontrolujeme, či sú všetky z rovnakého základného klubu
                             const baseClubNames = new Set();
-                            assignment.teams.forEach(team => {
+                            currentAssignedTeamsData.forEach(team => {
                                 let baseName;
-                                const fullTeamName = team.teamName.split('(')[0].trim();
+                                const fullTeamName = team.name.split('(')[0].trim();
                                 if (fullTeamName.includes('⁄')) {
                                     baseName = fullTeamName;
                                 } else {
@@ -757,11 +817,9 @@ async function displayMatchesAsSchedule() {
                             });
 
                             if (baseClubNames.size === 1) {
-                                // Ak sú všetky tímy z rovnakého základného klubu, zobrazíme iba názov klubu
                                 displayText = Array.from(baseClubNames)[0];
                             } else {
-                                // Inak zobrazíme zoznam všetkých tímov
-                                displayText = assignment.teams.map(team => team.teamName.split('(')[0].trim()).join(', ');
+                                displayText = currentAssignedTeamsData.map(team => team.name.split('(')[0].trim()).join(', ');
                             }
                         }
 
@@ -1401,9 +1459,11 @@ const getTeamName = async (categoryId, groupId, teamNumber) => {
         const groupDoc = await getDoc(doc(groupsCollectionRef, groupId));
         let groupData = null; 
         if (groupDoc.exists()) {
-            groupData = groupDoc.data(); 
+            groupData = groupData.name; 
+        } else {
+            groupData = groupId;
         }
-        const groupName = groupData ? (groupData.name || groupId) : groupId;
+        const groupName = groupData;
 
         let clubName = `Tím ${teamNumber}`;
         let clubId = null; 
