@@ -566,8 +566,8 @@ async function displayMatchesAsSchedule() {
         // Vytvorenie máp pre rýchle vyhľadávanie aktuálnych názvov
         const categoryMap = new Map(allCategories.map(cat => [cat.id, cat.name]));
         const groupMap = new Map(allGroups.map(group => [group.id, group.name]));
-        const placeMap = new Map(existingPlacesData.map(place => [place.id, place]));
-        const teamMap = new Map(); // Map pre tímy: teamId -> { name, categoryId, groupId, orderInGroup, clubName }
+        const placeMap = new Map(existingPlacesData.map(place => [place.id, place])); // Map ID to place object
+        const teamMap = new Map(); // Map pre tímy: teamId -> { name, categoryId, groupId, orderInGroup }
         allClubs.forEach(club => {
             const teamId = club.id; // V clubsCollectionRef je ID dokumentu ID tímu
             teamMap.set(teamId, {
@@ -584,10 +584,13 @@ async function displayMatchesAsSchedule() {
             const team1Result = await getTeamName(match.categoryId, match.groupId, match.team1Number, teamMap, categoryMap, groupMap);
             const team2Result = await getTeamName(match.categoryId, match.groupId, match.team2Number, teamMap, categoryMap, groupMap);
             
-            const currentCategoryName = categoryMap.get(match.categoryId) || match.categoryName;
-            const currentGroupName = groupMap.get(match.groupId) || match.groupName;
-            const currentPlace = placeMap.get(match.placeId);
-            const currentPlaceName = currentPlace ? currentPlace.name : match.location;
+            // Získanie aktuálnych názvov priamo z máp, bez fallbacku na staré hodnoty v dokumente zápasu
+            const currentCategoryName = categoryMap.get(match.categoryId) || 'N/A'; // Ak sa ID nenájde, zobraz N/A
+            const currentGroupName = groupMap.get(match.groupId) || ''; // Ak sa ID nenájde, zobraz prázdny reťazec
+
+            // Získanie aktuálneho názvu miesta na základe jeho názvu a typu, nie ID (match.location je názov)
+            const currentPlaceData = existingPlacesData.find(p => p.name === match.location && p.type === match.locationType);
+            const currentPlaceName = currentPlaceData ? currentPlaceData.name : match.location; // Použi aktuálny názov, inak pôvodný
 
             return {
                 ...match,
@@ -605,7 +608,7 @@ async function displayMatchesAsSchedule() {
         const processedAccommodations = await Promise.all(allAccommodations.map(async assignment => {
             const updatedTeams = assignment.teams.map(team => {
                 const currentTeamData = teamMap.get(team.teamId);
-                let currentTeamName = team.teamName; // Fallback to stored name
+                let currentTeamName = team.teamName; // Fallback to stored name if teamData not found
 
                 if (currentTeamData) {
                     const currentCategoryName = categoryMap.get(currentTeamData.categoryId) || currentTeamData.categoryId;
@@ -614,8 +617,9 @@ async function displayMatchesAsSchedule() {
                 }
                 return { ...team, teamName: currentTeamName };
             });
+            // Získanie aktuálneho názvu ubytovania z placeMap pomocou accommodationId
             const currentAccommodationPlace = placeMap.get(assignment.accommodationId);
-            const currentAccommodationName = currentAccommodationPlace ? currentAccommodationPlace.name : assignment.accommodationName;
+            const currentAccommodationName = currentAccommodationPlace ? currentAccommodationPlace.name : assignment.accommodationName; // Použi aktuálny názov, inak pôvodný
 
             return {
                 ...assignment,
@@ -629,11 +633,13 @@ async function displayMatchesAsSchedule() {
             const [startPlaceName, startPlaceType] = bus.startLocation.split(':::');
             const [endPlaceName, endPlaceType] = bus.endLocation.split(':::');
 
+            // Nájdenie aktuálnych dát miesta na základe názvu a typu
             const currentStartPlace = existingPlacesData.find(p => p.name === startPlaceName && p.type === startPlaceType);
             const currentEndPlace = existingPlacesData.find(p => p.name === endPlaceName && p.type === endPlaceType);
 
             return {
                 ...bus,
+                // Použi aktuálny názov a typ z nájdeného miesta, inak pôvodný kombinovaný kľúč
                 startLocation: currentStartPlace ? `${currentStartPlace.name}:::${currentStartPlace.type}` : bus.startLocation,
                 endLocation: currentEndPlace ? `${currentEndPlace.name}:::${currentEndPlace.type}` : bus.endLocation,
             };
@@ -1321,7 +1327,7 @@ async function editPlace(placeName, placeType) {
             placeGoogleMapsUrlInput.value = placeData.googleMapsUrl || '';
 
             deletePlaceButtonModal.style.display = 'inline-block';
-            deletePlaceButtonModal.onclick = () => deletePlace(placeData.name, placeData.data);
+            deletePlaceButtonModal.onclick = () => deletePlace(placeData.name, placeData.type); // Opravené: placeData.data na placeData.type
 
             openModal(placeModal);
         } else {
@@ -1686,7 +1692,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const busModalTitle = document.getElementById('busModalTitle');
     const busNameInput = document.getElementById('busNameInput');
     const busDateSelect = document.getElementById('busDateSelect');
-    const busStartLocationSelect = document.getElementById('busStartLocationSelect');
+    const busStartLocationSelect = document = document.getElementById('busStartLocationSelect');
     const busStartTimeInput = document.getElementById('busStartTimeInput');
     const busEndLocationSelect = document.getElementById('busEndLocationSelect');
     const busEndTimeInput = document.getElementById('busEndTimeInput');
