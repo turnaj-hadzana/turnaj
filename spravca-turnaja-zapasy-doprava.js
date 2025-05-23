@@ -525,6 +525,54 @@ async function findFirstAvailableTime() {
 }
 
 /**
+ * Pomocná funkcia na získanie formátovaných názvov tímu a klubu z aktuálnych dát.
+ * @param {object} teamData Objekt tímu z clubsCollectionRef.
+ * @param {Map<string, object>} categoryMap Mapa kategórií (ID -> objekt kategórie).
+ * @param {Map<string, object>} groupMap Mapa skupín (ID -> objekt skupiny).
+ * @returns {{fullDisplayName: string, clubNameDisplay: string}} Objekt s formátovaným názvom tímu a názvom klubu pre zobrazenie.
+ */
+function getFormattedTeamAndClubNames(teamData, categoryMap, groupMap) {
+    if (!teamData) {
+        return { fullDisplayName: 'N/A', clubNameDisplay: 'N/A' };
+    }
+
+    const category = categoryMap.get(teamData.categoryId);
+    const group = groupMap.get(teamData.groupId);
+
+    const categoryName = category?.name || teamData.categoryId;
+    const groupName = group?.name || teamData.groupId;
+    const actualClubName = teamData.name; // Skutočný názov klubu/tímu z kolekcie 'clubs'
+
+    let shortCategoryName = categoryName;
+    if (shortCategoryName) {
+        shortCategoryName = shortCategoryName.replace(/U(\d+)\s*([CHZ])/i, 'U$1$2').toUpperCase();
+    }
+
+    let shortGroupName = '';
+    if (groupName) {
+        const match = groupName.match(/(?:skupina\s*)?([A-Z])/i);
+        if (match && match[1]) {
+            shortGroupName = match[1].toUpperCase();
+        }
+    }
+
+    const fullDisplayName = `${shortCategoryName} ${shortGroupName}${teamData.orderInGroup}`;
+
+    let clubNameDisplay;
+    if (actualClubName.includes('⁄')) {
+        clubNameDisplay = actualClubName;
+    } else {
+        clubNameDisplay = actualClubName.replace(/\s[A-Z]$/, '');
+    }
+
+    return {
+        fullDisplayName: fullDisplayName,
+        clubNameDisplay: clubNameDisplay
+    };
+}
+
+
+/**
  * Načíta a zobrazí zápasy, autobusy a priradenia ubytovania ako rozvrh.
  */
 async function displayMatchesAsSchedule() {
@@ -540,22 +588,131 @@ async function displayMatchesAsSchedule() {
     const ITEM_HEIGHT_PX = 140;
 
     try {
-        const matchesQuery = query(matchesCollectionRef, orderBy("date", "asc"), orderBy("location", "asc"), orderBy("startTime", "asc"));
-        const matchesSnapshot = await getDocs(matchesQuery);
+        // Načítanie VŠETKÝCH potrebných dát z databázy pri každom volaní
+        const [
+            matchesSnapshot,
+            busesSnapshot,
+            accommodationsSnapshot,
+            playingDaysSnapshot,
+            placesSnapshot,
+            clubsSnapshot, // Nové: Načítame aktuálne kluby
+            categoriesSnapshot, // Nové: Načítame aktuálne kategórie
+            groupsSnapshot // Nové: Načítame aktuálne skupiny
+        ] = await Promise.all([
+            getDocs(query(matchesCollectionRef, orderBy("date", "asc"), orderBy("location", "asc"), orderBy("startTime", "asc"))),
+            getDocs(query(busesCollectionRef, orderBy("date", "asc"), orderBy("busName", "asc"), orderBy("startTime", "asc"))),
+            getDocs(query(teamAccommodationsCollectionRef, orderBy("dateFrom", "asc"), orderBy("accommodationName", "asc"))),
+            getDocs(query(playingDaysCollectionRef, orderBy("date", "asc"))),
+            getDocs(query(placesCollectionRef, orderBy("name", "asc"))),
+            getDocs(clubsCollectionRef), // Načítanie aktuálnych klubov
+            getDocs(categoriesCollectionRef), // Načítanie aktuálnych kategórií
+            getDocs(groupsCollectionRef) // Načítanie aktuálnych skupín
+        ]);
+
         const allMatches = matchesSnapshot.docs.map(doc => ({ id: doc.id, type: 'match', ...doc.data() }));
-
-        const busesQuery = query(busesCollectionRef, orderBy("date", "asc"), orderBy("busName", "asc"), orderBy("startTime", "asc"));
-        const busesSnapshot = await getDocs(busesQuery);
         const allBuses = busesSnapshot.docs.map(doc => ({ id: doc.id, type: 'bus', ...doc.data() }));
-
-        const accommodationsSnapshot = await getDocs(query(teamAccommodationsCollectionRef, orderBy("dateFrom", "asc"), orderBy("accommodationName", "asc")));
         const allAccommodations = accommodationsSnapshot.docs.map(doc => ({ id: doc.id, type: 'accommodation', ...doc.data() }));
-
-        const playingDaysSnapshot = await getDocs(query(playingDaysCollectionRef, orderBy("date", "asc")));
         const existingPlayingDays = playingDaysSnapshot.docs.map(doc => doc.data().date);
+        const existingPlacesData = placesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const allClubsData = clubsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })); // Aktuálne dáta klubov
+        const allCategoriesData = categoriesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })); // Aktuálne dáta kategórií
+        const allGroupsData = groupsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })); // Aktuálne dáta skupín
 
-        const placesSnapshot = await getDocs(query(placesCollectionRef, orderBy("name", "asc"))); 
-        const existingPlacesData = placesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })); 
+        // Vytvorenie máp pre rýchle vyhľadávanie aktuálnych dát
+        const clubsMap = new Map(allClubsData.map(club => [club.id, club]));
+        const categoriesMap = new Map(allCategoriesData.map(cat => [cat.id, cat]));
+        const groupsMap = new Map(allGroupsData.map(group => [group.id, group]));
+
+        // --- Aktualizácia dát v Firestore pre zápasy a ubytovania ---
+        const batch = writeBatch(db);
+        let batchHasOperations = false;
+
+        for (const matchEvent of allMatches) {
+            const team1Data = clubsMap.get(matchEvent.team1ClubId); // Používame team1ClubId
+            const team2Data = clubsMap.get(matchEvent.team2ClubId); // Používame team2ClubId
+
+            const team1Display = getFormattedTeamAndClubNames(team1Data, categoriesMap, groupsMap);
+            const team2Display = getFormattedTeamAndClubNames(team2Data, categoriesMap, groupsMap);
+
+            const categoryName = categoriesMap.get(matchEvent.categoryId)?.name || 'N/A';
+            const groupName = groupsMap.get(matchEvent.groupId)?.name || 'N/A';
+
+            let needsUpdate = false;
+            const updatedMatchData = {};
+
+            // Kontrola a aktualizácia team1DisplayName
+            if (matchEvent.team1DisplayName !== team1Display.fullDisplayName) {
+                updatedMatchData.team1DisplayName = team1Display.fullDisplayName;
+                needsUpdate = true;
+            }
+            // Kontrola a aktualizácia team1ClubName
+            if (matchEvent.team1ClubName !== team1Display.clubNameDisplay) {
+                updatedMatchData.team1ClubName = team1Display.clubNameDisplay;
+                needsUpdate = true;
+            }
+            // Kontrola a aktualizácia team2DisplayName
+            if (matchEvent.team2DisplayName !== team2Display.fullDisplayName) {
+                updatedMatchData.team2DisplayName = team2Display.fullDisplayName;
+                needsUpdate = true;
+            }
+            // Kontrola a aktualizácia team2ClubName
+            if (matchEvent.team2ClubName !== team2Display.clubNameDisplay) {
+                updatedMatchData.team2ClubName = team2Display.clubNameDisplay;
+                needsUpdate = true;
+            }
+            // Kontrola a aktualizácia categoryName (ak je uložená)
+            // Predpokladáme, že categoryName a groupName sa už neukladajú, ale ak by boli, takto:
+            // if (matchEvent.categoryName !== categoryName) {
+            //     updatedMatchData.categoryName = categoryName;
+            //     needsUpdate = true;
+            // }
+            // if (matchEvent.groupName !== groupName) {
+            //     updatedMatchData.groupName = groupName;
+            //     needsUpdate = true;
+            // }
+
+            if (needsUpdate) {
+                batch.update(doc(matchesCollectionRef, matchEvent.id), updatedMatchData);
+                batchHasOperations = true;
+                // Aktualizujeme aj in-memory objekt, aby sa správne vykreslil
+                Object.assign(matchEvent, updatedMatchData);
+            }
+        }
+
+        for (const assignment of allAccommodations) {
+            const updatedTeams = [];
+            let needsUpdate = false;
+
+            for (const teamInAssignment of assignment.teams) {
+                const currentTeamData = clubsMap.get(teamInAssignment.teamId);
+                if (currentTeamData) {
+                    const teamDisplay = getFormattedTeamAndClubNames(currentTeamData, categoriesMap, groupsMap);
+                    const newTeamName = currentTeamData.name; // Ukladáme celý názov tímu z kolekcie 'clubs'
+
+                    if (teamInAssignment.teamName !== newTeamName) {
+                        needsUpdate = true;
+                    }
+                    updatedTeams.push({ teamId: teamInAssignment.teamId, teamName: newTeamName });
+                } else {
+                    // Ak sa tím nenašiel, ponecháme pôvodné dáta alebo pridáme placeholder
+                    updatedTeams.push(teamInAssignment);
+                }
+            }
+
+            if (needsUpdate) {
+                batch.update(doc(teamAccommodationsCollectionRef, assignment.id), { teams: updatedTeams });
+                batchHasOperations = true;
+                // Aktualizujeme aj in-memory objekt
+                assignment.teams = updatedTeams;
+            }
+        }
+
+        if (batchHasOperations) {
+            await batch.commit();
+            console.log('Batch update successful for matches and accommodations.');
+        }
+        // --- Koniec aktualizácie dát v Firestore ---
+
 
         const uniquePlacesForRows = [];
         const addedPlaceKeys = new Set(); 
@@ -720,51 +877,58 @@ async function displayMatchesAsSchedule() {
                     return (aH * 60 + aM) - (bH * 60 + bM);
                 });
 
-                matchesInCell.forEach(event => {
-                    const [startH, startM] = event.startTime.split(':').map(Number);
+                matchesInCell.forEach(matchEvent => { // Zmenené z 'event' na 'matchEvent' pre prehľadnosť
+                    const [startH, startM] = matchEvent.startTime.split(':').map(Number);
                     const absoluteStartMin = startH * 60 + startM;
                     
                     const relativeStartMinInCell = absoluteStartMin - (range.minHour * 60);
 
                     const matchBlockLeftPx = relativeStartMinInCell * PIXELS_PER_MINUTE;
-                    const matchBlockWidthPx = event.duration * PIXELS_PER_MINUTE;
+                    const matchBlockWidthPx = matchEvent.duration * PIXELS_PER_MINUTE;
                     const bufferBlockLeftPx = matchBlockLeftPx + matchBlockWidthPx;
-                    const bufferBlockWidthPx = event.bufferTime * PIXELS_PER_MINUTE;
+                    const bufferBlockWidthPx = matchEvent.bufferTime * PIXELS_PER_MINUTE;
 
                     const matchEndTime = new Date();
-                    matchEndTime.setHours(startH, startM + event.duration, 0, 0);
+                    matchEndTime.setHours(startH, startM + matchEvent.duration, 0, 0);
                     const formattedEndTime = matchEndTime.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' });
 
-                    let team1ClubNameDisplay = event.team1ClubName ? `${event.team1ClubName}` : '';
-                    let team2ClubNameDisplay = event.team2ClubName ? `${event.team2ClubName}` : '';
+                    // Získanie aktuálnych dát tímu, kategórie a skupiny z máp
+                    const team1Data = clubsMap.get(matchEvent.team1ClubId); // Používame team1ClubId
+                    const team2Data = clubsMap.get(matchEvent.team2ClubId); // Používame team2ClubId
+                    
+                    const team1Display = getFormattedTeamAndClubNames(team1Data, categoriesMap, groupsMap);
+                    const team2Display = getFormattedTeamAndClubNames(team2Data, categoriesMap, groupsMap);
+
+                    const categoryName = categoriesMap.get(matchEvent.categoryId)?.name || 'N/A';
+                    const groupName = groupsMap.get(matchEvent.groupId)?.name || 'N/A';
 
                     let clubNamesHtml = '';
-                    if (team1ClubNameDisplay) {
-                        clubNamesHtml += `${team1ClubNameDisplay}`;
+                    if (team1Display.clubNameDisplay) {
+                        clubNamesHtml += `${team1Display.clubNameDisplay}`;
                     }
-                    if (team2ClubNameDisplay) {
+                    if (team2Display.clubNameDisplay) {
                         if (clubNamesHtml) clubNamesHtml += `<br>`; 
-                        clubNamesHtml += `${team2ClubNameDisplay}`;
+                        clubNamesHtml += `${team2Display.clubNameDisplay}`;
                     }
 
                     const finalClubNamesHtml = clubNamesHtml ? `<span style="font-weight: normal;">${clubNamesHtml}</span>` : '';
 
                     scheduleHtml += `
                         <div class="schedule-cell-match"
-                            data-id="${event.id}" data-type="${event.type}"
+                            data-id="${matchEvent.id}" data-type="${matchEvent.type}"
                             style="left: ${matchBlockLeftPx}px; width: ${matchBlockWidthPx}px; top: 0;">
                             <div class="schedule-cell-content">
-                                <p class="schedule-cell-time">${event.startTime} - ${formattedEndTime}</p>
-                                <p class="schedule-cell-category">${event.categoryName || 'N/A'}${event.groupName ? ` ${event.groupName}` : ''}</p>
+                                <p class="schedule-cell-time">${matchEvent.startTime} - ${formattedEndTime}</p>
+                                <p class="schedule-cell-category">${categoryName}${groupName && groupName !== 'N/A' ? ` ${groupName.replace(/skupina /gi, '').trim()}` : ''}</p>
                                 <p class="schedule-cell-teams">
-                                    ${event.team1DisplayName}<br>
-                                    ${event.team2DisplayName}<br>
+                                    ${team1Display.fullDisplayName}<br>
+                                    ${team2Display.fullDisplayName}<br>
                                     ${finalClubNamesHtml}
                                 </p>
                             </div>
                         </div>
                     `;
-                    if (event.bufferTime > 0) {
+                    if (matchEvent.bufferTime > 0) {
                         scheduleHtml += `
                             <div class="schedule-cell-buffer"
                                 style="left: ${bufferBlockLeftPx}px; width: ${bufferBlockWidthPx}px; top: 0;">
@@ -783,29 +947,37 @@ async function displayMatchesAsSchedule() {
                         const accommodationId = assignment.id;
 
                         let displayText;
-                        if (assignment.teams.length === 1) {
-                            // Ak je priradený iba jeden tím, zobrazíme jeho celý názov (bez info v zátvorkách)
-                            displayText = assignment.teams[0].teamName.split('(')[0].trim();
+                        // Získame aktuálne dáta tímu z mapy klubov
+                        const assignedTeamData = clubsMap.get(assignment.teams[0]?.teamId);
+
+                        if (assignment.teams.length === 1 && assignedTeamData) {
+                            // Ak je priradený iba jeden tím, zobrazíme jeho celý názov (z aktuálnych dát)
+                            displayText = assignedTeamData.name;
                         } else {
                             // Ak je priradených viac tímov, skontrolujeme, či sú všetky z rovnakého základného klubu
                             const baseClubNames = new Set();
-                            assignment.teams.forEach(team => {
-                                let baseName;
-                                const fullTeamName = team.teamName.split('(')[0].trim(); // Získame pôvodný názov tímu bez (Kat: ...)
-                                if (fullTeamName.includes('⁄')) {
-                                    baseName = fullTeamName; // Názov s '/' je braný ako kompletný názov klubu
-                                } else {
-                                    baseName = fullTeamName.replace(/\s[A-Z]$/, ''); // Odstráni suffixy ako " A", " B"
+                            assignment.teams.forEach(teamInAssignment => {
+                                const currentTeamData = clubsMap.get(teamInAssignment.teamId);
+                                if (currentTeamData) {
+                                    let baseName;
+                                    if (currentTeamData.name.includes('⁄')) {
+                                        baseName = currentTeamData.name;
+                                    } else {
+                                        baseName = currentTeamData.name.replace(/\s[A-Z]$/, '');
+                                    }
+                                    baseClubNames.add(baseName);
                                 }
-                                baseClubNames.add(baseName);
                             });
 
                             if (baseClubNames.size === 1) {
                                 // Ak sú všetky tímy z rovnakého základného klubu, zobrazíme iba tento základný názov klubu
                                 displayText = Array.from(baseClubNames)[0];
                             } else {
-                                // Inak zobrazíme zoznam všetkých názvov tímov (bez info v zátvorkách)
-                                displayText = assignment.teams.map(team => team.teamName.split('(')[0].trim()).join(', ');
+                                // Inak zobrazíme zoznam všetkých názvov tímov (z aktuálnych dát)
+                                displayText = assignment.teams.map(teamInAssignment => {
+                                    const currentTeamData = clubsMap.get(teamInAssignment.teamId);
+                                    return currentTeamData ? currentTeamData.name : 'N/A';
+                                }).join(', ');
                             }
                         }
 
@@ -1490,6 +1662,8 @@ async function deleteAccommodationAssignment(assignmentId) {
 
 /**
  * Získa formátovaný názov tímu a základný názov klubu na základe ID kategórie, ID skupiny a poradového čísla tímu.
+ * Táto funkcia už nie je priamo používaná pre zobrazenie v rozvrhu, pretože dáta sa načítavajú hromadne.
+ * Slúži primárne pri ukladaní zápasov na získanie clubId.
  * @param {string} categoryId ID kategórie.
  * @param {string} groupId ID skupiny.
  * @param {number} teamNumber Poradové číslo tímu v skupine.
@@ -1706,7 +1880,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         openModal(matchModal);
         addOptions.classList.remove('show');
         if (matchCategorySelect.value) {
-            await updateMatchDurationAndBuffer();
+            await updateMatchDurationAndBuffer(); 
         } else {
             await findFirstAvailableTime(); 
         }
@@ -1937,9 +2111,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             location: matchLocationName,
             locationType: matchLocationType,
             categoryId: matchCategory,
-            categoryName: matchCategorySelect.options[matchCategorySelect.selectedIndex].text,
+            // categoryName: matchCategorySelect.options[matchCategorySelect.selectedIndex].text, // Odstránené - bude sa získavať dynamicky
             groupId: matchGroup || null,
-            groupName: matchGroup ? matchGroupSelect.options[matchGroupSelect.selectedIndex].text.replace(/skupina /gi, '').trim() : null,
+            // groupName: matchGroup ? matchGroupSelect.options[matchGroupSelect.selectedIndex].text.replace(/skupina /gi, '').trim() : null, // Odstránené - bude sa získavať dynamicky
 
             team1Category: matchCategory,
             team1Group: matchGroup,
