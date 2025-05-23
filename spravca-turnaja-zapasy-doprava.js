@@ -755,6 +755,126 @@ async function displayMatchesAsSchedule() {
         });
         scheduleHtml += '</tr></thead><tbody>';
 
+        // --- Automatická aktualizácia názvov kategórií a skupín v zápasoch ---
+        const batch = writeBatch(db);
+        let updatesCount = 0;
+
+        for (const match of allMatches) {
+            const matchId = match.id;
+            const updateData = {};
+            let needsUpdate = false;
+
+            const currentCategoryName = categoryMap.get(match.categoryId);
+            const currentGroupName = groupMap.get(match.groupId);
+
+            // Ak kategória existuje a názov je odlišný
+            if (currentCategoryName !== undefined && match.categoryName !== currentCategoryName) {
+                updateData.categoryName = currentCategoryName;
+                needsUpdate = true;
+            } else if (currentCategoryName === undefined && match.categoryName !== 'N/A') { // Ak kategória neexistuje ale v zápase nie je N/A, nastav N/A
+                updateData.categoryName = 'N/A';
+                needsUpdate = true;
+            }
+
+            // Ak skupina existuje a názov je odlišný
+            if (currentGroupName !== undefined && match.groupName !== currentGroupName) {
+                updateData.groupName = currentGroupName;
+                needsUpdate = true;
+            } else if (currentGroupName === undefined && match.groupName !== '') { // Ak skupina neexistuje a v zápase nie je prázdny reťazec, nastav prázdny reťazec
+                updateData.groupName = ''; // Alebo 'N/A' ak chcete explicitne, že skupina chýba
+                needsUpdate = true;
+            }
+
+            // Podobne pre team1DisplayName a team2DisplayName
+            // Predpokladáme, že team1Id a team2Id sú ID dokumentov z clubsCollectionRef
+            const team1Data = teamMap.get(match.team1Id);
+            const team2Data = teamMap.get(match.team2Id);
+
+            // Získanie fullDisplayName z getTeamName pre konzistentnosť s formátovaním
+            const currentTeam1FullDisplayName = team1Data ? (await getTeamName(team1Data.categoryId, team1Data.groupId, team1Data.orderInGroup, teamMap, categoryMap, groupMap)).fullDisplayName : (match.team1Id ? 'N/A Tím' : '');
+            const currentTeam2FullDisplayName = team2Data ? (await getTeamName(team2Data.categoryId, team2Data.groupId, team2Data.orderInGroup, teamMap, categoryMap, groupMap)).fullDisplayName : (match.team2Id ? 'N/A Tím' : '');
+            
+            // Logiku pre team1ClubName a team2ClubName, ktoré sú odvodené od tímu
+            const currentTeam1ClubName = team1Data ? (team1Data.name.includes('⁄') ? team1Data.name : team1Data.name.replace(/\s[A-Z]$/, '')) : '';
+            const currentTeam2ClubName = team2Data ? (team2Data.name.includes('⁄') ? team2Data.name : team2Data.name.replace(/\s[A-Z]$/, '')) : '';
+
+
+            if (match.team1DisplayName !== currentTeam1FullDisplayName) {
+                updateData.team1DisplayName = currentTeam1FullDisplayName;
+                needsUpdate = true;
+            }
+            if (match.team2DisplayName !== currentTeam2FullDisplayName) {
+                updateData.team2DisplayName = currentTeam2FullDisplayName;
+                needsUpdate = true;
+            }
+            if (match.team1ClubName !== currentTeam1ClubName) {
+                updateData.team1ClubName = currentTeam1ClubName;
+                needsUpdate = true;
+            }
+            if (match.team2ClubName !== currentTeam2ClubName) {
+                updateData.team2ClubName = currentTeam2ClubName;
+                needsUpdate = true;
+            }
+
+
+            if (needsUpdate) {
+                const matchDocRef = doc(matchesCollectionRef, matchId);
+                batch.update(matchDocRef, updateData);
+                updatesCount++;
+            }
+        }
+
+        // Automatická aktualizácia názvov tímov a ubytovania v priradeniach ubytovania
+        for (const assignment of allAccommodations) {
+            const assignmentId = assignment.id;
+            const updateData = {};
+            let needsUpdate = false;
+
+            const updatedTeamsArray = [];
+            for (const team of assignment.teams) {
+                const currentTeamData = teamMap.get(team.teamId);
+                if (currentTeamData) {
+                    const currentCategoryName = categoryMap.get(currentTeamData.categoryId) || currentTeamData.categoryId;
+                    const currentGroupName = groupMap.get(currentTeamData.groupId) || currentTeamData.groupId;
+                    const newTeamName = `${currentTeamData.name} (Kat: ${currentCategoryName}, Skup: ${currentGroupName}, Tím: ${currentTeamData.orderInGroup})`;
+                    if (team.teamName !== newTeamName) {
+                        needsUpdate = true;
+                    }
+                    updatedTeamsArray.push({ ...team, teamName: newTeamName });
+                } else {
+                    // Ak tím neexistuje, zachovať pôvodný názov alebo nastaviť N/A
+                    if (team.teamName !== 'N/A Tím') {
+                        needsUpdate = true;
+                    }
+                    updatedTeamsArray.push({ ...team, teamName: 'N/A Tím' });
+                }
+            }
+            if (needsUpdate) {
+                updateData.teams = updatedTeamsArray;
+            }
+
+            const currentAccommodationPlace = placeMap.get(assignment.accommodationId);
+            const currentAccommodationName = currentAccommodationPlace ? currentAccommodationPlace.name : assignment.accommodationName;
+            if (assignment.accommodationName !== currentAccommodationName) {
+                updateData.accommodationName = currentAccommodationName;
+                needsUpdate = true;
+            }
+
+            if (needsUpdate) {
+                const assignmentDocRef = doc(teamAccommodationsCollectionRef, assignmentId);
+                batch.update(assignmentDocRef, updateData);
+                updatesCount++;
+            }
+        }
+
+
+        if (updatesCount > 0) {
+            console.log(`Automaticky aktualizujem ${updatesCount} dokumentov kvôli zastaraným názvom.`);
+            await batch.commit();
+        }
+        // --- Koniec automatickej aktualizácie ---
+
+
         uniquePlacesForRows.forEach(placeData => { 
             const locationName = placeData.name;
             const placeAddress = placeData.address;
@@ -1697,7 +1817,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const busModalTitle = document.getElementById('busModalTitle');
     const busNameInput = document.getElementById('busNameInput');
     const busDateSelect = document.getElementById('busDateSelect');
-    const busStartLocationSelect = document.getElementById('busStartLocationSelect');
+    const busStartLocationSelect = document = document.getElementById('busStartLocationSelect');
     const busStartTimeInput = document.getElementById('busStartTimeInput');
     const busEndLocationSelect = document.getElementById('busEndLocationSelect');
     const busEndTimeInput = document.getElementById('busEndTimeInput');
