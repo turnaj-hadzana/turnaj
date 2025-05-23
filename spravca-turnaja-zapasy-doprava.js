@@ -865,7 +865,7 @@ async function deletePlayingDay(dateToDelete) {
                 batch.delete(doc(teamAccommodationsCollectionRef, accDoc.id));
             });
             await batch.commit();
-            alert(`Hrací deň ${dateToDelete} a všetky súvisiace zápasy, autobusové linky a priradenia ubytovania, ktoré sa prekrývali s týmto dňom, boli úspešne vymazané!`);
+            alert(`Hrací deň ${dateToDelete} a všetky súvisiace zápasy, autobusové linky a priradenia ubytovania, ktoré sa prekrývali s týmto dňom, boli vymazané!`);
             closeModal(document.getElementById('playingDayModal'));
             await displayMatchesAsSchedule();
         } catch (error) {
@@ -908,7 +908,7 @@ async function deletePlace(placeNameToDelete, placeTypeToDelete) {
                 });
             }
             await batch.commit();
-            alert(`Miesto ${placeNameToDelete} (${placeTypeToDelete}) a všetky súvisiace zápasy, autobusové linky a priradenia ubytovania boli úspešne vymazané!`); 
+            alert(`Miesto ${placeNameToDelete} (${placeTypeToDelete}) a všetky súvisiace zápasy, autobusové linky a priradenia ubytovania boli vymazané!`); 
             closeModal(document.getElementById('placeModal')); 
             await displayMatchesAsSchedule();
         } catch (error) {
@@ -1022,7 +1022,7 @@ async function deleteMatch(matchId) {
     if (confirm('Naozaj chcete vymazať tento zápas?')) {
         try {
             await deleteDoc(doc(matchesCollectionRef, matchId));
-            alert('Zápas úspešne vymazaný!');
+            alert('Zápas vymazaný!');
             closeModal(document.getElementById('matchModal'));
             displayMatchesAsSchedule();
         } catch (error) {
@@ -1072,7 +1072,7 @@ async function deleteBus(busId) {
     if (confirm('Naozaj chcete vymazať túto autobusovú linku?')) {
         try {
             await deleteDoc(doc(busesCollectionRef, busId));
-            alert('Autobusová linka úspešne vymazaná!');
+            alert('Autobusová linka vymazaná!');
             closeModal(document.getElementById('busModal'));
             displayMatchesAsSchedule();
         } catch (error) {
@@ -1132,7 +1132,7 @@ async function deleteAccommodationAssignment(assignmentId) {
     if (confirm('Naozaj chcete vymazať toto priradenie ubytovania?')) {
         try {
             await deleteDoc(doc(teamAccommodationsCollectionRef, assignmentId));
-            alert('Priradenie ubytovania úspešne vymazané!');
+            alert('Priradenie ubytovania vymazané!');
             closeModal(document.getElementById('assignAccommodationModal'));
             displayMatchesAsSchedule();
         } catch (error) {
@@ -1619,10 +1619,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             if (currentBusId) {
                 await setDoc(doc(busesCollectionRef, currentBusId), busData, { merge: true });
-                alert('Autobusová linka úspešne aktualizovaná!');
             } else {
                 await addDoc(busesCollectionRef, busData);
-                alert('Nová autobusová linka úspešne pridaná!');
             }
             closeModal(busModal);
             await displayMatchesAsSchedule();
@@ -1663,10 +1661,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             };
             if (id) {
                 await setDoc(doc(placesCollectionRef, id), placeData, { merge: true });
-                alert('Miesto úspešne aktualizované!');
             } else {
                 await addDoc(placesCollectionRef, placeData);
-                alert('Miesto úspešne pridané!');
             }            
             closeModal(placeModal);
             await displayMatchesAsSchedule(); 
@@ -1692,10 +1688,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             const playingDayData = { date: date };
             if (id) {
                 await setDoc(doc(playingDaysCollectionRef, id), playingDayData, { merge: true });
-                alert('Hrací deň úspešne aktualizovaný!');
             } else {
                 await addDoc(playingDaysCollectionRef, { ...playingDayData, createdAt: new Date() });
-                alert('Nová hrací deň úspešne pridaný!');
             }            
             closeModal(playingDayModal);
             await displayMatchesAsSchedule(); 
@@ -1779,10 +1773,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             };
             if (id) {
                 await setDoc(doc(teamAccommodationsCollectionRef, id), assignmentData, { merge: true });
-                alert('Priradenie ubytovania úspešne aktualizované!');
             } else {
                 await addDoc(teamAccommodationsCollectionRef, assignmentData);
-                alert('Nové priradenie ubytovania úspešne pridané!');
             }
             closeModal(assignAccommodationModal);
             await displayMatchesAsSchedule();
