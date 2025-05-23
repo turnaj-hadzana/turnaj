@@ -518,6 +518,7 @@ async function findFirstAvailableTime() {
 
 /**
  * Zobrazí zápasy, autobusy a priradenia ubytovania v tabuľke rozvrhu.
+ * Automaticky aktualizuje názvy kategórií, skupín, tímov a miest z databázy.
  */
 async function displayMatchesAsSchedule() {
     const matchesContainer = document.getElementById('matchesContainer');
@@ -532,22 +533,112 @@ async function displayMatchesAsSchedule() {
     const ITEM_HEIGHT_PX = 140;
 
     try {
-        const matchesQuery = query(matchesCollectionRef, orderBy("date", "asc"), orderBy("location", "asc"), orderBy("startTime", "asc"));
-        const matchesSnapshot = await getDocs(matchesQuery);
+        // Načítanie všetkých potrebných dát z Firestore
+        const [
+            matchesSnapshot,
+            busesSnapshot,
+            accommodationsSnapshot,
+            playingDaysSnapshot,
+            placesSnapshot,
+            categoriesSnapshot,
+            groupsSnapshot,
+            clubsSnapshot
+        ] = await Promise.all([
+            getDocs(query(matchesCollectionRef, orderBy("date", "asc"), orderBy("location", "asc"), orderBy("startTime", "asc"))),
+            getDocs(query(busesCollectionRef, orderBy("date", "asc"), orderBy("busName", "asc"), orderBy("startTime", "asc"))),
+            getDocs(query(teamAccommodationsCollectionRef, orderBy("dateFrom", "asc"), orderBy("accommodationName", "asc"))),
+            getDocs(query(playingDaysCollectionRef, orderBy("date", "asc"))),
+            getDocs(query(placesCollectionRef, orderBy("name", "asc"))),
+            getDocs(categoriesCollectionRef),
+            getDocs(groupsCollectionRef),
+            getDocs(clubsCollectionRef)
+        ]);
+
         const allMatches = matchesSnapshot.docs.map(doc => ({ id: doc.id, type: 'match', ...doc.data() }));
-
-        const busesQuery = query(busesCollectionRef, orderBy("date", "asc"), orderBy("busName", "asc"), orderBy("startTime", "asc"));
-        const busesSnapshot = await getDocs(busesQuery);
         const allBuses = busesSnapshot.docs.map(doc => ({ id: doc.id, type: 'bus', ...doc.data() }));
-
-        const accommodationsSnapshot = await getDocs(query(teamAccommodationsCollectionRef, orderBy("dateFrom", "asc"), orderBy("accommodationName", "asc")));
         const allAccommodations = accommodationsSnapshot.docs.map(doc => ({ id: doc.id, type: 'accommodation', ...doc.data() }));
-
-        const playingDaysSnapshot = await getDocs(query(playingDaysCollectionRef, orderBy("date", "asc")));
         const existingPlayingDays = playingDaysSnapshot.docs.map(doc => doc.data().date);
-
-        const placesSnapshot = await getDocs(query(placesCollectionRef, orderBy("name", "asc"))); 
         const existingPlacesData = placesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })); 
+        const allCategories = categoriesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const allGroups = groupsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const allClubs = clubsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        // Vytvorenie máp pre rýchle vyhľadávanie aktuálnych názvov
+        const categoryMap = new Map(allCategories.map(cat => [cat.id, cat.name]));
+        const groupMap = new Map(allGroups.map(group => [group.id, group.name]));
+        const placeMap = new Map(existingPlacesData.map(place => [place.id, place]));
+        const teamMap = new Map(); // Map pre tímy: teamId -> { name, categoryId, groupId, orderInGroup, clubName }
+        allClubs.forEach(club => {
+            const teamId = club.id; // V clubsCollectionRef je ID dokumentu ID tímu
+            teamMap.set(teamId, {
+                id: teamId,
+                name: club.name,
+                categoryId: club.categoryId,
+                groupId: club.groupId,
+                orderInGroup: club.orderInGroup
+            });
+        });
+
+        // Spracovanie zápasov pre aktuálne názvy
+        const processedMatches = await Promise.all(allMatches.map(async match => {
+            const team1Result = await getTeamName(match.categoryId, match.groupId, match.team1Number, teamMap, categoryMap, groupMap);
+            const team2Result = await getTeamName(match.categoryId, match.groupId, match.team2Number, teamMap, categoryMap, groupMap);
+            
+            const currentCategoryName = categoryMap.get(match.categoryId) || match.categoryName;
+            const currentGroupName = groupMap.get(match.groupId) || match.groupName;
+            const currentPlace = placeMap.get(match.placeId);
+            const currentPlaceName = currentPlace ? currentPlace.name : match.location;
+
+            return {
+                ...match,
+                categoryName: currentCategoryName,
+                groupName: currentGroupName,
+                team1DisplayName: team1Result.fullDisplayName,
+                team1ClubName: team1Result.clubName,
+                team2DisplayName: team2Result.fullDisplayName,
+                team2ClubName: team2Result.clubName,
+                location: currentPlaceName // Aktualizovaný názov miesta
+            };
+        }));
+
+        // Spracovanie priradení ubytovania pre aktuálne názvy
+        const processedAccommodations = await Promise.all(allAccommodations.map(async assignment => {
+            const updatedTeams = assignment.teams.map(team => {
+                const currentTeamData = teamMap.get(team.teamId);
+                let currentTeamName = team.teamName; // Fallback to stored name
+
+                if (currentTeamData) {
+                    const currentCategoryName = categoryMap.get(currentTeamData.categoryId) || currentTeamData.categoryId;
+                    const currentGroupName = groupMap.get(currentTeamData.groupId) || currentTeamData.groupId;
+                    currentTeamName = `${currentTeamData.name} (Kat: ${currentCategoryName}, Skup: ${currentGroupName}, Tím: ${currentTeamData.orderInGroup})`;
+                }
+                return { ...team, teamName: currentTeamName };
+            });
+            const currentAccommodationPlace = placeMap.get(assignment.accommodationId);
+            const currentAccommodationName = currentAccommodationPlace ? currentAccommodationPlace.name : assignment.accommodationName;
+
+            return {
+                ...assignment,
+                teams: updatedTeams,
+                accommodationName: currentAccommodationName
+            };
+        }));
+
+        // Spracovanie autobusov pre aktuálne názvy miest
+        const processedBuses = allBuses.map(bus => {
+            const [startPlaceName, startPlaceType] = bus.startLocation.split(':::');
+            const [endPlaceName, endPlaceType] = bus.endLocation.split(':::');
+
+            const currentStartPlace = existingPlacesData.find(p => p.name === startPlaceName && p.type === startPlaceType);
+            const currentEndPlace = existingPlacesData.find(p => p.name === endPlaceName && p.type === endPlaceType);
+
+            return {
+                ...bus,
+                startLocation: currentStartPlace ? `${currentStartPlace.name}:::${currentStartPlace.type}` : bus.startLocation,
+                endLocation: currentEndPlace ? `${currentEndPlace.name}:::${currentEndPlace.type}` : bus.endLocation,
+            };
+        });
+
 
         const uniquePlacesForRows = [];
         const addedPlaceKeys = new Set(); 
@@ -575,7 +666,7 @@ async function displayMatchesAsSchedule() {
 
         console.log("Sorted Dates for schedule:", sortedDates); 
 
-        const eventsForTimeRangeCalculation = [...allMatches, ...allBuses];
+        const eventsForTimeRangeCalculation = [...processedMatches, ...processedBuses];
 
         const dailyTimeRanges = new Map();
         eventsForTimeRangeCalculation.forEach(event => { 
@@ -695,11 +786,11 @@ async function displayMatchesAsSchedule() {
 
                 scheduleHtml += `<td colspan="${colspan}" style="position: relative; background-color: #f7f7f7;">`;
 
-                const matchesInCell = allMatches.filter(event => {
+                const matchesInCell = processedMatches.filter(event => {
                     return event.date === date && placeType === 'Športová hala' && event.location === locationName;
                 });
 
-                const accommodationsInCell = allAccommodations.filter(assignment => {
+                const accommodationsInCell = processedAccommodations.filter(assignment => {
                     const dateFrom = new Date(assignment.dateFrom);
                     const dateTo = new Date(assignment.dateTo);
                     const currentDate = new Date(date);
@@ -878,7 +969,7 @@ async function displayMatchesAsSchedule() {
             });
         }
         
-        allBuses.forEach(bus => {
+        processedBuses.forEach(bus => { // Používame processedBuses
             const startLocationKey = bus.startLocation; 
             const endLocationKey = bus.endLocation;     
             const date = bus.date;
@@ -1230,7 +1321,7 @@ async function editPlace(placeName, placeType) {
             placeGoogleMapsUrlInput.value = placeData.googleMapsUrl || '';
 
             deletePlaceButtonModal.style.display = 'inline-block';
-            deletePlaceButtonModal.onclick = () => deletePlace(placeData.name, placeData.type);
+            deletePlaceButtonModal.onclick = () => deletePlace(placeData.name, placeData.data);
 
             openModal(placeModal);
         } else {
@@ -1469,46 +1560,41 @@ async function deleteAccommodationAssignment(assignmentId) {
 
 /**
  * Získa úplné zobrazované názvy tímov, názvy klubov a ID klubov na základe ID kategórie, ID skupiny a poradového čísla tímu.
+ * Používa poskytnuté mapy pre aktuálne názvy kategórií, skupín a tímov.
  * @param {string} categoryId - ID kategórie tímu.
  * @param {string} groupId - ID skupiny tímu.
  * @param {number} teamNumber - Poradové číslo tímu v skupine.
+ * @param {Map<string, Object>} teamMap - Mapa ID tímu na objekt tímu.
+ * @param {Map<string, string>} categoryMap - Mapa ID kategórie na názov kategórie.
+ * @param {Map<string, string>} groupMap - Mapa ID skupiny na názov skupiny.
  * @returns {Promise<{fullDisplayName: string|null, clubName: string|null, clubId: string|null}>} Objekt s názvom tímu, názvom klubu a ID klubu.
  */
-const getTeamName = async (categoryId, groupId, teamNumber) => {
+const getTeamName = async (categoryId, groupId, teamNumber, teamMap, categoryMap, groupMap) => {
     if (!categoryId || !groupId || !teamNumber) {
         return { fullDisplayName: null, clubName: null, clubId: null };
     }
 
     try {
-        const categoryDoc = await getDoc(doc(categoriesCollectionRef, categoryId));
-        const categoryName = categoryDoc.exists() ? (categoryDoc.data().name || categoryId) : categoryId;
-
-        const groupDoc = await getDoc(doc(groupsCollectionRef, groupId));
-        let groupData = null; 
-        if (groupDoc.exists()) {
-            groupData = groupDoc.data(); 
-        }
-        const groupName = groupData ? (groupData.name || groupId) : groupId;
+        const categoryName = categoryMap.get(categoryId) || categoryId;
+        const groupName = groupMap.get(groupId) || groupId;
 
         let clubName = `Tím ${teamNumber}`;
-        let clubId = null; 
+        let clubId = null;
 
-        const clubsQuery = query(
-            clubsCollectionRef,
-            where("categoryId", "==", categoryId),
-            where("groupId", "==", groupId),
-            where("orderInGroup", "==", parseInt(teamNumber))
-        );
-        const clubsSnapshot = await getDocs(clubsQuery);
-
-        if (!clubsSnapshot.empty) {
-            const teamDocData = clubsSnapshot.docs[0].data();
-            clubId = clubsSnapshot.docs[0].id;
-            if (teamDocData.name) {
-                clubName = teamDocData.name;
+        // Nájdenie tímu v teamMap podľa categoryId, groupId a orderInGroup
+        let foundTeam = null;
+        for (const [id, teamData] of teamMap.entries()) {
+            if (teamData.categoryId === categoryId && teamData.groupId === groupId && teamData.orderInGroup === parseInt(teamNumber)) {
+                foundTeam = teamData;
+                clubId = id; // ID dokumentu klubu je ID tímu v tomto kontexte
+                break;
             }
+        }
+
+        if (foundTeam) {
+            clubName = foundTeam.name;
         } else {
-            console.warn(`Tím s číslom ${teamNumber} v kategórii ${categoryId} a skupine ${groupId} sa nenašiel. Používam fallback: "${clubName}"`);
+            console.warn(`Tím s číslom ${teamNumber} v kategórii ${categoryId} a skupine ${groupId} sa nenašiel v teamMap. Používam fallback: "${clubName}"`);
         }
 
         let shortCategoryName = categoryName;
@@ -1838,8 +1924,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         let team2Result = null;
 
         try {
-            team1Result = await getTeamName(matchCategory, matchGroup, team1Number);
-            team2Result = await getTeamName(matchCategory, matchGroup, team2Number);
+            // Pre získanie aktuálnych názvov použijeme novo načítané mapy
+            const categoriesSnapshot = await getDocs(categoriesCollectionRef);
+            const categoryMap = new Map(categoriesSnapshot.docs.map(doc => [doc.id, doc.data().name]));
+            const groupsSnapshot = await getDocs(groupsCollectionRef);
+            const groupMap = new Map(groupsSnapshot.docs.map(doc => [doc.id, doc.data().name]));
+            const clubsSnapshot = await getDocs(clubsCollectionRef);
+            const teamMap = new Map();
+            clubsSnapshot.forEach(clubDoc => {
+                teamMap.set(clubDoc.id, {
+                    id: clubDoc.id,
+                    name: clubDoc.data().name,
+                    categoryId: clubDoc.data().categoryId,
+                    groupId: clubDoc.data().groupId,
+                    orderInGroup: clubDoc.data().orderInGroup
+                });
+            });
+
+            team1Result = await getTeamName(matchCategory, matchGroup, team1Number, teamMap, categoryMap, groupMap);
+            team2Result = await getTeamName(matchCategory, matchGroup, team2Number, teamMap, categoryMap, groupMap);
         } catch (error) {
             console.error("Chyba pri získavaní názvov tímov:", error);
             alert("Vyskytla sa chyba pri získavaní názvov tímov. Skúste to znova.");
@@ -2188,40 +2291,61 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             let teamsData = [];
 
+            // Načítanie aktuálnych dát pre tímy, kategórie a skupiny
+            const categoriesSnapshot = await getDocs(categoriesCollectionRef);
+            const categoryMap = new Map(categoriesSnapshot.docs.map(doc => [doc.id, doc.data().name]));
+            const groupsSnapshot = await getDocs(groupsCollectionRef);
+            const groupMap = new Map(groupsSnapshot.docs.map(doc => [doc.id, doc.data().name]));
+            const clubsSnapshot = await getDocs(clubsCollectionRef);
+            const teamMap = new Map();
+            clubsSnapshot.forEach(clubDoc => {
+                teamMap.set(clubDoc.id, {
+                    id: clubDoc.id,
+                    name: clubDoc.data().name,
+                    categoryId: clubDoc.data().categoryId,
+                    groupId: clubDoc.data().groupId,
+                    orderInGroup: clubDoc.data().orderInGroup
+                });
+            });
+
+
             if (selectedSpecificTeamId) {
-                const teamDoc = await getDoc(doc(clubsCollectionRef, selectedSpecificTeamId));
-                if (teamDoc.exists()) {
-                    const team = teamDoc.data(); 
+                const teamData = teamMap.get(selectedSpecificTeamId);
+                if (teamData) {
+                    const currentCategoryName = categoryMap.get(teamData.categoryId) || teamData.categoryId;
+                    const currentGroupName = groupMap.get(teamData.groupId) || teamData.groupId;
                     teamsData.push({
                         teamId: selectedSpecificTeamId,
-                        teamName: `${team.name} (Kat: ${team.categoryName}, Skup: ${team.groupName}, Tím: ${team.orderInGroup})`
+                        teamName: `${teamData.name} (Kat: ${currentCategoryName}, Skup: ${currentGroupName}, Tím: ${teamData.orderInGroup})`
                     });
                 } else {
                     alert('Vybraný konkrétny tím sa nenašiel v databáze.');
                     return;
                 }
             } else {
-                const allClubsSnapshot = await getDocs(clubsCollectionRef);
                 const teamsForBaseClub = [];
 
-                allClubsSnapshot.forEach(doc => {
-                    const team = doc.data();
+                for (const [teamId, teamData] of teamMap.entries()) {
                     if (selectedClubName.includes('⁄')) {
-                        if (team.name === selectedClubName) {
+                        if (teamData.name === selectedClubName) {
+                            const currentCategoryName = categoryMap.get(teamData.categoryId) || teamData.categoryId;
+                            const currentGroupName = groupMap.get(teamData.groupId) || teamData.groupId;
                             teamsForBaseClub.push({
-                                teamId: doc.id,
-                                teamName: `${team.name} (Kat: ${team.categoryName}, Skup: ${team.groupName}, Tím: ${team.orderInGroup})`
+                                teamId: teamId,
+                                teamName: `${teamData.name} (Kat: ${currentCategoryName}, Skup: ${currentGroupName}, Tím: ${teamData.orderInGroup})`
                             });
                         }
                     } else {
-                        if (team.name.match(new RegExp(`^${selectedClubName}(?:\\s[A-Z])?$`))) {
+                        if (teamData.name.match(new RegExp(`^${selectedClubName}(?:\\s[A-Z])?$`))) {
+                            const currentCategoryName = categoryMap.get(teamData.categoryId) || teamData.categoryId;
+                            const currentGroupName = groupMap.get(teamData.groupId) || teamData.groupId;
                             teamsForBaseClub.push({
-                                teamId: doc.id,
-                                teamName: `${team.name} (Kat: ${team.categoryName}, Skup: ${team.groupName}, Tím: ${team.orderInGroup})`
+                                teamId: teamId,
+                                teamName: `${teamData.name} (Kat: ${currentCategoryName}, Skup: ${currentGroupName}, Tím: ${teamData.orderInGroup})`
                             });
                         }
                     }
-                });
+                }
 
                 if (teamsForBaseClub.length > 0) {
                     teamsData = teamsForBaseClub;
