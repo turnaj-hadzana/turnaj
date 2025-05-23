@@ -4,6 +4,11 @@ import { db, categoriesCollectionRef, groupsCollectionRef, clubsCollectionRef, m
 const SETTINGS_DOC_ID = 'matchTimeSettings';
 
 // --- Funkcie pre plnenie select boxov (presunuté mimo DOMContentLoaded) ---
+/**
+ * Naplní select box s hracími dňami.
+ * @param {HTMLSelectElement} selectElement - Element select boxu.
+ * @param {string} selectedDate - Voliteľný dátum, ktorý má byť predvybraný.
+ */
 async function populatePlayingDaysSelect(selectElement, selectedDate = '') {
     if (!selectElement) return;
     selectElement.innerHTML = '<option value="">-- Vyberte dátum --</option>';
@@ -29,6 +34,11 @@ async function populatePlayingDaysSelect(selectElement, selectedDate = '') {
     }
 }
 
+/**
+ * Naplní select box s miestami typu "Športová hala".
+ * @param {HTMLSelectElement} selectElement - Element select boxu.
+ * @param {string} selectedPlaceName - Voliteľný názov miesta, ktoré má byť predvybrané.
+ */
 async function populateSportHallSelects(selectElement, selectedPlaceName = '') {
     if (!selectElement) return;
     selectElement.innerHTML = '<option value="">-- Vyberte miesto (športovú halu) --</option>';
@@ -64,6 +74,11 @@ async function populateSportHallSelects(selectElement, selectedPlaceName = '') {
     }
 }
 
+/**
+ * Naplní select box so všetkými miestami (športové haly, stravovacie zariadenia, ubytovanie).
+ * @param {HTMLSelectElement} selectElement - Element select boxu.
+ * @param {string} selectedPlaceCombined - Voliteľná kombinácia názvu a typu miesta (napr. "Názov:::Typ"), ktorá má byť predvybraná.
+ */
 async function populateAllPlaceSelects(selectElement, selectedPlaceCombined = '') {
     if (!selectElement) return;
     selectElement.innerHTML = '<option value="">-- Vyberte miesto --</option>';
@@ -99,6 +114,12 @@ async function populateAllPlaceSelects(selectElement, selectedPlaceCombined = ''
     }
 }
 
+/**
+ * Naplní select box s klubmi pre priradenie ubytovania.
+ * Filtruje kluby, ktoré už majú všetky svoje tímy priradené k ubytovaniu v danom dátumovom rozsahu.
+ * @param {HTMLSelectElement} selectElement - Element select boxu.
+ * @param {string} selectedClubName - Voliteľný názov klubu, ktorý má byť predvybraný.
+ */
 async function populateClubSelect(selectElement, selectedClubName = '') {
     if (!selectElement) return;
     selectElement.innerHTML = '<option value="">-- Vyberte klub --</option>';
@@ -207,6 +228,13 @@ async function populateClubSelect(selectElement, selectedClubName = '') {
     }
 }
 
+/**
+ * Naplní select box s konkrétnymi tímami na základe vybraného základného názvu klubu.
+ * Filtruje tímy, ktoré sú už priradené k ubytovaniu v danom dátumovom rozsahu.
+ * @param {HTMLSelectElement} selectElement - Element select boxu.
+ * @param {string} baseClubName - Základný názov klubu.
+ * @param {string} selectedTeamId - Voliteľné ID tímu, ktoré má byť predvybrané.
+ */
 async function populateSpecificTeamSelect(selectElement, baseClubName, selectedTeamId = '') {
     if (!selectElement) return;
     selectElement.innerHTML = '<option value="">-- Vyberte konkrétny tím (nepovinné) --</option>';
@@ -313,6 +341,11 @@ async function populateSpecificTeamSelect(selectElement, baseClubName, selectedT
     }
 }
 
+/**
+ * Naplní select box s ubytovaním (miestami typu 'Ubytovanie').
+ * @param {HTMLSelectElement} selectElement - Element select boxu.
+ * @param {string} selectedAccommodationId - Voliteľné ID ubytovania, ktoré má byť predvybrané.
+ */
 async function populateAccommodationSelect(selectElement, selectedAccommodationId = '') {
     if (!selectElement) return;
     selectElement.innerHTML = '<option value="">-- Vyberte ubytovňu --</option>';
@@ -483,6 +516,9 @@ async function findFirstAvailableTime() {
     }
 }
 
+/**
+ * Zobrazí zápasy, autobusy a priradenia ubytovania v tabuľke rozvrhu.
+ */
 async function displayMatchesAsSchedule() {
     const matchesContainer = document.getElementById('matchesContainer');
     if (!matchesContainer) return;
@@ -1017,6 +1053,10 @@ async function displayMatchesAsSchedule() {
     }
 }
 
+/**
+ * Vymaže hrací deň a všetky súvisiace zápasy, autobusové linky a priradenia ubytovania.
+ * @param {string} dateToDelete - Dátum hracieho dňa, ktorý sa má vymazať.
+ */
 async function deletePlayingDay(dateToDelete) {
     if (confirm(`Naozaj chcete vymazať hrací deň ${dateToDelete} a VŠETKY zápasy a autobusové linky, ktoré sa konajú v tento deň?`)) {
         try {
@@ -1065,6 +1105,11 @@ async function deletePlayingDay(dateToDelete) {
     }
 }
 
+/**
+ * Vymaže miesto a všetky súvisiace zápasy, autobusové linky a priradenia ubytovania.
+ * @param {string} placeNameToDelete - Názov miesta, ktoré sa má vymazať.
+ * @param {string} placeTypeToDelete - Typ miesta, ktoré sa má vymazať.
+ */
 async function deletePlace(placeNameToDelete, placeTypeToDelete) { 
     if (confirm(`Naozaj chcete vymazať miesto ${placeNameToDelete} (${placeTypeToDelete}) a VŠETKY zápasy a autobusové linky, ktoré sa viažu na toto miesto?`)) { 
         try {
@@ -1118,6 +1163,10 @@ async function deletePlace(placeNameToDelete, placeTypeToDelete) {
     }
 }
 
+/**
+ * Otvorí modálne okno pre úpravu hracieho dňa.
+ * @param {string} dateToEdit - Dátum hracieho dňa, ktorý sa má upraviť.
+ */
 async function editPlayingDay(dateToEdit) {
     try {
         const playingDayModal = document.getElementById('playingDayModal');
@@ -1151,6 +1200,11 @@ async function editPlayingDay(dateToEdit) {
     }
 }
 
+/**
+ * Otvorí modálne okno pre úpravu miesta.
+ * @param {string} placeName - Názov miesta, ktoré sa má upraviť.
+ * @param {string} placeType - Typ miesta, ktoré sa má upraviť.
+ */
 async function editPlace(placeName, placeType) {
     try {
         const placeModal = document.getElementById('placeModal');
@@ -1188,6 +1242,10 @@ async function editPlace(placeName, placeType) {
     }
 }
 
+/**
+ * Otvorí modálne okno pre úpravu zápasu.
+ * @param {string} matchId - ID zápasu, ktorý sa má upraviť.
+ */
 async function editMatch(matchId) {
     try {
         const matchModal = document.getElementById('matchModal');
@@ -1244,6 +1302,10 @@ async function editMatch(matchId) {
     }
 }
 
+/**
+ * Vymaže zápas.
+ * @param {string} matchId - ID zápasu, ktorý sa má vymazať.
+ */
 async function deleteMatch(matchId) {
     if (confirm('Naozaj chcete vymazať tento zápas?')) {
         try {
@@ -1258,6 +1320,10 @@ async function deleteMatch(matchId) {
     }
 }
 
+/**
+ * Otvorí modálne okno pre úpravu autobusovej linky.
+ * @param {string} busId - ID autobusovej linky, ktorá sa má upraviť.
+ */
 async function editBus(busId) {
     try {
         const busModal = document.getElementById('busModal');
@@ -1302,6 +1368,10 @@ async function editBus(busId) {
     }
 }
 
+/**
+ * Vymaže autobusovú linku.
+ * @param {string} busId - ID autobusovej linky, ktorá sa má vymazať.
+ */
 async function deleteBus(busId) {
     if (confirm('Naozaj chcete vymazať túto autobusovú linku?')) {
         try {
@@ -1316,14 +1386,18 @@ async function deleteBus(busId) {
     }
 }
 
+/**
+ * Otvorí modálne okno pre úpravu priradenia ubytovania.
+ * @param {string} assignmentId - ID priradenia ubytovania, ktoré sa má upraviť.
+ */
 async function editAccommodationAssignment(assignmentId) {
     try {
         const assignAccommodationModal = document.getElementById('assignAccommodationModal');
         const assignmentIdInput = document.getElementById('assignmentId');
         const assignAccommodationModalTitle = document.getElementById('assignAccommodationModalTitle');
-        const assignmentDateFromSelect = document.getElementById('assignmentDateFromSelect');
-        const assignmentDateToSelect = document.getElementById('assignmentDateToSelect');
-        const clubSelect = document.getElementById('clubSelect');
+        const assignmentDateFromSelect = document.getElementById('assignmentDateFromSelect'); 
+        const assignmentDateToSelect = document.getElementById('assignmentDateToSelect'); 
+        const clubSelect = document.getElementById('clubSelect'); 
         const specificTeamSelect = document.getElementById('specificTeamSelect');
         const accommodationSelect = document.getElementById('accommodationSelect');
         const deleteAssignmentButtonModal = document.getElementById('deleteAssignmentButtonModal');
@@ -1375,6 +1449,10 @@ async function editAccommodationAssignment(assignmentId) {
     }
 }
 
+/**
+ * Vymaže priradenie ubytovania.
+ * @param {string} assignmentId - ID priradenia ubytovania, ktoré sa má vymazať.
+ */
 async function deleteAccommodationAssignment(assignmentId) {
     if (confirm('Naozaj chcete vymazať toto priradenie ubytovania?')) {
         try {
@@ -1389,6 +1467,13 @@ async function deleteAccommodationAssignment(assignmentId) {
     }
 }
 
+/**
+ * Získa úplné zobrazované názvy tímov, názvy klubov a ID klubov na základe ID kategórie, ID skupiny a poradového čísla tímu.
+ * @param {string} categoryId - ID kategórie tímu.
+ * @param {string} groupId - ID skupiny tímu.
+ * @param {number} teamNumber - Poradové číslo tímu v skupine.
+ * @returns {Promise<{fullDisplayName: string|null, clubName: string|null, clubId: string|null}>} Objekt s názvom tímu, názvom klubu a ID klubu.
+ */
 const getTeamName = async (categoryId, groupId, teamNumber) => {
     if (!categoryId || !groupId || !teamNumber) {
         return { fullDisplayName: null, clubName: null, clubId: null };
@@ -1515,7 +1600,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const busModalTitle = document.getElementById('busModalTitle');
     const busNameInput = document.getElementById('busNameInput');
     const busDateSelect = document.getElementById('busDateSelect');
-    const busStartLocationSelect = document.getElementById('busStartLocationSelect');
+    const busStartLocationSelect = document = document.getElementById('busStartLocationSelect');
     const busStartTimeInput = document.getElementById('busStartTimeInput');
     const busEndLocationSelect = document.getElementById('busEndLocationSelect');
     const busEndTimeInput = document.getElementById('busEndTimeInput');
