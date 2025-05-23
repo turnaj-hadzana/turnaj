@@ -311,6 +311,7 @@ async function getCategoryMatchSettings(categoryId) {
                 };
             }
         }
+    }catch{
     }
     return { duration: 60, bufferTime: 5 };
 }
