@@ -556,7 +556,8 @@ function getFormattedTeamAndClubNames(teamData, categoryMap, groupMap) {
         }
     }
 
-    const fullDisplayName = `${shortCategoryName} ${shortGroupName}${teamData.orderInGroup}`;
+    // Kombinácia kategórie, skupiny a poradového čísla
+    const fullDisplayName = `${shortCategoryName}${shortGroupName}${teamData.orderInGroup}`;
 
     let clubNameDisplay;
     if (actualClubName.includes('⁄')) {
@@ -896,6 +897,7 @@ async function displayMatchesAsSchedule() {
                     const team1Data = clubsMap.get(matchEvent.team1ClubId); // Používame team1ClubId
                     const team2Data = clubsMap.get(matchEvent.team2ClubId); // Používame team2ClubId
                     
+                    // Používame getFormattedTeamAndClubNames pre získanie fullDisplayName a clubNameDisplay
                     const team1Display = getFormattedTeamAndClubNames(team1Data, categoriesMap, groupsMap);
                     const team2Display = getFormattedTeamAndClubNames(team2Data, categoriesMap, groupsMap);
 
