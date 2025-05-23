@@ -17,6 +17,12 @@ async function populatePlayingDaysSelect(selectElement, selectedDate = '') {
         if (selectedDate) {
             selectElement.value = selectedDate; 
         }
+    } catch (error) {
+        const option = document.createElement('option');
+        option.value = '';
+        option.textContent = '-- Chyba pri načítaní dátumov --';
+        option.disabled = true;
+        selectElement.appendChild(option);
     }
 }
 async function populateSportHallSelects(selectElement, selectedPlaceName = '') {
