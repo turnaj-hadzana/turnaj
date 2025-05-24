@@ -890,6 +890,9 @@ async function displayMatchesAsSchedule() {
 
         const scheduleTableContainer = matchesContainer.querySelector('.schedule-table-container');
         const scheduleTable = matchesContainer.querySelector('.match-schedule-table');
+        // Define scheduleTableContainerRect here
+        const scheduleTableContainerRect = scheduleTableContainer.getBoundingClientRect();
+
 
         if (!scheduleTableContainer || !scheduleTable) {
             matchesContainer.innerHTML = '<p>Chyba pri zobrazení rozvrhu. Chýbajú komponenty tabuľky.</p>';
