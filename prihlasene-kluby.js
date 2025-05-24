@@ -469,17 +469,17 @@ async function displaySubjectDetails(baseName, initialTeamId = null) {
      } else {
           // Zoradenie tímov pre tlačidlá
           teamsForSubject.sort((a, b) => {
-               const categoryA = allCategories.find(cat => cat.id === a.categoryId);
-               const categoryNameA = (categoryA && categoryA.name) ? categoryA.name : (a.categoryId || 'Neznáma kategória');
-               const groupA = allGroups.find(g => g.id === a.groupId);
-               const groupNameA = groupA ? (groupA.name || groupA.id) : 'Nepriradené';
+               let categoryA = allCategories.find(cat => String(cat.id) === String(a.categoryId));
+               let categoryNameA = (categoryA && categoryA.name) ? categoryA.name : (String(a.categoryId) || 'Neznáma kategória');
+               let groupA = allGroups.find(g => String(g.id) === String(a.groupId));
+               let groupNameA = groupA ? (groupA.name || String(groupA.id)) : 'Nepriradené';
                const teamTextA = `${categoryNameA}${groupNameA !== 'Nepriradené' ? ' - ' + groupNameA : ''}`;
 
-               const categoryB = allCategories.find(cat => cat.id === b.categoryId);
-               const categoryNameB = (categoryB && categoryB.name) ? categoryNameB : (b.categoryId || 'Neznáma kategória');
-               const groupB = allGroups.find(g => g.id === b.groupId);
-               const groupNameB = groupB ? (groupB.name || groupB.id) : 'Nepriradené';
-                const teamTextB = `${categoryNameB}${groupNameB !== 'Nepriradené' ? ' - ' + groupNameB : ''}`;
+               let categoryB = allCategories.find(cat => String(cat.id) === String(b.categoryId));
+               let categoryNameB = (categoryB && categoryB.name) ? categoryB.name : (String(b.categoryId) || 'Neznáma kategória');
+               let groupB = allGroups.find(g => String(g.id) === String(b.groupId));
+               let groupNameB = groupB ? (groupB.name || String(groupB.id)) : 'Nepriradené';
+               const teamTextB = `${categoryNameB}${groupNameB !== 'Nepriradené' ? ' - ' + groupNameB : ''}`;
 
                return teamTextA.localeCompare(teamTextB, 'sk-SK');
            });
