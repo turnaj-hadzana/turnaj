@@ -78,7 +78,7 @@ function addCategoryRowToTable(categoryId, categoryName) {
             batch.delete(doc(categoriesCollectionRef, categoryIdToDelete));
             await batch.commit();
 
-            await showMessage('Úspech', `Kategória "${categoryDisplayName}" úspešne vymazaná.`);
+            await showMessage('Potvrdenie', `Kategória "${categoryDisplayName}" úspešne vymazaná.`);
             loadCategoriesTable();
         } catch (error) {
             console.error('Chyba pri mazaní kategórie:', error);
@@ -218,7 +218,7 @@ if (categoryForm) {
                 const newCategoryDocRef = doc(categoriesCollectionRef);
                 await setDoc(newCategoryDocRef, { name: categoryName });
 
-                await showMessage('Úspech', `Kategória "${categoryName}" úspešne pridaná.`);
+                await showMessage('Potvrdenie', `Kategória "${categoryName}" úspešne pridaná.`);
                 if (categoryModal) closeModal(categoryModal);
                 resetCategoryModal();
                 loadCategoriesTable();
@@ -263,7 +263,7 @@ if (categoryForm) {
                 const categoryDocRef = doc(categoriesCollectionRef, categoryIdToUpdate);
                 await updateDoc(categoryDocRef, { name: newCategoryDisplayName });
 
-                await showMessage('Úspech', `Kategória "${oldCategoryDisplayName}" úspešne premenovaná na "${newCategoryDisplayName}".`);
+                await showMessage('Potvrdenie', `Kategória "${oldCategoryDisplayName}" úspešne premenovaná na "${newCategoryDisplayName}".`);
                 if (categoryModal) closeModal(categoryModal);
                 resetCategoryModal();
                 loadCategoriesTable();
