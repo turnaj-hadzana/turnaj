@@ -120,7 +120,8 @@ function getUniqueTeamCategories(teams, categories) {
                 categoryIdForValue = team.categoryId;
             }
 
-            const normalizedCategoryName = categoryNameForDisplay.toLowerCase();
+            // Ensure consistent trimming and lowercasing for the map key
+            const normalizedCategoryName = (categoryNameForDisplay || '').trim().toLowerCase();
             if (!uniqueCategoryMap.has(normalizedCategoryName)) {
                 uniqueCategoryMap.set(normalizedCategoryName, { id: categoryIdForValue, name: categoryNameForDisplay });
             }
@@ -129,7 +130,12 @@ function getUniqueTeamCategories(teams, categories) {
 
     const categoryOptions = Array.from(uniqueCategoryMap.values());
 
-    return categoryOptions.sort((a, b) => (a.name || '').localeCompare((b.name || ''), 'sk-SK'));
+    // Sort by name, with "Neznáma kategória" (id: null) always at the top
+    return categoryOptions.sort((a, b) => {
+        if (a.id === null) return -1; // "Neznáma kategória" comes first
+        if (b.id === null) return 1;
+        return (a.name || '').localeCompare((b.name || ''), 'sk-SK');
+    });
 }
 
 /**
@@ -158,12 +164,16 @@ function getUniqueTeamGroups(teams, groups) {
                 groupIdForValue = group.id;
             } else {
                 // Fallback pre skupiny, ktoré sa nenašli v allAvailableGroups (nekonzistentné dáta)
+                // Try to derive name from ID, if it's in "category - name" format
                 const parts = team.groupId.split(' - ');
                 groupNameForDisplay = (parts.length > 1) ? parts.slice(1).join(' - ').trim() : team.groupId;
                 groupIdForValue = team.groupId; // Use the original ID for the value
             }
 
-            const normalizedGroupName = groupNameForDisplay.toLowerCase();
+            // Ensure consistent trimming and lowercasing for the map key
+            const normalizedGroupName = (groupNameForDisplay || '').trim().toLowerCase();
+            
+            // Only add if not already present by normalized name
             if (!uniqueGroupMap.has(normalizedGroupName)) {
                 uniqueGroupMap.set(normalizedGroupName, { id: groupIdForValue, name: groupNameForDisplay });
             }
@@ -172,7 +182,12 @@ function getUniqueTeamGroups(teams, groups) {
 
     const groupOptions = Array.from(uniqueGroupMap.values());
 
-    return groupOptions.sort((a, b) => (a.name || '').localeCompare((b.name || ''), 'sk-SK'));
+    // Sort by name, with "Nepriradené" (id: null) always at the top
+    return groupOptions.sort((a, b) => {
+        if (a.id === null) return -1; // "Nepriradené" comes first
+        if (b.id === null) return 1;
+        return (a.name || '').localeCompare((b.name || ''), 'sk-SK');
+    });
 }
 
 /**
@@ -674,7 +689,23 @@ async function openClubModal(identifier = null, mode = 'assign') {
                     filterSelect.appendChild(option);
                 });
             } else if (filterType === 'group') {
-                const uniqueGroups = getUniqueTeamGroups(teamsToDisplay, allAvailableGroups); // Používame teamsToDisplay
+                // Určenie, ktorú sadu tímov použiť pre generovanie možností skupín
+                // Ak je aktívny filter kategórie, zobrazia sa iba skupiny relevantné pre danú kategóriu.
+                // Inak sa zobrazia všetky unikátne skupiny zo všetkých tímov.
+                let teamsForGroupOptions = allTeams;
+                if (currentFilters.category !== null) {
+                    teamsForGroupOptions = allTeams.filter(team => {
+                        const teamCategoryId = team.categoryId;
+                        if (currentFilters.category === null) {
+                            return !teamCategoryId || (typeof teamCategoryId === 'string' && teamCategoryId.trim() === '');
+                        } else {
+                            return teamCategoryId === currentFilters.category;
+                        }
+                    });
+                }
+                
+                const uniqueGroups = getUniqueTeamGroups(teamsForGroupOptions, allAvailableGroups);
+                
                 uniqueGroups.forEach(group => {
                     const option = document.createElement('option');
                     option.value = group.id !== null ? group.id : ''; // ID ako value, prázdny reťazec pre null
