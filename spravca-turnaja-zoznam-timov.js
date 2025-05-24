@@ -307,7 +307,7 @@ function resetClubModal() {
     }
     if (clubGroupSelect) {
         clubGroupSelect.innerHTML = '<option value="">-- Vyberte skupinu --</option>';
-        if (clubGroupSelect) clubGroupSelect.disabled = true;
+        clubGroupSelect.disabled = true; // Vždy disabled na začiatku
     }
     if (orderInGroupInput) {
         orderInGroupInput.value = '';
@@ -372,7 +372,7 @@ async function openClubModal(identifier = null, mode = 'assign') {
                   if (submitButton) submitButton.textContent = 'Vytvoriť tím';
              }
         } else if (mode === 'edit') {
-            clubModalTitle.textContent = 'Upraviť tím'; // Zmenený text
+            clubModalTitle.textContent = 'Upraviť tím';
              if (clubForm) {
                  const submitButton = clubForm.querySelector('button[type="submit"]')
                  if (submitButton) submitButton.textContent = 'Uložiť zmeny';
@@ -385,7 +385,7 @@ async function openClubModal(identifier = null, mode = 'assign') {
             unassignedClubField.style.display = 'block';
 
             if (clubCategorySelect) clubCategorySelect.disabled = true;
-            if (clubGroupSelect) clubGroupSelect.disabled = true;
+            if (clubGroupSelect) clubGroupSelect.disabled = true; // Vždy disabled na začiatku
             if (orderInGroupInput) orderInGroupInput.disabled = true;
 
             clubCategorySelect.innerHTML = `<option value="">-- Kategória sa zobrazí po výbere tímu --</option>`;
@@ -403,7 +403,7 @@ async function openClubModal(identifier = null, mode = 'assign') {
                         const categoryName = category ? category.name : 'Neznáma kategória';
                         clubCategorySelect.innerHTML = `<option value="${categoryId}">${categoryName}</option>`;
                         if (clubCategorySelect) clubCategorySelect.disabled = true;
-                        if (clubGroupSelect) clubGroupSelect.disabled = false;
+                        if (clubGroupSelect) clubGroupSelect.disabled = false; // Enable group select
                         populateGroupSelectForClubModal(clubGroupSelect, null, allAvailableGroups, categoryId);
                         if (orderInGroupInput) {
                             orderInGroupInput.disabled = true;
@@ -413,7 +413,7 @@ async function openClubModal(identifier = null, mode = 'assign') {
                     } else {
                         clubCategorySelect.innerHTML = `<option value="">-- Kategória sa zobrazí po výbere tímu --</option>`;
                         if (clubCategorySelect) clubCategorySelect.disabled = true;
-                        if (clubGroupSelect) clubGroupSelect.disabled = true;
+                        if (clubGroupSelect) clubGroupSelect.disabled = true; // Disable group select
                         clubGroupSelect.innerHTML = '<option value="">-- Vyberte skupinu --</option>';
                         if (orderInGroupInput) {
                             orderInGroupInput.disabled = true;
@@ -449,8 +449,8 @@ async function openClubModal(identifier = null, mode = 'assign') {
 
             if (unassignedClubSelect) unassignedClubSelect.disabled = true;
             if (clubCategorySelect) clubCategorySelect.disabled = false;
-            if (clubGroupSelect) clubGroupSelect.disabled = false;
-
+            if (clubGroupSelect) clubGroupSelect.disabled = true; // Disabled by default for edit mode too
+            
             try {
                 const clubDocRef = doc(clubsCollectionRef, editingClubId);
                 const clubDoc = await getDoc(clubDocRef);
@@ -467,8 +467,14 @@ async function openClubModal(identifier = null, mode = 'assign') {
                         clubCategorySelect.disabled = true;
                     }
 
-                    // Naplníme skupinu
-                    populateGroupSelectForClubModal(clubGroupSelect, clubData.groupId, allAvailableGroups, clubData.categoryId);
+                    // Ak je vybratá kategória, povolíme a naplníme skupinu
+                    if (clubData.categoryId && clubData.categoryId !== '' && !clubData.categoryId.startsWith('--')) {
+                        if (clubGroupSelect) clubGroupSelect.disabled = false; // Enable group select if category is valid
+                        populateGroupSelectForClubModal(clubGroupSelect, clubData.groupId, allAvailableGroups, clubData.categoryId);
+                    } else {
+                        if (clubGroupSelect) clubGroupSelect.disabled = true; // Keep disabled if no category
+                        clubGroupSelect.innerHTML = '<option value="">-- Vyberte skupinu --</option>';
+                    }
 
                     orderInGroupInput.value = (typeof clubData.orderInGroup === 'number' && clubData.orderInGroup > 0) ? clubData.orderInGroup : '';
                     if (orderInGroupInput) orderInGroupInput.removeAttribute('required');
@@ -484,7 +490,7 @@ async function openClubModal(identifier = null, mode = 'assign') {
                         clubCategorySelect.onchange = () => {
                             const selectedCategoryId = clubCategorySelect.value;
                             if (selectedCategoryId && selectedCategoryId !== '' && !selectedCategoryId.startsWith('--')) {
-                                if (clubGroupSelect) clubGroupSelect.disabled = false;
+                                if (clubGroupSelect) clubGroupSelect.disabled = false; // Enables
                                 populateGroupSelectForClubModal(clubGroupSelect, null, allAvailableGroups, selectedCategoryId);
                                 if (orderInGroupInput) {
                                     orderInGroupInput.disabled = true;
@@ -492,7 +498,7 @@ async function openClubModal(identifier = null, mode = 'assign') {
                                     orderInGroupInput.removeAttribute('required');
                                 }
                             } else {
-                                if (clubGroupSelect) clubGroupSelect.disabled = true;
+                                if (clubGroupSelect) clubGroupSelect.disabled = true; // Disables
                                 clubGroupSelect.innerHTML = '<option value="">-- Vyberte skupinu --</option>';
                                 if (orderInGroupInput) {
                                     orderInGroupInput.disabled = true;
@@ -539,7 +545,7 @@ async function openClubModal(identifier = null, mode = 'assign') {
             unassignedClubField.style.display = 'none';
             if (unassignedClubSelect) unassignedClubSelect.disabled = true;
             if (clubCategorySelect) clubCategorySelect.disabled = false;
-            if (clubGroupSelect) clubGroupSelect.disabled = true;
+            if (clubGroupSelect) clubGroupSelect.disabled = true; // Always disabled on start
             if (orderInGroupInput) orderInGroupInput.disabled = true;
 
             if (allAvailableCategories.length > 0) {
@@ -554,7 +560,7 @@ async function openClubModal(identifier = null, mode = 'assign') {
                 clubCategorySelect.onchange = () => {
                     const selectedCategoryId = clubCategorySelect.value;
                     if (selectedCategoryId && selectedCategoryId !== '' && !selectedCategoryId.startsWith('--')) {
-                        if (clubGroupSelect) clubGroupSelect.disabled = false;
+                        if (clubGroupSelect) clubGroupSelect.disabled = false; // Enables
                         populateGroupSelectForClubModal(clubGroupSelect, null, allAvailableGroups, selectedCategoryId);
                         if (orderInGroupInput) {
                             orderInGroupInput.disabled = true;
@@ -562,7 +568,7 @@ async function openClubModal(identifier = null, mode = 'assign') {
                             orderInGroupInput.removeAttribute('required');
                         }
                     } else {
-                        if (clubGroupSelect) clubGroupSelect.disabled = true;
+                        if (clubGroupSelect) clubGroupSelect.disabled = true; // Disables
                         clubGroupSelect.innerHTML = '<option value="">-- Vyberte skupinu --</option>';
                         if (orderInGroupInput) {
                             orderInGroupInput.disabled = true;
@@ -632,7 +638,7 @@ async function openClubModal(identifier = null, mode = 'assign') {
                       if (currentCategoryFilter.toLowerCase() === 'neznáma kategória') {
                            return !teamCategoryId || (typeof teamCategoryId === 'string' && teamCategoryId.trim() === '');
                       } else {
-                           const category = allAvailableCategories.find(cat => cat.id === currentCategoryFilter); // Používame ID kategórie
+                           const category = allAvailableCategories.find(cat => cat.id === currentCategoryFilter); // Porovnávame ID kategórie
                            const categoryIdToMatch = category ? category.id : currentCategoryFilter; // Zabezpečíme, že sa porovnáva ID
 
                            return teamCategoryId === categoryIdToMatch;
@@ -887,14 +893,14 @@ if (clubForm) {
             if (operationType === 'create') {
                 const newClubDocRef = doc(clubsCollectionRef, clubIdToProcess); // Použijeme vygenerované ID
                 await setDoc(newClubDocRef, dataToSave);
-                await showMessage('Potvrdenie', `Tím "${clubName}" bol úspešne vytvorený.`);
+                await showMessage('Úspech', `Tím "${clubName}" bol úspešne vytvorený.`);
             } else if (operationType === 'update') {
                 const clubDocRef = doc(clubsCollectionRef, clubIdToProcess);
                 await updateDoc(clubDocRef, dataToSave);
                 if (currentClubModalMode === 'assign') {
-                    await showMessage('Potvrdenie', "Tím bol úspešne priradený.");
+                    await showMessage('Úspech', "Tím bol úspešne priradený.");
                 } else {
-                    await showMessage('Potvrdenie', "Zmeny boli úspešne uložené.");
+                    await showMessage('Úspech', "Zmeny boli úspešne uložené.");
                 }
             } else {
                 await showMessage('Chyba', "Vyskytla sa chyba pri ukladaní dát. Neznámy typ operácie.");
@@ -1239,7 +1245,7 @@ async function deleteTeam(teamId) {
     try {
         const teamDocRef = doc(clubsCollectionRef, teamId);
         await deleteDoc(teamDocRef);
-        await showMessage('Potvrdenie', `Tím bol úspešne vymazaný.`);
+        await showMessage('Úspech', `Tím bol úspešne vymazaný.`);
         displayCreatedTeams();
         if (clubModal && clubModal.style.display !== 'none') {
             if (currentClubModalMode === 'assign') {
