@@ -95,58 +95,60 @@ function getUniqueBaseTeamNames(teams) {
  * Získa unikátne názvy kategórií tímov pre filter.
  * @param {Array<object>} teams - Pole objektov tímov.
  * @param {Array<object>} categories - Pole objektov kategórií.
- * @returns {Array<string>} Pole unikátnych názvov kategórií.
+ * @returns {Array<object>} Pole objektov {id, name} unikátnych kategórií.
  */
 function getUniqueTeamCategories(teams, categories) {
-    const categoryNames = new Set();
+    const categoryMap = new Map(); // Použijeme Map pre unikátne ID
     teams.forEach(team => {
         if (team.categoryId === null || typeof team.categoryId === 'undefined' || (typeof team.categoryId === 'string' && team.categoryId.trim() === '')) {
-            categoryNames.add('Neznáma kategória');
+            categoryMap.set(null, 'Neznáma kategória'); // Použijeme null ako ID pre neznámu kategóriu
         } else {
             const category = categories.find(cat => cat.id === team.categoryId);
             if (category) {
-                categoryNames.add(category.name); // Používame name
+                categoryMap.set(category.id, category.name);
             } else {
-                categoryNames.add('Neznáma kategória'); // Ak sa ID kategórie nenašlo medzi dostupnými
+                categoryMap.set(null, 'Neznáma kategória'); // Ak sa ID kategórie nenašlo medzi dostupnými
             }
         }
     });
-    return [...categoryNames].sort((a, b) => a.localeCompare(b, 'sk-SK'));
+    const result = Array.from(categoryMap, ([id, name]) => ({ id, name }));
+    return result.sort((a, b) => (a.name || '').localeCompare((b.name || ''), 'sk-SK'));
 }
 
 /**
  * Získa unikátne názvy skupín tímov pre filter.
  * @param {Array<object>} teams - Pole objektov tímov.
  * @param {Array<object>} groups - Pole objektov skupín.
- * @returns {Array<string>} Pole unikátnych názvov skupín.
+ * @returns {Array<object>} Pole objektov {id, name} unikátnych skupín.
  */
 function getUniqueTeamGroups(teams, groups) {
-    const groupNames = new Set();
+    const groupMap = new Map(); // Použijeme Map pre unikátne ID
     teams.forEach(team => {
         if (team.groupId === null || typeof team.groupId === 'undefined' || (typeof team.groupId === 'string' && team.groupId.trim() === '')) {
-            groupNames.add('Nepriradené');
+            groupMap.set(null, 'Nepriradené'); // Použijeme null ako ID pre nepriradené skupiny
         } else {
             const group = groups.find(g => g.id === team.groupId);
             if (group) {
-                groupNames.add(group.name); // Používame name
+                groupMap.set(group.id, group.name);
             } else {
                 // Ak sa ID skupiny nenašlo, pokúsime sa parsovať názov z ID, ak je v tvare "kategoria - nazov"
                 const parts = team.groupId.split(' - ');
                 if (parts.length > 1) {
                     const parsedGroupName = parts.slice(1).join(' - ').trim();
                     if (parsedGroupName !== '') {
-                        groupNames.add(parsedGroupName);
+                        groupMap.set(team.groupId, parsedGroupName); // Použijeme pôvodné ID, ale parsovaný názov
                     } else {
-                        groupNames.add(team.groupId);
+                        groupMap.set(team.groupId, team.groupId);
                     }
                 } else {
-                    groupNames.add(team.groupId);
+                    groupMap.set(team.groupId, team.groupId);
                 }
             }
         }
     });
-    return [...groupNames].filter(name => name && name.trim() !== '' || name === 'Nepriradené')
-        .sort((a, b) => a.localeCompare(b, 'sk-SK'));
+    const result = Array.from(groupMap, ([id, name]) => ({ id, name }));
+    return result.filter(obj => obj.name && obj.name.trim() !== '' || obj.id === null)
+        .sort((a, b) => (a.name || '').localeCompare((b.name || ''), 'sk-SK'));
 }
 
 /**
@@ -635,31 +637,34 @@ async function openClubModal(identifier = null, mode = 'assign') {
              if (currentCategoryFilter !== null) {
                  const teamsMatchingCategoryFilter = allTeams.filter(team => {
                       const teamCategoryId = team.categoryId;
-                      if (currentCategoryFilter.toLowerCase() === 'neznáma kategória') {
+                      if (currentCategoryFilter === null) { // Check for null ID (Neznáma kategória)
                            return !teamCategoryId || (typeof teamCategoryId === 'string' && teamCategoryId.trim() === '');
                       } else {
-                           const category = allAvailableCategories.find(cat => cat.id === currentCategoryFilter); // Porovnávame ID kategórie
-                           const categoryIdToMatch = category ? category.id : currentCategoryFilter; // Zabezpečíme, že sa porovnáva ID
-
-                           return teamCategoryId === categoryIdToMatch;
+                           return teamCategoryId === currentCategoryFilter; // Compare IDs
                        }
                   });
                  let optionsFromTeams = getUniqueTeamGroups(teamsMatchingCategoryFilter, allAvailableGroups);
-                 const category = allAvailableCategories.find(cat => cat.id === currentCategoryFilter);
-                 const categoryIdForGroups = category ? category.id : null;
+                 const categoryIdForGroups = currentCategoryFilter; // Already the ID
                  let groupOptionsFromDB = [];
                  if(categoryIdForGroups) {
                       const groupsInCategory = allAvailableGroups.filter(group => group.categoryId === categoryIdForGroups);
-                       groupOptionsFromDB = groupsInCategory.map(group => group.name || group.id);
+                       groupOptionsFromDB = groupsInCategory.map(group => ({id: group.id, name: group.name || group.id}));
                  }
-                  filterOptions = [...new Set([...optionsFromTeams, ...groupOptionsFromDB])];
+                  // Combine and deduplicate by ID, then sort by name
+                  const combinedGroupOptionsMap = new Map();
+                  [...optionsFromTeams, ...groupOptionsFromDB].forEach(item => {
+                      combinedGroupOptionsMap.set(item.id, item);
+                  });
+                  filterOptions = Array.from(combinedGroupOptionsMap.values());
+                  filterOptions.sort((a,b) => (a.name || '').localeCompare((b.name || ''), 'sk-SK'));
+
                   const hasUnassignedInCategory = teamsMatchingCategoryFilter.some(team =>
                        !team.groupId || (typeof team.groupId === 'string' && team.groupId.trim() === '')
                   );
-                  if (hasUnassignedInCategory && !filterOptions.includes('Nepriradené')) {
-                       filterOptions.push('Nepriradené');
+                  if (hasUnassignedInCategory && !filterOptions.some(opt => opt.id === null)) {
+                       filterOptions.push({id: null, name: 'Nepriradené'});
                   }
-                 filterOptions.sort((a, b) => a.localeCompare(b, 'sk-SK'));
+                 filterOptions.sort((a, b) => (a.name || '').localeCompare((b.name || ''), 'sk-SK'));
              } else {
                  filterOptions = getUniqueTeamGroups(allTeams, allAvailableGroups);
              }
@@ -667,58 +672,59 @@ async function openClubModal(identifier = null, mode = 'assign') {
 
         if (filterSelect) {
             filterSelect.innerHTML = '<option value="">-- Zobraziť všetko --</option>';
-            filterOptions.forEach(optionValue => {
+            filterOptions.forEach(optionObject => { // Iterate over objects {id, name}
                 const option = document.createElement('option');
-                option.value = optionValue;
-                option.textContent = optionValue;
+                option.value = optionObject.id === null ? '' : optionObject.id; // Use ID for value, empty string for null
+                option.textContent = optionObject.name;
                 filterSelect.appendChild(option);
             });
 
             // Nastavenie vybranej hodnoty filtra
-            let selectedFilterValueForDisplay = currentFilters[filterType];
-            if (filterType === 'category' && selectedFilterValueForDisplay !== null) {
-                const category = allAvailableCategories.find(cat => cat.id === selectedFilterValueForDisplay);
-                selectedFilterValueForDisplay = category ? category.name : selectedFilterValueForDisplay;
-                if (selectedFilterValueForDisplay.toLowerCase() === 'neznáma kategória') {
-                    selectedFilterValueForDisplay = 'Neznáma kategória';
+            let selectedFilterValueForDisplay = currentFilters[filterType]; // This is the ID (or null)
+            let selectedOptionValue = ''; // The value to set on the select element
+
+            if (filterType === 'teamName') {
+                selectedOptionValue = selectedFilterValueForDisplay || '';
+            } else if (filterType === 'category') {
+                if (selectedFilterValueForDisplay === null) {
+                    selectedOptionValue = ''; // For "Neznáma kategória"
+                } else {
+                    selectedOptionValue = selectedFilterValueForDisplay; // This is the ID
                 }
-            } else if (filterType === 'group' && selectedFilterValueForDisplay !== null) {
-                const group = allAvailableGroups.find(g => g.id === selectedFilterValueForDisplay);
-                selectedFilterValueForDisplay = group ? group.name : selectedFilterValueForDisplay;
-                if (selectedFilterValueForDisplay.toLowerCase() === 'nepriradené') {
-                    selectedFilterValueForDisplay = 'Nepriradené';
+            } else if (filterType === 'group') {
+                if (selectedFilterValueForDisplay === null) {
+                    selectedOptionValue = ''; // For "Nepriradené"
+                } else {
+                    selectedOptionValue = selectedFilterValueForDisplay; // This is the ID
                 }
             }
-
-            if (selectedFilterValueForDisplay !== null && filterSelect.querySelector(`option[value="${selectedFilterValueForDisplay}"]`)) {
-                filterSelect.value = selectedFilterValueForDisplay;
+            
+            if (filterSelect.querySelector(`option[value="${selectedOptionValue}"]`)) {
+                filterSelect.value = selectedOptionValue;
             } else {
                 filterSelect.value = "";
             }
 
             filterSelect.onchange = () => {
-                const selectedValue = filterSelect.value === "" ? null : filterSelect.value;
-                 if (filterType === 'category') {
-                     // Nájdeme ID kategórie podľa vybraného názvu
-                     const selectedCategory = allAvailableCategories.find(cat => cat.name === selectedValue);
-                     const categoryIdToStore = selectedCategory ? selectedCategory.id : selectedValue;
+                const selectedValue = filterSelect.value; // This is the ID (or empty string for "Zobraziť všetko" / null)
+                let valueToStore = null;
 
-                     if (currentFilters.category !== categoryIdToStore) {
+                if (selectedValue === '') {
+                    valueToStore = null; // Represents "Zobraziť všetko" or "Neznáma kategória" / "Nepriradené"
+                } else {
+                    valueToStore = selectedValue; // This is the ID
+                }
+
+                if (filterType === 'category') {
+                     if (currentFilters.category !== valueToStore) {
                           currentFilters.group = null; // Resetujeme filter skupiny, ak sa zmení kategória
                      }
-                      currentFilters.category = (selectedValue !== null && selectedValue.toLowerCase() === 'neznáma kategória')
-                           ? 'Neznáma kategória' // Uložíme špeciálnu hodnotu pre neznámu kategóriu
-                           : categoryIdToStore;
-                 } else if (filterType === 'group') {
-                     // Nájdeme ID skupiny podľa vybraného názvu
-                     const selectedGroup = allAvailableGroups.find(g => g.name === selectedValue);
-                     const groupIdToStore = selectedGroup ? selectedGroup.id : selectedValue;
-                     currentFilters[filterType] = (selectedValue !== null && selectedValue.toLowerCase() === 'nepriradené')
-                          ? 'Nepriradené' // Uložíme špeciálnu hodnotu pre nepriradené
-                          : groupIdToStore;
-                 } else {
-                      currentFilters[filterType] = selectedValue;
-                 }
+                     currentFilters.category = valueToStore;
+                } else if (filterType === 'group') {
+                     currentFilters.group = valueToStore;
+                } else {
+                      currentFilters[filterType] = valueToStore;
+                }
                 closeModal(clubModal);
                 displayCreatedTeams();
             };
@@ -992,10 +998,8 @@ async function displayCreatedTeams() {
 
         // Aplikácia filtrov
         Object.keys(currentFilters).forEach(filterType => {
-            const filterValue = currentFilters[filterType];
+            const filterValue = currentFilters[filterType]; // This is the ID or null
             if (filterValue !== null) {
-                const filterValueLowerTrimmed = typeof filterValue === 'string' ? filterValue.trim().toLowerCase() : filterValue;
-
                 filteredTeams = filteredTeams.filter(team => {
                     const teamCategoryId = team.categoryId;
                     const teamGroupId = team.groupId;
@@ -1003,23 +1007,18 @@ async function displayCreatedTeams() {
                     if (filterType === 'teamName') {
                         const teamBaseName = team.createdFromBase || parseTeamName(team.id).baseName || '';
                         const cleanedTeamName = getCleanedTeamNameForFilter(teamBaseName);
-                        return cleanedTeamName.toLowerCase() === filterValueLowerTrimmed;
+                        return cleanedTeamName.toLowerCase() === filterValue.toLowerCase(); // filterValue is already the cleaned name
                     } else if (filterType === 'category') {
-                        if (filterValueLowerTrimmed === 'neznáma kategória') {
+                        if (filterValue === null) { // Filter for "Neznáma kategória" (ID is null)
                             return !teamCategoryId || (typeof teamCategoryId === 'string' && teamCategoryId.trim() === '');
                         } else {
-                            const category = allAvailableCategories.find(cat => cat.id === filterValue); // Porovnávame ID kategórie
-                            const categoryIdToMatch = category ? category.id : filterValue; // Zabezpečíme, že sa porovnáva ID
-
-                            return teamCategoryId === categoryIdToMatch;
+                            return teamCategoryId === filterValue; // Compare IDs
                         }
                     } else if (filterType === 'group') {
-                        if (filterValueLowerTrimmed === 'nepriradené') {
+                        if (filterValue === null) { // Filter for "Nepriradené" (ID is null)
                             return !teamGroupId || (typeof teamGroupId === 'string' && teamGroupId.trim() === '');
                         } else {
-                            const group = allAvailableGroups.find(g => g.id === filterValue); // Porovnávame ID skupiny
-                            const groupIdToMatch = group ? group.id : filterValue; // Zabezpečíme, že sa porovnáva ID
-                            return teamGroupId === groupIdToMatch;
+                            return teamGroupId === filterValue; // Compare IDs
                         }
                     }
                     return false;
@@ -1169,22 +1168,24 @@ function displayAppliedFiltersInHeader() {
          }
 
          if (filterType && currentFilters[filterType] !== null) {
-             const filterValue = currentFilters[filterType];
+             const filterValue = currentFilters[filterType]; // This is the ID or null
              const filterValueSpan = document.createElement('span');
              filterValueSpan.classList.add('applied-filter-value');
 
               let displayedFilterValue = filterValue;
               if (filterType === 'category') {
-                   const category = allAvailableCategories.find(cat => cat.id === filterValue);
-                   displayedFilterValue = category ? category.name : filterValue;
-                    if (filterValue.toLowerCase() === 'neznáma kategória') {
+                   if (filterValue === null) {
                        displayedFilterValue = 'Neznáma kategória';
-                    }
+                   } else {
+                       const category = allAvailableCategories.find(cat => cat.id === filterValue);
+                       displayedFilterValue = category ? category.name : filterValue;
+                   }
               } else if (filterType === 'group') {
-                   const group = allAvailableGroups.find(g => g.id === filterValue);
-                   displayedFilterValue = group ? group.name : filterValue;
-                   if (filterValue.toLowerCase() === 'nepriradené') {
+                   if (filterValue === null) {
                        displayedFilterValue = 'Nepriradené';
+                   } else {
+                       const group = allAvailableGroups.find(g => g.id === filterValue);
+                       displayedFilterValue = group ? group.name : filterValue;
                    }
               }
              filterValueSpan.textContent = `${displayedFilterValue}`;
