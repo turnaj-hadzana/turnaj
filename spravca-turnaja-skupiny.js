@@ -97,10 +97,7 @@ async function displayGroupsByCategory() {
             const categorySectionDiv = document.createElement('div');
             categorySectionDiv.classList.add('category-group-section', 'section-block');
 
-            const categoryHeading = document.createElement('h2');
-            categoryHeading.textContent = categoryDisplayName; // Zobrazujeme názov kategórie
-            categorySectionDiv.appendChild(categoryHeading);
-
+            // Názov kategórie sa teraz zobrazí v hlavičke tabuľky
             const categoryGroupsTable = document.createElement('table');
             categoryGroupsTable.classList.add('category-group-table');
 
@@ -109,7 +106,11 @@ async function displayGroupsByCategory() {
             const groupNameTh = document.createElement('th');
             groupNameTh.textContent = 'Názov skupiny';
             const actionsTh = document.createElement('th');
-            actionsTh.textContent = '';
+            // Pridanie názvu kategórie do hlavičky stĺpca s tlačidlami
+            actionsTh.innerHTML = `<span style="font-weight: bold;">${categoryDisplayName}</span>`; // Názov kategórie
+            actionsTh.style.textAlign = 'center';
+            actionsTh.style.verticalAlign = 'middle';
+            actionsTh.style.width = '150px'; // Nastavte šírku podľa potreby
             headerRow.appendChild(groupNameTh);
             headerRow.appendChild(actionsTh);
             thead.appendChild(headerRow);
@@ -134,6 +135,7 @@ async function displayGroupsByCategory() {
 
                     const groupActionsTd = document.createElement('td');
                     groupActionsTd.style.whiteSpace = 'nowrap';
+                    groupActionsTd.style.textAlign = 'center'; // Centrujeme tlačidlá
 
                     const editGroupButton = document.createElement('button');
                     editGroupButton.textContent = 'Upraviť'; // Zmenený text pre úpravu
