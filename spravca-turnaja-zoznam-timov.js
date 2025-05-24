@@ -1159,7 +1159,6 @@ async function displayCreatedTeams() {
             actionsCell.style.textAlign = 'center';
             actionsCell.style.display = 'flex';
             actionsCell.style.justifyContent = 'center';
-            actionsCell.style.alignItems = 'center';
             actionsCell.style.gap = '5px';
 
             const editButton = document.createElement('button');
@@ -1262,16 +1261,25 @@ function addHeaderFilterListeners() {
         // Odstránime predchádzajúce listenery, aby sa predišlo duplicitám
         headerCell.removeEventListener('click', handleHeaderClick);
 
+        // Resetuj štýly pre prípad, že sa mení stav
+        headerCell.style.cursor = 'default';
+        headerCell.style.pointerEvents = 'auto'; // Default to auto
+
         // Podmienka pre kliknutie na hlavičku "Skupina"
-        if (filterType === 'group' && currentFilters.category === null) {
-            // Ak je filter kategórie neaktívny, zablokujeme kliknutie na filter skupiny
-            headerCell.style.cursor = 'default';
+        if (filterType === 'group') {
+            if (currentFilters.category === null) {
+                // Ak je filter kategórie neaktívny, zablokujeme kliknutie na filter skupiny
+                headerCell.style.cursor = 'default';
+                headerCell.style.pointerEvents = 'none'; // Zablokuje všetky udalosti myši vrátane hover
+            } else {
+                headerCell.style.cursor = 'pointer';
+                headerCell.addEventListener('click', handleHeaderClick);
+            }
         } else if (filterType || sortType === 'orderInGroup') {
             headerCell.style.cursor = 'pointer';
             headerCell.addEventListener('click', handleHeaderClick);
-        } else {
-             headerCell.style.cursor = 'default';
         }
+        // Pre ostatné th, ktoré nemajú filterType ani sortType, ostane cursor 'default' a pointerEvents 'auto'
     });
 }
 function handleHeaderClick() {
