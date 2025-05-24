@@ -1,4 +1,5 @@
 import {db, clubsCollectionRef, categoriesCollectionRef, groupsCollectionRef, openModal, closeModal, populateCategorySelect, doc, getDocs, query, where, getDoc, setDoc, deleteDoc, updateDoc, writeBatch, showMessage, showConfirmation} from './spravca-turnaja-common.js';
+
 const teamCreationModal = document.getElementById('teamCreationModal');
 const teamCreationModalClose = teamCreationModal ? teamCreationModal.querySelector('.close') : null;
 const teamCreationForm = document.getElementById('teamCreationForm');
@@ -22,6 +23,7 @@ const filterModalTitle = document.getElementById('filterModalTitle');
 const filterSelect = document.getElementById('filterSelect');
 const addButton = document.getElementById('addButton');
 const clearFiltersButton = document.getElementById('clearFiltersButton');
+
 let allAvailableCategories = [];
 let allAvailableGroups = [];
 let allTeams = [];
@@ -37,6 +39,12 @@ let currentSort = {
     column: null,
     direction: 'asc'
 };
+
+/**
+ * Parsuje plný názov tímu a extrahuje prefix kategórie a základný názov.
+ * @param {string} fullTeamName - Plný názov tímu.
+ * @returns {{categoryPrefix: string|null, baseName: string}} Objekt s prefixom kategórie a základným názvom.
+ */
 function parseTeamName(fullTeamName) {
     if (!fullTeamName || typeof fullTeamName !== 'string') {
         return { categoryPrefix: null, baseName: fullTeamName || '' };
@@ -52,6 +60,12 @@ function parseTeamName(fullTeamName) {
     }
     return { categoryPrefix: null, baseName: fullTeamName.trim() };
 }
+
+/**
+ * Vyčistí názov tímu pre účely filtrovania (odstráni suffixy ako A, B, C).
+ * @param {string} teamName - Názov tímu.
+ * @returns {string} Vyčistený názov tímu.
+ */
 function getCleanedTeamNameForFilter(teamName) {
     if (!teamName || typeof teamName !== 'string') {
         return '';
@@ -63,13 +77,23 @@ function getCleanedTeamNameForFilter(teamName) {
     }
     return cleanedName;
 }
-function getUniqueBaseTeamNames(teams) {
-    const baseNames = teams.map(team => {
-        const rawBaseName = team.createdFromBase || parseTeamName(team.id).baseName || '';
-        return getCleanedTeamNameForFilter(rawBaseName);
-    }).filter(name => name !== '');
-    return [...new Set(baseNames)].sort((a, b) => a.localeCompare(b, 'sk-SK'));
+
+/**
+ * Získa unikátne základné názvy tímov pre filter.
+ * @param {Array<object>} teams - Pole objektov tímov.
+ * @returns {Array<string>} Pole unikátnych základných názvov tímov.
+ */
+function getUniqueTeamNamesForFilter(teams) {
+    const teamNames = teams.map(team => team.name || team.id).filter(name => name && name.trim() !== '');
+    return [...new Set(teamNames)].sort((a, b) => a.localeCompare(b, 'sk-SK'));
 }
+
+/**
+ * Získa unikátne názvy kategórií tímov pre filter.
+ * @param {Array<object>} teams - Pole objektov tímov.
+ * @param {Array<object>} categories - Pole objektov kategórií.
+ * @returns {Array<object>} Pole objektov {id, name} unikátnych kategórií.
+ */
 function getUniqueTeamCategories(teams, categories) {
     const categoryMap = new Map(); // Použijeme Map pre unikátne ID
     teams.forEach(team => {
@@ -87,6 +111,13 @@ function getUniqueTeamCategories(teams, categories) {
     const result = Array.from(categoryMap, ([id, name]) => ({ id, name }));
     return result.sort((a, b) => (a.name || '').localeCompare((b.name || ''), 'sk-SK'));
 }
+
+/**
+ * Získa unikátne názvy skupín tímov pre filter.
+ * @param {Array<object>} teams - Pole objektov tímov.
+ * @param {Array<object>} groups - Pole objektov skupín.
+ * @returns {Array<object>} Pole objektov {id, name} unikátnych skupín.
+ */
 function getUniqueTeamGroups(teams, groups) {
     const groupMap = new Map(); // Použijeme Map pre unikátne ID
     teams.forEach(team => {
@@ -107,7 +138,7 @@ function getUniqueTeamGroups(teams, groups) {
                         groupMap.set(team.groupId, team.groupId);
                     }
                 } else {
-                    groupMap.set(team.groupId, team.groupId);
+                    groupMap.set(team.groupId, team.id); // Použijeme team.id ako fallback, ak group.id nie je parsovateľné
                 }
             }
         }
@@ -598,7 +629,7 @@ async function openClubModal(identifier = null, mode = 'assign') {
 
         let filterOptions = [];
         if (filterType === 'teamName') {
-            filterOptions = getUniqueBaseTeamNames(allTeams);
+            filterOptions = getUniqueTeamNamesForFilter(allTeams); // Získanie jedinečných názvov tímov
         } else if (filterType === 'category') {
             filterOptions = getUniqueTeamCategories(allTeams, allAvailableCategories);
         } else if (filterType === 'group') {
@@ -641,15 +672,20 @@ async function openClubModal(identifier = null, mode = 'assign') {
 
         if (filterSelect) {
             filterSelect.innerHTML = '<option value="">-- Zobraziť všetko --</option>';
-            filterOptions.forEach(optionObject => { // Iterate over objects {id, name}
+            filterOptions.forEach(optionObject => { // Iterate over objects {id, name} or just names (for teamName)
                 const option = document.createElement('option');
-                option.value = optionObject.id === null ? '' : optionObject.id; // Use ID for value, empty string for null
-                option.textContent = optionObject.name;
+                if (filterType === 'teamName') {
+                    option.value = optionObject; // Názov tímu je už string
+                    option.textContent = optionObject;
+                } else {
+                    option.value = optionObject.id === null ? '' : optionObject.id; // Use ID for value, empty string for null
+                    option.textContent = optionObject.name;
+                }
                 filterSelect.appendChild(option);
             });
 
             // Nastavenie vybranej hodnoty filtra
-            let selectedFilterValueForDisplay = currentFilters[filterType]; // This is the ID (or null)
+            let selectedFilterValueForDisplay = currentFilters[filterType]; // This is the ID or null
             let selectedOptionValue = ''; // The value to set on the select element
 
             if (filterType === 'teamName') {
@@ -983,9 +1019,8 @@ async function displayCreatedTeams() {
                     const teamGroupId = team.groupId;
 
                     if (filterType === 'teamName') {
-                        const teamBaseName = team.createdFromBase || parseTeamName(team.id).baseName || '';
-                        const cleanedTeamName = getCleanedTeamNameForFilter(teamBaseName);
-                        return cleanedTeamName.toLowerCase() === filterValue.toLowerCase(); // filterValue is already the cleaned name
+                        const teamName = team.name || team.id; // Používame priamo názov tímu
+                        return teamName.toLowerCase() === filterValue.toLowerCase();
                     } else if (filterType === 'category') {
                         if (filterValue === null) { // Filter for "Neznáma kategória" (ID is null)
                             return !teamCategoryId || (typeof teamCategoryId === 'string' && teamCategoryId.trim() === '');
