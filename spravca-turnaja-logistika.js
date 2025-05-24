@@ -1421,7 +1421,7 @@ async function editBus(busId) {
         const busStartLocationSelect = document.getElementById('busStartLocationSelect');
         const busStartTimeInput = document.getElementById('busStartTimeInput');
         const busEndLocationSelect = document.getElementById('busEndLocationSelect');
-        const busEndTimeInput = document = document.getElementById('busEndTimeInput');
+        const busEndTimeInput = document.getElementById('busEndTimeInput'); // Corrected: removed 'document ='
         const busNotesInput = document.getElementById('busNotesInput');
         const deleteBusButtonModal = document.getElementById('deleteBusButtonModal');
 
@@ -1912,7 +1912,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             if (alreadyPlayed) {
                 const dateObj = new Date(overlappingExistingMatchDetails.date);
-                const formattedDate = `${String(dateObj.getDate()).padStart(2, '0')}. ${String(dateObj.getMonth() + 1).padStart(2, '0')}.`;
+                const formattedDate = `${String(dateObj.getDate()).padStart(2, '0')}. ${String(dateObj.getMonth() + 1).padStart(2, '0')}. ${dateObj.getFullYear()}`; // Added .getFullYear()
                 await showMessage('Chyba', `Tímy ${team1Result.fullDisplayName} a ${team2Result.fullDisplayName} už proti sebe hrali v kategórii ${categoriesMap.get(matchCategory)} a skupine ${groupsMap.get(matchGroup)} dňa ${formattedDate} o ${overlappingExistingMatchDetails.startTime}. Prosím, zadajte iné tímy.`);
                 return;
             }
@@ -2053,7 +2053,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const [startH, startM] = busStartTime.split(':').map(Number);
         const [endH, endM] = busEndTime.split(':').map(Number);
         const startTimeInMinutes = startH * 60 + startM;
-        let endTimeInMinutes = endM * 60 + endM; // Corrected: should be endH * 60 + endM
+        let endTimeInMinutes = endH * 60 + endM; // Corrected: was endM * 60 + endM
 
         if (endTimeInMinutes < startTimeInMinutes) {
             endTimeInMinutes += 24 * 60; // Handle overnight routes
