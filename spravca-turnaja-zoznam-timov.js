@@ -1262,7 +1262,11 @@ function addHeaderFilterListeners() {
         // Odstránime predchádzajúce listenery, aby sa predišlo duplicitám
         headerCell.removeEventListener('click', handleHeaderClick);
 
-        if (filterType || sortType === 'orderInGroup') {
+        // Podmienka pre kliknutie na hlavičku "Skupina"
+        if (filterType === 'group' && currentFilters.category === null) {
+            // Ak je filter kategórie neaktívny, zablokujeme kliknutie na filter skupiny
+            headerCell.style.cursor = 'default';
+        } else if (filterType || sortType === 'orderInGroup') {
             headerCell.style.cursor = 'pointer';
             headerCell.addEventListener('click', handleHeaderClick);
         } else {
