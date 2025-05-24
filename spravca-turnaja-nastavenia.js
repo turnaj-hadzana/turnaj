@@ -71,7 +71,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const categoryName = categoryDoc.data().name || categoryId; 
                 console.log(`Spracovávam kategóriu: ID=${categoryId}, Názov=${categoryName}`);
 
-                const categoryData = existingCategorySettings[categoryId] || { duration: 60, bufferTime: 5 }; // Predvolené hodnoty
+                const categoryData = existingCategorySettings[categoryId] || { duration: 30, bufferTime: 5 }; // Predvolené hodnoty
 
                 const categoryDiv = document.createElement('div');
                 categoryDiv.classList.add('form-group', 'category-setting-group');
