@@ -1380,7 +1380,8 @@ async function editAccommodationAssignment(assignmentId) {
         } else {
             alert("Priradenie ubytovania sa nenašlo.");
         }
-    } catch (error) {
+    }
+    catch (error) {
         alert("Vyskytla sa chyba pri načítavaní dát priradenia ubytovania. Skúste to znova.");
     }
 }
@@ -1461,7 +1462,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const busEndLocationSelect = document.getElementById('busEndLocationSelect');
     const busEndTimeInput = document.getElementById('busEndTimeInput');
     const busNotesInput = document.getElementById('busNotesInput');
-    const deleteBusButtonModal = document.getElementById('deleteBusButtonModal');
+    const deleteBusButtonModal = document = document.getElementById('deleteBusButtonModal');
 
     const assignAccommodationModal = document.getElementById('assignAccommodationModal');
     const closeAssignAccommodationModalButton = document.getElementById('closeAssignAccommodationModal');
@@ -1700,6 +1701,48 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (!team1Result || !team1Result.fullDisplayName || !team2Result || !team2Result.fullDisplayName) {
             alert('Jeden alebo oba tímy sa nenašli. Skontrolujte poradové čísla v danej kategórii a skupine.');
+            return;
+        }
+
+        // Kontrola, či tímy už hrali proti sebe v rámci kategórie a skupiny
+        try {
+            const existingMatchesQuery = query(
+                matchesCollectionRef,
+                where("categoryId", "==", matchCategory),
+                where("groupId", "==", matchGroup)
+            );
+            const existingMatchesSnapshot = await getDocs(existingMatchesQuery);
+
+            let alreadyPlayed = false;
+            existingMatchesSnapshot.docs.forEach(doc => {
+                const existingMatch = doc.data();
+                const existingMatchId = doc.id;
+
+                if (currentMatchId && existingMatchId === currentMatchId) {
+                    // Ak upravujeme existujúci zápas, ignorujeme ho pri kontrole duplicity
+                    return;
+                }
+
+                const existingTeam1Number = existingMatch.team1Number;
+                const existingTeam2Number = existingMatch.team2Number;
+
+                // Skontrolujeme obe možné kombinácie (Tím1 vs Tím2 alebo Tím2 vs Tím1)
+                const condition1 = (existingTeam1Number === team1Number && existingTeam2Number === team2Number);
+                const condition2 = (existingTeam1Number === team2Number && existingTeam2Number === team1Number);
+
+                if (condition1 || condition2) {
+                    alreadyPlayed = true;
+                    return; // Nájdený duplicitný zápas, môžeme ukončiť cyklus
+                }
+            });
+
+            if (alreadyPlayed) {
+                alert(`Tímy ${team1Result.fullDisplayName} a ${team2Result.fullDisplayName} už proti sebe hrali v kategórii ${categoriesMap.get(matchCategory)} a skupine ${groupsMap.get(matchGroup)}. Prosím, zadajte iné tímy.`);
+                return;
+            }
+        } catch (error) {
+            console.error("Chyba pri kontrole existujúcich zápasov:", error);
+            alert("Vyskytla sa chyba pri kontrole, či tímy už hrali proti sebe. Skúste to znova.");
             return;
         }
 
