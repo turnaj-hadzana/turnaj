@@ -1,5 +1,6 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js';
 import { getFirestore, collection, doc, setDoc, getDoc, getDocs, deleteDoc, query, where, addDoc, updateDoc, writeBatch, orderBy } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js';
+
 const firebaseConfig = {
   apiKey: "AIzaSyD0h0rQZiIGi0-UDb4-YU_JihRGpIlfz40",
   authDomain: "turnaj-a28c5.firebaseapp.com",
@@ -11,7 +12,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// Get the app ID from the global variable, or use a default if not defined
+// Získajte ID aplikácie z globálnej premennej, alebo použite predvolené, ak nie je definované
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
 export const categoriesCollectionRef = collection(db, 'tournamentData', 'mainTournamentData', 'categories');
@@ -19,10 +20,10 @@ export const groupsCollectionRef = collection(db, 'tournamentData', 'mainTournam
 export const clubsCollectionRef = collection(db, 'tournamentData', 'mainTournamentData', 'clubs');
 export const matchesCollectionRef = collection(db, 'tournamentData', 'mainTournamentData', 'matches');
 export const playingDaysCollectionRef = collection(db, 'tournamentData', 'mainTournamentData', 'playingDays');
-export const placesCollectionRef = collection(db, 'tournamentData', 'mainTournamentData', 'places'); // ZMENENÉ: Pôvodne sportHallsCollectionRef, teraz všeobecnejšie miesta
+export const placesCollectionRef = collection(db, 'tournamentData', 'mainTournamentData', 'places');
 export const busesCollectionRef = collection(db, 'tournamentData', 'mainTournamentData', 'buses');
-export const teamAccommodationsCollectionRef = collection(db, 'tournamentData', 'mainTournamentData', 'teamAccommodations'); // NOVÉ: Export pre kolekciu priradení ubytovania
-export const settingsCollectionRef = collection(db, `artifacts/${appId}/public/data/settings`); // NOVÉ: Export pre kolekciu nastavení
+export const teamAccommodationsCollectionRef = collection(db, 'tournamentData', 'mainTournamentData', 'teamAccommodations');
+export const settingsCollectionRef = collection(db, `artifacts/${appId}/public/data/settings`);
 
 let openModalCount = 0;
 export function openModal(modalElement) {
@@ -51,6 +52,104 @@ document.addEventListener('click', (event) => {
         closeModal(event.target);
     }
 });
+
+// Globálne premenné pre modálne okno správ
+let resolveMessagePromise;
+let rejectMessagePromise;
+let messageModalElement;
+let messageModalTitleElement;
+let messageModalTextElement;
+let messageModalButtonsElement;
+
+document.addEventListener('DOMContentLoaded', () => {
+    messageModalElement = document.getElementById('messageModal');
+    if (messageModalElement) {
+        messageModalTitleElement = messageModalElement.querySelector('#messageModalTitle');
+        messageModalTextElement = messageModalElement.querySelector('#messageModalText');
+        messageModalButtonsElement = messageModalElement.querySelector('#messageModalButtons');
+
+        const messageModalCloseBtn = messageModalElement.querySelector('.message-modal-close');
+        if (messageModalCloseBtn) {
+            messageModalCloseBtn.addEventListener('click', () => {
+                closeModal(messageModalElement);
+                if (rejectMessagePromise) {
+                    rejectMessagePromise(new Error('Modal closed by user'));
+                }
+            });
+        }
+    }
+});
+
+/**
+ * Zobrazí generické modálne okno so správou.
+ * @param {string} title - Nadpis modálneho okna.
+ * @param {string} message - Text správy.
+ * @returns {Promise<boolean>} - Vždy sa vyrieši na `true` po kliknutí na OK.
+ */
+export function showMessage(title, message) {
+    return new Promise((resolve) => {
+        if (!messageModalElement) {
+            console.error('Message modal elements not found.');
+            resolve(false); // Záložný stav, ak modál nie je prítomný
+            return;
+        }
+        messageModalTitleElement.textContent = title;
+        messageModalTextElement.textContent = message;
+        messageModalButtonsElement.innerHTML = ''; // Vyčistí predchádzajúce tlačidlá
+        const okButton = document.createElement('button');
+        okButton.textContent = 'OK';
+        okButton.classList.add('action-button');
+        okButton.onclick = () => {
+            closeModal(messageModalElement);
+            resolve(true);
+        };
+        messageModalButtonsElement.appendChild(okButton);
+        openModal(messageModalElement);
+    });
+}
+
+/**
+ * Zobrazí generické modálne okno s potvrdením (Áno/Zrušiť).
+ * @param {string} title - Nadpis modálneho okna.
+ * @param {string} message - Text otázky.
+ * @returns {Promise<boolean>} - Vyrieši sa na `true` pre Áno, `false` pre Zrušiť.
+ */
+export function showConfirmation(title, message) {
+    return new Promise((resolve, reject) => {
+        if (!messageModalElement) {
+            console.error('Confirmation modal elements not found.');
+            resolve(false); // Záložný stav, ak modál nie je prítomný
+            return;
+        }
+        resolveMessagePromise = resolve;
+        rejectMessagePromise = reject;
+
+        messageModalTitleElement.textContent = title;
+        messageModalTextElement.textContent = message;
+        messageModalButtonsElement.innerHTML = ''; // Vyčistí predchádzajúce tlačidlá
+
+        const confirmButton = document.createElement('button');
+        confirmButton.textContent = 'Áno';
+        confirmButton.classList.add('action-button', 'confirm-button');
+        confirmButton.onclick = () => {
+            closeModal(messageModalElement);
+            resolveMessagePromise(true);
+        };
+
+        const cancelButton = document.createElement('button');
+        cancelButton.textContent = 'Zrušiť';
+        cancelButton.classList.add('action-button', 'cancel-button');
+        cancelButton.onclick = () => {
+            closeModal(messageModalElement);
+            resolveMessagePromise(false); // Používateľ zrušil
+        };
+
+        messageModalButtonsElement.appendChild(confirmButton);
+        messageModalButtonsElement.appendChild(cancelButton);
+        openModal(messageModalElement);
+    });
+}
+
 export async function populateCategorySelect(selectElement, selectedCategoryId = null) {
     if (!selectElement) return;
     selectElement.innerHTML = '<option value="">-- Vyberte kategóriu --</option>';
@@ -92,6 +191,7 @@ export async function populateCategorySelect(selectElement, selectedCategoryId =
         selectElement.disabled = true;
     }
 }
+
 export async function populateGroupSelect(selectedCategoryId, selectElement, selectedGroupId = null) {
     if (!selectedCategoryId || !selectElement) {
         selectElement.innerHTML = '<option value="">-- Vyberte kategóriu najprv --</option>';
@@ -140,6 +240,7 @@ export async function populateGroupSelect(selectedCategoryId, selectElement, sel
         selectElement.disabled = true;
     }
 }
+
 export async function populateTeamNumberSelect(selectedCategoryId, selectedGroupId, selectElement, selectedTeamNumber = null) {
     if (!selectedCategoryId || !selectedGroupId || !selectElement) {
         selectElement.innerHTML = '<option value="">-- Vyberte kategóriu a skupinu --</option>';
