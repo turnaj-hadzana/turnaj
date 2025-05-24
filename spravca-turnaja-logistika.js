@@ -742,13 +742,17 @@ async function displayMatchesAsSchedule() {
                     }
                     const finalClubNamesHtml = clubNamesHtml ? `<span style="font-weight: normal;">${clubNamesHtml}</span>` : '';
 
+                    // Get updated category and group names from the maps
+                    const currentCategoryName = categoriesMap.get(event.categoryId) || event.categoryId;
+                    const currentGroupName = groupsMap.get(event.groupId) || event.groupId;
+
                     scheduleHtml += `
                         <div class="schedule-cell-match"
                             data-id="${event.id}" data-type="${event.type}"
                             style="left: ${matchBlockLeftPx}px; width: ${matchBlockWidthPx}px; top: 0;">
                             <div class="schedule-cell-content">
                                 <p class="schedule-cell-time">${event.startTime} - ${formattedEndTime}</p>
-                                <p class="schedule-cell-category">${event.categoryName || 'N/A'}${event.groupName ? ` ${event.groupName}` : ''}</p>
+                                <p class="schedule-cell-category">${currentCategoryName || 'N/A'}${currentGroupName ? ` ${currentGroupName}` : ''}</p>
                                 <p class="schedule-cell-teams">
                                     ${event.team1DisplayName}<br>
                                     ${event.team2DisplayName}<br>
