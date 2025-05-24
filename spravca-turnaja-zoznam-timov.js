@@ -760,187 +760,187 @@ function handleClubNameInput(event) {
 if (clubForm) {
     clubForm.addEventListener('submit', async (event) => {
         event.preventDefault();
-        if (!['assign', 'edit', 'create'].includes(currentClubModalMode)) {
-            return;
-        }
-
-        const clubName = clubNameInput.value.trim();
-        // Získame ID kategórie z vybranej hodnoty (value) selectu
+        const operationType = currentClubModalMode; // Používame currentClubModalMode
+        let clubName = clubNameInput.value.trim();
         const selectedCategoryIdInModal = currentClubModalMode === 'assign' && unassignedClubSelect && unassignedClubSelect.value !== '' && !unassignedClubSelect.value.startsWith('--') && unassignedClubSelect.options[unassignedClubSelect.selectedIndex] ? unassignedClubSelect.options[unassignedClubSelect.selectedIndex].dataset.categoryId : (clubCategorySelect && clubCategorySelect.value !== '' && !clubCategorySelect.value.startsWith('--') ? clubCategorySelect.value : null);
-        // Získame ID skupiny z vybranej hodnoty (value) selectu
         const selectedGroupIdInModal = clubGroupSelect && clubGroupSelect.value !== '' && !clubGroupSelect.value.startsWith('--') ? clubGroupSelect.value : null;
-
         let orderInGroup = (orderInGroupInput && orderInGroupInput.value !== '' && selectedGroupIdInModal) ? parseInt(orderInGroupInput.value, 10) : null;
         if (typeof orderInGroup !== 'number' || orderInGroup <= 0) {
             orderInGroup = null;
         }
 
-        let clubIdToProcess = editingClubId;
-        let dataToSave = {};
-        let operationType = currentClubModalMode;
-        let newDocumentId;
+        let confirmationTitle = '';
+        let confirmationMessage = '';
+        let clubIdToProcess = editingClubId; // Predvolené pre edit
 
-        try {
-            if (operationType === 'create') {
-                if (!clubName) {
-                    await showMessage('Chyba', "Zadajte názov tímu.");
-                    if (clubNameInput) clubNameInput.focus();
-                    return;
-                }
+        // Validácie a nastavenie potvrdzovacích správ
+        if (operationType === 'create') {
+            if (!clubName) {
+                await showMessage('Chyba', "Zadajte názov tímu.");
+                if (clubNameInput) clubNameInput.focus();
+                return;
+            }
+            const qExistingName = query(clubsCollectionRef, where('name', '==', clubName), where('categoryId', '==', selectedCategoryIdInModal));
+            const existingNameSnapshot = await getDocs(qExistingName);
+            if (!existingNameSnapshot.empty) {
+                const category = allAvailableCategories.find(cat => cat.id === selectedCategoryIdInModal);
+                const categoryDisplayName = category ? category.name : selectedCategoryIdInModal;
+                await showMessage('Upozornenie', `Tím s názvom "${clubName}" už v kategórii "${categoryDisplayName}" existuje. Prosím, zvoľte iný názov.`);
+                if (clubNameInput) clubNameInput.focus();
+                return;
+            }
+            confirmationTitle = 'Potvrdenie vytvorenia tímu';
+            confirmationMessage = `Naozaj chcete vytvoriť tím "${clubName}"?`;
+        } else if (operationType === 'assign') {
+            if (!unassignedClubSelect || !unassignedClubSelect.value || unassignedClubSelect.value.startsWith('--')) {
+                await showMessage('Chyba', "Prosím, vyberte nepriradený tím k priradeniu.");
+                return;
+            }
+            if (!selectedGroupIdInModal) {
+                await showMessage('Chyba', "Prosím, vyberte skupinu, do ktorej chcete tím priradiť.");
+                if (clubGroupSelect) clubGroupSelect.focus();
+                return;
+            }
+            if (orderInGroup === null) {
+                await showMessage('Chyba', "Zadajte platné poradie tímu v skupine (číslo väčšie ako 0).");
+                if (orderInGroupInput) orderInGroupInput.focus();
+                return;
+            }
 
-                // Skontrolujeme unikátnosť názvu tímu v rámci kategórie
+            clubIdToProcess = unassignedClubSelect.value;
+            const clubDocToAssign = await getDoc(doc(clubsCollectionRef, clubIdToProcess));
+            if (!clubDocToAssign.exists()) {
+                await showMessage('Chyba', "Tím na priradenie sa nenašiel. Prosím, skúste znova.");
+                return;
+            }
+            clubName = clubDocToAssign.data().name || clubDocToAssign.id; // Použijeme názov tímu z databázy pre potvrdenie
+
+            // Kontrola duplicitného poradia v skupine
+            const existingOrderQuery = query(clubsCollectionRef,
+                where('categoryId', '==', selectedCategoryIdInModal),
+                where('groupId', '==', selectedGroupIdInModal),
+                where('orderInGroup', '==', orderInGroup)
+            );
+            const existingOrderSnapshot = await getDocs(existingOrderQuery);
+            if (!existingOrderSnapshot.empty && existingOrderSnapshot.docs.some(doc => doc.id !== clubIdToProcess)) {
+                await showMessage('Chyba', `Poradie ${orderInGroup} je už obsadené v tejto skupine. Prosím, vyberte iné poradie.`);
+                if (orderInGroupInput) orderInGroupInput.focus();
+                return;
+            }
+
+            const category = allAvailableCategories.find(cat => cat.id === selectedCategoryIdInModal);
+            const categoryDisplayName = category ? category.name : selectedCategoryIdInModal;
+            const group = allAvailableGroups.find(g => g.id === selectedGroupIdInModal);
+            const groupDisplayName = group ? group.name : selectedGroupIdInModal;
+
+            confirmationTitle = 'Potvrdenie priradenia tímu';
+            confirmationMessage = `Naozaj chcete priradiť tím "${clubName}" do kategórie "${categoryDisplayName}", skupiny "${groupDisplayName}" na poradie ${orderInGroup}?`;
+        } else if (operationType === 'edit' && editingClubId) {
+            if (!clubName) {
+                await showMessage('Chyba', "Zadajte názov tímu.");
+                if (clubNameInput) clubNameInput.focus();
+                return;
+            }
+
+            const clubDoc = await getDoc(doc(clubsCollectionRef, clubIdToProcess));
+            if (!clubDoc.exists()) {
+                await showMessage('Chyba', "Tím na úpravu sa nenašiel. Prosím, skúste znova.");
+                return;
+            }
+            const clubData = clubDoc.data();
+
+            const nameChanged = (clubName !== clubData.name);
+            const categoryChanged = (selectedCategoryIdInModal !== clubData.categoryId);
+            const groupChanged = (selectedGroupIdInModal !== clubData.groupId);
+            const orderChanged = (orderInGroup !== clubData.orderInGroup);
+
+            if (!nameChanged && !categoryChanged && !groupChanged && !orderChanged) {
+                await showMessage('Informácia', 'Žiadne zmeny neboli vykonané.');
+                return; // Návrat bez potvrdenia, ak neboli žiadne zmeny
+            }
+
+            if (nameChanged || categoryChanged || groupChanged || orderChanged) {
                 const qExistingName = query(clubsCollectionRef, where('name', '==', clubName), where('categoryId', '==', selectedCategoryIdInModal));
                 const existingNameSnapshot = await getDocs(qExistingName);
-                if (!existingNameSnapshot.empty) {
+                if (!existingNameSnapshot.empty && existingNameSnapshot.docs.some(doc => doc.id !== clubIdToProcess)) {
                     const category = allAvailableCategories.find(cat => cat.id === selectedCategoryIdInModal);
                     const categoryDisplayName = category ? category.name : selectedCategoryIdInModal;
                     await showMessage('Upozornenie', `Tím s názvom "${clubName}" už v kategórii "${categoryDisplayName}" existuje. Prosím, zvoľte iný názov.`);
                     if (clubNameInput) clubNameInput.focus();
                     return;
                 }
+            }
 
-                // Generujeme náhodné ID pre nový dokument
-                const newClubDocRef = doc(clubsCollectionRef);
-                clubIdToProcess = newClubDocRef.id; // Získame vygenerované ID
-
-                dataToSave = {
-                    name: clubName,
-                    categoryId: selectedCategoryIdInModal,
-                    groupId: selectedGroupIdInModal,
-                    orderInGroup: orderInGroup,
-                    createdFromBase: clubName // Uložíme pôvodný názov pre filter
-                };
-            } else if (operationType === 'assign') {
-                if (!unassignedClubSelect || !unassignedClubSelect.value || unassignedClubSelect.value.startsWith('--')) {
-                    await showMessage('Chyba', "Prosím, vyberte nepriradený tím k priradeniu.");
-                    return;
-                }
-                if (!selectedGroupIdInModal) {
-                    await showMessage('Chyba', "Prosím, vyberte skupinu, do ktorej chcete tím priradiť.");
-                    if (clubGroupSelect) clubGroupSelect.focus();
-                    return;
-                }
-                if (typeof orderInGroup !== 'number' || orderInGroup <= 0) {
-                    await showMessage('Chyba', "Zadajte platné poradie tímu v skupine (číslo väčšie ako 0).");
+            // Kontrola duplicitného poradia v skupine pri úprave
+            if (selectedGroupIdInModal && orderInGroup !== null) {
+                const existingOrderQuery = query(clubsCollectionRef,
+                    where('categoryId', '==', selectedCategoryIdInModal),
+                    where('groupId', '==', selectedGroupIdInModal),
+                    where('orderInGroup', '==', orderInGroup)
+                );
+                const existingOrderSnapshot = await getDocs(existingOrderQuery);
+                if (!existingOrderSnapshot.empty && existingOrderSnapshot.docs.some(doc => doc.id !== clubIdToProcess)) {
+                    await showMessage('Chyba', `Poradie ${orderInGroup} je už obsadené v tejto skupine. Prosím, vyberte iné poradie.`);
                     if (orderInGroupInput) orderInGroupInput.focus();
                     return;
                 }
+            }
 
-                clubIdToProcess = unassignedClubSelect.value;
-                const clubDoc = await getDoc(doc(clubsCollectionRef, clubIdToProcess));
-                if (!clubDoc.exists()) {
-                    await showMessage('Chyba', "Tím na priradenie sa nenašiel. Prosím, skúste znova.");
-                    if (clubModal) closeModal(clubModal);
-                    resetClubModal();
-                    displayCreatedTeams();
-                    return;
-                }
-                const clubData = clubDoc.data();
-                dataToSave = {
-                    name: clubData.name || clubData.id, // Používame existujúci názov
-                    categoryId: clubData.categoryId || selectedCategoryIdInModal || null,
-                    groupId: selectedGroupIdInModal,
-                    orderInGroup: orderInGroup,
-                    createdFromBase: clubData.createdFromBase || clubData.name || clubData.id
-                };
-                if (dataToSave.groupId === null) {
-                    dataToSave.orderInGroup = null;
-                }
-                operationType = 'update'; // Priradenie je vlastne aktualizácia existujúceho tímu
-            } else if (operationType === 'edit' && editingClubId) {
-                if (!clubName) {
-                    await showMessage('Chyba', "Zadajte názov tímu.");
-                    if (clubNameInput) clubNameInput.focus();
-                    return;
-                }
+            confirmationTitle = 'Potvrdenie úpravy tímu';
+            confirmationMessage = `Naozaj chcete uložiť zmeny pre tím "${clubName}"?`;
+        } else {
+            await showMessage('Chyba', "Nastala chyba pri spracovaní formulára. Neplatný režim.");
+            return;
+        }
 
-                clubIdToProcess = editingClubId; // ID dokumentu zostáva rovnaké
-                const clubDoc = await getDoc(doc(clubsCollectionRef, clubIdToProcess));
-                if (!clubDoc.exists()) {
-                    await showMessage('Chyba', "Tím na úpravu sa nenašiel. Prosím, skúste znova.");
-                    if (clubModal) closeModal(clubModal);
-                    resetClubModal();
-                    displayCreatedTeams();
-                    return;
-                }
-                const clubData = clubDoc.data();
+        // Zobrazenie potvrdzovacieho dialógu
+        const confirmed = await showConfirmation(confirmationTitle, confirmationMessage);
 
-                // Skontrolujeme, či sa zmenil názov, kategória alebo skupina
-                const nameChanged = (clubName !== clubData.name);
-                const categoryChanged = (selectedCategoryIdInModal !== clubData.categoryId);
-                const groupChanged = (selectedGroupIdInModal !== clubData.groupId);
-                const orderChanged = (orderInGroup !== clubData.orderInGroup);
+        if (!confirmed) {
+            return; // Ak používateľ nepotvrdí, zostane modal otvorený
+        }
 
-                if (!nameChanged && !categoryChanged && !groupChanged && !orderChanged) {
-                    await showMessage('Informácia', 'Žiadne zmeny neboli vykonané.');
-                    if (clubModal) closeModal(clubModal);
-                    resetClubModal();
-                    displayCreatedTeams();
-                    return;
-                }
+        // Akcia potvrdená, zatvoríme pôvodný modal a resetujeme formulár
+        if (clubModal) closeModal(clubModal);
+        resetClubModal();
 
-                // Ak sa zmenil názov alebo kategória, skontrolujeme unikátnosť nového kombina
-                if (nameChanged || categoryChanged) {
-                    const qExistingName = query(clubsCollectionRef, where('name', '==', clubName), where('categoryId', '==', selectedCategoryIdInModal));
-                    const existingNameSnapshot = await getDocs(qExistingName);
-                    // Ak existuje iný dokument s rovnakým názvom a kategóriou
-                    if (!existingNameSnapshot.empty && existingNameSnapshot.docs.some(doc => doc.id !== clubIdToProcess)) {
-                        const category = allAvailableCategories.find(cat => cat.id === selectedCategoryIdInModal);
-                        const categoryDisplayName = category ? category.name : selectedCategoryIdInModal;
-                        await showMessage('Upozornenie', `Tím s názvom "${clubName}" už v kategórii "${categoryDisplayName}" existuje. Prosím, zvoľte iný názov.`);
-                        if (clubNameInput) clubNameInput.focus();
-                        return;
-                    }
-                }
-
-                // Aktualizujeme existujúci dokument
+        try {
+            let dataToSave = {};
+            if (operationType === 'create') {
+                const newClubDocRef = doc(clubsCollectionRef);
+                clubIdToProcess = newClubDocRef.id;
                 dataToSave = {
                     name: clubName,
                     categoryId: selectedCategoryIdInModal,
                     groupId: selectedGroupIdInModal,
                     orderInGroup: orderInGroup,
-                    createdFromBase: clubData.createdFromBase || clubData.name || clubData.id
+                    createdFromBase: clubName
                 };
-                if (dataToSave.groupId === null) {
-                    dataToSave.orderInGroup = null;
-                }
-                operationType = 'update';
-            } else {
-                await showMessage('Chyba', "Nastala chyba pri spracovaní formulára. Neplatný režim.");
-                if (clubModal) closeModal(clubModal);
-                resetClubModal();
-                return;
-            }
-
-            // Vykonanie operácie na Firestore
-            if (operationType === 'create') {
-                const newClubDocRef = doc(clubsCollectionRef, clubIdToProcess); // Použijeme vygenerované ID
                 await setDoc(newClubDocRef, dataToSave);
                 await showMessage('Úspech', `Tím "${clubName}" bol úspešne vytvorený.`);
-            } else if (operationType === 'update') {
-                const clubDocRef = doc(clubsCollectionRef, clubIdToProcess);
-                await updateDoc(clubDocRef, dataToSave);
-                if (currentClubModalMode === 'assign') {
-                    await showMessage('Úspech', "Tím bol úspešne priradený.");
-                } else {
-                    await showMessage('Úspech', "Zmeny boli úspešne uložené.");
-                }
-            } else {
-                await showMessage('Chyba', "Vyskytla sa chyba pri ukladaní dát. Neznámy typ operácie.");
-                if (clubModal) closeModal(clubModal);
-                resetClubModal();
-                return;
+            } else if (operationType === 'assign') {
+                dataToSave = {
+                    categoryId: selectedCategoryIdInModal,
+                    groupId: selectedGroupIdInModal,
+                    orderInGroup: orderInGroup,
+                };
+                await updateDoc(doc(clubsCollectionRef, clubIdToProcess), dataToSave);
+                await showMessage('Úspech', `Tím "${clubName}" bol úspešne priradený.`);
+            } else if (operationType === 'edit') {
+                dataToSave = {
+                    name: clubName,
+                    categoryId: selectedCategoryIdInModal,
+                    groupId: selectedGroupIdInModal,
+                    orderInGroup: orderInGroup,
+                };
+                await updateDoc(doc(clubsCollectionRef, clubIdToProcess), dataToSave);
+                await showMessage('Úspech', `Zmeny pre tím "${clubName}" boli úspešne uložené.`);
             }
-
-            if (clubModal) closeModal(clubModal);
-            resetClubModal();
-            displayCreatedTeams();
+            displayCreatedTeams(); // Znova načítať a zobraziť tímy
         } catch (error) {
             console.error('Chyba pri ukladaní dát tímu:', error);
             await showMessage('Chyba', `Chyba pri ukladaní dát! Prosím, skúste znova. Detail: ${error.message}`);
-            if (clubModal) closeModal(clubModal);
-            resetClubModal();
-            displayCreatedTeams();
+            // Modál je už zatvorený, takže ho netreba zatvárať znova
         }
     });
 }
@@ -1146,6 +1146,10 @@ async function displayCreatedTeams() {
             deleteButton.textContent = 'Vymazať';
             deleteButton.classList.add('action-button', 'delete-button');
             deleteButton.onclick = async () => {
+                // Zatvoríme clubModal hneď, ako sa spustí žiadosť o potvrdenie
+                if (clubModal && clubModal.style.display !== 'none') {
+                    closeModal(clubModal);
+                }
                 const confirmed = await showConfirmation('Potvrdenie vymazania', `Naozaj chcete vymazať tím "${team.name}"? Táto akcia je nezvratná!`);
                 if (confirmed) {
                     await deleteTeam(team.id);
