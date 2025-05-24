@@ -1,4 +1,4 @@
-import { db, categoriesCollectionRef, groupsCollectionRef, clubsCollectionRef, matchesCollectionRef, playingDaysCollectionRef, placesCollectionRef, busesCollectionRef, teamAccommodationsCollectionRef, openModal, closeModal, populateCategorySelect, populateGroupSelect, getDocs, doc, setDoc, addDoc, getDoc, query, where, orderBy, deleteDoc, writeBatch, settingsCollectionRef } from './spravca-turnaja-common.js';
+import { db, categoriesCollectionRef, groupsCollectionRef, clubsCollectionRef, matchesCollectionRef, playingDaysCollectionRef, placesCollectionRef, busesCollectionRef, teamAccommodationsCollectionRef, openModal, closeModal, populateCategorySelect, populateGroupSelect, getDocs, doc, setDoc, addDoc, getDoc, query, where, orderBy, deleteDoc, writeBatch, settingsCollectionRef, showMessage, showConfirmation } from './spravca-turnaja-common.js';
 const SETTINGS_DOC_ID = 'matchTimeSettings';
 
 async function populatePlayingDaysSelect(selectElement, selectedDate = '') {
@@ -1045,7 +1045,12 @@ async function displayMatchesAsSchedule() {
 }
 
 async function deletePlayingDay(dateToDelete) {
-    if (confirm(`Naozaj chcete vymazať hrací deň ${dateToDelete} a VŠETKY zápasy a autobusové linky, ktoré sa konajú v tento deň?`)) {
+    const confirmed = await showConfirmation(
+        'Potvrdenie vymazania',
+        `Naozaj chcete vymazať hrací deň ${dateToDelete} a VŠETKY zápasy, autobusové linky a priradenia ubytovania, ktoré sa konajú v tento deň?`
+    );
+
+    if (confirmed) {
         try {
             const batch = writeBatch(db);
 
@@ -1080,17 +1085,23 @@ async function deletePlayingDay(dateToDelete) {
             });
 
             await batch.commit();
-            alert(`Hrací deň ${dateToDelete} a všetky súvisiace zápasy, autobusové linky a priradenia ubytovania, ktoré sa prekrývali s týmto dňom, boli vymazané!`);
+            await showMessage('Úspech', `Hrací deň ${dateToDelete} a všetky súvisiace zápasy, autobusové linky a priradenia ubytovania, ktoré sa prekrývali s týmto dňom, boli vymazané!`);
             closeModal(document.getElementById('playingDayModal'));
             await displayMatchesAsSchedule();
         } catch (error) {
-            alert(`Chyba pri mazaní hracieho dňa ${dateToDelete}.`);
+            console.error("Chyba pri mazaní hracieho dňa:", error);
+            await showMessage('Chyba', `Chyba pri mazaní hracieho dňa ${dateToDelete}. Detail: ${error.message}`);
         }
     }
 }
 
 async function deletePlace(placeNameToDelete, placeTypeToDelete) {
-    if (confirm(`Naozaj chcete vymazať miesto ${placeNameToDelete} (${placeTypeToDelete}) a VŠETKY zápasy a autobusové linky, ktoré sa viažu na toto miesto?`)) {
+    const confirmed = await showConfirmation(
+        'Potvrdenie vymazania',
+        `Naozaj chcete vymazať miesto ${placeNameToDelete} (${placeTypeToDelete}) a VŠETKY zápasy a autobusové linky, ktoré sa viažu na toto miesto?`
+    );
+
+    if (confirmed) {
         try {
             const batch = writeBatch(db);
 
@@ -1130,11 +1141,12 @@ async function deletePlace(placeNameToDelete, placeTypeToDelete) {
             }
 
             await batch.commit();
-            alert(`Miesto ${placeNameToDelete} (${placeTypeToDelete}) a všetky súvisiace zápasy, autobusové linky a priradenia ubytovania boli vymazané!`);
+            await showMessage('Úspech', `Miesto ${placeNameToDelete} (${placeTypeToDelete}) a všetky súvisiace zápasy, autobusové linky a priradenia ubytovania boli vymazané!`);
             closeModal(document.getElementById('placeModal'));
             await displayMatchesAsSchedule();
         } catch (error) {
-            alert(`Chyba pri mazaní miesta ${placeNameToDelete} (${placeTypeToDelete}).`);
+            console.error("Chyba pri mazaní miesta:", error);
+            await showMessage('Chyba', `Chyba pri mazaní miesta ${placeNameToDelete} (${placeTypeToDelete}). Detail: ${error.message}`);
         }
     }
 }
@@ -1259,14 +1271,16 @@ async function editMatch(matchId) {
 }
 
 async function deleteMatch(matchId) {
-    if (confirm('Naozaj chcete vymazať tento zápas?')) {
+    const confirmed = await showConfirmation('Potvrdenie vymazania', 'Naozaj chcete vymazať tento zápas?');
+    if (confirmed) {
         try {
             await deleteDoc(doc(matchesCollectionRef, matchId));
-            alert('Zápas vymazaný!');
+            await showMessage('Úspech', 'Zápas vymazaný!');
             closeModal(document.getElementById('matchModal'));
             displayMatchesAsSchedule();
         } catch (error) {
-            alert("Chyba pri mazaní zápasu.");
+            console.error("Chyba pri mazaní zápasu:", error);
+            await showMessage('Chyba', `Chyba pri mazaní zápasu. Detail: ${error.message}`);
         }
     }
 }
@@ -1316,14 +1330,16 @@ async function editBus(busId) {
 }
 
 async function deleteBus(busId) {
-    if (confirm('Naozaj chcete vymazať túto autobusovú linku?')) {
+    const confirmed = await showConfirmation('Potvrdenie vymazania', 'Naozaj chcete vymazať túto autobusovú linku?');
+    if (confirmed) {
         try {
             await deleteDoc(doc(busesCollectionRef, busId));
-            alert('Autobusová linka vymazaná!');
+            await showMessage('Úspech', 'Autobusová linka vymazaná!');
             closeModal(document.getElementById('busModal'));
             displayMatchesAsSchedule();
         } catch (error) {
-            alert("Chyba pri mazaní autobusovej linky.");
+            console.error("Chyba pri mazaní autobusovej linky:", error);
+            await showMessage('Chyba', `Chyba pri mazaní autobusovej linky. Detail: ${error.message}`);
         }
     }
 }
@@ -1385,14 +1401,16 @@ async function editAccommodationAssignment(assignmentId) {
 }
 
 async function deleteAccommodationAssignment(assignmentId) {
-    if (confirm('Naozaj chcete vymazať toto priradenie ubytovania?')) {
+    const confirmed = await showConfirmation('Potvrdenie vymazania', 'Naozaj chcete vymazať toto priradenie ubytovania?');
+    if (confirmed) {
         try {
             await deleteDoc(doc(teamAccommodationsCollectionRef, assignmentId));
-            alert('Priradenie ubytovania vymazané!');
+            await showMessage('Úspech', 'Priradenie ubytovania vymazané!');
             closeModal(document.getElementById('assignAccommodationModal'));
             displayMatchesAsSchedule();
         } catch (error) {
-            alert("Chyba pri mazaní priradenia ubytovania.");
+            console.error("Chyba pri mazaní priradenia ubytovania:", error);
+            await showMessage('Chyba', `Chyba pri mazaní priradenia ubytovania. Detail: ${error.message}`);
         }
     }
 }
