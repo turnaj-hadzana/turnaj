@@ -887,14 +887,14 @@ if (clubForm) {
             if (operationType === 'create') {
                 const newClubDocRef = doc(clubsCollectionRef, clubIdToProcess); // Použijeme vygenerované ID
                 await setDoc(newClubDocRef, dataToSave);
-                await showMessage('Úspech', `Tím "${clubName}" bol úspešne vytvorený.`);
+                await showMessage('Potvrdenie', `Tím "${clubName}" bol úspešne vytvorený.`);
             } else if (operationType === 'update') {
                 const clubDocRef = doc(clubsCollectionRef, clubIdToProcess);
                 await updateDoc(clubDocRef, dataToSave);
                 if (currentClubModalMode === 'assign') {
-                    await showMessage('Úspech', "Tím bol úspešne priradený.");
+                    await showMessage('Potvrdenie', "Tím bol úspešne priradený.");
                 } else {
-                    await showMessage('Úspech', "Zmeny boli úspešne uložené.");
+                    await showMessage('Potvrdenie', "Zmeny boli úspešne uložené.");
                 }
             } else {
                 await showMessage('Chyba', "Vyskytla sa chyba pri ukladaní dát. Neznámy typ operácie.");
@@ -1239,7 +1239,7 @@ async function deleteTeam(teamId) {
     try {
         const teamDocRef = doc(clubsCollectionRef, teamId);
         await deleteDoc(teamDocRef);
-        await showMessage('Úspech', `Tím bol úspešne vymazaný.`);
+        await showMessage('Potvrdenie', `Tím bol úspešne vymazaný.`);
         displayCreatedTeams();
         if (clubModal && clubModal.style.display !== 'none') {
             if (currentClubModalMode === 'assign') {
