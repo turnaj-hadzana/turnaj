@@ -1421,7 +1421,7 @@ async function editBus(busId) {
         const busStartLocationSelect = document.getElementById('busStartLocationSelect');
         const busStartTimeInput = document.getElementById('busStartTimeInput');
         const busEndLocationSelect = document.getElementById('busEndLocationSelect');
-        const busEndTimeInput = document.getElementById('busEndTimeInput');
+        const busEndTimeInput = document = document.getElementById('busEndTimeInput');
         const busNotesInput = document.getElementById('busNotesInput');
         const deleteBusButtonModal = document.getElementById('deleteBusButtonModal');
 
@@ -1885,6 +1885,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             const existingMatchesSnapshot = await getDocs(existingMatchesQuery);
 
             let alreadyPlayed = false;
+            let overlappingExistingMatchDetails = null; // Variable to store details of the overlapping match
+
             existingMatchesSnapshot.docs.forEach(doc => {
                 const existingMatch = doc.data();
                 const existingMatchId = doc.id;
@@ -1903,12 +1905,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 if (condition1 || condition2) {
                     alreadyPlayed = true;
+                    overlappingExistingMatchDetails = existingMatch; // Store the existing match details
                     return; // Found a duplicate match, can exit the loop
                 }
             });
 
             if (alreadyPlayed) {
-                await showMessage('Chyba', `Tímy ${team1Result.fullDisplayName} a ${team2Result.fullDisplayName} už proti sebe hrali v kategórii ${categoriesMap.get(matchCategory)} a skupine ${groupsMap.get(matchGroup)}. Prosím, zadajte iné tímy.`);
+                await showMessage('Chyba', `Tímy ${team1Result.fullDisplayName} a ${team2Result.fullDisplayName} už proti sebe hrali v kategórii ${categoriesMap.get(matchCategory)} a skupine ${groupsMap.get(matchGroup)} dňa ${overlappingExistingMatchDetails.date} o ${overlappingExistingMatchDetails.startTime}. Prosím, zadajte iné tímy.`);
                 return;
             }
         } catch (error) {
