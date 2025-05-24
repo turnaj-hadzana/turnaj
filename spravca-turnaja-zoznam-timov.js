@@ -92,62 +92,88 @@ function getUniqueTeamNamesForFilter(teams) {
 
 /**
  * Získa unikátne názvy kategórií tímov pre filter.
- * @param {Array<object>} teams - Pole objektov tímov.
- * @param {Array<object>} categories - Pole objektov kategórií.
+ * @param {Array<object>} teams - Pole objektov tímov (teamsToDisplay).
+ * @param {Array<object>} categories - Pole všetkých objektov kategórií (allAvailableCategories).
  * @returns {Array<object>} Pole objektov {id, name} unikátnych kategórií.
  */
 function getUniqueTeamCategories(teams, categories) {
-    const categoryMap = new Map(); // Použijeme Map pre unikátne ID
+    const uniqueCategoryIds = new Set();
+    const categoryOptions = [];
+
+    // Pridaj "Neznáma kategória" možnosť, ak nejaký tím nemá priradenú kategóriu
+    const hasUnknownCategory = teams.some(team => team.categoryId === null || typeof team.categoryId === 'undefined' || (typeof team.categoryId === 'string' && team.categoryId.trim() === ''));
+    if (hasUnknownCategory) {
+        uniqueCategoryIds.add(null); // Použi null pre reprezentáciu "Neznáma kategória"
+        categoryOptions.push({ id: null, name: 'Neznáma kategória' });
+    }
+
     teams.forEach(team => {
-        if (team.categoryId === null || typeof team.categoryId === 'undefined' || (typeof team.categoryId === 'string' && team.categoryId.trim() === '')) {
-            categoryMap.set(null, 'Neznáma kategória'); // Použijeme null ako ID pre neznámu kategóriu
-        } else {
+        if (team.categoryId && typeof team.categoryId === 'string' && team.categoryId.trim() !== '') {
             const category = categories.find(cat => cat.id === team.categoryId);
             if (category) {
-                categoryMap.set(category.id, category.name);
+                if (!uniqueCategoryIds.has(category.id)) {
+                    uniqueCategoryIds.add(category.id);
+                    categoryOptions.push({ id: category.id, name: category.name || category.id });
+                }
             } else {
-                categoryMap.set(null, 'Neznáma kategória'); // Ak sa ID kategórie nenašlo medzi dostupnými
-            }
-        }
-    });
-    const result = Array.from(categoryMap, ([id, name]) => ({ id, name }));
-    return result.sort((a, b) => (a.name || '').localeCompare((b.name || ''), 'sk-SK'));
-}
-
-/**
- * Získa unikátne názvy skupín tímov pre filter.
- * @param {Array<object>} teams - Pole objektov tímov.
- * @param {Array<object>} groups - Pole objektov skupín.
- * @returns {Array<object>} Pole objektov {id, name} unikátnych skupín.
- */
-function getUniqueTeamGroups(teams, groups) {
-    const groupMap = new Map(); // Použijeme Map pre unikátne ID
-    teams.forEach(team => {
-        if (team.groupId === null || typeof team.groupId === 'undefined' || (typeof team.groupId === 'string' && team.groupId.trim() === '')) {
-            groupMap.set(null, 'Nepriradené'); // Použijeme null ako ID pre nepriradené skupiny
-        } else {
-            const group = groups.find(g => g.id === team.groupId);
-            if (group) {
-                groupMap.set(group.id, group.name);
-            } else {
-                // Ak sa ID skupiny nenašlo, pokúsime sa parsovať názov z ID, ak je v tvare "kategoria - nazov"
-                const parts = team.groupId.split(' - ');
-                if (parts.length > 1) {
-                    const parsedGroupName = parts.slice(1).join(' - ').trim();
-                    if (parsedGroupName !== '') {
-                        groupMap.set(team.groupId, parsedGroupName); // Použijeme pôvodné ID, ale parsovaný názov
-                    } else {
-                        groupMap.set(team.groupId, team.groupId);
-                    }
-                } else {
-                    groupMap.set(team.groupId, team.id); // Použijeme team.id ako fallback, ak group.id nie je parsovateľné
+                // Fallback pre kategórie, ktoré sa nenašli v allAvailableCategories (nekonzistentné dáta)
+                // Ak je categoryId prítomné, ale nezhoduje sa so známou kategóriou, pridaj ho ako unikátnu možnosť
+                if (!uniqueCategoryIds.has(team.categoryId)) {
+                    uniqueCategoryIds.add(team.categoryId);
+                    categoryOptions.push({ id: team.categoryId, name: team.categoryId }); // Použi ID ako názov, ak sa nenašlo
                 }
             }
         }
     });
-    const result = Array.from(groupMap, ([id, name]) => ({ id, name }));
-    return result.filter(obj => obj.name && obj.name.trim() !== '' || obj.id === null)
-        .sort((a, b) => (a.name || '').localeCompare((b.name || ''), 'sk-SK'));
+
+    return categoryOptions.sort((a, b) => (a.name || '').localeCompare((b.name || ''), 'sk-SK'));
+}
+
+/**
+ * Získa unikátne názvy skupín tímov pre filter.
+ * @param {Array<object>} teams - Pole objektov tímov (teamsToDisplay).
+ * @param {Array<object>} groups - Pole všetkých objektov skupín (allAvailableGroups).
+ * @returns {Array<object>} Pole objektov {id, name} unikátnych skupín.
+ */
+function getUniqueTeamGroups(teams, groups) {
+    const uniqueGroupIds = new Set();
+    const groupOptions = [];
+
+    // Pridaj "Nepriradené" možnosť, ak nejaký tím nemá priradenú skupinu
+    const hasUnassigned = teams.some(team => !team.groupId || (typeof team.groupId === 'string' && team.groupId.trim() === ''));
+    if (hasUnassigned) {
+        uniqueGroupIds.add(null); // Použi null pre reprezentáciu "Nepriradené"
+        groupOptions.push({ id: null, name: 'Nepriradené' });
+    }
+
+    teams.forEach(team => {
+        if (team.groupId && typeof team.groupId === 'string' && team.groupId.trim() !== '') {
+            const group = groups.find(g => g.id === team.groupId);
+            if (group) {
+                if (!uniqueGroupIds.has(group.id)) {
+                    uniqueGroupIds.add(group.id);
+                    groupOptions.push({ id: group.id, name: group.name || group.id });
+                }
+            } else {
+                // Fallback pre skupiny, ktoré sa nenašli v allAvailableGroups (nekonzistentné dáta)
+                const parts = team.groupId.split(' - ');
+                const parsedGroupName = (parts.length > 1) ? parts.slice(1).join(' - ').trim() : team.groupId;
+
+                // Skontroluj, či už existuje možnosť s týmto parsovaným názvom
+                const existingOption = groupOptions.find(opt => (opt.name || '').toLowerCase() === parsedGroupName.toLowerCase());
+
+                if (!existingOption) {
+                    // Ak neexistuje, pridaj novú možnosť. Použi team.groupId ako ID, aby bola unikátna.
+                    if (!uniqueGroupIds.has(team.groupId)) { // Zabezpečí unikátnosť aj pre nezhodné ID v rámci teamsToDisplay
+                        uniqueGroupIds.add(team.groupId);
+                        groupOptions.push({ id: team.groupId, name: parsedGroupName });
+                    }
+                }
+            }
+        }
+    });
+
+    return groupOptions.sort((a, b) => (a.name || '').localeCompare((b.name || ''), 'sk-SK'));
 }
 
 /**
