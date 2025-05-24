@@ -361,6 +361,12 @@ async function openClubModal(identifier = null, mode = 'assign') {
         await loadAllGroups();
     }
 
+    // Pridanie listenera pre automatickú zmenu '/' na '⁄'
+    if (clubNameInput) {
+        clubNameInput.removeEventListener('input', handleClubNameInput); // Odstrániť starý listener pre istotu
+        clubNameInput.addEventListener('input', handleClubNameInput);
+    }
+
     if (['assign', 'edit', 'create'].includes(mode)) {
         clubFormContent.style.display = 'block';
         clubFilterContent.style.display = 'none';
@@ -738,6 +744,17 @@ async function openClubModal(identifier = null, mode = 'assign') {
         return;
     }
     openModal(clubModal);
+}
+
+/**
+ * Handler pre input event na clubNameInput. Nahradí '/' znakom '⁄'.
+ * @param {Event} event - Objekt udalosti.
+ */
+function handleClubNameInput(event) {
+    const input = event.target;
+    if (input.value.includes('/')) {
+        input.value = input.value.replace(/\//g, '⁄');
+    }
 }
 
 if (clubForm) {
