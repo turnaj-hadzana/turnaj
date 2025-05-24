@@ -488,16 +488,16 @@ async function displaySubjectDetails(baseName, initialTeamId = null) {
                const teamButton = document.createElement('button');
                teamButton.classList.add('action-button');
 
-               const group = allGroups.find(g => g.id === team.groupId);
-               const groupName = group ? (group.name || group.id) : 'Nepriradené';
+               const group = allGroups.find(g => String(g.id) === String(team.groupId));
+               const groupName = group ? (group.name || String(group.id)) : 'Nepriradené';
 
                let categoryName = 'Neznáma kategória';
-               const category = allCategories.find(cat => cat.id === team.categoryId);
+               const category = allCategories.find(cat => String(cat.id) === String(team.categoryId));
                if (category && category.name) {
                     categoryName = category.name;
                } else {
                    // Ak kategória nie je nájdená, pokúsime sa ju parsovať z ID tímu
-                   const teamIdString = team.id || '';
+                   const teamIdString = String(team.id) || '';
                    const separator = ' - ';
                    let separatorIndex = teamIdString.indexOf(separator);
                    if (separatorIndex === -1) {
@@ -507,6 +507,7 @@ async function displaySubjectDetails(baseName, initialTeamId = null) {
                        categoryName = teamIdString.substring(0, separatorIndex).trim();
                    }
                }
+               // Konštruujeme text tlačidla tak, aby bol konzistentný s ID tímu
                const buttonText = groupName !== 'Nepriradené' ? `${categoryName} - ${groupName}` : categoryName;
                teamButton.textContent = buttonText;
                teamButton.dataset.teamId = team.id; // Uložíme ID tímu do datasetu
@@ -514,7 +515,7 @@ async function displaySubjectDetails(baseName, initialTeamId = null) {
                teamButton.addEventListener('click', () => {
                     const url = new URL(window.location.href);
                     url.searchParams.set('club', baseName);
-                    url.searchParams.set('team', team.id);
+                    url.searchParams.set('team', team.id); // Používame celé team.id pre URL
                     history.pushState({ baseName: baseName, teamId: team.id }, '', url.toString());
                     displaySpecificTeamDetails(team.id);
                 });
@@ -522,8 +523,8 @@ async function displaySubjectDetails(baseName, initialTeamId = null) {
            });
 
            // Zobrazíme detaily prvého tímu, alebo tímu z URL
-           const teamToDisplay = (initialTeamId && teamsForSubject.find(t => t.id === initialTeamId))
-                                 ? teamsForSubject.find(t => t.id === initialTeamId)
+           const teamToDisplay = (initialTeamId && teamsForSubject.find(t => String(t.id) === String(initialTeamId)))
+                                 ? teamsForSubject.find(t => String(t.id) === String(initialTeamId))
                                  : (teamsForSubject.length > 0 ? teamsForSubject[0] : null);
 
            if (teamToDisplay) {
@@ -561,16 +562,16 @@ async function displaySpecificTeamDetails(teamId) {
 
         // Zobrazenie názvu tímu
          const baseName = getClubBaseName(teamData);
-         const category = allCategories.find(cat => cat.id === teamData.categoryId);
-         const categoryName = (category && category.name) ? category.name : (teamData.categoryId || 'Neznáma kategória');
-         const group = allGroups.find(g => g.id === teamData.groupId);
-         const groupName = group ? (group.name || group.id) : 'Nepriradené';
+         const category = allCategories.find(cat => String(cat.id) === String(teamData.categoryId));
+         const categoryName = (category && category.name) ? category.name : (String(teamData.categoryId) || 'Neznáma kategória');
+         const group = allGroups.find(g => String(g.id) === String(teamData.groupId));
+         const groupName = group ? (group.name || String(group.id)) : 'Nepriradené';
 
          const teamDisplayName = teamData.name && teamData.name.trim() !== ''
                                  ? teamData.name.trim()
                                  : `${baseName} - ${categoryName}${groupName !== 'Nepriradené' ? ' - ' + groupName : ''}`;
 
-        if (clubDetailTitleSpan) clubDetailTitleSpan.textContent = `${baseName} - ${teamDisplayName}`; // Aktualizácia hlavného titulku
+        if (clubDetailTitleSpan) clubDetailTitleSpan.textContent = `${baseName} - ${categoryName}${groupName !== 'Nepriradené' ? ' - ' + groupName : ''}`; // Aktualizácia hlavného titulku
 
         // Načítanie a zobrazenie realizačného tímu
         if (selectedTeamRealizacnyTimDiv) {
@@ -699,7 +700,7 @@ async function handleUrlState() {
 
     if (teamId) {
         // Ak je v URL teamId, zobrazíme detaily konkrétneho tímu
-        const team = allClubs.find(c => c.id === teamId);
+        const team = allClubs.find(c => String(c.id) === String(teamId));
         if (team) {
             const baseName = getClubBaseName(team);
              // Skontrolujeme, či základný názov klubu existuje v súhrne
