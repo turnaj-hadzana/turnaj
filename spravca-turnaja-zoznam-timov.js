@@ -1,5 +1,4 @@
 import {db, clubsCollectionRef, categoriesCollectionRef, groupsCollectionRef, openModal, closeModal, populateCategorySelect, doc, getDocs, query, where, getDoc, setDoc, deleteDoc, updateDoc, writeBatch, showMessage, showConfirmation} from './spravca-turnaja-common.js';
-
 const teamCreationModal = document.getElementById('teamCreationModal');
 const teamCreationModalClose = teamCreationModal ? teamCreationModal.querySelector('.close') : null;
 const teamCreationForm = document.getElementById('teamCreationForm');
@@ -23,7 +22,6 @@ const filterModalTitle = document.getElementById('filterModalTitle');
 const filterSelect = document.getElementById('filterSelect');
 const addButton = document.getElementById('addButton');
 const clearFiltersButton = document.getElementById('clearFiltersButton');
-
 let allAvailableCategories = [];
 let allAvailableGroups = [];
 let allTeams = [];
@@ -39,12 +37,6 @@ let currentSort = {
     column: null,
     direction: 'asc'
 };
-
-/**
- * Parsuje plný názov tímu a extrahuje prefix kategórie a základný názov.
- * @param {string} fullTeamName - Plný názov tímu.
- * @returns {{categoryPrefix: string|null, baseName: string}} Objekt s prefixom kategórie a základným názvom.
- */
 function parseTeamName(fullTeamName) {
     if (!fullTeamName || typeof fullTeamName !== 'string') {
         return { categoryPrefix: null, baseName: fullTeamName || '' };
@@ -60,12 +52,6 @@ function parseTeamName(fullTeamName) {
     }
     return { categoryPrefix: null, baseName: fullTeamName.trim() };
 }
-
-/**
- * Vyčistí názov tímu pre účely filtrovania (odstráni suffixy ako A, B, C).
- * @param {string} teamName - Názov tímu.
- * @returns {string} Vyčistený názov tímu.
- */
 function getCleanedTeamNameForFilter(teamName) {
     if (!teamName || typeof teamName !== 'string') {
         return '';
@@ -77,12 +63,6 @@ function getCleanedTeamNameForFilter(teamName) {
     }
     return cleanedName;
 }
-
-/**
- * Získa unikátne základné názvy tímov pre filter.
- * @param {Array<object>} teams - Pole objektov tímov.
- * @returns {Array<string>} Pole unikátnych základných názvov tímov.
- */
 function getUniqueBaseTeamNames(teams) {
     const baseNames = teams.map(team => {
         const rawBaseName = team.createdFromBase || parseTeamName(team.id).baseName || '';
@@ -90,13 +70,6 @@ function getUniqueBaseTeamNames(teams) {
     }).filter(name => name !== '');
     return [...new Set(baseNames)].sort((a, b) => a.localeCompare(b, 'sk-SK'));
 }
-
-/**
- * Získa unikátne názvy kategórií tímov pre filter.
- * @param {Array<object>} teams - Pole objektov tímov.
- * @param {Array<object>} categories - Pole objektov kategórií.
- * @returns {Array<object>} Pole objektov {id, name} unikátnych kategórií.
- */
 function getUniqueTeamCategories(teams, categories) {
     const categoryMap = new Map(); // Použijeme Map pre unikátne ID
     teams.forEach(team => {
@@ -114,13 +87,6 @@ function getUniqueTeamCategories(teams, categories) {
     const result = Array.from(categoryMap, ([id, name]) => ({ id, name }));
     return result.sort((a, b) => (a.name || '').localeCompare((b.name || ''), 'sk-SK'));
 }
-
-/**
- * Získa unikátne názvy skupín tímov pre filter.
- * @param {Array<object>} teams - Pole objektov tímov.
- * @param {Array<object>} groups - Pole objektov skupín.
- * @returns {Array<object>} Pole objektov {id, name} unikátnych skupín.
- */
 function getUniqueTeamGroups(teams, groups) {
     const groupMap = new Map(); // Použijeme Map pre unikátne ID
     teams.forEach(team => {
@@ -174,9 +140,6 @@ async function loadAllCategoriesForDynamicSelects() {
     }
 }
 
-/**
- * Načíta všetky skupiny z Firestore a uloží ich do allAvailableGroups.
- */
 async function loadAllGroups() {
     allAvailableGroups = [];
     try {
@@ -789,8 +752,6 @@ if (clubForm) {
                 if (clubNameInput) clubNameInput.focus();
                 return;
             }
-            confirmationTitle = 'Potvrdenie vytvorenia tímu';
-            confirmationMessage = `Naozaj chcete vytvoriť tím "${clubName}"?`;
         } else if (operationType === 'assign') {
             if (!unassignedClubSelect || !unassignedClubSelect.value || unassignedClubSelect.value.startsWith('--')) {
                 await showMessage('Chyba', "Prosím, vyberte nepriradený tím k priradeniu.");
@@ -855,8 +816,11 @@ if (clubForm) {
             const orderChanged = (orderInGroup !== clubData.orderInGroup);
 
             if (!nameChanged && !categoryChanged && !groupChanged && !orderChanged) {
-                await showMessage('Informácia', 'Žiadne zmeny neboli vykonané.');
-                return; // Návrat bez potvrdenia, ak neboli žiadne zmeny
+                // Ak neboli žiadne zmeny, jednoducho zatvoríme modal bez správy
+                if (clubModal) closeModal(clubModal);
+                resetClubModal();
+                displayCreatedTeams();
+                return;
             }
 
             if (nameChanged || categoryChanged || groupChanged || orderChanged) {
@@ -885,22 +849,22 @@ if (clubForm) {
                     return;
                 }
             }
-
-            confirmationTitle = 'Potvrdenie úpravy tímu';
-            confirmationMessage = `Naozaj chcete uložiť zmeny pre tím "${clubName}"?`;
         } else {
             await showMessage('Chyba', "Nastala chyba pri spracovaní formulára. Neplatný režim.");
             return;
         }
 
-        // Zobrazenie potvrdzovacieho dialógu
-        const confirmed = await showConfirmation(confirmationTitle, confirmationMessage);
-
-        if (!confirmed) {
-            return; // Ak používateľ nepotvrdí, zostane modal otvorený
+        let confirmed = true; // Predvolene potvrdené pre create a edit
+        if (operationType === 'assign') {
+            // Zobrazenie potvrdzovacieho dialógu len pre priradenie
+            confirmed = await showConfirmation(confirmationTitle, confirmationMessage);
         }
 
-        // Akcia potvrdená, zatvoríme pôvodný modal a resetujeme formulár
+        if (!confirmed) {
+            return; // Ak používateľ nepotvrdí (len pre assign), zostane modal otvorený
+        }
+
+        // Akcia potvrdená (alebo pre create/edit bez potvrdenia), zatvoríme pôvodný modal a resetujeme formulár
         if (clubModal) closeModal(clubModal);
         resetClubModal();
 
@@ -917,7 +881,6 @@ if (clubForm) {
                     createdFromBase: clubName
                 };
                 await setDoc(newClubDocRef, dataToSave);
-                await showMessage('Úspech', `Tím "${clubName}" bol úspešne vytvorený.`);
             } else if (operationType === 'assign') {
                 dataToSave = {
                     categoryId: selectedCategoryIdInModal,
@@ -925,7 +888,6 @@ if (clubForm) {
                     orderInGroup: orderInGroup,
                 };
                 await updateDoc(doc(clubsCollectionRef, clubIdToProcess), dataToSave);
-                await showMessage('Úspech', `Tím "${clubName}" bol úspešne priradený.`);
             } else if (operationType === 'edit') {
                 dataToSave = {
                     name: clubName,
@@ -934,7 +896,6 @@ if (clubForm) {
                     orderInGroup: orderInGroup,
                 };
                 await updateDoc(doc(clubsCollectionRef, clubIdToProcess), dataToSave);
-                await showMessage('Úspech', `Zmeny pre tím "${clubName}" boli úspešne uložené.`);
             }
             displayCreatedTeams(); // Znova načítať a zobraziť tímy
         } catch (error) {
@@ -1238,14 +1199,9 @@ function addHeaderFilterListeners() {
         }
     });
 }
-
-/**
- * Handler pre kliknutie na hlavičku tabuľky (pre filtrovanie/zoradenie).
- */
 function handleHeaderClick() {
     const filterType = this.dataset.filterType;
     const sortType = this.dataset.sortType;
-
     if (filterType) {
         openClubModal(filterType, 'filter');
     } else if (sortType === 'orderInGroup') {
@@ -1258,11 +1214,6 @@ function handleHeaderClick() {
         displayCreatedTeams();
     }
 }
-
-/**
- * Vymaže tím z Firestore.
- * @param {string} teamId - ID tímu, ktorý sa má vymazať.
- */
 async function deleteTeam(teamId) {
     try {
         const teamDocRef = doc(clubsCollectionRef, teamId);
@@ -1283,34 +1234,25 @@ async function deleteTeam(teamId) {
         await showMessage('Chyba', "Nepodarilo sa vymazať tím. Prosím, skúste znova.");
     }
 }
-
 const handleAddButtonClick = () => {
      openClubModal(null, 'create');
 };
-
-// Spustí sa po načítaní DOM obsahu
 document.addEventListener('DOMContentLoaded', async () => {
     const loggedInUsername = localStorage.getItem('username');
     if (!loggedInUsername || loggedInUsername !== 'admin') {
-        window.location.href = 'login.html'; // Presmerovanie na prihlasovaciu stránku, ak nie je admin
+        window.location.href = 'login.html';
         return;
     }
-
-    // Načítanie všetkých kategórií a skupín na začiatku
     await loadAllCategoriesForDynamicSelects();
     await loadAllGroups();
     await displayCreatedTeams(); // Zobrazí tímy po načítaní dát
-
     const addButtonElement = document.getElementById('addButton');
     if (addButtonElement) {
         addButtonElement.style.display = 'block';
         addButtonElement.title = "Vytvoriť nový tím";
-        // Odstránime starý listener, ak existuje, aby sme predišli duplicitám
         addButtonElement.removeEventListener('click', handleAddButtonClick);
         addButtonElement.addEventListener('click', handleAddButtonClick);
     }
-
-    // Listenery pre zatvorenie modálneho okna klubu
     if (clubModalClose) {
         clubModalClose.addEventListener('click', () => {
             closeModal(clubModal);
@@ -1318,8 +1260,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             displayCreatedTeams();
         });
     }
-
-    // Zatvorenie modálu kliknutím mimo obsah
      if (clubModal) {
          window.addEventListener('click', (event) => {
               const modalContent = clubModal.querySelector('.modal-content');
@@ -1331,5 +1271,4 @@ document.addEventListener('DOMContentLoaded', async () => {
          });
      }
 });
-
 export { openClubModal, displayCreatedTeams };
