@@ -30,6 +30,7 @@
             </main>
     </div>
     <button id="addButton" class="add-button" title="Pridať skupinu">+</button>
+
     <div id="groupModal" class="modal">
         <div class="modal-content">
             <span class="close group-modal-close">&times;</span>
@@ -48,6 +49,17 @@
             </form>
         </div>
     </div>
+
+    <div id="messageModal" class="modal">
+        <div class="modal-content">
+            <span class="close message-modal-close">&times;</span>
+            <h2 id="messageModalTitle"></h2>
+            <p id="messageModalText"></p>
+            <div id="messageModalButtons" class="modal-buttons">
+                </div>
+        </div>
+    </div>
+
     <script type="module" src="spravca-turnaja-common.js"></script>
     <script type="module" src="spravca-turnaja-skupiny.js"></script>
 </body>
