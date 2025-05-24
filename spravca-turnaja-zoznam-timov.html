@@ -33,7 +33,8 @@
                             <th data-filter-type="category">Kategória</th>
                             <th data-filter-type="group">Skupina</th>
                             <th data-sort-type="orderInGroup">Poradie v skupine</th>
-                            <th><button id="clearFiltersButton" class="action-button">Vymazať filtre</button></th> </tr>
+                            <th><button id="clearFiltersButton" class="action-button">Vymazať filtre</button></th>
+                        </tr>
                     </thead>
                     <tbody id="createdTeamsTableBody">
                     </tbody>
@@ -42,6 +43,7 @@
         </main>
     </div>
     <button id="addButton" class="add-button" title="Vytvoriť nový tím">+</button>
+
     <div id="clubModal" class="modal">
         <div class="modal-content">
             <span class="close club-modal-close">&times;</span>
@@ -89,6 +91,17 @@
             </div>
         </div>
     </div>
+
+    <div id="messageModal" class="modal">
+        <div class="modal-content">
+            <span class="close message-modal-close">&times;</span>
+            <h2 id="messageModalTitle"></h2>
+            <p id="messageModalText"></p>
+            <div id="messageModalButtons" class="modal-buttons">
+                </div>
+        </div>
+    </div>
+
     <script type="module" src="spravca-turnaja-common.js"></script>
     <script type="module" src="spravca-turnaja-zoznam-timov.js"></script>
 </body>
