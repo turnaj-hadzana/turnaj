@@ -27,7 +27,7 @@ const clearFiltersButton = document.getElementById('clearFiltersButton');
 let allAvailableCategories = [];
 let allAvailableGroups = [];
 let allTeams = [];
-let teamsToDisplay = [];
+let teamsToDisplay = []; // Toto pole bude obsahovať tímy aktuálne zobrazené v tabuľke po filtrovaní
 let editingClubId = null;
 let currentClubModalMode = null;
 let currentFilters = {
@@ -629,67 +629,34 @@ async function openClubModal(identifier = null, mode = 'assign') {
         else clubModalTitle.textContent = 'Filter';
         filterModalTitle.textContent = 'Vyberte hodnotu filtra';
 
-        let filterOptions = [];
-        if (filterType === 'teamName') {
-            filterOptions = getUniqueTeamNamesForFilter(allTeams); // Získanie jedinečných základných názvov tímov (stringy)
-        } else if (filterType === 'category') {
-            filterOptions = getUniqueTeamCategories(allTeams, allAvailableCategories); // Objekty {id, name}
-        } else if (filterType === 'group') {
-             const currentCategoryFilter = currentFilters.category;
-             if (currentCategoryFilter !== null) {
-                 const teamsMatchingCategoryFilter = allTeams.filter(team => {
-                      const teamCategoryId = team.categoryId;
-                      if (currentCategoryFilter === null) { // Check for null ID (Neznáma kategória)
-                           return !teamCategoryId || (typeof teamCategoryId === 'string' && teamCategoryId.trim() === '');
-                      } else {
-                           return teamCategoryId === currentCategoryFilter; // Compare IDs
-                       }
-                  });
-                 let optionsFromTeams = getUniqueTeamGroups(teamsMatchingCategoryFilter, allAvailableGroups);
-                 const categoryIdForGroups = currentCategoryFilter; // Already the ID
-                 let groupOptionsFromDB = [];
-                 if(categoryIdForGroups) {
-                      const groupsInCategory = allAvailableGroups.filter(group => group.categoryId === categoryIdForGroups);
-                       groupOptionsFromDB = groupsInCategory.map(group => ({id: group.id, name: group.name || group.id}));
-                 }
-                  // Combine and deduplicate by ID, then sort by name
-                  const combinedGroupOptionsMap = new Map();
-                  [...optionsFromTeams, ...groupOptionsFromDB].forEach(item => {
-                      combinedGroupOptionsMap.set(item.id, item);
-                  });
-                  filterOptions = Array.from(combinedGroupOptionsMap.values());
-                  filterOptions.sort((a,b) => (a.name || '').localeCompare((b.name || ''), 'sk-SK'));
-
-                  const hasUnassignedInCategory = teamsMatchingCategoryFilter.some(team =>
-                       !team.groupId || (typeof team.groupId === 'string' && team.groupId.trim() === '')
-                  );
-                  if (hasUnassignedInCategory && !filterOptions.some(opt => opt.id === null)) {
-                       filterOptions.push({id: null, name: 'Nepriradené'});
-                  }
-                 filterOptions.sort((a, b) => (a.name || '').localeCompare((b.name || ''), 'sk-SK'));
-             } else {
-                 filterOptions = getUniqueTeamGroups(allTeams, allAvailableGroups);
-             }
-        }
-
         if (filterSelect) {
-            filterSelect.innerHTML = '<option value="">-- Zobraziť všetko --</option>';
-            filterOptions.forEach(optionObject => {
-                const option = document.createElement('option');
-                // Upravená logika pre nastavenie value a textContent
-                if (typeof optionObject === 'string') { // Pre názvy tímov (stringy)
-                    option.value = optionObject;
-                    option.textContent = optionObject;
-                } else if (optionObject && typeof optionObject === 'object' && (optionObject.id !== undefined || optionObject.name !== undefined)) { // Pre kategórie/skupiny (objekty)
-                    option.value = optionObject.id !== null ? optionObject.id : ''; // Použijeme ID ako value, pre null ID prázdny reťazec
-                    option.textContent = optionObject.name || optionObject.id || ''; // Použijeme name, ak je k dispozícii, inak ID
-                } else {
-                    // Fallback pre neočakávané typy objektov
-                    option.value = '';
-                    option.textContent = 'Chybná možnosť';
-                }
-                filterSelect.appendChild(option);
-            });
+            filterSelect.innerHTML = '<option value="">-- Zobraziť všetko --</option>'; // Táto možnosť by mala byť vždy prvá
+
+            if (filterType === 'teamName') {
+                const teamNames = getUniqueTeamNamesForFilter(teamsToDisplay); // Používame teamsToDisplay
+                teamNames.forEach(name => {
+                    const option = document.createElement('option');
+                    option.value = name;
+                    option.textContent = name;
+                    filterSelect.appendChild(option);
+                });
+            } else if (filterType === 'category') {
+                const uniqueCategories = getUniqueTeamCategories(teamsToDisplay, allAvailableCategories); // Používame teamsToDisplay
+                uniqueCategories.forEach(cat => {
+                    const option = document.createElement('option');
+                    option.value = cat.id !== null ? cat.id : ''; // ID ako value, prázdny reťazec pre null
+                    option.textContent = cat.name || cat.id || ''; // Názov ako text
+                    filterSelect.appendChild(option);
+                });
+            } else if (filterType === 'group') {
+                const uniqueGroups = getUniqueTeamGroups(teamsToDisplay, allAvailableGroups); // Používame teamsToDisplay
+                uniqueGroups.forEach(group => {
+                    const option = document.createElement('option');
+                    option.value = group.id !== null ? group.id : ''; // ID ako value, prázdny reťazec pre null
+                    option.textContent = group.name || group.id || ''; // Názov ako text
+                    filterSelect.appendChild(option);
+                });
+            }
 
             // Nastavenie vybranej hodnoty filtra
             let selectedFilterValueForDisplay = currentFilters[filterType];
@@ -697,15 +664,9 @@ async function openClubModal(identifier = null, mode = 'assign') {
 
             if (filterType === 'teamName') {
                 selectedOptionValue = selectedFilterValueForDisplay || '';
-            } else if (filterType === 'category') {
+            } else if (filterType === 'category' || filterType === 'group') {
                 if (selectedFilterValueForDisplay === null) {
-                    selectedOptionValue = ''; // Pre "Neznáma kategória" filter je ID null, ale value v selecte je prázdne
-                } else {
-                    selectedOptionValue = selectedFilterValueForDisplay;
-                }
-            } else if (filterType === 'group') {
-                if (selectedFilterValueForDisplay === null) {
-                    selectedOptionValue = ''; // Pre "Nepriradené" filter je ID null, ale value v selecte je prázdne
+                    selectedOptionValue = ''; // Pre "Neznáma kategória" / "Nepriradené" filter je ID null, ale value v selecte je prázdne
                 } else {
                     selectedOptionValue = selectedFilterValueForDisplay;
                 }
@@ -726,8 +687,6 @@ async function openClubModal(identifier = null, mode = 'assign') {
                 // V prípade kategórie/skupiny, ak je vybraná možnosť s prázdnou hodnotou, ale text je "Neznáma kategória" / "Nepriradené",
                 // chceme uložiť null. Inak, ak je prázdny reťazec, znamená to zrušenie filtra.
                 if (selectedValue === '') {
-                    // Ak filterType je kategória alebo skupina a vybraná možnosť je "Neznáma kategória" / "Nepriradené"
-                    // (ktorá má value=""), chceme nastaviť filter na null ID.
                     const selectedOption = filterSelect.options[filterSelect.selectedIndex];
                     if (filterType === 'category' && selectedOption && selectedOption.textContent === 'Neznáma kategória') {
                         valueToStore = null;
@@ -1060,7 +1019,7 @@ async function displayCreatedTeams() {
             }
         });
 
-        teamsToDisplay = filteredTeams;
+        teamsToDisplay = filteredTeams; // Aktualizácia teamsToDisplay po filtrovaní
 
         // Aplikácia zoradenia
         if (currentSort.column === 'orderInGroup') {
@@ -1327,4 +1286,4 @@ document.addEventListener('DOMContentLoaded', async () => {
          });
      }
 });
-export { openClubModal, displayCreatedTeams }
+export { openClubModal, displayCreatedTeams };
