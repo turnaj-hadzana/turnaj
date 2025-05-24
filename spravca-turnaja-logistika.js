@@ -1457,7 +1457,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const busEndLocationSelect = document.getElementById('busEndLocationSelect');
     const busEndTimeInput = document.getElementById('busEndTimeInput');
     const busNotesInput = document.getElementById('busNotesInput');
-    const deleteBusButtonModal = document.getElementById('deleteBusButtonModal');
+    const deleteBusButtonModal = document = document.getElementById('deleteBusButtonModal');
 
     const assignAccommodationModal = document.getElementById('assignAccommodationModal');
     const closeAssignAccommodationModalButton = document.getElementById('closeAssignAccommodationModal');
