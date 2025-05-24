@@ -831,8 +831,6 @@ async function displayMatchesAsSchedule() {
             return;
         }
 
-        const scheduleTableContainerRect = scheduleTableContainer.getBoundingClientRect();
-
         const busOverlayContainer = document.createElement('div');
         busOverlayContainer.id = 'busOverlayContainer';
         busOverlayContainer.style.cssText = `
@@ -1462,7 +1460,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const busEndLocationSelect = document.getElementById('busEndLocationSelect');
     const busEndTimeInput = document.getElementById('busEndTimeInput');
     const busNotesInput = document.getElementById('busNotesInput');
-    const deleteBusButtonModal = document.getElementById('deleteBusButtonModal');
+    const deleteBusButtonModal = document = document.getElementById('deleteBusButtonModal');
 
     const assignAccommodationModal = document.getElementById('assignAccommodationModal');
     const closeAssignAccommodationModalButton = document.getElementById('closeAssignAccommodationModal');
@@ -1680,18 +1678,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
+        // Fetch categories and groups once at the beginning of the submit handler
+        const categoriesSnapshot = await getDocs(categoriesCollectionRef);
+        const categoriesMap = new Map();
+        categoriesSnapshot.forEach(doc => categoriesMap.set(doc.id, doc.data().name || doc.id));
+
+        const groupsSnapshot = await getDocs(groupsCollectionRef);
+        const groupsMap = new Map();
+        groupsSnapshot.forEach(doc => groupsMap.set(doc.id, doc.data().name || doc.id));
+
         let team1Result = null;
         let team2Result = null;
         try {
-            // Re-fetch categories and groups for the submit handler as well, to ensure consistency
-            const categoriesSnapshot = await getDocs(categoriesCollectionRef);
-            const categoriesMap = new Map();
-            categoriesSnapshot.forEach(doc => categoriesMap.set(doc.id, doc.data().name || doc.id));
-
-            const groupsSnapshot = await getDocs(groupsCollectionRef);
-            const groupsMap = new Map();
-            groupsSnapshot.forEach(doc => groupsMap.set(doc.id, doc.data().name || doc.id));
-
             team1Result = await getTeamName(matchCategory, matchGroup, team1Number, categoriesMap, groupsMap);
             team2Result = await getTeamName(matchCategory, matchGroup, team2Number, categoriesMap, groupsMap);
         } catch (error) {
@@ -1810,9 +1808,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             location: matchLocationName,
             locationType: matchLocationType,
             categoryId: matchCategory,
-            categoryName: matchCategorySelect.options[matchCategorySelect.selectedIndex].text,
+            categoryName: categoriesMap.get(matchCategory) || matchCategory, // Používame aktuálny názov z mapy
             groupId: matchGroup || null,
-            groupName: matchGroup ? matchGroupSelect.options[matchGroupSelect.selectedIndex].text.replace(/skupina /gi, '').trim() : null,
+            groupName: matchGroup ? groupsMap.get(matchGroup).replace(/skupina /gi, '').trim() : null, // Používame aktuálny názov z mapy
             team1Category: matchCategory,
             team1Group: matchGroup,
             team1Number: team1Number,
