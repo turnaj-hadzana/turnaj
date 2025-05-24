@@ -631,9 +631,9 @@ async function openClubModal(identifier = null, mode = 'assign') {
 
         let filterOptions = [];
         if (filterType === 'teamName') {
-            filterOptions = getUniqueTeamNamesForFilter(allTeams); // Získanie jedinečných základných názvov tímov
+            filterOptions = getUniqueTeamNamesForFilter(allTeams); // Získanie jedinečných základných názvov tímov (stringy)
         } else if (filterType === 'category') {
-            filterOptions = getUniqueTeamCategories(allTeams, allAvailableCategories);
+            filterOptions = getUniqueTeamCategories(allTeams, allAvailableCategories); // Objekty {id, name}
         } else if (filterType === 'group') {
              const currentCategoryFilter = currentFilters.category;
              if (currentCategoryFilter !== null) {
@@ -676,8 +676,18 @@ async function openClubModal(identifier = null, mode = 'assign') {
             filterSelect.innerHTML = '<option value="">-- Zobraziť všetko --</option>';
             filterOptions.forEach(optionObject => {
                 const option = document.createElement('option');
-                option.value = optionObject; // Názov tímu je už string
-                option.textContent = optionObject;
+                // Upravená logika pre nastavenie value a textContent
+                if (typeof optionObject === 'string') { // Pre názvy tímov (stringy)
+                    option.value = optionObject;
+                    option.textContent = optionObject;
+                } else if (optionObject && typeof optionObject === 'object' && (optionObject.id !== undefined || optionObject.name !== undefined)) { // Pre kategórie/skupiny (objekty)
+                    option.value = optionObject.id !== null ? optionObject.id : ''; // Použijeme ID ako value, pre null ID prázdny reťazec
+                    option.textContent = optionObject.name || optionObject.id || ''; // Použijeme name, ak je k dispozícii, inak ID
+                } else {
+                    // Fallback pre neočakávané typy objektov
+                    option.value = '';
+                    option.textContent = 'Chybná možnosť';
+                }
                 filterSelect.appendChild(option);
             });
 
@@ -689,18 +699,19 @@ async function openClubModal(identifier = null, mode = 'assign') {
                 selectedOptionValue = selectedFilterValueForDisplay || '';
             } else if (filterType === 'category') {
                 if (selectedFilterValueForDisplay === null) {
-                    selectedOptionValue = '';
+                    selectedOptionValue = ''; // Pre "Neznáma kategória" filter je ID null, ale value v selecte je prázdne
                 } else {
                     selectedOptionValue = selectedFilterValueForDisplay;
                 }
             } else if (filterType === 'group') {
                 if (selectedFilterValueForDisplay === null) {
-                    selectedOptionValue = '';
+                    selectedOptionValue = ''; // Pre "Nepriradené" filter je ID null, ale value v selecte je prázdne
                 } else {
                     selectedOptionValue = selectedFilterValueForDisplay;
                 }
             }
             
+            // Nastavíme vybranú hodnotu v selecte
             if (filterSelect.querySelector(`option[value="${selectedOptionValue}"]`)) {
                 filterSelect.value = selectedOptionValue;
             } else {
@@ -711,8 +722,20 @@ async function openClubModal(identifier = null, mode = 'assign') {
                 const selectedValue = filterSelect.value;
                 let valueToStore = null;
 
+                // Ak je selectedValue prázdny reťazec, znamená to "Zobraziť všetko" alebo "Neznáma kategória" / "Nepriradené"
+                // V prípade kategórie/skupiny, ak je vybraná možnosť s prázdnou hodnotou, ale text je "Neznáma kategória" / "Nepriradené",
+                // chceme uložiť null. Inak, ak je prázdny reťazec, znamená to zrušenie filtra.
                 if (selectedValue === '') {
-                    valueToStore = null;
+                    // Ak filterType je kategória alebo skupina a vybraná možnosť je "Neznáma kategória" / "Nepriradené"
+                    // (ktorá má value=""), chceme nastaviť filter na null ID.
+                    const selectedOption = filterSelect.options[filterSelect.selectedIndex];
+                    if (filterType === 'category' && selectedOption && selectedOption.textContent === 'Neznáma kategória') {
+                        valueToStore = null;
+                    } else if (filterType === 'group' && selectedOption && selectedOption.textContent === 'Nepriradené') {
+                        valueToStore = null;
+                    } else {
+                        valueToStore = null; // Pre "Zobraziť všetko" alebo akúkoľvek inú prázdnu hodnotu
+                    }
                 } else {
                     valueToStore = selectedValue;
                 }
@@ -1304,4 +1327,4 @@ document.addEventListener('DOMContentLoaded', async () => {
          });
      }
 });
-export { openClubModal, displayCreatedTeams };
+export { openClubModal, displayCreatedTeams }
