@@ -518,7 +518,7 @@ async function displaySubjectDetails(baseName, initialTeamId = null) {
                     url.searchParams.set('club', baseName);
                     url.searchParams.set('category', categoryName);
                     url.searchParams.set('group', groupName);
-                    // Pre zobrazenie detailov stále potrebujeme unikátne ID tímu
+                    // Pre zobrazenie detailov stále potrebujeme unikátne ID tímu, uložíme ho do history.state
                     history.pushState({ baseName: baseName, categoryName: categoryName, groupName: groupName, teamId: team.id }, '', url.toString());
                     displaySpecificTeamDetails(team.id);
                 });
@@ -720,29 +720,34 @@ async function handleUrlState() {
 
         if (foundTeam) {
             teamIdToDisplay = foundTeam.id;
+            // Ak bol tím nájdený z URL parametrov, zabezpečíme, že history.state obsahuje teamId
+            // Toto je dôležité pre správne fungovanie popstate a zvýraznenia tlačidla
+            const url = new URL(window.location.href); // Získame aktuálnu URL
+            history.replaceState({ baseName: clubBaseName, categoryName: categoryUrlParam, groupName: groupUrlParam, teamId: teamIdToDisplay }, '', url.toString());
         }
     } else if (clubBaseName) {
         // Ak je prítomný len clubBaseName, zobrazíme detaily subjektu a prvý tím
         const teamsForSubject = allClubs.filter(club => getClubBaseName(club) === clubBaseName);
         if (teamsForSubject.length > 0) {
-            // Zobrazíme prvý tím v zozname (alebo ten, ktorý je už v histórii)
             const firstTeam = teamsForSubject[0];
             const category = allCategories.find(cat => String(cat.id) === String(firstTeam.categoryId));
             const categoryName = (category && category.name) ? category.name : (String(firstTeam.categoryId) || 'Neznáma kategória');
             const group = allGroups.find(g => String(g.id) === String(firstTeam.groupId));
             const groupName = group ? (group.name || String(group.id)) : 'Nepriradené';
 
-            // Aktualizujeme URL, aby obsahovala kategóriu a skupinu
+            // Aktualizujeme URL, aby obsahovala kategóriu a skupinu (pre prvý tím)
             const url = new URL(window.location.href);
             url.searchParams.set('club', clubBaseName);
             url.searchParams.set('category', categoryName);
             url.searchParams.set('group', groupName);
+            // Uložíme teamId do history.state
             history.replaceState({ baseName: clubBaseName, categoryName: categoryName, groupName: groupName, teamId: firstTeam.id }, '', url.toString());
 
             teamIdToDisplay = firstTeam.id;
         }
     }
 
+    // Ak sa teamIdToDisplay našlo (či už z URL alebo ako prvý tím), zobrazíme detaily
     if (teamIdToDisplay) {
         displaySubjectDetails(clubBaseName, teamIdToDisplay);
     } else {
