@@ -278,7 +278,7 @@ async function populateSpecificTeamSelect(selectElement, baseClubName, selectedT
                 option.value = team.id;
                 const groupName = groupsMap.get(team.groupId) || team.groupId;
                 const categoryName = categoriesMap.get(team.categoryId) || team.categoryId;
-                option.textContent = `${team.name} (${categoryName}, ${groupName})`; 
+                option.textContent = `${team.name} (Kat: ${categoryName}, Skup: ${groupName})`; 
                 if (selectedTeamId === team.id) {
                     option.selected = true;
                 }
@@ -444,6 +444,62 @@ async function findFirstAvailableTime() {
     }
 }
 
+// Modify getTeamName to accept pre-fetched maps for categories and groups
+const getTeamName = async (categoryId, groupId, teamNumber, categoriesMap, groupsMap) => {
+    if (!categoryId || !groupId || !teamNumber) {
+        return { fullDisplayName: null, clubName: null, clubId: null };
+    }
+    try {
+        const categoryName = categoriesMap.get(categoryId) || categoryId;
+        const groupName = groupsMap.get(groupId) || groupId;
+
+        let clubName = `Tím ${teamNumber}`;
+        let clubId = null;
+
+        // Still need to query clubs collection specifically for the team number within category/group
+        const clubsQuery = query(
+            clubsCollectionRef,
+            where("categoryId", "==", categoryId),
+            where("groupId", "==", groupId),
+            where("orderInGroup", "==", parseInt(teamNumber))
+        );
+        const clubsSnapshot = await getDocs(clubsQuery);
+
+        if (!clubsSnapshot.empty) {
+            const teamDocData = clubsSnapshot.docs[0].data();
+            clubId = clubsSnapshot.docs[0].id;
+            if (teamDocData.name) {
+                clubName = teamDocData.name;
+            }
+        }
+
+        let shortCategoryName = categoryName;
+        if (shortCategoryName) {
+            shortCategoryName = shortCategoryName.replace(/U(\d+)\s*([CHZ])/i, 'U$1$2').toUpperCase();
+        }
+
+        let shortGroupName = '';
+        if (groupName) {
+            const match = groupName.match(/(?:skupina\s*)?([A-Z])/i);
+            if (match && match[1]) {
+                shortGroupName = match[1].toUpperCase();
+            }
+        }
+
+        const fullDisplayName = `${shortCategoryName} ${shortGroupName}${teamNumber}`;
+
+        return {
+            fullDisplayName: fullDisplayName,
+            clubName: clubName,
+            clubId: clubId
+        };
+    } catch (error) {
+        console.error("Chyba pri získavaní názvu tímu:", error);
+        return { fullDisplayName: `Chyba`, clubName: `Chyba`, clubId: null };
+    }
+};
+
+
 async function displayMatchesAsSchedule() {
     const matchesContainer = document.getElementById('matchesContainer');
     if (!matchesContainer) return;
@@ -459,7 +515,42 @@ async function displayMatchesAsSchedule() {
     try {
         const matchesQuery = query(matchesCollectionRef, orderBy("date", "asc"), orderBy("location", "asc"), orderBy("startTime", "asc"));
         const matchesSnapshot = await getDocs(matchesQuery);
-        const allMatches = matchesSnapshot.docs.map(doc => ({ id: doc.id, type: 'match', ...doc.data() }));
+        let allMatches = matchesSnapshot.docs.map(doc => ({ id: doc.id, type: 'match', ...doc.data() }));
+
+        // Pre-fetch all categories and groups to pass to getTeamName
+        const categoriesSnapshot = await getDocs(categoriesCollectionRef);
+        const categoriesMap = new Map();
+        categoriesSnapshot.forEach(doc => categoriesMap.set(doc.id, doc.data().name || doc.id));
+
+        const groupsSnapshot = await getDocs(groupsCollectionRef);
+        const groupsMap = new Map();
+        groupsSnapshot.forEach(doc => groupsMap.set(doc.id, doc.data().name || doc.id));
+
+        // Create an array of promises for getTeamName calls for all teams in all matches
+        const teamNamePromises = allMatches.flatMap(match => [
+            getTeamName(match.categoryId, match.groupId, match.team1Number, categoriesMap, groupsMap),
+            getTeamName(match.categoryId, match.groupId, match.team2Number, categoriesMap, groupsMap)
+        ]);
+
+        // Wait for all team name lookups to complete
+        const teamNameResults = await Promise.all(teamNamePromises);
+
+        // Map the results back to the matches
+        let resultIndex = 0;
+        allMatches = allMatches.map(match => {
+            const team1Data = teamNameResults[resultIndex++];
+            const team2Data = teamNameResults[resultIndex++];
+            return {
+                ...match,
+                team1DisplayName: team1Data.fullDisplayName,
+                team1ClubName: team1Data.clubName,
+                team1ClubId: team1Data.clubId,
+                team2DisplayName: team2Data.fullDisplayName,
+                team2ClubName: team2Data.clubName,
+                team2ClubId: team2Data.clubId,
+            };
+        });
+
 
         const busesQuery = query(busesCollectionRef, orderBy("date", "asc"), orderBy("busName", "asc"), orderBy("startTime", "asc"));
         const busesSnapshot = await getDocs(busesQuery);
@@ -1156,7 +1247,7 @@ async function editMatch(matchId) {
             }
 
             team1NumberInput.value = matchData.team1Number || '';
-            team2NumberInput.value = matchData.team2Number || '';
+            team2NumberInput.value = matchData.team2Number || ''; // Changed from match2Data.team2Number
 
             deleteMatchButtonModal.style.display = 'inline-block';
             deleteMatchButtonModal.onclick = () => deleteMatch(matchId);
@@ -1308,24 +1399,19 @@ async function deleteAccommodationAssignment(assignmentId) {
     }
 }
 
-const getTeamName = async (categoryId, groupId, teamNumber) => {
+// Modify getTeamName to accept pre-fetched maps for categories and groups
+const getTeamName = async (categoryId, groupId, teamNumber, categoriesMap, groupsMap) => {
     if (!categoryId || !groupId || !teamNumber) {
         return { fullDisplayName: null, clubName: null, clubId: null };
     }
     try {
-        const categoryDoc = await getDoc(doc(categoriesCollectionRef, categoryId));
-        const categoryName = categoryDoc.exists() ? (categoryDoc.data().name || categoryId) : categoryId;
-
-        const groupDoc = await getDoc(doc(groupsCollectionRef, groupId));
-        let groupData = null; 
-        if (groupDoc.exists()) {
-            groupData = groupDoc.data(); 
-        }
-        const groupName = groupData ? (groupData.name || groupId) : groupId;
+        const categoryName = categoriesMap.get(categoryId) || categoryId;
+        const groupName = groupsMap.get(groupId) || groupId;
 
         let clubName = `Tím ${teamNumber}`;
-        let clubId = null; 
+        let clubId = null;
 
+        // Still need to query clubs collection specifically for the team number within category/group
         const clubsQuery = query(
             clubsCollectionRef,
             where("categoryId", "==", categoryId),
@@ -1359,10 +1445,11 @@ const getTeamName = async (categoryId, groupId, teamNumber) => {
 
         return {
             fullDisplayName: fullDisplayName,
-            clubName: clubName, 
+            clubName: clubName,
             clubId: clubId
         };
     } catch (error) {
+        console.error("Chyba pri získavaní názvu tímu:", error);
         return { fullDisplayName: `Chyba`, clubName: `Chyba`, clubId: null };
     }
 };
@@ -1651,8 +1738,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         let team1Result = null;
         let team2Result = null;
         try {
-            team1Result = await getTeamName(matchCategory, matchGroup, team1Number);
-            team2Result = await getTeamName(matchCategory, matchGroup, team2Number);
+            // Re-fetch categories and groups for the submit handler as well, to ensure consistency
+            const categoriesSnapshot = await getDocs(categoriesCollectionRef);
+            const categoriesMap = new Map();
+            categoriesSnapshot.forEach(doc => categoriesMap.set(doc.id, doc.data().name || doc.id));
+
+            const groupsSnapshot = await getDocs(groupsCollectionRef);
+            const groupsMap = new Map();
+            groupsSnapshot.forEach(doc => groupsMap.set(doc.id, doc.data().name || doc.id));
+
+            team1Result = await getTeamName(matchCategory, matchGroup, team1Number, categoriesMap, groupsMap);
+            team2Result = await getTeamName(matchCategory, matchGroup, team2Number, categoriesMap, groupsMap);
         } catch (error) {
             alert("Vyskytla sa chyba pri získavaní názvov tímov. Skúste to znova.");
             return;
