@@ -62,7 +62,7 @@ function parseTeamName(fullTeamName) {
 }
 
 /**
- * Vyčistí názov tímu pre účely filtrovania (odstráni suffixy ako A, B, C).
+ * Vyčistí názov tímu pre účely filtrovania (odstráni suffixy ako A, B, C, ak ide o jedno písmeno).
  * @param {string} teamName - Názov tímu.
  * @returns {string} Vyčistený názov tímu.
  */
@@ -71,8 +71,8 @@ function getCleanedTeamNameForFilter(teamName) {
         return '';
     }
     let cleanedName = teamName.trim();
-    // Regex na odstránenie medzery a jedného alebo viacerých veľkých písmen na konci (napr. " A", " B", " ABC")
-    const suffixRegex = /\s+[A-Z]+$/i;
+    // Regex na odstránenie medzery a PRESNE JEDNÉHO veľkého písmena na konci (napr. " A", " B", " C")
+    const suffixRegex = /\s+[A-Z]$/i; // Zmenené z /\s+[A-Z]+$/i
     if (suffixRegex.test(cleanedName)) {
         cleanedName = cleanedName.replace(suffixRegex, '');
     }
