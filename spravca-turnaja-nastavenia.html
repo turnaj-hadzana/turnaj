@@ -7,8 +7,8 @@
     <link rel="icon" href="favicon.ico" type="image/x-icon">    
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="spravca-turnaja-style.css">
-
-        <style>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
         /* Custom styles to ensure Inter font and smooth transitions for all elements */
         body {
             font-family: "Inter", sans-serif;
@@ -44,49 +44,50 @@
             color: #1a202c;
         }
     </style>
-    
 </head>
 <body>
     <script type="module" src="auth.js"></script>
     <script src="script.js"></script>
-    <h1>Správca turnaja</h1>
-    <div class="content-wrapper">
-        <nav class="left-menu">
-            <ul>
-                <li><a href="spravca-turnaja-kategorie.html">Vytvorenie kategórií</a></li>
-                <li><a href="spravca-turnaja-skupiny.html">Vytvorenie skupín</a></li>
-                <li><a href="spravca-turnaja-zoznam-timov.html">Vytvorenie tímov</a></li>
-                <li><a href="zobrazenie-skupin.html">Zobrazenie skupín</a></li>
-                <li><a href="spravca-turnaja-logistika.html">Logistika</a></li>
-                <li><a href="spravca-turnaja-nastavenia.html">Nastavenia</a></li>
+    <h1 class="text-3xl font-bold text-center my-6 text-gray-800">Správca turnaja</h1>
+    <div class="content-wrapper bg-white shadow-lg rounded-xl p-6 max-w-4xl mx-auto my-8">
+        <nav class="left-menu bg-gray-100 p-4 rounded-lg mb-6">
+            <ul class="space-y-2">
+                <li><a href="spravca-turnaja-kategorie.html" class="block py-2 px-3 text-gray-700 hover:bg-gray-200 rounded-md transition-colors duration-200">Vytvorenie kategórií</a></li>
+                <li><a href="spravca-turnaja-skupiny.html" class="block py-2 px-3 text-gray-700 hover:bg-gray-200 rounded-md transition-colors duration-200">Vytvorenie skupín</a></li>
+                <li><a href="spravca-turnaja-zoznam-timov.html" class="block py-2 px-3 text-gray-700 hover:bg-gray-200 rounded-md transition-colors duration-200">Vytvorenie tímov</a></li>
+                <li><a href="zobrazenie-skupin.html" class="block py-2 px-3 text-gray-700 hover:bg-gray-200 rounded-md transition-colors duration-200">Zobrazenie skupín</a></li>
+                <li><a href="spravca-turnaja-logistika.html" class="block py-2 px-3 text-gray-700 hover:bg-gray-200 rounded-md transition-colors duration-200">Logistika</a></li>
+                <li><a href="spravca-turnaja-nastavenia.html" class="block py-2 px-3 text-gray-700 hover:bg-gray-200 rounded-md transition-colors duration-200 font-semibold bg-gray-200">Nastavenia</a></li>
             </ul>
         </nav>
-        <main>
-            <section id="settingsContentSection" class="section-block">
-                <h2>Nastavenia turnaja</h2>
-                <form id="settingsForm">
+        <main class="flex-1 p-4">
+            <section id="settingsContentSection" class="section-block bg-gray-50 p-6 rounded-lg shadow-sm mb-8">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-4">Nastavenia turnaja</h2>
+                <form id="settingsForm" class="space-y-4">
                     <div class="form-group">
-                        <label for="firstDayStartTimeInput">Čas začiatku pre prvý hrací deň:</label>
-                        <input type="time" id="firstDayStartTimeInput" required>
+                        <label for="firstDayStartTimeInput" class="block text-gray-700 text-sm font-bold mb-2">Čas začiatku pre prvý hrací deň:</label>
+                        <input type="time" id="firstDayStartTimeInput" required
+                               class="shadow appearance-none border rounded-md w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                     </div>
                     <div class="form-group">
-                        <label for="otherDaysStartTimeInput">Čas začiatku pre ostatné hracie dni:</label>
-                        <input type="time" id="otherDaysStartTimeInput" required>
+                        <label for="otherDaysStartTimeInput" class="block text-gray-700 text-sm font-bold mb-2">Čas začiatku pre ostatné hracie dni:</label>
+                        <input type="time" id="otherDaysStartTimeInput" required
+                               class="shadow appearance-none border rounded-md w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                     </div>
-                    <button type="submit">Uložiť nastavenia</button>
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md focus:outline-none focus:shadow-outline transition-colors duration-200">Uložiť nastavenia</button>
                 </form>
-                <p id="settingsStatus" class="status-message"></p>
+                <p id="settingsStatus" class="status-message mt-4 text-sm"></p>
             </section>
 
-            <section id="categorySettingsSection" class="section-block">
-                <h2>Nastavenia zápasov podľa kategórií</h2>
-                <form id="categorySettingsForm">
-                    <div id="categorySettingsContainer">
-                        <p>Načítavam kategórie...</p>
+            <section id="categorySettingsSection" class="section-block bg-gray-50 p-6 rounded-lg shadow-sm">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-4">Nastavenia zápasov podľa kategórií</h2>
+                <form id="categorySettingsForm" class="space-y-4">
+                    <div id="categorySettingsContainer" class="space-y-6">
+                        <p class="text-gray-600">Načítavam kategórie...</p>
                     </div>
-                    <button type="submit">Uložiť nastavenia kategórií</button>
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md focus:outline-none focus:shadow-outline transition-colors duration-200">Uložiť nastavenia kategórií</button>
                 </form>
-                <p id="categorySettingsStatus" class="status-message"></p>
+                <p id="categorySettingsStatus" class="status-message mt-4 text-sm"></p>
             </section>
         </main>
     </div>
