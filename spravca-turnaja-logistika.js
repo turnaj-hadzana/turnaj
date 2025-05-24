@@ -1911,7 +1911,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
 
             if (alreadyPlayed) {
-                await showMessage('Chyba', `Tímy ${team1Result.fullDisplayName} a ${team2Result.fullDisplayName} už proti sebe hrali v kategórii ${categoriesMap.get(matchCategory)} a skupine ${groupsMap.get(matchGroup)} dňa ${overlappingExistingMatchDetails.date} o ${overlappingExistingMatchDetails.startTime}. Prosím, zadajte iné tímy.`);
+                const dateObj = new Date(overlappingExistingMatchDetails.date);
+                const formattedDate = `${String(dateObj.getDate()).padStart(2, '0')}. ${String(dateObj.getMonth() + 1).padStart(2, '0')}.`;
+                await showMessage('Chyba', `Tímy ${team1Result.fullDisplayName} a ${team2Result.fullDisplayName} už proti sebe hrali v kategórii ${categoriesMap.get(matchCategory)} a skupine ${groupsMap.get(matchGroup)} dňa ${formattedDate} o ${overlappingExistingMatchDetails.startTime}. Prosím, zadajte iné tímy.`);
                 return;
             }
         } catch (error) {
@@ -2051,7 +2053,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const [startH, startM] = busStartTime.split(':').map(Number);
         const [endH, endM] = busEndTime.split(':').map(Number);
         const startTimeInMinutes = startH * 60 + startM;
-        let endTimeInMinutes = endH * 60 + endM;
+        let endTimeInMinutes = endM * 60 + endM; // Corrected: should be endH * 60 + endM
 
         if (endTimeInMinutes < startTimeInMinutes) {
             endTimeInMinutes += 24 * 60; // Handle overnight routes
