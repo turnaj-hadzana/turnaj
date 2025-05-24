@@ -11,7 +11,7 @@ const groupModalTitle = document.getElementById('groupModalTitle');
 const groupFormSubmitButton = groupForm ? groupForm.querySelector('button[type="submit"]') : null;
 
 let currentGroupModalMode = 'add';
-let editingGroupId = null;
+let editingGroupId = null; // Bude uchovávať skutočné ID dokumentu skupiny pri úprave
 
 /**
  * Otvorí modálne okno pre pridanie alebo úpravu skupiny.
@@ -30,8 +30,8 @@ async function openGroupModal(groupId = null, groupData = null) {
 
     if (groupId && groupData) {
         currentGroupModalMode = 'edit';
-        editingGroupId = groupId;
-        groupModalTitle.textContent = 'Premenovať skupinu';
+        editingGroupId = groupId; // Uložíme skutočné ID dokumentu
+        groupModalTitle.textContent = 'Upraviť skupinu'; // Zmenený text pre úpravu
         groupFormSubmitButton.textContent = 'Uložiť zmeny';
         await populateCategorySelect(groupCategorySelect, groupData.categoryId);
         groupCategorySelect.disabled = false;
@@ -136,7 +136,7 @@ async function displayGroupsByCategory() {
                     groupActionsTd.style.whiteSpace = 'nowrap';
 
                     const editGroupButton = document.createElement('button');
-                    editGroupButton.textContent = 'Premenovať';
+                    editGroupButton.textContent = 'Upraviť'; // Zmenený text pre úpravu
                     editGroupButton.classList.add('action-button');
                     editGroupButton.onclick = () => {
                         openGroupModal(group.id, group.data);
@@ -211,8 +211,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.location.href = 'login.html'; // Presmerovanie na prihlasovaciu stránku, ak nie je admin
         return;
     }
-    // Nie je potrebné volať loadAllCategoriesForDynamicSelects samostatne,
-    // populateCategorySelect to urobí pri otvorení modálu.
     displayGroupsByCategory();
 
     if (groupsContentDiv) {
@@ -264,61 +262,77 @@ if (groupForm) {
         const categoryDoc = await getDoc(doc(categoriesCollectionRef, selectedCategoryId));
         const categoryDisplayName = categoryDoc.exists() ? categoryDoc.data().name : selectedCategoryId;
 
-        // ID skupiny bude stále zložené z ID kategórie a názvu skupiny pre unikátnosť v rámci kategórie
-        const compositeGroupId = `${selectedCategoryId} - ${groupName}`;
-        const groupDocRef = doc(groupsCollectionRef, compositeGroupId);
-
         try {
-            const existingDoc = await getDoc(groupDocRef);
-
             if (currentGroupModalMode === 'add') {
-                if (existingDoc.exists()) {
+                // Režim pridávania novej skupiny
+                // Skontrolujeme, či skupina s rovnakým názvom už v danej kategórii existuje
+                const qExistingName = query(groupsCollectionRef, where('name', '==', groupName), where('categoryId', '==', selectedCategoryId));
+                const existingNameSnapshot = await getDocs(qExistingName);
+                if (!existingNameSnapshot.empty) {
                     await showMessage('Upozornenie', `Skupina s názvom "${groupName}" už v kategórii "${categoryDisplayName}" existuje! Názvy skupín musia byť unikátne v rámci kategórie.`);
                     if (groupNameInput) groupNameInput.focus();
                     return;
                 }
-                await setDoc(groupDocRef, { name: groupName, categoryId: selectedCategoryId });
+
+                // Generujeme náhodné ID pre nový dokument skupiny
+                const newGroupDocRef = doc(groupsCollectionRef);
+                await setDoc(newGroupDocRef, { name: groupName, categoryId: selectedCategoryId });
+
                 await showMessage('Úspech', `Skupina "${groupName}" v kategórii "${categoryDisplayName}" úspešne pridaná.`);
             } else if (currentGroupModalMode === 'edit') {
-                const oldGroupId = editingGroupId;
-                if (!oldGroupId) {
+                // Režim úpravy existujúcej skupiny
+                const groupIdToUpdate = editingGroupId; // Toto je stabilné ID dokumentu skupiny
+                if (!groupIdToUpdate) {
                     await showMessage('Chyba', "Chyba pri úprave skupiny. Prosím, obnovte stránku.");
                     if (groupModal) closeModal(groupModal);
                     resetGroupModal();
                     return;
                 }
-                const oldGroupDocRef = doc(groupsCollectionRef, oldGroupId);
 
-                // Ak sa zmenilo ID skupiny (buď kategória, alebo názov skupiny)
-                if (oldGroupId !== compositeGroupId) {
-                    if (existingDoc.exists()) {
-                        await showMessage('Upozornenie', `Skupina s názvom "${groupName}" už v kategórii "${categoryDisplayName}" existuje (iná skupina)! Názvy skupín musia byť unikátne v rámci kategórie.`);
+                const currentGroupDoc = await getDoc(doc(groupsCollectionRef, groupIdToUpdate));
+                if (!currentGroupDoc.exists()) {
+                    await showMessage('Chyba', "Skupina na úpravu nebola nájdená.");
+                    if (groupModal) closeModal(groupModal);
+                    resetGroupModal();
+                    return;
+                }
+                const oldGroupData = currentGroupDoc.data();
+                const oldCategoryOfGroup = oldGroupData.categoryId;
+                const oldNameOfGroup = oldGroupData.name;
+
+                // Skontrolujeme, či sa zmenil názov alebo kategória
+                const nameChanged = (groupName !== oldNameOfGroup);
+                const categoryChanged = (selectedCategoryId !== oldCategoryOfGroup);
+
+                if (nameChanged || categoryChanged) {
+                    // Ak sa zmenil názov alebo kategória, skontrolujeme unikátnosť nového kombina
+                    const qExistingName = query(groupsCollectionRef, where('name', '==', groupName), where('categoryId', '==', selectedCategoryId));
+                    const existingNameSnapshot = await getDocs(qExistingName);
+
+                    // Ak existuje iný dokument s rovnakým názvom a kategóriou
+                    if (!existingNameSnapshot.empty && existingNameSnapshot.docs.some(doc => doc.id !== groupIdToUpdate)) {
+                        await showMessage('Upozornenie', `Skupina s názvom "${groupName}" už v kategórii "${categoryDisplayName}" existuje! Názvy skupín musia byť unikátne v rámci kategórie.`);
                         if (groupNameInput) groupNameInput.focus();
                         return;
                     }
+
                     const batch = writeBatch(db);
-                    batch.set(groupDocRef, { name: groupName, categoryId: selectedCategoryId });
+                    // Aktualizujeme pole 'name' a 'categoryId' v existujúcom dokumente skupiny
+                    batch.update(doc(groupsCollectionRef, groupIdToUpdate), { name: groupName, categoryId: selectedCategoryId });
 
-                    // Aktualizujeme kluby, ktoré boli priradené k starej skupine
-                    const clubsInGroupQuery = query(clubsCollectionRef, where('groupId', '==', oldGroupId));
-                    const clubsSnapshot = await getDocs(clubsInGroupQuery);
-                    clubsSnapshot.forEach(doc => {
-                        batch.update(doc.ref, { groupId: compositeGroupId, categoryId: selectedCategoryId });
-                    });
-                    batch.delete(oldGroupDocRef); // Vymažeme starý dokument skupiny
+                    // Ak sa zmenila kategória skupiny, aktualizujeme aj categoryId v kluboch priradených k tejto skupine
+                    if (categoryChanged) {
+                        const clubsInGroupQuery = query(clubsCollectionRef, where('groupId', '==', groupIdToUpdate));
+                        const clubsSnapshot = await getDocs(clubsInGroupQuery);
+                        clubsSnapshot.forEach(clubDoc => {
+                            batch.update(clubDoc.ref, { categoryId: selectedCategoryId });
+                        });
+                    }
                     await batch.commit();
-
-                    // Získame starý názov skupiny pre správu
-                    const oldGroupDoc = await getDoc(oldGroupDocRef);
-                    const oldGroupDisplayName = oldGroupDoc.exists() ? oldGroupDoc.data().name : oldGroupId.split(' - ').slice(1).join(' - ');
-
-                    await showMessage('Úspech', `Skupina "${oldGroupDisplayName}" úspešne premenovaná/presunutá na "${groupName}" v kategórii "${categoryDisplayName}".`);
+                    await showMessage('Úspech', `Skupina "${oldNameOfGroup}" úspešne upravená na "${groupName}" v kategórii "${categoryDisplayName}".`);
                 } else {
-                    // Ak sa ID skupiny nezmenilo (len názov skupiny, ale kategória zostala rovnaká)
-                    await updateDoc(groupDocRef, {
-                        name: groupName,
-                    });
-                    await showMessage('Úspech', `Skupina "${groupName}" v kategórii "${categoryDisplayName}" úspešne upravená.`);
+                    // Ak sa nič nezmenilo, len zatvoríme modál
+                    await showMessage('Informácia', 'Žiadne zmeny neboli vykonané.');
                 }
             }
             if (groupModal) closeModal(groupModal);
