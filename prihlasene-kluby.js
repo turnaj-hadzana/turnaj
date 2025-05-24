@@ -507,16 +507,19 @@ async function displaySubjectDetails(baseName, initialTeamId = null) {
                        categoryName = teamIdString.substring(0, separatorIndex).trim();
                    }
                }
-               // Konštruujeme text tlačidla tak, aby bol konzistentný s ID tímu
+               // Konštruujeme text tlačidla
                const buttonText = groupName !== 'Nepriradené' ? `${categoryName} - ${groupName}` : categoryName;
                teamButton.textContent = buttonText;
                teamButton.dataset.teamId = team.id; // Uložíme ID tímu do datasetu
 
                teamButton.addEventListener('click', () => {
                     const url = new URL(window.location.href);
+                    // Nastavujeme URL parametre na základe názvu kategórie a skupiny
                     url.searchParams.set('club', baseName);
-                    url.searchParams.set('team', team.id); // Používame celé team.id pre URL
-                    history.pushState({ baseName: baseName, teamId: team.id }, '', url.toString());
+                    url.searchParams.set('category', categoryName);
+                    url.searchParams.set('group', groupName);
+                    // Pre zobrazenie detailov stále potrebujeme unikátne ID tímu
+                    history.pushState({ baseName: baseName, categoryName: categoryName, groupName: groupName, teamId: team.id }, '', url.toString());
                     displaySpecificTeamDetails(team.id);
                 });
                teamsInCategoryButtonsDiv.appendChild(teamButton);
@@ -696,46 +699,56 @@ async function handleUrlState() {
 
     const urlParams = new URLSearchParams(window.location.search);
     const clubBaseName = urlParams.get('club');
-    const teamId = urlParams.get('team');
+    const categoryUrlParam = urlParams.get('category');
+    const groupUrlParam = urlParams.get('group');
 
-    if (teamId) {
-        // Ak je v URL teamId, zobrazíme detaily konkrétneho tímu
-        const team = allClubs.find(c => String(c.id) === String(teamId));
-        if (team) {
-            const baseName = getClubBaseName(team);
-             // Skontrolujeme, či základný názov klubu existuje v súhrne
-             const clubExistsInSummary = allClubs.some(c => getClubBaseName(c) === baseName);
-             if (clubExistsInSummary) {
-                  displaySubjectDetails(baseName, teamId);
-             } else {
-                   // Ak klub neexistuje v súhrne, vrátime sa na súhrnnú tabuľku
-                   history.replaceState(null, '', window.location.pathname);
-                  displayClubsSummaryTable();
-             }
-        } else {
-            // Ak sa tím s daným ID nenašiel, vrátime sa na súhrnnú tabuľku
-            history.replaceState(null, '', window.location.pathname);
-            displayClubsSummaryTable();
+    let teamIdToDisplay = null;
+
+    if (clubBaseName && categoryUrlParam && groupUrlParam) {
+        // Ak sú prítomné všetky tri parametre, pokúsime sa nájsť konkrétny tím
+        const foundTeam = allClubs.find(c => {
+            const currentBaseName = getClubBaseName(c);
+            const category = allCategories.find(cat => String(cat.id) === String(c.categoryId));
+            const currentCategoryName = (category && category.name) ? category.name : (String(c.categoryId) || 'Neznáma kategória');
+            const group = allGroups.find(g => String(g.id) === String(c.groupId));
+            const currentGroupName = group ? (group.name || String(group.id)) : 'Nepriradené';
+
+            return currentBaseName === clubBaseName &&
+                   currentCategoryName === categoryUrlParam &&
+                   currentGroupName === groupUrlParam;
+        });
+
+        if (foundTeam) {
+            teamIdToDisplay = foundTeam.id;
         }
     } else if (clubBaseName) {
-        // Ak je v URL len clubBaseName, zobrazíme detaily subjektu a prvý tím
-         const teamsForSubject = allClubs.filter(club => getClubBaseName(club) === clubBaseName);
-         if (teamsForSubject.length > 0) {
-              const firstTeamId = teamsForSubject[0].id;
-              // Aktualizujeme URL s teamId, aby bolo konzistentné
-              const url = new URL(window.location.href);
-              url.searchParams.set('club', clubBaseName);
-              url.searchParams.set('team', firstTeamId);
-              history.replaceState({ baseName: clubBaseName, teamId: firstTeamId }, '', url.toString());
-              displaySubjectDetails(clubBaseName, firstTeamId);
-         } else {
-               // Ak pre daný základný názov nie sú tímy, vrátime sa na súhrnnú tabuľku
-               history.replaceState(null, '', window.location.pathname);
-              displayClubsSummaryTable();
-         }
+        // Ak je prítomný len clubBaseName, zobrazíme detaily subjektu a prvý tím
+        const teamsForSubject = allClubs.filter(club => getClubBaseName(club) === clubBaseName);
+        if (teamsForSubject.length > 0) {
+            // Zobrazíme prvý tím v zozname (alebo ten, ktorý je už v histórii)
+            const firstTeam = teamsForSubject[0];
+            const category = allCategories.find(cat => String(cat.id) === String(firstTeam.categoryId));
+            const categoryName = (category && category.name) ? category.name : (String(firstTeam.categoryId) || 'Neznáma kategória');
+            const group = allGroups.find(g => String(g.id) === String(firstTeam.groupId));
+            const groupName = group ? (group.name || String(group.id)) : 'Nepriradené';
+
+            // Aktualizujeme URL, aby obsahovala kategóriu a skupinu
+            const url = new URL(window.location.href);
+            url.searchParams.set('club', clubBaseName);
+            url.searchParams.set('category', categoryName);
+            url.searchParams.set('group', groupName);
+            history.replaceState({ baseName: clubBaseName, categoryName: categoryName, groupName: groupName, teamId: firstTeam.id }, '', url.toString());
+
+            teamIdToDisplay = firstTeam.id;
+        }
+    }
+
+    if (teamIdToDisplay) {
+        displaySubjectDetails(clubBaseName, teamIdToDisplay);
     } else {
-        // Ak nie sú žiadne URL parametre, zobrazíme súhrnnú tabuľku
+        // Ak sa nenašiel žiadny tím alebo chýbajú parametre, zobrazíme súhrnnú tabuľku
         displayClubsSummaryTable();
+        history.replaceState({}, '', window.location.pathname); // Vyčistíme URL parametre
     }
 }
 
