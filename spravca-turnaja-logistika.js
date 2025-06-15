@@ -416,7 +416,7 @@ async function findFirstAvailableTime() {
     const matchLocationSelect = document.getElementById('matchLocationSelect');
     const matchDurationInput = document.getElementById('matchDuration');
     const matchBufferTimeInput = document.getElementById('matchBufferTime');
-    const matchStartTimeInput = document = document.getElementById('matchStartTime');
+    const matchStartTimeInput = document.getElementById('matchStartTime'); // Corrected assignment
 
     const selectedDate = matchDateSelect.value;
     const selectedLocationName = matchLocationSelect.value;
@@ -889,23 +889,6 @@ async function displayMatchesAsSchedule() {
                     console.log('Original match data - Date:', originalDate, 'Location:', originalLocation); // Debugging
                     console.log('New target - Date:', newDate, 'Location:', newLocation); // Debugging
 
-                    // Removed confirmation message and logic
-                    // let confirmationMessage = '';
-                    // if (originalDate !== newDate || originalLocation !== newLocation) {
-                    //     confirmationMessage = `Naozaj chcete presunúť zápas "${draggedMatchData.team1ClubName} vs ${draggedMatchData.team2ClubName}" z ${originalDate} na ${newDate} a z ${originalLocation} na ${newLocation}? Časy zápasov sa prispôsobia.`;
-                    // } else {
-                    //     confirmationMessage = `Naozaj chcete presunúť zápas "${draggedMatchData.team1ClubName} vs ${draggedMatchData.team2ClubName}" v rámci rozvrhu? Časy zápasov sa prispôsobia.`;
-                    // }
-                    
-                    // const confirmed = await showConfirmation('Potvrdenie presunu zápasu', confirmationMessage);
-
-                    // if (!confirmed) {
-                    //     await showMessage('Zrušené', 'Presun zápasu bol zrušený.');
-                    //     e.target.classList.remove('dragging');
-                    //     matchesContainer.querySelectorAll('.drop-target').forEach(el => el.classList.remove('drop-target'));
-                    //     return;
-                    // }
-
                     const batch = writeBatch(db);
                     
                     // Handle original location/date block (if different)
@@ -1054,23 +1037,6 @@ async function displayMatchesAsSchedule() {
 
                     console.log('Original match data - Date:', originalDate, 'Location:', originalLocation); // Debugging
                     console.log('New target - Date:', newDate, 'Location:', newLocation); // Debugging
-
-                    // Removed confirmation message and logic
-                    // let confirmationMessage = '';
-                    // if (originalDate !== newDate || originalLocation !== newLocation) {
-                    //     confirmationMessage = `Naozaj chcete presunúť zápas "${draggedMatchData.team1ClubName} vs ${draggedMatchData.team2ClubName}" z ${originalDate} na ${newDate} a z ${originalLocation} na ${newLocation}? Časy zápasov sa prispôsobia.`;
-                    // } else {
-                    //     // This case happens if dropping into the same location block but not onto a specific row
-                    //     confirmationMessage = `Naozaj chcete presunúť zápas "${draggedMatchData.team1ClubName} vs ${draggedMatchData.team2ClubName}" v rámci rozvrhu? Časy zápasov sa prispôsobia.`;
-                    // }
-
-                    // const confirmed = await showConfirmation('Potvrdenie presunu zápasu', confirmationMessage);
-                    // if (!confirmed) {
-                    //     await showMessage('Zrušené', 'Presun zápasu bol zrušený.');
-                    //     e.target.classList.remove('dragging');
-                    //     matchesContainer.querySelectorAll('.drop-target').forEach(el => el.classList.remove('drop-target'));
-                    //     return;
-                    // }
 
                     const batch = writeBatch(db);
 
@@ -1460,8 +1426,8 @@ async function editBus(busId) {
         const busDateSelect = document.getElementById('busDateSelect');
         const busStartLocationSelect = document.getElementById('busStartLocationSelect');
         const busStartTimeInput = document.getElementById('busStartTimeInput');
-        const busEndLocationSelect = document.getElementById('busEndLocationSelect'); // Corrected from document = document.getElementById('busEndTimeInput');
-        const busEndTimeInput = document.getElementById('busEndTimeInput'); // Added for clarity
+        const busEndLocationSelect = document.getElementById('busEndLocationSelect'); 
+        const busEndTimeInput = document.getElementById('busEndTimeInput'); 
         const busNotesInput = document.getElementById('busNotesInput');
         const deleteBusButtonModal = document.getElementById('deleteBusButtonModal');
 
