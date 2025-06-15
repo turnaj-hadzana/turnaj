@@ -700,16 +700,20 @@ async function displayMatchesAsSchedule() {
         });
         allMatches = await Promise.all(updatedMatchesPromises);
 
-        // Group matches by date
-        const matchesByDate = new Map();
+        // Group matches by date and then by location
+        const matchesByDateAndLocation = new Map(); // Map<date, Map<location, Array<match>>>
         allMatches.forEach(match => {
-            if (!matchesByDate.has(match.date)) {
-                matchesByDate.set(match.date, []);
+            if (!matchesByDateAndLocation.has(match.date)) {
+                matchesByDateAndLocation.set(match.date, new Map());
             }
-            matchesByDate.get(match.date).push(match);
+            const locationsMap = matchesByDateAndLocation.get(match.date);
+            if (!locationsMap.has(match.location)) {
+                locationsMap.set(match.location, []);
+            }
+            locationsMap.get(match.location).push(match);
         });
 
-        const sortedDates = Array.from(matchesByDate.keys()).sort();
+        const sortedDates = Array.from(matchesByDateAndLocation.keys()).sort();
 
         matchesContainer.innerHTML = '';
         let scheduleHtml = `<div class="schedule-overview">`;
@@ -726,45 +730,53 @@ async function displayMatchesAsSchedule() {
                         <h3 class="date-header-clickable" draggable="true" data-date="${date}" title="Kliknutím upravíte hrací deň ${formattedDisplayDate}">
                             ${formattedDisplayDate}
                         </h3>
-                        <table class="modern-schedule-table">
-                            <thead>
-                                <tr>
-                                    <th>Čas</th>
-                                    <th>Miesto</th>
-                                    <th>Domáci Tím</th>
-                                    <th>Hostia Tím</th>
-                                    <th>Kód Tímu</th>
-                                </tr>
-                            </thead>
-                            <tbody>
                 `;
+                const locationsForThisDate = matchesByDateAndLocation.get(date);
+                const sortedLocations = Array.from(locationsForThisDate.keys()).sort();
 
-                const matchesForThisDate = matchesByDate.get(date);
-
-                // Sort matches by start time
-                matchesForThisDate.sort((a, b) => {
-                    const [aH, aM] = a.startTime.split(':').map(Number);
-                    const [bH, bM] = b.startTime.split(':').map(Number);
-                    return (aH * 60 + aM) - (bH * 60 + bM);
-                });
-
-                matchesForThisDate.forEach(match => {
-                    const matchEndTime = new Date();
-                    const [startH, startM] = match.startTime.split(':').map(Number);
-                    matchEndTime.setHours(startH, startM + match.duration, 0, 0);
-                    const formattedEndTime = matchEndTime.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' });
-
+                sortedLocations.forEach(locationName => {
                     scheduleHtml += `
-                        <tr class="schedule-cell-match" draggable="true" data-id="${match.id}" data-type="${match.type}" title="Kliknutím upravíte zápas">
-                            <td>${match.startTime} - ${formattedEndTime}</td>
-                            <td>${match.location || 'N/A'}</td>
-                            <td>${match.team1ClubName || 'N/A'}</td>
-                            <td>${match.team2ClubName || 'N/A'}</td>
-                            <td>${match.team1DisplayName || 'N/A'} vs ${match.team2DisplayName || 'N/A'}</td>
-                        </tr>
+                        <div class="location-block" data-date="${date}" data-location="${locationName}">
+                            <h4 class="location-header">${locationName}</h4>
+                            <table class="modern-schedule-table">
+                                <thead>
+                                    <tr>
+                                        <th>Čas</th>
+                                        <th>Domáci Tím</th>
+                                        <th>Hostia Tím</th>
+                                        <th>Kód Tímu</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
                     `;
+
+                    const matchesForThisLocation = locationsForThisDate.get(locationName);
+
+                    // Sort matches by start time
+                    matchesForThisLocation.sort((a, b) => {
+                        const [aH, aM] = a.startTime.split(':').map(Number);
+                        const [bH, bM] = b.startTime.split(':').map(Number);
+                        return (aH * 60 + aM) - (bH * 60 + bM);
+                    });
+
+                    matchesForThisLocation.forEach(match => {
+                        const matchEndTime = new Date();
+                        const [startH, startM] = match.startTime.split(':').map(Number);
+                        matchEndTime.setHours(startH, startM + match.duration, 0, 0);
+                        const formattedEndTime = matchEndTime.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' });
+
+                        scheduleHtml += `
+                            <tr class="schedule-cell-match" draggable="true" data-id="${match.id}" data-type="${match.type}" data-date="${match.date}" data-location="${match.location}" title="Kliknutím upravíte zápas">
+                                <td>${match.startTime} - ${formattedEndTime}</td>
+                                <td>${match.team1ClubName || 'N/A'}</td>
+                                <td>${match.team2ClubName || 'N/A'}</td>
+                                <td>${match.team1DisplayName || 'N/A'} vs ${match.team2DisplayName || 'N/A'}</td>
+                            </tr>
+                        `;
+                    });
+                    scheduleHtml += `</tbody></table></div>`; // Close location-block table
                 });
-                scheduleHtml += `</tbody></table></div>`;
+                scheduleHtml += `</div>`; // Close schedule-date-block
             });
         }
 
@@ -796,112 +808,138 @@ async function displayMatchesAsSchedule() {
 
             row.addEventListener('dragover', (e) => {
                 e.preventDefault(); // Allow drop
-                e.target.closest('tr').classList.add('drop-target');
+                const targetRow = e.target.closest('tr');
+                if (targetRow) {
+                    targetRow.classList.add('drop-target');
+                }
             });
 
             row.addEventListener('dragleave', (e) => {
-                e.target.closest('tr').classList.remove('drop-target');
+                const targetRow = e.target.closest('tr');
+                if (targetRow) {
+                    targetRow.classList.remove('drop-target');
+                }
             });
 
             row.addEventListener('drop', async (e) => {
                 e.preventDefault();
-                e.target.closest('tr').classList.remove('drop-target');
                 const targetRow = e.target.closest('tr');
-                const targetMatchId = targetRow.dataset.id; // The ID of the match row it was dropped ON
+                if (targetRow) {
+                    targetRow.classList.remove('drop-target');
+                }
+                
+                const targetMatchId = targetRow ? targetRow.dataset.id : null;
 
-                if (draggedMatchId && draggedMatchId !== targetMatchId) {
-                    try {
-                        const draggedMatchDoc = await getDoc(doc(matchesCollectionRef, draggedMatchId));
-                        const targetMatchDoc = await getDoc(doc(matchesCollectionRef, targetMatchId));
+                // Ensure draggedMatchId is valid and not dropping on itself
+                if (!draggedMatchId || draggedMatchId === targetMatchId) {
+                    // console.log("Invalid drop operation: no draggedMatchId, or dropping on self.");
+                    return;
+                }
 
-                        if (!draggedMatchDoc.exists() || !targetMatchDoc.exists()) {
-                            await showMessage('Chyba', 'Presúvaný alebo cieľový zápas sa nenašiel.');
-                            return;
-                        }
+                try {
+                    const draggedMatchDoc = await getDoc(doc(matchesCollectionRef, draggedMatchId));
+                    if (!draggedMatchDoc.exists()) {
+                        await showMessage('Chyba', 'Presúvaný zápas sa nenašiel.');
+                        return;
+                    }
+                    const draggedMatchData = draggedMatchDoc.data();
 
-                        const draggedMatchData = draggedMatchDoc.data();
-                        const targetMatchData = targetMatchDoc.data();
+                    const targetDate = targetRow.dataset.date;
+                    const targetLocation = targetRow.dataset.location;
 
-                        const targetDate = targetMatchData.date; // Use target date for the group
-                        const originalDraggedLocation = draggedMatchData.location; // Preserve original location
+                    // Check if the target date/location pair matches the dragged match's date/location
+                    // If dropping onto a row that implies a change of date/location, it's not allowed by this logic.
+                    // The previous logic allowed dropping on a date header to change date. This logic
+                    // assumes dropping within the same day/location block implicitly.
+                    if (draggedMatchData.date !== targetDate || draggedMatchData.location !== targetLocation) {
+                         await showMessage('Upozornenie', 'Zápas je možné presunúť iba v rámci rovnakého dňa a miesta.');
+                         return;
+                    }
 
-                        // Fetch ALL matches for the target date and original dragged location
-                        const currentMatchesQuery = query(
-                            matchesCollectionRef,
-                            where("date", "==", targetDate),
-                            where("location", "==", originalDraggedLocation) // IMPORTANT: Filter by original location
-                        );
-                        const currentMatchesSnapshot = await getDocs(currentMatchesQuery);
-                        
-                        let matchesForRecalculation = currentMatchesSnapshot.docs
-                            .map(doc => ({ id: doc.id, ...doc.data() }))
-                            .filter(match => match.id !== draggedMatchId) // Exclude the dragged one
-                            .sort((a, b) => { // Sort existing matches by their current start times
-                                const [aH, aM] = (a.startTime || '00:00').split(':').map(Number);
-                                const [bH, bM] = (b.startTime || '00:00').split(':').map(Number);
-                                return (aH * 60 + aM) - (bH * 60 + bM);
-                            });
 
-                        // Determine insertion point based on mouse Y position
+                    // Fetch ALL matches for the target date and location (which is the original dragged location)
+                    const currentMatchesQuery = query(
+                        matchesCollectionRef,
+                        where("date", "==", targetDate),
+                        where("location", "==", targetLocation)
+                    );
+                    const currentMatchesSnapshot = await getDocs(currentMatchesQuery);
+                    
+                    let matchesForRecalculation = currentMatchesSnapshot.docs
+                        .map(doc => ({ id: doc.id, ...doc.data() }))
+                        .filter(match => match.id !== draggedMatchId) // Exclude the dragged one for now
+                        .sort((a, b) => { // Sort existing matches by their current start times
+                            const [aH, aM] = (a.startTime || '00:00').split(':').map(Number);
+                            const [bH, bM] = (b.startTime || '00:00').split(':').map(Number);
+                            return (aH * 60 + aM) - (bH * 60 + bM);
+                        });
+
+                    let insertionIndex = 0; // Default to inserting at the beginning
+
+                    if (targetMatchId) { // If dropped on a specific row
+                        insertionIndex = matchesForRecalculation.findIndex(match => match.id === targetMatchId);
                         const targetRect = targetRow.getBoundingClientRect();
                         const mouseY = e.clientY;
                         const insertAfter = (mouseY > (targetRect.top + targetRect.height / 2));
 
-                        let insertionIndex = matchesForRecalculation.findIndex(match => match.id === targetMatchId);
                         if (insertionIndex === -1) {
-                            // This should ideally not happen if dropped on a row that exists in the filtered list
-                            // As a fallback, if target is somehow not found, append
-                            insertionIndex = matchesForRecalculation.length;
+                            // Target not found in the filtered list (e.g., it was the dragged item itself or a new item not yet in DB)
+                            // In this refined logic, this path should ideally be rare if targetMatchId exists.
+                            insertionIndex = matchesForRecalculation.length; // Append to end
                         } else if (insertAfter) {
                             insertionIndex++; // Insert after the target match
                         }
-
-                        // Insert the dragged match into the new ordered list
-                        let orderedMatches = [
-                            ...matchesForRecalculation.slice(0, insertionIndex),
-                            { id: draggedMatchId, ...draggedMatchData },
-                            ...matchesForRecalculation.slice(insertionIndex)
-                        ];
-
-                        const confirmed = await showConfirmation(
-                            'Potvrdenie presunu zápasu',
-                            `Naozaj chcete presunúť zápas "${draggedMatchData.team1ClubName} vs ${draggedMatchData.team2ClubName}" v rozvrhu na dátum ${targetDate} a miesto ${originalDraggedLocation}? Časy zápasov sa prispôsobia.`
-                        );
-
-                        if (confirmed) {
-                            const updatedMatchDetails = await calculateSequentialMatchTimes(targetDate, originalDraggedLocation, orderedMatches);
-
-                            const batch = writeBatch(db);
-                            for (const update of updatedMatchDetails) {
-                                // Make sure to only update the fields that change, and include all required fields if merged
-                                batch.update(doc(matchesCollectionRef, update.id), {
-                                    date: update.date,
-                                    location: update.location,
-                                    startTime: update.startTime,
-                                    duration: update.duration,
-                                    bufferTime: update.bufferTime,
-                                    categoryId: update.categoryId,
-                                    groupId: update.groupId,
-                                    team1Number: update.team1Number,
-                                    team2Number: update.team2Number,
-                                    team1DisplayName: update.team1DisplayName, // Re-adding these for a safer merge
-                                    team1ClubName: update.team1ClubName,
-                                    team1ClubId: update.team1ClubId,
-                                    team2DisplayName: update.team2DisplayName,
-                                    team2ClubName: update.team2ClubName,
-                                    team2ClubId: update.team2ClubId,
-                                    locationType: update.locationType,
-                                });
-                            }
-                            await batch.commit();
-                            await showMessage('Úspech', 'Zápas úspešne presunutý a časy aktualizované! Rozvrh sa aktualizuje.');
-                        } else {
-                            await showMessage('Zrušené', 'Presun zápasu bol zrušený.');
-                        }
-                    } catch (error) {
-                        console.error("Chyba pri presune zápasu:", error);
-                        await showMessage('Chyba', `Chyba pri presune zápasu: ${error.message}`);
+                    } else {
+                        // If dropping on an empty space (e.g., last row in an empty table or very bottom)
+                        // This case should be handled by checking if matchesForRecalculation is empty
+                        // or if the drop target implies appending.
+                        insertionIndex = matchesForRecalculation.length; // Append to end if no specific target row
                     }
+
+                    // Insert the dragged match into the new ordered list
+                    let orderedMatches = [
+                        ...matchesForRecalculation.slice(0, insertionIndex),
+                        { id: draggedMatchId, ...draggedMatchData },
+                        ...matchesForRecalculation.slice(insertionIndex)
+                    ];
+                    
+                    const confirmed = await showConfirmation(
+                        'Potvrdenie presunu zápasu',
+                        `Naozaj chcete presunúť zápas "${draggedMatchData.team1ClubName} vs ${draggedMatchData.team2ClubName}" v rozvrhu na dátum ${targetDate} a miesto ${targetLocation}? Časy zápasov sa prispôsobia.`
+                    );
+
+                    if (confirmed) {
+                        const updatedMatchDetails = await calculateSequentialMatchTimes(targetDate, targetLocation, orderedMatches);
+
+                        const batch = writeBatch(db);
+                        for (const update of updatedMatchDetails) {
+                            batch.update(doc(matchesCollectionRef, update.id), {
+                                date: update.date,
+                                location: update.location,
+                                startTime: update.startTime,
+                                duration: update.duration,
+                                bufferTime: update.bufferTime,
+                                categoryId: update.categoryId,
+                                groupId: update.groupId,
+                                team1Number: update.team1Number,
+                                team2Number: update.team2Number,
+                                team1DisplayName: update.team1DisplayName,
+                                team1ClubName: update.team1ClubName,
+                                team1ClubId: update.team1ClubId,
+                                team2DisplayName: update.team2DisplayName,
+                                team2ClubName: update.team2ClubName,
+                                team2ClubId: update.team2ClubId,
+                                locationType: update.locationType,
+                            });
+                        }
+                        await batch.commit();
+                        await showMessage('Úspech', 'Zápas úspešne presunutý a časy aktualizované! Rozvrh sa aktualizuje.');
+                    } else {
+                        await showMessage('Zrušené', 'Presun zápasu bol zrušený.');
+                    }
+                } catch (error) {
+                    console.error("Chyba pri presune zápasu:", error);
+                    await showMessage('Chyba', `Chyba pri presune zápasu: ${error.message}`);
                 }
                 e.target.classList.remove('dragging');
                 draggedMatchId = null; // Reset after drop
@@ -916,98 +954,116 @@ async function displayMatchesAsSchedule() {
             });
         });
 
-        // Add dragover/dragleave/drop to date headers as well for dropping onto a new day
-        matchesContainer.querySelectorAll('.date-header-clickable').forEach(header => {
-            header.addEventListener('dragover', (e) => {
+        // Add dragover/dragleave/drop to location blocks for dropping into an empty location block
+        matchesContainer.querySelectorAll('.location-block').forEach(locationBlock => {
+            locationBlock.addEventListener('dragover', (e) => {
                 e.preventDefault(); // Allow drop
-                e.target.classList.add('drop-target');
+                // Only add drop-target if dropping on the table body, not the header or other parts
+                const target = e.target.closest('tbody');
+                if (target) {
+                    target.classList.add('drop-target');
+                }
             });
 
-            header.addEventListener('dragleave', (e) => {
-                e.target.classList.remove('drop-target');
+            locationBlock.addEventListener('dragleave', (e) => {
+                const target = e.target.closest('tbody');
+                if (target) {
+                    target.classList.remove('drop-target');
+                }
             });
 
-            header.addEventListener('drop', async (e) => {
+            locationBlock.addEventListener('drop', async (e) => {
                 e.preventDefault();
-                e.target.classList.remove('drop-target');
-                const targetDate = e.target.dataset.date; // The date of the day header it was dropped ON
+                const targetTbody = e.target.closest('tbody');
+                if (targetTbody) {
+                    targetTbody.classList.remove('drop-target');
+                }
+                const targetLocationBlock = e.target.closest('.location-block');
+                const targetDate = targetLocationBlock ? targetLocationBlock.dataset.date : null;
+                const targetLocationName = targetLocationBlock ? targetLocationBlock.dataset.location : null;
+                
+                if (!draggedMatchId || !targetDate || !targetLocationName) {
+                    // console.log("Invalid drop on location block: missing draggedMatchId, targetDate, or targetLocationName");
+                    return;
+                }
 
-                if (draggedMatchId) {
-                    try {
-                        const draggedMatchDoc = await getDoc(doc(matchesCollectionRef, draggedMatchId));
-                        if (draggedMatchDoc.exists()) {
-                            const draggedMatchData = draggedMatchDoc.data();
-                            const targetLocation = draggedMatchData.location; // Keep original location for now
-
-                            // Fetch all matches for the target date and location
-                            const currentMatchesQuery = query(
-                                matchesCollectionRef,
-                                where("date", "==", targetDate),
-                                where("location", "==", targetLocation)
-                            );
-                            const currentMatchesSnapshot = await getDocs(currentMatchesQuery);
-                            let matchesForRecalculation = currentMatchesSnapshot.docs
-                                .map(doc => ({ id: doc.id, ...doc.data() }))
-                                .filter(match => match.id !== draggedMatchId); // Exclude the dragged match if it was already here
-
-                            // Prepend the dragged match to the list
-                            matchesForRecalculation.unshift({ id: draggedMatchId, ...draggedMatchData });
-
-                            // Sort by original start time (this ensures matches previously on this day/location maintain order)
-                            matchesForRecalculation.sort((a, b) => {
-                                const [aH, aM] = (a.startTime || '00:00').split(':').map(Number);
-                                const [bH, bM] = (b.startTime || '00:00').split(':').map(Number);
-                                return (aH * 60 + aM) - (bH * 60 + bM);
-                            });
-
-                            // Recalculate times
-                            const updatedMatchDetails = await calculateSequentialMatchTimes(targetDate, targetLocation, matchesForRecalculation);
-
-                            const confirmed = await showConfirmation(
-                                'Potvrdenie presunu zápasu',
-                                `Naozaj chcete presunúť zápas "${draggedMatchData.team1ClubName} vs ${draggedMatchData.team2ClubName}" na dátum ${targetDate} a miesto ${targetLocation}? Časy ostatných zápasov sa prispôsobia.`
-                            );
-
-                            if (confirmed) {
-                                const batch = writeBatch(db);
-                                for (const update of updatedMatchDetails) {
-                                    batch.update(doc(matchesCollectionRef, update.id), {
-                                        date: update.date,
-                                        location: update.location,
-                                        startTime: update.startTime,
-                                        duration: update.duration,
-                                        bufferTime: update.bufferTime,
-                                        categoryId: update.categoryId,
-                                        groupId: update.groupId,
-                                        team1Number: update.team1Number,
-                                        team2Number: update.team2Number,
-                                        team1DisplayName: update.team1DisplayName,
-                                        team1ClubName: update.team1ClubName,
-                                        team1ClubId: update.team1ClubId,
-                                        team2DisplayName: update.team2DisplayName,
-                                        team2ClubName: update.team2ClubName,
-                                        team2ClubId: update.team2ClubId,
-                                        locationType: update.locationType,
-                                    });
-                                }
-                                await batch.commit();
-                                await showMessage('Úspech', 'Zápas úspešne presunutý! Rozvrh sa aktualizuje.');
-                            } else {
-                                await showMessage('Zrušené', 'Presun zápasu bol zrušený.');
-                            }
-                        } else {
-                            await showMessage('Chyba', 'Presúvaný zápas sa nenašiel.');
-                        }
-                    } catch (error) {
-                        console.error("Chyba pri presune zápasu na nový deň:", error);
-                        await showMessage('Chyba', `Chyba pri presune zápasu na nový deň: ${error.message}`);
+                try {
+                    const draggedMatchDoc = await getDoc(doc(matchesCollectionRef, draggedMatchId));
+                    if (!draggedMatchDoc.exists()) {
+                        await showMessage('Chyba', 'Presúvaný zápas sa nenašiel.');
+                        return;
                     }
+                    const draggedMatchData = draggedMatchDoc.data();
+
+                    // If dropping into a different date or location than the dragged match's current one
+                    if (draggedMatchData.date !== targetDate || draggedMatchData.location !== targetLocationName) {
+                        await showMessage('Upozornenie', 'Zápas je možné presunúť iba v rámci rovnakého dňa a miesta.');
+                        return;
+                    }
+
+                    // If the drop occurred on an empty tbody, or after the last match, append it
+                    const currentMatchesQuery = query(
+                        matchesCollectionRef,
+                        where("date", "==", targetDate),
+                        where("location", "==", targetLocationName)
+                    );
+                    const currentMatchesSnapshot = await getDocs(currentMatchesQuery);
+                    
+                    let matchesForRecalculation = currentMatchesSnapshot.docs
+                        .map(doc => ({ id: doc.id, ...doc.data() }))
+                        .filter(match => match.id !== draggedMatchId) // Exclude the dragged one for now
+                        .sort((a, b) => { // Sort existing matches by their current start times
+                            const [aH, aM] = (a.startTime || '00:00').split(':').map(Number);
+                            const [bH, bM] = (b.startTime || '00:00').split(':').map(Number);
+                            return (aH * 60 + aM) - (bH * 60 + bM);
+                        });
+
+                    // Append the dragged match to the end of the list for this location/date
+                    matchesForRecalculation.push({ id: draggedMatchId, ...draggedMatchData });
+
+                    const confirmed = await showConfirmation(
+                        'Potvrdenie presunu zápasu',
+                        `Naozaj chcete presunúť zápas "${draggedMatchData.team1ClubName} vs ${draggedMatchData.team2ClubName}" do rozvrhu na dátum ${targetDate} a miesto ${targetLocationName}? Časy ostatných zápasov sa prispôsobia.`
+                    );
+
+                    if (confirmed) {
+                        const updatedMatchDetails = await calculateSequentialMatchTimes(targetDate, targetLocationName, matchesForRecalculation);
+
+                        const batch = writeBatch(db);
+                        for (const update of updatedMatchDetails) {
+                            batch.update(doc(matchesCollectionRef, update.id), {
+                                date: update.date,
+                                location: update.location,
+                                startTime: update.startTime,
+                                duration: update.duration,
+                                bufferTime: update.bufferTime,
+                                categoryId: update.categoryId,
+                                groupId: update.groupId,
+                                team1Number: update.team1Number,
+                                team2Number: update.team2Number,
+                                team1DisplayName: update.team1DisplayName,
+                                team1ClubName: update.team1ClubName,
+                                team1ClubId: update.team1ClubId,
+                                team2DisplayName: update.team2DisplayName,
+                                team2ClubName: update.team2ClubName,
+                                team2ClubId: update.team2ClubId,
+                                locationType: update.locationType,
+                            });
+                        }
+                        await batch.commit();
+                        await showMessage('Úspech', 'Zápas úspešne presunutý a časy aktualizované! Rozvrh sa aktualizuje.');
+                    } else {
+                        await showMessage('Zrušené', 'Presun zápasu bol zrušený.');
+                    }
+                } catch (error) {
+                    console.error("Chyba pri presune zápasu na prázdny blok:", error);
+                    await showMessage('Chyba', `Chyba pri presune zápasu: ${error.message}`);
                 }
                 draggedMatchId = null; // Reset after drop
                 await displayMatchesAsSchedule(); // Re-render the schedule to reflect changes
             });
 
-            header.addEventListener('dragend', (e) => {
+            locationBlock.addEventListener('dragend', (e) => {
                 // Clean up dragging classes
                 e.target.classList.remove('dragging');
                 matchesContainer.querySelectorAll('.drop-target').forEach(el => el.classList.remove('drop-target'));
