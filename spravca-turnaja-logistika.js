@@ -416,7 +416,7 @@ async function findFirstAvailableTime() {
     const matchLocationSelect = document.getElementById('matchLocationSelect');
     const matchDurationInput = document.getElementById('matchDuration');
     const matchBufferTimeInput = document.getElementById('matchBufferTime');
-    const matchStartTimeInput = document = document.getElementById('matchStartTime');
+    const matchStartTimeInput = document.getElementById('matchStartTime');
 
     const selectedDate = matchDateSelect.value;
     const selectedLocationName = matchLocationSelect.value;
