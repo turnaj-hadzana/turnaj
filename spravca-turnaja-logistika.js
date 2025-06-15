@@ -583,6 +583,80 @@ async function getFirstAvailableTimeForDrop(date, locationName, duration, buffer
 }
 
 /**
+ * Calculates new start times for a sequence of matches on a given date and location, ensuring no overlaps.
+ * @param {string} date The date string (YYYY-MM-DD).
+ * @param {string} locationName The name of the location.
+ * @param {Array<Object>} matchesInOrder An array of match objects (including id, duration, bufferTime, categoryId) in their desired sequential order.
+ * @returns {Promise<Array<{id: string, startTime: string, date: string, location: string, duration: number, bufferTime: number, categoryId: string, groupId: string, team1Number: number, team2Number: number, team1DisplayName: string, team1ClubName: string, team1ClubId: string, team2DisplayName: string, team2ClubName: string, team2ClubId: string, locationType: string}>>} An array of match updates including all necessary fields for a merge update.
+ */
+async function calculateSequentialMatchTimes(date, locationName, matchesInOrder) {
+    const updatedMatchDetails = [];
+    if (matchesInOrder.length === 0) {
+        return updatedMatchDetails;
+    }
+
+    try {
+        const settingsDocRef = doc(settingsCollectionRef, SETTINGS_DOC_ID);
+        const settingsDoc = await getDoc(settingsDocRef);
+        let firstDayStartTime = '08:00';
+        let otherDaysStartTime = '08:00';
+
+        if (settingsDoc.exists()) {
+            const data = settingsDoc.data();
+            firstDayStartTime = data.firstDayStartTime || '08:00';
+            otherDaysStartTime = data.otherDaysStartTime || '08:00';
+        }
+
+        const playingDaysSnapshot = await getDocs(query(playingDaysCollectionRef, orderBy("date", "asc")));
+        const sortedPlayingDays = playingDaysSnapshot.docs.map(d => d.data().date).sort();
+        const isFirstPlayingDay = sortedPlayingDays.length > 0 && date === sortedPlayingDays[0];
+
+        let currentTimeInMinutes = 0;
+        const [startH, startM] = (isFirstPlayingDay ? firstDayStartTime : otherDaysStartTime).split(':').map(Number);
+        currentTimeInMinutes = startH * 60 + startM;
+
+        for (const match of matchesInOrder) {
+            // Get category specific duration and buffer time, or use existing if present on match object
+            const categorySettings = await getCategoryMatchSettings(match.categoryId);
+            const effectiveDuration = match.duration || categorySettings.duration;
+            const effectiveBufferTime = match.bufferTime || categorySettings.bufferTime;
+
+            // Ensure the match starts at or after the current calculated time
+            const newStartHour = Math.floor(currentTimeInMinutes / 60);
+            const newStartMinute = currentTimeInMinutes % 60;
+            const formattedStartTime = `${String(newStartHour).padStart(2, '0')}:${String(newStartMinute).padStart(2, '0')}`;
+
+            updatedMatchDetails.push({
+                id: match.id,
+                date: date,
+                location: locationName,
+                startTime: formattedStartTime,
+                duration: effectiveDuration, // Use effective duration
+                bufferTime: effectiveBufferTime, // Use effective bufferTime
+                categoryId: match.categoryId,
+                groupId: match.groupId,
+                team1Number: match.team1Number,
+                team2Number: match.team2Number,
+                team1DisplayName: match.team1DisplayName, // Keep display names if available
+                team1ClubName: match.team1ClubName,
+                team1ClubId: match.team1ClubId,
+                team2DisplayName: match.team2DisplayName,
+                team2ClubName: match.team2ClubName,
+                team2ClubId: match.team2ClubId,
+                locationType: match.locationType, // Keep location type
+            });
+
+            currentTimeInMinutes += effectiveDuration + effectiveBufferTime;
+        }
+    } catch (error) {
+        console.error("Error calculating sequential match times:", error);
+        throw error; // Re-throw to be caught by the caller
+    }
+    return updatedMatchDetails;
+}
+
+
+/**
  * Displays the full match schedule in a new, enhanced table format.
  */
 async function displayMatchesAsSchedule() {
@@ -742,31 +816,78 @@ async function displayMatchesAsSchedule() {
 
                         if (draggedMatchDoc.exists() && targetMatchDoc.exists()) {
                             const targetMatchData = targetMatchDoc.data();
-                            const targetMatchDate = targetMatchData.date;
-                            const targetMatchStartTime = targetMatchData.startTime;
-                            const targetMatchLocation = targetMatchData.location; 
-
                             const draggedMatchData = draggedMatchDoc.data();
+
+                            const targetDate = targetMatchData.date;
+                            const targetLocation = targetMatchData.location;
+
+                            // Fetch ALL matches for the target date and location (including potential dragged match if it was already there)
+                            const currentMatchesQuery = query(
+                                matchesCollectionRef,
+                                where("date", "==", targetDate),
+                                where("location", "==", targetLocation)
+                            );
+                            const currentMatchesSnapshot = await getDocs(currentMatchesQuery);
                             
+                            // Create an array of existing matches, excluding the dragged one
+                            let existingMatchesSorted = currentMatchesSnapshot.docs
+                                .map(doc => ({ id: doc.id, ...doc.data() }))
+                                .filter(match => match.id !== draggedMatchId)
+                                .sort((a, b) => { // Sort existing matches by their current start times
+                                    const [aH, aM] = (a.startTime || '00:00').split(':').map(Number);
+                                    const [bH, bM] = (b.startTime || '00:00').split(':').map(Number);
+                                    return (aH * 60 + aM) - (bH * 60 + bM);
+                                });
+
+                            // Find the insertion point for the dragged match
+                            const targetIndex = existingMatchesSorted.findIndex(match => match.id === targetMatchId);
+                            let orderedMatchesForRecalculation = [];
+
+                            if (targetIndex !== -1) {
+                                // Insert the dragged match right before the target match
+                                orderedMatchesForRecalculation = [
+                                    ...existingMatchesSorted.slice(0, targetIndex),
+                                    { id: draggedMatchId, ...draggedMatchData },
+                                    ...existingMatchesSorted.slice(targetIndex)
+                                ];
+                            } else {
+                                // If target match is not found (shouldn't happen if dropped on a row), append to end
+                                orderedMatchesForRecalculation = [...existingMatchesSorted, { id: draggedMatchId, ...draggedMatchData }];
+                            }
+                            
+                            // Recalculate times for the newly ordered sequence
+                            const updatedMatchDetails = await calculateSequentialMatchTimes(targetDate, targetLocation, orderedMatchesForRecalculation);
+
                             const confirmed = await showConfirmation(
                                 'Potvrdenie presunu zápasu',
-                                `Naozaj chcete presunúť zápas "${draggedMatchData.team1ClubName} vs ${draggedMatchData.team2ClubName}" na dátum ${targetMatchDate} a čas ${targetMatchStartTime} (na miesto ${targetMatchLocation})?`
+                                `Naozaj chcete presunúť zápas "${draggedMatchData.team1ClubName} vs ${draggedMatchData.team2ClubName}" do rozvrhu na dátum ${targetDate} a miesto ${targetLocation}? Časy ostatných zápasov sa prispôsobia.`
                             );
 
                             if (confirmed) {
-                                const updatedMatchData = {
-                                    date: targetMatchDate,
-                                    location: targetMatchLocation,
-                                    startTime: targetMatchStartTime,
-                                    duration: draggedMatchData.duration,
-                                    bufferTime: draggedMatchData.bufferTime,
-                                    categoryId: draggedMatchData.categoryId,
-                                    groupId: draggedMatchData.groupId,
-                                    team1Number: draggedMatchData.team1Number,
-                                    team2Number: draggedMatchData.team2Number
-                                };
-                                await setDoc(doc(matchesCollectionRef, draggedMatchId), updatedMatchData, { merge: true });
-                                await showMessage('Úspech', 'Zápas úspešne presunutý! Rozvrh sa aktualizuje.');
+                                const batch = writeBatch(db);
+                                for (const update of updatedMatchDetails) {
+                                    // Make sure to only update the fields that change, and include all required fields if merged
+                                    batch.update(doc(matchesCollectionRef, update.id), {
+                                        date: update.date,
+                                        location: update.location,
+                                        startTime: update.startTime,
+                                        duration: update.duration,
+                                        bufferTime: update.bufferTime,
+                                        categoryId: update.categoryId,
+                                        groupId: update.groupId,
+                                        team1Number: update.team1Number,
+                                        team2Number: update.team2Number,
+                                        team1DisplayName: update.team1DisplayName, // Re-adding these for a safer merge
+                                        team1ClubName: update.team1ClubName,
+                                        team1ClubId: update.team1ClubId,
+                                        team2DisplayName: update.team2DisplayName,
+                                        team2ClubName: update.team2ClubName,
+                                        team2ClubId: update.team2ClubId,
+                                        locationType: update.locationType,
+                                    });
+                                }
+                                await batch.commit();
+                                await showMessage('Úspech', 'Zápas úspešne presunutý a časy aktualizované! Rozvrh sa aktualizuje.');
                             } else {
                                 await showMessage('Zrušené', 'Presun zápasu bol zrušený.');
                             }
@@ -812,27 +933,60 @@ async function displayMatchesAsSchedule() {
                         const draggedMatchDoc = await getDoc(doc(matchesCollectionRef, draggedMatchId));
                         if (draggedMatchDoc.exists()) {
                             const draggedMatchData = draggedMatchDoc.data();
+                            const targetLocation = draggedMatchData.location; // Keep original location for now
 
-                            const newStartTime = await getFirstAvailableTimeForDrop(targetDate, draggedMatchData.location, draggedMatchData.duration, draggedMatchData.bufferTime);
+                            // Fetch all matches for the target date and location
+                            const currentMatchesQuery = query(
+                                matchesCollectionRef,
+                                where("date", "==", targetDate),
+                                where("location", "==", targetLocation)
+                            );
+                            const currentMatchesSnapshot = await getDocs(currentMatchesQuery);
+                            let matchesForRecalculation = currentMatchesSnapshot.docs
+                                .map(doc => ({ id: doc.id, ...doc.data() }))
+                                .filter(match => match.id !== draggedMatchId); // Exclude the dragged match if it was already here
+
+                            // Prepend the dragged match to the list
+                            matchesForRecalculation.unshift({ id: draggedMatchId, ...draggedMatchData });
+
+                            // Sort by original start time (this ensures matches previously on this day/location maintain order)
+                            matchesForRecalculation.sort((a, b) => {
+                                const [aH, aM] = (a.startTime || '00:00').split(':').map(Number);
+                                const [bH, bM] = (b.startTime || '00:00').split(':').map(Number);
+                                return (aH * 60 + aM) - (bH * 60 + bM);
+                            });
+
+                            // Recalculate times
+                            const updatedMatchDetails = await calculateSequentialMatchTimes(targetDate, targetLocation, matchesForRecalculation);
 
                             const confirmed = await showConfirmation(
                                 'Potvrdenie presunu zápasu',
-                                `Naozaj chcete presunúť zápas "${draggedMatchData.team1ClubName} vs ${draggedMatchData.team2ClubName}" na dátum ${targetDate} (na miesto ${draggedMatchData.location}) a nájsť mu prvý voľný čas ${newStartTime}?`
+                                `Naozaj chcete presunúť zápas "${draggedMatchData.team1ClubName} vs ${draggedMatchData.team2ClubName}" na dátum ${targetDate} a miesto ${targetLocation}? Časy ostatných zápasov sa prispôsobia.`
                             );
 
                             if (confirmed) {
-                                const updatedMatchData = {
-                                    date: targetDate,
-                                    startTime: newStartTime, // Use found available time
-                                    location: draggedMatchData.location, // Keep original location
-                                    duration: draggedMatchData.duration,
-                                    bufferTime: draggedMatchData.bufferTime,
-                                    categoryId: draggedMatchData.categoryId,
-                                    groupId: draggedMatchData.groupId,
-                                    team1Number: draggedMatchData.team1Number,
-                                    team2Number: draggedMatchData.team2Number
-                                };
-                                await setDoc(doc(matchesCollectionRef, draggedMatchId), updatedMatchData, { merge: true });
+                                const batch = writeBatch(db);
+                                for (const update of updatedMatchDetails) {
+                                    batch.update(doc(matchesCollectionRef, update.id), {
+                                        date: update.date,
+                                        location: update.location,
+                                        startTime: update.startTime,
+                                        duration: update.duration,
+                                        bufferTime: update.bufferTime,
+                                        categoryId: update.categoryId,
+                                        groupId: update.groupId,
+                                        team1Number: update.team1Number,
+                                        team2Number: update.team2Number,
+                                        team1DisplayName: update.team1DisplayName,
+                                        team1ClubName: update.team1ClubName,
+                                        team1ClubId: update.team1ClubId,
+                                        team2DisplayName: update.team2DisplayName,
+                                        team2ClubName: update.team2ClubName,
+                                        team2ClubId: update.team2ClubId,
+                                        locationType: update.locationType,
+                                    });
+                                }
+                                await batch.commit();
                                 await showMessage('Úspech', 'Zápas úspešne presunutý! Rozvrh sa aktualizuje.');
                             } else {
                                 await showMessage('Zrušené', 'Presun zápasu bol zrušený.');
