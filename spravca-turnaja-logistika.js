@@ -889,21 +889,22 @@ async function displayMatchesAsSchedule() {
                     console.log('Original match data - Date:', originalDate, 'Location:', originalLocation); // Debugging
                     console.log('New target - Date:', newDate, 'Location:', newLocation); // Debugging
 
-                    let confirmationMessage = '';
-                    if (originalDate !== newDate || originalLocation !== newLocation) {
-                        confirmationMessage = `Naozaj chcete presunúť zápas "${draggedMatchData.team1ClubName} vs ${draggedMatchData.team2ClubName}" z ${originalDate} na ${newDate} a z ${originalLocation} na ${newLocation}? Časy zápasov sa prispôsobia.`;
-                    } else {
-                        confirmationMessage = `Naozaj chcete presunúť zápas "${draggedMatchData.team1ClubName} vs ${draggedMatchData.team2ClubName}" v rámci rozvrhu? Časy zápasov sa prispôsobia.`;
-                    }
+                    // Removed confirmation message and logic
+                    // let confirmationMessage = '';
+                    // if (originalDate !== newDate || originalLocation !== newLocation) {
+                    //     confirmationMessage = `Naozaj chcete presunúť zápas "${draggedMatchData.team1ClubName} vs ${draggedMatchData.team2ClubName}" z ${originalDate} na ${newDate} a z ${originalLocation} na ${newLocation}? Časy zápasov sa prispôsobia.`;
+                    // } else {
+                    //     confirmationMessage = `Naozaj chcete presunúť zápas "${draggedMatchData.team1ClubName} vs ${draggedMatchData.team2ClubName}" v rámci rozvrhu? Časy zápasov sa prispôsobia.`;
+                    // }
                     
-                    const confirmed = await showConfirmation('Potvrdenie presunu zápasu', confirmationMessage);
+                    // const confirmed = await showConfirmation('Potvrdenie presunu zápasu', confirmationMessage);
 
-                    if (!confirmed) {
-                        await showMessage('Zrušené', 'Presun zápasu bol zrušený.');
-                        e.target.classList.remove('dragging');
-                        matchesContainer.querySelectorAll('.drop-target').forEach(el => el.classList.remove('drop-target'));
-                        return;
-                    }
+                    // if (!confirmed) {
+                    //     await showMessage('Zrušené', 'Presun zápasu bol zrušený.');
+                    //     e.target.classList.remove('dragging');
+                    //     matchesContainer.querySelectorAll('.drop-target').forEach(el => el.classList.remove('drop-target'));
+                    //     return;
+                    // }
 
                     const batch = writeBatch(db);
                     
@@ -1054,21 +1055,22 @@ async function displayMatchesAsSchedule() {
                     console.log('Original match data - Date:', originalDate, 'Location:', originalLocation); // Debugging
                     console.log('New target - Date:', newDate, 'Location:', newLocation); // Debugging
 
-                    let confirmationMessage = '';
-                    if (originalDate !== newDate || originalLocation !== newLocation) {
-                        confirmationMessage = `Naozaj chcete presunúť zápas "${draggedMatchData.team1ClubName} vs ${draggedMatchData.team2ClubName}" z ${originalDate} na ${newDate} a z ${originalLocation} na ${newLocation}? Časy zápasov sa prispôsobia.`;
-                    } else {
-                        // This case happens if dropping into the same location block but not onto a specific row
-                        confirmationMessage = `Naozaj chcete presunúť zápas "${draggedMatchData.team1ClubName} vs ${draggedMatchData.team2ClubName}" v rámci rozvrhu? Časy zápasov sa prispôsobia.`;
-                    }
+                    // Removed confirmation message and logic
+                    // let confirmationMessage = '';
+                    // if (originalDate !== newDate || originalLocation !== newLocation) {
+                    //     confirmationMessage = `Naozaj chcete presunúť zápas "${draggedMatchData.team1ClubName} vs ${draggedMatchData.team2ClubName}" z ${originalDate} na ${newDate} a z ${originalLocation} na ${newLocation}? Časy zápasov sa prispôsobia.`;
+                    // } else {
+                    //     // This case happens if dropping into the same location block but not onto a specific row
+                    //     confirmationMessage = `Naozaj chcete presunúť zápas "${draggedMatchData.team1ClubName} vs ${draggedMatchData.team2ClubName}" v rámci rozvrhu? Časy zápasov sa prispôsobia.`;
+                    // }
 
-                    const confirmed = await showConfirmation('Potvrdenie presunu zápasu', confirmationMessage);
-                    if (!confirmed) {
-                        await showMessage('Zrušené', 'Presun zápasu bol zrušený.');
-                        e.target.classList.remove('dragging');
-                        matchesContainer.querySelectorAll('.drop-target').forEach(el => el.classList.remove('drop-target'));
-                        return;
-                    }
+                    // const confirmed = await showConfirmation('Potvrdenie presunu zápasu', confirmationMessage);
+                    // if (!confirmed) {
+                    //     await showMessage('Zrušené', 'Presun zápasu bol zrušený.');
+                    //     e.target.classList.remove('dragging');
+                    //     matchesContainer.querySelectorAll('.drop-target').forEach(el => el.classList.remove('drop-target'));
+                    //     return;
+                    // }
 
                     const batch = writeBatch(db);
 
