@@ -75,7 +75,7 @@ nav ul li a:hover {
 /* Základné štýly pre telo */
 main {
     padding: 20px;
-    max-width: 1200px;
+    max-width: 100%;
     margin: 20px auto;
     background-color: #fff;
     border-radius: 8px;
