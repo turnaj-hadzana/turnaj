@@ -1,3 +1,526 @@
+/* Pridajte na začiatok súboru, ak tam už nie je */
+html, body {
+    height: 100%; /* Zabezpečí, že 100vh sa vzťahuje na celú výšku okna */
+    margin: 0; /* Zabezpečí, že telo nemá predvolené okraje */
+    padding: 0; /* Zabezpečí, že telo nemá predvolené odsadenie */
+}
+
+header {
+    background-color: #f0f0f0;
+    padding: 10px 0;
+    border-bottom: 1px solid #ccc;
+    position: fixed;
+    top: 0;
+    width: 100%;
+    z-index: 1000;
+    box-sizing: border-box;
+}
+body {
+    padding-top: 60px; /* Ponechané tvoje pôvodné odsadenie kvôli fixnej hlavičke */
+    display: flex;
+    flex-direction: column; /* Uloží priame deti (vrátane main) pod sebou */
+    min-height: 100%; /* Zabezpečí, že telo má minimálne výšku okna */
+    /* Ostatné pôvodné štýly tela */
+    font-family: 'Arial', sans-serif;
+    line-height: 1.6;
+    color: #333;
+    background-color: #ffffff;
+    margin: 0; /* Ponechať */
+    padding-left: 0; /* Zabezpečiť, že ľavý padding je 0 ak bol zmenený */
+}
+
+nav ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    justify-content: flex-start; /* Zarovnanie položiek menu vľavo */
+    align-items: center; /* Vertikálne zarovnanie */
+}
+
+nav ul li {
+    margin-right: 20px;
+}
+
+nav ul li:last-child {
+    margin-right: 0;
+}
+
+nav ul li a {
+    text-decoration: none;
+    color: #333;
+    font-weight: bold;
+    padding: 5px 10px;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+}
+
+nav ul li a:hover {
+    background-color: #e2e2e2;
+}
+
+/* Štýly pre prihláseného používateľa a správcu */
+#usernameItem {
+    margin-left: auto; /* Posunie tento prvok a všetko za ním úplne doprava */
+    margin-right: 20px; /* Odhadnuté medzery */
+    font-weight: normal;
+    color: #555;
+}
+
+#usernameItem span {
+    font-weight: bold;
+    color: #333;
+}
+
+/* Základné štýly pre telo */
+main {
+    padding: 20px;
+    max-width: 1200px;
+    margin: 20px auto;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    flex-grow: 1; /* Umožní main obsadiť dostupný priestor */
+    box-sizing: border-box; /* Zahrnie padding do šírky/výšky */
+}
+
+h1, h2, h3 {
+    color: #333;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    max-width: 500px;
+    margin: 0 auto;
+    padding: 20px;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+}
+
+form div {
+    display: flex;
+    flex-direction: column;
+}
+
+form label {
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: #555;
+}
+
+form input[type="text"],
+form input[type="password"],
+form input[type="email"],
+form input[type="number"],
+form input[type="date"],
+form input[type="time"],
+form select,
+form textarea {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 1em;
+    width: 100%; /* Plná šírka inputu */
+    box-sizing: border-box; /* Zahrnie padding do šírky */
+}
+
+form button[type="submit"],
+.action-button,
+.add-button,
+.display-button {
+    padding: 10px 15px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1em;
+    transition: background-color 0.3s ease;
+    align-self: flex-start; /* Zarovnanie tlačidla k začiatku formulára */
+}
+
+form button[type="submit"]:hover,
+.action-button:hover,
+.add-button:hover,
+.display-button:hover {
+    background-color: #45a049;
+}
+
+.delete-button {
+    background-color: #f44336;
+}
+
+.delete-button:hover {
+    background-color: #da190b;
+}
+
+.error-message {
+    color: red;
+    font-weight: bold;
+    margin-top: 10px;
+    text-align: center;
+}
+
+/* Tabuľky */
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+.data-table th, .data-table td {
+    border: 1px solid #ddd;
+    padding: 10px;
+    text-align: left;
+}
+
+.data-table th {
+    background-color: #f2f2f2;
+    font-weight: bold;
+    text-transform: uppercase;
+    font-size: 0.9em;
+    color: #555;
+}
+
+/* Správca turnaja - rozloženie */
+.content-wrapper {
+    display: flex;
+    gap: 20px;
+    max-width: 1200px;
+    margin: 20px auto;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    min-height: calc(100vh - 100px); /* Prispôsobí sa výške obrazovky mínus header a margin */
+    box-sizing: border-box;
+    overflow: hidden; /* Zabezpečí, že obsah nevyskočí z bloku */
+}
+
+.left-menu {
+    flex: 0 0 200px; /* Pevná šírka */
+    background-color: #f0f0f0;
+    padding: 20px;
+    border-right: 1px solid #eee;
+    box-sizing: border-box;
+}
+
+.left-menu ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.left-menu ul li {
+    margin-bottom: 10px;
+}
+
+.left-menu ul li a {
+    text-decoration: none;
+    color: #333;
+    display: block;
+    padding: 8px 10px;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+}
+
+.left-menu ul li a.active,
+.left-menu ul li a:hover {
+    background-color: #e2e2e2;
+}
+
+main {
+    flex-grow: 1; /* Zaberá zvyšný priestor */
+    padding: 20px;
+    box-sizing: border-box;
+    overflow-y: auto; /* Scroll pre hlavný obsah, ak je príliš dlhý */
+}
+
+.section-block {
+    background-color: #fff;
+    padding: 20px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* Modálne okno */
+.modal {
+    display: none; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 1001; /* Sit on top */
+    left: 0;
+    top: 0;
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+    justify-content: center; /* Center horizontally */
+    align-items: center; /* Center vertically */
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: auto; /* Changed from 15% auto to auto to enable vertical centering with align-items */
+    padding: 20px;
+    border: 1px solid #888;
+    border-radius: 10px;
+    width: 80%; /* Could be more specific, e.g., 500px or max-width */
+    max-width: 600px;
+    box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2), 0 6px 20px 0 rgba(0,0,0,0.19);
+    position: relative; /* Needed for absolute positioning of the close button */
+    box-sizing: border-box; /* Include padding in width calculation */
+}
+
+.modal-content form {
+    margin-top: 20px;
+}
+
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    position: absolute; /* Position relative to .modal-content */
+    right: 15px;
+    top: 10px;
+}
+
+.close:hover,
+.close:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.modal-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+/* Add Button and Dropdown */
+#controlsContainer {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 100;
+}
+
+.add-button {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    font-size: 2.5em;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    background-color: #007bff; /* Primary blue */
+    color: white;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.3s ease;
+}
+
+.add-button:hover {
+    background-color: #0056b3;
+    transform: scale(1.05);
+}
+
+.add-options-dropdown {
+    display: none;
+    position: absolute;
+    bottom: 70px; /* Above the + button */
+    right: 0;
+    background-color: #f9f9f9;
+    min-width: 160px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+    z-index: 1;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.add-options-dropdown button {
+    color: black;
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.add-options-dropdown button:hover {
+    background-color: #f1f1f1;
+}
+
+.add-options-dropdown.show {
+    display: block;
+}
+
+/* Adjust main content padding for fixed add button */
+body > main {
+    padding-bottom: 90px; /* Add space for the fixed button and dropdown */
+}
+
+/* Specific styles for schedule display */
+.schedule-overview {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+}
+
+.schedule-date-block {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 15px;
+    background-color: #fefefe;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.date-header-clickable {
+    text-align: left;
+    color: #0056b3;
+    cursor: pointer;
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 1.5em;
+    padding-bottom: 5px;
+    border-bottom: 2px solid #007bff;
+    display: inline-block; /* Allows border-bottom to fit content */
+}
+
+.location-block {
+    border: 1px solid #eee;
+    border-radius: 6px;
+    margin-top: 20px;
+    padding: 10px;
+    background-color: #fff;
+}
+
+.location-header {
+    margin-top: 0;
+    margin-bottom: 10px;
+    color: #3a8d41; /* Greenish */
+    font-size: 1.2em;
+    border-bottom: 1px solid #e0e0e0;
+    padding-bottom: 5px;
+}
+
+.modern-schedule-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.modern-schedule-table th,
+.modern-schedule-table td {
+    border: 1px solid #eee;
+    padding: 8px 12px;
+    text-align: left;
+    white-space: nowrap; /* Prevent wrapping in cells */
+    overflow: hidden;
+    text-overflow: ellipsis; /* Add ellipsis for overflow */
+}
+
+.modern-schedule-table th {
+    background-color: #f5f5f5;
+    font-weight: bold;
+    color: #666;
+}
+
+.schedule-cell-match {
+    background-color: #e6f7ff; /* Light blue for matches */
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+    position: relative; /* For insert indicators */
+}
+
+.schedule-cell-match:hover {
+    background-color: #cceeff;
+    transform: translateY(-2px); /* Slight lift effect */
+}
+
+/* Drag and Drop Visual Feedback */
+.schedule-cell-match.dragging {
+    opacity: 0.4; /* Make the dragged item semi-transparent */
+}
+
+.schedule-cell-match.drop-target {
+    border: 2px dashed #007bff; /* Indicate valid drop target */
+    background-color: #f0f8ff; /* Lighter background for drop target */
+}
+
+/* Visual shift for insertion point */
+.schedule-cell-match.insert-before {
+    border-top: 3px solid #ff5722; /* Orange-red line above */
+    padding-top: 15px; /* Create space above */
+}
+
+.schedule-cell-match.insert-after {
+    border-bottom: 3px solid #ff5722; /* Orange-red line below */
+    padding-bottom: 15px; /* Create space below */
+}
+
+/* When a row is marked for insert-before/after, ensure no other border interferes */
+.schedule-cell-match.insert-before td,
+.schedule-cell-match.insert-after td {
+    border-top: none;
+    border-bottom: none;
+}
+
+
+/* Responsive design for smaller screens */
+@media (max-width: 768px) {
+    .content-wrapper {
+        flex-direction: column;
+    }
+
+    .left-menu {
+        flex: none;
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid #eee;
+    }
+
+    .left-menu ul {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .left-menu ul li {
+        margin-right: 0;
+        margin-bottom: 5px;
+    }
+
+    main {
+        padding: 15px;
+    }
+
+    form {
+        padding: 15px;
+    }
+
+    .add-button {
+        width: 50px;
+        height: 50px;
+        font-size: 2em;
+    }
+
+    .add-options-dropdown {
+        min-width: 140px;
+    }
+}
+
+
 .filter-container {
     margin-bottom: 20px;
     padding: 15px;
@@ -51,807 +574,313 @@
 }
 #clubsFilterContainer select {
 }
-body.modal-open .left-menu {
-    opacity: 0.5;
-    pointer-events: none;
-}
-body.modal-open .left-menu a {
-    cursor: default;
-}
-body.modal-open main {
-    opacity: 0.5;
-    pointer-events: none;
-    user-select: none;
-}
-.content-wrapper {
-    display: flex;
-    width: 100%;
-    margin: 20px 0;
-    padding: 0 20px;
-    box-sizing: border-box;
-    gap: 20px;
-}
-.left-menu {
-    background-color: #fff;
-    padding: 15px;
-    border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    position: sticky;
-    top: 90px;
-    align-self: flex-start;
-    max-height: calc(100vh - 110px);
-    overflow-y: hidden;
-    z-index: 1002;
-    flex-shrink: 0;
-}
-.left-menu ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-.left-menu li {
-    margin-bottom: 10px;
-}
-.left-menu a {
-    text-decoration: none;
-    color: #007bff;
-    font-size: 1.1em;
-    display: block;
-    padding: 8px 5px;
-    border-radius: 4px;
-    transition: background-color 0.2s ease;
-    white-space: nowrap;
-}
-.left-menu a:hover {
-    background-color: #e9ecef;
-    color: #0056b3;
-}
-.left-menu a:active {
-    color: #004085;
-}
-main {
-    flex-grow: 1;
-    padding: 0;
-    box-shadow: none;
-    background-color: transparent;
-    min-width: 0;
-    overflow-x: hidden; /* Zabezpečí, že main sám nebude mať horizontálny scrollbar */
-    /* overflow-y: auto; Ak tu chceš vertikálny scrollbar pre celý main obsah */
-    align-self: flex-start; /* Zabezpečí, že main sa vertikálne neroztiahne viac, ako je potrebné */
-    min-height: 0; /* NOVÉ: Zabezpečí, že nebude minimálna výška, ktorá by ho rozťahovala */
+#clubsFilterContainer input {
 }
 
-#groupsContent,
-#clubsContent {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 20px;
-    padding: 0;
-    margin-bottom: 20px;
-    align-items: flex-start;
+/* New CSS for tables in prihlasene-kluby.html for fixed header and scrollable body */
+#clubsHeaderTable, #clubsBodyTable {
     width: 100%;
-}
-#groupsContent .section-block,
-#clubsContent .section-block {
-    margin-bottom: 0;
-    flex: 1 1 300px;
-    min-width: 380px;
-    padding: 15px;
-    box-sizing: border-box;
-}
-table {
+    table-layout: fixed; /* Ensures columns align */
     border-collapse: collapse;
-    margin-top: 15px;
-}
-th,
-td {
-    border: none;
-    padding: 10px;
-    text-align: left;
-    white-space: nowrap;
-}
-#categoryTable th, #clubsTable th, .category-group-table th, .group-clubs-table th, #createdTeamsTable th,
-#manageTeamsModal .group-clubs-table th, #clubModal .group-clubs-table th {
-    background-color: #f2f2f2;
-    color: #333;
-    font-weight: bold;
-    text-align: left;
-    padding: 12px 15px;
-    font-size: 0.9em;
-    white-space: nowrap;
-}
-#categoryTable td, #clubsTable td, .category-group-table td, .group-clubs-table td, #createdTeamsTable td,
-#manageTeamsModal .group-clubs-table td, #clubModal .group-clubs-table td {
-    text-align: left;
-    padding: 10px 15px;
-    font-size: 0.9em;
-    white-space: nowrap;
-}
-th {
-    background-color: #f2f2f2;
-    font-weight: bold;
-}
-tbody tr:nth-child(even) {
-    background-color: #f9f9f9;
-}
-tbody tr:hover {
-    background-color: #e9e9e9;
-}
-#createdTeamsTable th[data-filter-type]:hover {
-    cursor: pointer;
-    background-color: #e2e2e2;
-}
-td:last-child {
-    text-align: center;
-}
-.action-button {
-    padding: 5px 10px;
-    border: 1px solid #007bff;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 0.9em;
-    transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
-/*
-.action-button:not(.delete-button) {
-    background-color: #007bff;
-    color: white;
-}
-.action-button:not(.delete-button):hover {
-    background-color: #0056b3;
-    border-color: #004085;
-}
-.action-button:not(.delete-button):active {
-    background-color: #004085;
-    border-color: #002752;
-}
-*/
-
-.action-button.delete-button {
-    background-color: #dc3545;
-    color: white;
-    border-color: #c82333;
-}
-.action-button.delete-button:hover {
-    background-color: #c82333;
-    border-color: #bd2130;
-}
-.action-button.delete-button:active {
-    background-color: #bd2130;
-    border-color: #a71d2a;
-}
-.section-block h2 {
-    text-align: center;
-    margin-bottom: 20px;
-}
-#groupsContent .section-block h2 {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-#groupsContent .category-group-table td:first-child {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-#createdTeamsTable,
-.category-group-table,
-.group-clubs-table {
-    width: auto;
-    table-layout: auto;
-}
-.category-group-table td:last-child,
-.group-clubs-table td:last-child,
-#createdTeamsTable td:last-child {
-    white-space: nowrap;
-    padding: 5px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 5px;
-}
-.category-group-table th:last-child,
-.group-clubs-table th:last-child,
-#createdTeamsTable th:last-child {
-    width: 200px;
-    min-width: 200px;
-    white-space: nowrap;
-}
-#createdTeamsTable thead {
-}
-#teamCreationContentSection {
-}
-#teamCreationForm label,
-#teamCreationForm input,
-#teamCreationForm select {
-    display: block;
-    margin-bottom: 10px;
-}
-#teamCategoryCountContainer {
-    margin-top: 15px;
-    padding: 10px;
-    border: 1px solid #eee;
-    border-radius: 4px;
-    background-color: #fcfcfc;
-}
-.category-count-pair {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    margin-bottom: 10px;
-}
-.category-count-pair select {
-    flex-grow: 1;
-    max-width: 200px;
-    padding: 5px;
-}
-.category-count-pair input[type="number"] {
-    width: 60px;
-    padding: 5px;
-}
-.category-count-pair .remove-button {
-    padding: 5px;
-    background-color: #dc3545;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 0.9em;
-}
-.category-count-pair .remove-button:hover {
-    background-color: #c82333;
-}
-.add-button {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    background-color: #28a745;
-    color: white;
-    font-size: 2em;
-    border: none;
-    cursor: pointer;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-    z-index: 1000;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    transition: background-color 0.3s ease;
-}
-.add-button:hover {
-    background-color: #c46f50;
+#clubsHeaderTable thead, #clubsHeaderTable tbody, #clubsHeaderTable tfoot,
+#clubsBodyTable thead, #clubsBodyTable tbody, #clubsBodyTable tfoot {
+    display: block; /* Important for scrollable tbody */
 }
 
-/* Nové štýly pre menu s tlačidlami */
-.add-button-menu {
-    position: fixed;
-    bottom: 80px; /* 20px od spodku + 50px výška tlačidla + 10px medzera */
-    right: 20px;
-    background-color: #fff;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-    padding: 10px;
-    display: none; /* Predvolene skryté, JS ho zobrazí */
-    flex-direction: column;
-    gap: 10px;
-    z-index: 1001; /* Vyšší z-index ako hlavné tlačidlo */
-    width: 200px; /* Nastavená šírka menu */
-}
-
-.add-button-menu.show {
-    display: flex; /* Trieda pre zobrazenie menu cez JS */
-}
-
-.add-button-menu button {
-    background-color: #007bff;
-    color: white;
-    padding: 10px 15px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 0.9em;
-    text-align: left;
-    transition: background-color 0.2s ease;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.add-button-menu button:hover {
-    background-color: #0056b3;
-}
-
-.add-button-menu button:active {
-    background-color: #004085;
-}
-
-.modal {
+/* Hide original tbody for header table as we only use tfoot for headers */
+#clubsHeaderTable tbody {
     display: none;
-    position: fixed;
-    z-index: 1001;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    overflow: auto;
-    background-color: rgba(0, 0, 0, 0.4);
-    justify-content: center;
-    align-items: center;
 }
-.modal-content {
-    background-color: #fefefe;
-    margin: auto;
-    padding: 20px;
-    border: 1px solid #888;
-    width: 90%;
-    max-width: 600px;
-    border-radius: 8px;
-    position: relative;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-}
-.modal-content h2 {
-    margin-top: 0;
-    border-bottom: 1px solid #eee;
-    padding-bottom: 10px;
-    margin-bottom: 20px;
-}
-.modal-content form div {
-    margin-bottom: 15px;
-}
-.modal-content form label {
-    display: block;
-    margin-bottom: 5px;
+
+/* Style for the fixed header row (which is in tfoot of clubsHeaderTable) */
+#clubsSummaryTableHeader th {
+    /* Identical styles to body table td to ensure alignment */
+    padding: 10px 15px;
+    background-color: #f2f2f2;
     font-weight: bold;
-}
-.modal-content form input[type="text"],
-.modal-content form input[type="number"],
-.modal-content form select,
-.modal-content form input[type="time"], /* NOVÉ: pre časové inputy */
-.modal-content form input[type="url"], /* Pre Google Maps URL */
-.modal-content form input[type="date"] /* Pre dátumové inputy */
-{
-    width: calc(100% - 22px);
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+    border-top: 1px solid #ddd; /* Ensure top border also */
     box-sizing: border-box;
-    font-size: 1em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
-.modal-content form button[type="submit"] {
-    background-color: #007bff;
-    color: white;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 1em;
-    transition: background-color 0.3s ease;
+
+/* Specific width for the first column (Názov klubu) */
+#clubsSummaryTableHeader th:first-child {
+    width: 35%; /* Prispôsobte podľa potreby, aby sa zhodovalo s telom */
 }
-.modal-content form button[type="submit"]:hover {
-    background-color: #0056b3;
+
+/* Specific width for other columns (Categories) */
+#clubsSummaryTableHeader th:nth-child(n + 2) {
+    width: 13%; /* Prispôsobte podľa počtu kategórií */
+    text-align: center;
 }
-.modal-content .close {
-    color: #aaa;
-    float: right;
-    font-size: 28px;
-    font-weight: bold;
-    position: absolute;
-    top: 10px;
-    right: 15px;
-    cursor: pointer;
+
+/* Adjust the last header cell to prevent double border if needed */
+#clubsSummaryTableHeader th:last-child {
+    border-right: 1px solid #ddd; /* Explicit border for the last one */
 }
-.modal-content .close:hover,
-.modal-content .close:focus {
-    color: black;
-    text-decoration: none;
+
+
+#scrollableTableBodyContainer {
+    max-height: 65vh; /* Adjust as needed */
+    overflow-y: auto;
+    border: 1px solid #ccc;
+    border-top: none; /* No top border, as it connects to the fixed header */
 }
-.modal-content .form-group {
-    margin-bottom: 15px;
+
+#clubsBodyTable tbody td {
+    padding: 10px 15px;
+    border-bottom: 1px solid #eee;
+    text-align: left; /* Default alignment */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    box-sizing: border-box;
 }
-@media (max-width: 768px) {
-    .content-wrapper {
-        flex-direction: column;
-        padding: 0 10px;
-    }
-    .left-menu {
-        position: static;
-        margin-bottom: 20px;
-        width: 100%;
-        max-height: none;
-        overflow-y: visible;
-    }
-    #groupsContent,
-    #clubsContent {
-        flex-direction: column;
-        gap: 10px;
-    }
-    #groupsContent .section-block,
-    #clubsContent .section-block {
-        min-width: 100%;
-    }
-    .modal-content {
-        width: 95%;
-    }
-    .modal-content form input[type="text"],
-    .modal-content form input[type="number"],
-    .modal-content form select,
-    .modal-content form input[type="time"], /* NOVÉ: pre časové inputy */
-    .modal-content form input[type="url"], /* Pre Google Maps URL */
-    .modal-content form input[type="date"] /* Pre dátumové inputy */
-    {
-        width: calc(100% - 20px);
-    }
-    .category-count-pair {
-        flex-direction: column;
-        gap: 5px;
-        align-items: stretch;
-    }
-    .category-count-pair select,
-    .category-count-pair input[type="number"] {
-        max-width: none;
-        width: 100%;
-    }
-    /* Pre mobilné zariadenia prispôsobíme aj umiestnenie menu, ak je potrebné */
-    .add-button-menu {
-        bottom: 70px; /* Upravená pozícia pre menšie obrazovky */
-    }
+
+/* Specific width for the first column in body */
+#clubsBodyTable tbody td:first-child {
+    width: 35%; /* Must match header first-child width */
 }
-#clubModal .modal-content #clubFormContent,
-#clubModal .modal-content #clubFilterContent {
+
+/* Specific width for other columns in body (Categories' cells) */
+#clubsBodyTable tbody td:nth-child(n + 2) {
+    width: 13%; /* Must match header other columns width */
+    text-align: center; /* Center align these cells */
+}
+
+/* No right border for the very last column cell in the body, to match design */
+#clubsBodyTable tbody td:last-child {
+    border-right: 1px solid #ddd; /* Keep the border for consistency */
+}
+
+/* Ensure no horizontal scrollbar on the body */
+#scrollableTableBodyContainer table {
+    margin-right: -17px; /* Compensate for scrollbar width */
+}
+#scrollableTableBodyContainer {
+    padding-right: 17px; /* Add padding to account for scrollbar area */
+}
+
+/* Style for the fixed "longest name" row in the clubsHeaderTable tbody */
+/* This row exists purely to help set column widths consistently. */
+#longestNameRowFixedBody td {
+     /* Tieto štýly by mali byť zhodné s prvým TD v clubsBodyTable pre zarovnanie */
+     padding: 10px 15px; /* Rovnaký padding ako prvý TD */
+     border-bottom: 1px solid #eee;
+     white-space: nowrap;
+     min-width: 15vw; /* Mala by mať šírku prvého stĺpca */
+     color: transparent; /* Text je priehľadný, slúži len na určenie šírky */
+     text-align: left; /* Zarovnať vľavo ako prvý stĺpec */
+}
+
+/* Špecifické štýly pre druhú a ďalšie TD v longestNameRowFixedBody, ak existujú (napr. pre stĺpec "Tímy") */
+#longestNameRowFixedBody td:nth-child(n + 2) {
+     padding: 10px 15px; /* Rovnaký padding */
+     text-align: center; /* Centrovať ako ostatné stĺpce */
+     min-width: 3vw; /* Menšia minimálna šírka */
+}
+
+/* Zabezpečiť, že posledná TD v longestNameRowFixedBody nemá pravý okraj */
+#longestNameRowFixedBody td:last-child {
+     border-right: none;
+}
+
+
+#clubsSummaryTable {
     width: 100%;
+    table-layout: fixed; /* Môže pomôcť s konzistenciou šírky, ale 'auto' s min-width a max-width je často lepšie */
+    border-collapse: collapse;
 }
-#filterSelect {
-    width: calc(100% - 16px);
+
+#clubsSummaryTable th, #clubsSummaryTable td {
+    padding: 10px;
+    border: 1px solid #ddd;
+    text-align: left;
+}
+
+#clubsSummaryTable th {
+    background-color: #f2f2f2;
+    font-weight: bold;
+}
+
+.table-action-buttons {
+    display: flex;
+    gap: 5px;
+    justify-content: center;
+}
+
+.table-action-buttons .action-button {
+    padding: 5px 10px;
+    font-size: 0.9em;
+}
+
+.status-message {
+    margin-top: 15px;
+    padding: 10px;
+    border-radius: 5px;
+    text-align: center;
+    font-weight: bold;
+}
+
+.status-message.success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.status-message.error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+/* Styles for the schedule-cell-accommodation */
+.schedule-cell-accommodation {
+    background-color: #e6ffe6; /* Light green for accommodation */
+    border: 1px solid #4CAF50;
+    border-radius: 8px;
     padding: 8px;
     box-sizing: border-box;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 1em;
+    overflow: hidden;
+    white-space: normal;
+    text-overflow: ellipsis;
+    z-index: 5; /* Lower than matches, if overlapping */
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    position: relative; /* For text positioning */
 }
-.applied-filter-value {
-    display: block;
+
+.schedule-cell-accommodation:hover {
+    background-color: #d4fcd4;
+    transform: translateY(-1px);
+}
+
+.schedule-cell-accommodation .date-range {
     font-size: 0.8em;
     color: #555;
-    margin-top: 2px;
-    font-weight: normal;
+    margin-bottom: 4px;
 }
 
-/*-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
-
-
-/* Kontajner, ktorý umožňuje horizontálny scroll, ak je tabuľka príliš široká */
-.schedule-table-container {
-    overflow-x: auto;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    background-color: #fff;
-    width: 100%; /* Tabuľka vyplní dostupnú šírku rodiča main, ktorý je flex-grow: 1 */
-    margin: 20px auto 0 auto;
-    position: relative; /* Dôležité pre vytvorenie nového stacking kontextu */
-    z-index: 6; /* Nastavené na nižší z-index ako busOverlayContainer */
-    height: auto; /* Zmenené na auto, aby sa prispôsobila obsahu */
-    max-height: none; /* Zruší predošlé obmedzenia výšky */
-    overflow-y: visible; /* Zabezpečí, že sa vertikálny scrollbar objaví na celom kontajneri */
-}
-
-/* Základná tabuľka rozvrhu */
-.match-schedule-table {
-    border-collapse: collapse;
-    table-layout: fixed; /* Kľúčové pre vynútenie pevných šírok stĺpcov */
-    width: 100%; /* Zabezpečí, že tabuľka vyplní dostupnú šírku */
-    min-width: 700px; /* Minimálna šírka tabuľky, aby sa obsah nezlomil príliš */
-}
-
-/* Základné štýly pre hlavičky a bunky */
-.match-schedule-table th,
-.match-schedule-table td {
-    border: 1px solid #e0e0e0;
-    padding: 10px 15px; /* Jednotný padding pre hlavičky aj bunky */
-    text-align: left; /* Zmenené na left pre prehľadnosť */
-    vertical-align: middle; /* Zarovnanie obsahu na stred vertikálne */
-    position: relative; /* Dôležité pre prípadné budúce absolútne pozicionovanie */
-    box-sizing: border-box;
-    white-space: nowrap; /* Zabraňuje zalomeniu textu v bunkách */
-    overflow: hidden; /* Skryje pretekajúci text */
-    text-overflow: ellipsis; /* Zobrazí tri bodky, ak text preteká */
-}
-
-/* Špecifické štýly pre hlavičky (th) */
-.match-schedule-table th {
-    background-color: #f0f0f0;
+.schedule-cell-accommodation .team-name-accommodation {
     font-weight: bold;
     color: #333;
-    position: sticky;
-    top: 0;
-    z-index: 10;
-}
-
-/* Prvý stĺpec (Miesto / Čas) - pevný */
-.match-schedule-table .fixed-column {
-    background-color: #007bff;
-    color: white;
-    font-size: 0.9em;
-    width: 160px; /* Pevná šírka pre tento stĺpec */
-    min-width: 160px;
-    max-width: 160px;
-    position: sticky;
-    left: 0;
-    z-index: 11;
-    box-shadow: 2px 0 5px rgba(0,0,0,0.1);
-    padding: 5px;
-    text-align: left;
-    white-space: normal; /* Povoliť zalomenie textu, ak je názov miesta dlhý */
-}
-
-/* Pôvodné štýly pre hlavičku miesta - tieto by sa už nemali používať, ak je všetko v tabuľke */
-.match-schedule-table .schedule-location-header {
-    background-color: #007bff; /* Predvolená modrá */
-    color: white;
-    font-size: 1em;
-    padding: 5px;
-    white-space: normal; /* Povoliť zalomenie textu, ak je názov miesta dlhý */
-}
-
-/* Hlavička dátumu v hornom riadku - už nie je potrebné flex/block, bude to súčasť thead */
-.schedule-date-header {
-    background-color: #5cb85c;
-    color: white;
-    padding: 5px 0;
-    margin: 0;
-    font-size: 1.1em;
-    width: 100%;
-    display: table-cell; /* Zabezpečí, že sa správa ako bunka tabuľky */
-    box-sizing: border-box;
-    white-space: nowrap;
-}
-
-/* Riadok s časmi pod dátumom - už nie je potrebné flex, bude to súčasť thead */
-.schedule-times-row {
-    display: table-row; /* Zabezpečí, že sa správa ako riadok tabuľky */
-    justify-content: space-around;
-    padding: 5px;
-    background-color: #e6e6e6;
-    border-top: 1px solid #ddd;
-    margin: 0;
-    width: 100%;
-    box-sizing: border-box;
-}
-.schedule-times-row span {
-    width: auto; /* Zmenené na auto */
-    flex-shrink: 0; /* Zabrání zmenšeniu */
-    text-align: center;
-    padding: 0 2px;
-    box-sizing: border-box;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    border-left: 1px solid #555;
-    border-right: 1px solid #555;
-    display: table-cell; /* Zabezpečí, že sa správa ako bunka tabuľky */
-}
-
-
-/* Štýly pre prázdne bunky */
-.match-schedule-table td:empty {
-    background-color: #f7f7f7;
-}
-
-/* Placeholder pre prázdne bunky - už nebude potrebné, ak sú zápasy riadky */
-.no-match-placeholder {
-    display: none; /* Skryje placeholder */
-}
-
-/* Štýly pre blok zápasu vo vnútri bunky - tieto štýly už nebudú platiť, keďže zápas je riadok */
-.schedule-cell-match {
-    /* Pôvodné absolútne pozicionovanie a flexbox boli odstránené */
-    background-color: #e0f7fa; /* Svetlo modrá */
-    border: 1px solid #00bcd4; /* Tyrkysová */
-    border-radius: 4px;
-    padding: 5px;
-    margin: 0;
-    box-sizing: border-box;
-    cursor: pointer;
-    display: table-row; /* Zabezpečí, že sa správa ako riadok tabuľky */
-}
-
-/* NOVÉ: Kontajner pre SVG autobusy - pôvodný už nebude takto fungovať s novou štruktúrou */
-#busOverlayContainer {
-    /* Tieto štýly môžu byť problematické s novou tabuľkovou štruktúrou.
-       Ak sa majú autobusy stále prekrývať, bude potrebný iný prístup (napr. SVG vložené priamo do TD,
-       alebo komplexnejšie pozicionovanie). Pre jednoduchosť ich zatiaľ nechám tak, ale upozorňujem na to. */
-    position: absolute;
-    top: 0;
-    left: 0;
     width: 100%;
-    height: 100%;
-    pointer-events: none; /* Umožní kliknutie cez tento div na elementy pod ním, ale SVG polygóny môžu mať pointer-events: all; */
-    z-index: 7;
 }
 
-/* NOVÉ: Štýly pre samotný SVG element autobusu */
-.bus-svg {
-    pointer-events: all;
-    overflow: visible;
-    z-index: 2;
-}
-
-/* NOVÉ: Štýly pre samotný polygón autobusu */
-.schedule-bus-polygon {
-    fill: #d896ff; 
-    stroke: #be29ec; 
-    stroke-width: 1;
-    opacity: 0.5;
-}
-
-/* NOVÉ: Štýly pre text v SVG autobuse */
-.schedule-bus-text,
-.schedule-bus-route-text,
-.schedule-bus-time-text,
-.schedule-bus-notes-text {
-    fill: black;
-    font-size: 12px;
-    font-weight: bold;
-    pointer-events: none;
-    user-select: none;
-}
-
-.schedule-bus-route-text {
-    font-size: 10px;
-}
-.schedule-bus-time-text {
-    font-size: 9px;
-    font-weight: normal;
-}
-.schedule-bus-notes-text {
-    font-size: 9px;
-}
-
-
-.schedule-cell-content {
-    /* Tento štýl už pravdepodobne nebude potrebný, ak sa zápasy zobrazujú ako riadky */
-    flex-grow: 1;
-    overflow-y: auto;
-    overflow-x: hidden;
-    padding-bottom: 5px;
-    box-sizing: border-box;
-    min-height: 0;
-}
-
-/* Odstránenie predvolených marginov z p elementov vnútri zápasu - teraz sa aplikuje na TD */
-.schedule-cell-match td {
-    margin: 0;
-    padding: 5px 10px; /* Upravený padding pre bunky zápasu */
-    overflow-wrap: break-word;
-    min-width: 0;
-}
-.schedule-cell-time {
-    font-size: 0.8em; /* Zväčšené písmo pre čas */
-    color: #555;
-    margin-bottom: 2px;
-    text-align: left; /* Zarovnať vľavo */
-}
-.schedule-cell-category {
-    font-weight: bold;
-    color: #0056b3;
-    font-size: 0.9em; /* Zväčšené písmo pre kategóriu */
-}
-
-.schedule-cell-teams {
-    font-weight: bold;
-    color: #333;
-    font-size: 0.9em; /* Zväčšené písmo pre tímy */
-}
-
-.schedule-cell-club-names {
-    font-style: italic;
+.schedule-cell-accommodation .accommodation-name {
+    font-size: 0.9em;
     color: #666;
-    font-size: 0.8em; /* Zväčšené písmo pre názvy klubov */
-    white-space: normal;
-}
-
-
-/* Akčné tlačidlá vo vnútri bloku zápasu - teraz v samostatnej bunke alebo ako súčasť riadku */
-.schedule-cell-actions {
-    display: flex;
-    justify-content: center; /* Centruje tlačidlá */
-    gap: 5px; /* Väčší odstup medzi tlačidlami */
-    padding: 5px;
-    background-color: rgba(255, 255, 255, 0.9);
-    border-top: 1px solid #ccc;
-    box-sizing: border-box;
-    flex-shrink: 0;
-    align-items: center;
-    font-size: 0.9em; /* Väčšie písmo pre akčnú oblasť */
-}
-
-.schedule-cell-actions button {
-    flex-grow: 0; /* Zabraňuje roztiahnutiu */
-    padding: 5px 10px; /* Väčší padding pre tlačidlá */
-    border: none;
-    border-radius: 3px;
-    cursor: pointer;
-    font-size: 0.8em; /* Väčšie písmo pre text na tlačidlách */
+    margin-top: 4px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    width: 100%;
 }
 
-.schedule-cell-actions .edit-btn {
-    background-color: #28a745;
-    color: white;
-}
-
-.schedule-cell-actions .delete-btn {
-    background-color: #dc3545;
-    color: white;
-}
-
-.add-options-dropdown {
-    position: fixed;
-    bottom: 80px; /* 20px od spodku + 50px výška tlačidla + 10px medzera */
-    right: 20px;
-    background-color: #fff;
+/* Bus Route Specific Styles */
+.schedule-cell-bus {
+    background-color: #fff3cd; /* Light yellow for buses */
+    border: 1px solid #ffc107;
     border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-    padding: 10px;
-    display: none; /* Predvolene skryté, JS ho zobrazí */
-    flex-direction: column;
-    gap: 10px;
-    z-index: 1001; /* Vyšší z-index ako hlavné tlačidlo */
-    width: 200px; /* Nastavená šírka menu */
-}
-
-.add-options-dropdown.show {
-    display: flex; /* Trieda pre zobrazenie menu cez JS */
-}
-
-.add-options-dropdown button {
-    background-color: #007bff;
-    color: white;
-    padding: 10px 15px;
-    border: none;
-    border-radius: 4px;
+    padding: 8px;
+    box-sizing: border-box;
+    overflow: hidden;
+    white-space: normal;
+    text-overflow: ellipsis;
+    z-index: 6; /* Higher than accommodation, lower than matches */
     cursor: pointer;
-    font-size: 0.9em;
-    text-align: left;
-    transition: background-color 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    position: relative;
+}
+
+.schedule-cell-bus:hover {
+    background-color: #ffe8a1;
+    transform: translateY(-1px);
+}
+
+.schedule-cell-bus .bus-time-route {
+    font-size: 0.8em;
+    color: #555;
+    margin-bottom: 4px;
+}
+
+.schedule-cell-bus .bus-name {
+    font-weight: bold;
+    color: #333;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    width: 100%;
 }
 
-.add-options-dropdown button:hover {
-    background-color: #0056b3;
+.schedule-cell-bus .bus-route-details {
+    font-size: 0.9em;
+    color: #666;
+    margin-top: 4px;
+    white-space: normal; /* Allow route details to wrap */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
 }
 
-.add-options-dropdown button:active {
-    background-color: #004085;
+
+/* Styling for match schedule table headers based on place type */
+.match-schedule-table .schedule-location-header {
+    padding: 10px;
+    font-weight: bold;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+    border-top: 1px solid #ddd;
+    box-sizing: border-box;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
 }
-.hall-address {
-    font-size: 0.5em;
-    color: white;
-    text-decoration: none;
+
+.match-schedule-table .schedule-location-header .hall-name {
+    font-size: 1.1em;
+    margin: 0;
+    flex-grow: 1;
 }
-.hall-address a {
-    text-decoration: none;
+
+.match-schedule-table .schedule-location-header .hall-address {
+    font-size: 0.85em;
+    color: #555;
+    white-space: nowrap;
+}
+
+.match-schedule-table .schedule-location-header .hall-address a {
     color: inherit;
-}
-#matchesContainer {
-    overflow: hidden; /* Toto by mohlo byť pôvodne kvôli absolútnemu pozicionovaniu, teraz to môžeme zvážiť */
-    padding-bottom: 0 !important;
-    margin-bottom: 0 !important;
+    text-decoration: none;
 }
 
-/* NOVÉ: Štýly pre rôzne typy miest */
-/* Zvýšenie špecifickosti pre typy miest */
-.match-schedule-table .schedule-location-header.place-type-sport-hall {
-    background-color: #007bff; /* Modrá */
-    border: 1px solid #0056b3;
-    color: white; /* Zabezpečí biely text */
+.match-schedule-table .schedule-location-header .hall-address a:hover {
+    text-decoration: underline;
+}
+
+.match-schedule-table .schedule-location-header.place-type-Športová-hala {
+    background-color: #d4edda; /* Svetlo zelená */
+    border: 1px solid #c3e6cb;
+    color: #155724;
 }
 
 .match-schedule-table .schedule-location-header.place-type-catering {
@@ -872,10 +901,6 @@ td:last-child {
     color: #333; /* Tmavší text */
 }
 .schedule-cell-accommodation {
-    /* Tieto štýly pre absolútne pozicionovanie pre ubytovanie sa musia prehodnotiť
-       v závislosti od toho, ako sa ubytovanie zobrazuje v novej tabuľke.
-       Pre túto chvíľu ich ponechám, ale pravdepodobne budú vyžadovať úpravu
-       alebo úplné odstránenie, ak sa ubytovanie zobrazuje ako samostatné riadky/bunky. */
     position: absolute;
     background-color: #e6ffe6; /* Svetlo zelená farba pre ubytovanie */
     border: 1px solid #4CAF50;
@@ -889,21 +914,4 @@ td:last-child {
     cursor: pointer;
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    font-size: 0.8em;
-    color: #333;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.schedule-cell-accommodation .schedule-cell-title {
-    font-weight: bold;
-    margin-bottom: 5px;
-    color: #2e7d32; /* Tmavšia zelená pre názov */
-}
-
-.schedule-cell-accommodation .schedule-cell-teams {
-    font-size: 0.9em;
-    line-height: 1.2;
 }
