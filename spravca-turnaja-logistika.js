@@ -631,8 +631,9 @@ async function displayMatchesAsSchedule() {
                 scheduleHtml += `<tr>
                     <th style="width: 10%;">Čas začiatok</th>
                     <th style="width: 10%;">Čas koniec</th>
-                    <th style="width: 30%;">Názov domáci</th>
-                    <th style="width: 30%;">Názov hostia</th>
+                    <th style="width: 20%;">Miesto</th> <!-- Added new column for 'Miesto' -->
+                    <th style="width: 20%;">Názov domáci</th>
+                    <th style="width: 20%;">Názov hostia</th>
                     <th style="width: 10%;">Kód tímu domáci</th>
                     <th style="width: 10%;">Kód tímu hostia</th>
                 </tr></thead><tbody>`;
@@ -657,6 +658,7 @@ async function displayMatchesAsSchedule() {
                         <tr class="schedule-cell-match" data-id="${match.id}" data-type="${match.type}" style="cursor: pointer;">
                             <td>${match.startTime}</td>
                             <td>${formattedEndTime}</td>
+                            <td>${match.location || 'N/A'}</td> <!-- Added match.location -->
                             <td>${match.team1ClubName || 'N/A'}</td>
                             <td>${match.team2ClubName || 'N/A'}</td>
                             <td>${match.team1DisplayName || 'N/A'}</td>
