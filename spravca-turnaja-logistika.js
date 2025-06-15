@@ -416,7 +416,7 @@ async function findFirstAvailableTime() {
     const matchLocationSelect = document.getElementById('matchLocationSelect');
     const matchDurationInput = document.getElementById('matchDuration');
     const matchBufferTimeInput = document.getElementById('matchBufferTime');
-    const matchStartTimeInput = document.getElementById('matchStartTime'); // Corrected assignment
+    const matchStartTimeInput = document.getElementById('matchStartTime');
 
     const selectedDate = matchDateSelect.value;
     const selectedLocationName = matchLocationSelect.value;
@@ -961,13 +961,14 @@ async function displayMatchesAsSchedule() {
 
                     await batch.commit();
                     await showMessage('Úspech', 'Zápas úspešne presunutý a časy aktualizované! Rozvrh sa aktualizuje.');
+                    await displayMatchesAsSchedule(); // Refresh display first
+                    editMatch(matchIdToProcess); // Then open modal for the dragged match
                 } catch (error) {
                     console.error("Chyba pri presune zápasu (zachytená chyba):", error);
                     await showMessage('Chyba', `Chyba pri presune zápasu: ${error.message}`);
                 }
                 e.target.classList.remove('dragging');
                 draggedMatchId = null; // Reset after drop
-                await displayMatchesAsSchedule(); // Re-render the schedule to reflect changes
             });
             
             row.addEventListener('dragend', (e) => {
@@ -1090,13 +1091,14 @@ async function displayMatchesAsSchedule() {
 
                     await batch.commit();
                     await showMessage('Úspech', 'Zápas úspešne presunutý a časy aktualizované! Rozvrh sa aktualizuje.');
+                    await displayMatchesAsSchedule(); // Refresh display first
+                    editMatch(matchIdToProcess); // Then open modal for the dragged match
 
                 } catch (error) {
                     console.error("Chyba pri presune zápasu na prázdny blok (zachytená chyba):", error);
                     await showMessage('Chyba', `Chyba pri presune zápasu: ${error.message}`);
                 }
                 draggedMatchId = null; // Reset after drop
-                await displayMatchesAsSchedule(); // Re-render the schedule to reflect changes
             });
 
             locationBlock.addEventListener('dragend', (e) => {
