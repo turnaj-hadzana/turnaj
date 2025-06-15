@@ -832,7 +832,6 @@ async function displayMatchesAsSchedule() {
 
                 // Ensure draggedMatchId is valid and not dropping on itself
                 if (!draggedMatchId || draggedMatchId === targetMatchId) {
-                    // console.log("Invalid drop operation: no draggedMatchId, or dropping on self.");
                     return;
                 }
 
@@ -983,7 +982,6 @@ async function displayMatchesAsSchedule() {
                 const targetLocationName = targetLocationBlock ? targetLocationBlock.dataset.location : null;
                 
                 if (!draggedMatchId || !targetDate || !targetLocationName) {
-                    // console.log("Invalid drop on location block: missing draggedMatchId, targetDate, or targetLocationName");
                     return;
                 }
 
