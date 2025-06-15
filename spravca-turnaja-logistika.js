@@ -1,7 +1,7 @@
 import { db, categoriesCollectionRef, groupsCollectionRef, clubsCollectionRef, matchesCollectionRef, playingDaysCollectionRef, placesCollectionRef, busesCollectionRef, teamAccommodationsCollectionRef, openModal, closeModal, populateCategorySelect, populateGroupSelect, getDocs, doc, setDoc, addDoc, getDoc, query, where, orderBy, deleteDoc, writeBatch, settingsCollectionRef, showMessage, showConfirmation } from './spravca-turnaja-common.js';
 const SETTINGS_DOC_ID = 'matchTimeSettings';
 
-let draggedMatchId = null; // Global variable to store the ID of the dragged match
+// Removed: let draggedMatchId = null; // Global variable is no longer needed
 
 /**
  * Populates a select element with playing days from Firestore.
@@ -802,19 +802,17 @@ async function displayMatchesAsSchedule() {
         // Drag and Drop Event Listeners
         matchesContainer.querySelectorAll('.schedule-cell-match').forEach(row => {
             row.addEventListener('dragstart', (e) => {
-                // Use currentTarget to ensure we get the data-id from the <tr>
-                const potentialMatchId = e.currentTarget.dataset.id;
-                if (potentialMatchId) {
-                    draggedMatchId = potentialMatchId; 
-                    e.dataTransfer.setData('text/plain', draggedMatchId); // For older browsers/fallbacks
-                    e.dataTransfer.setData('match/id', draggedMatchId); // Specific type for our app
-                    e.currentTarget.classList.add('dragging'); // Apply class to the currentTarget
-                    console.log('Drag started for match ID (from currentTarget):', draggedMatchId); // Log for debugging
+                const matchId = e.currentTarget.dataset.id;
+                if (matchId) {
+                    e.dataTransfer.setData('match/id', matchId); // Primary data type
+                    e.dataTransfer.setData('text/plain', matchId); // Fallback for broader compatibility
+                    e.currentTarget.classList.add('dragging');
+                    console.log('Drag started for match ID:', matchId);
                     console.log('e.currentTarget:', e.currentTarget);
                     console.log('e.currentTarget.dataset:', e.currentTarget.dataset);
                 } else {
                     console.error('Drag start failed: No data-id found on currentTarget.', e.currentTarget);
-                    draggedMatchId = null; // Ensure it's null if ID is missing
+                    e.preventDefault(); // Prevent drag operation if no ID
                 }
             });
 
@@ -856,26 +854,23 @@ async function displayMatchesAsSchedule() {
 
             row.addEventListener('drop', async (e) => {
                 e.preventDefault();
-                // Rely solely on the global variable for the dragged match ID
-                let matchIdToProcess = draggedMatchId; 
+                // Get match ID from dataTransfer, preferring 'match/id' then 'text/plain'
+                let matchIdToProcess = e.dataTransfer.getData('match/id') || e.dataTransfer.getData('text/plain'); 
 
-                console.log('Drop event triggered on match row. Captured matchIdToProcess (from global):', matchIdToProcess); // Log for debugging
+                console.log('Drop event triggered on match row. Captured matchIdToProcess (from dataTransfer):', matchIdToProcess); // Log for debugging
                 console.log('e.target on drop:', e.target);
                 console.log('e.target.closest("tr") on drop:', e.target.closest('tr'));
-
 
                 // Always clean up drop-target class and insertion indicators
                 matchesContainer.querySelectorAll('.drop-target, .insert-before, .insert-after').forEach(el => el.classList.remove('drop-target', 'insert-before', 'insert-after'));
 
                 if (!matchIdToProcess) {
-                    await showMessage('Chyba', 'Presun zápasu zrušený: ID presúvaného zápasu nie je platné.');
-                    console.error("Drop operation cancelled: matchIdToProcess is null or empty. draggedMatchId was:", draggedMatchId); // More detailed logging
-                    // Ensure the dragged item's class is removed in case of early exit
-                    const draggedElement = document.querySelector(`.schedule-cell-match[data-id="${draggedMatchId}"]`);
+                    await showMessage('Chyba', 'Presun zápasu zrušený: ID presúvaného zápasu nie je platné alebo sa nepodarilo preniesť.');
+                    console.error("Drop operation cancelled: matchIdToProcess is null or empty after dataTransfer.getData().");
+                    const draggedElement = document.querySelector(`.schedule-cell-match[data-id="${matchIdToProcess}"]`);
                     if (draggedElement) {
                         draggedElement.classList.remove('dragging');
                     }
-                    draggedMatchId = null; // Reset immediately on error
                     return;
                 }
 
@@ -891,11 +886,10 @@ async function displayMatchesAsSchedule() {
 
                 if (matchIdToProcess === targetMatchId) { 
                     console.log('Dropping onto itself or no effective change, ignoring.');
-                    const draggedElement = document.querySelector(`.schedule-cell-match[data-id="${draggedMatchId}"]`);
+                    const draggedElement = document.querySelector(`.schedule-cell-match[data-id="${matchIdToProcess}"]`);
                     if (draggedElement) {
                         draggedElement.classList.remove('dragging');
                     }
-                    draggedMatchId = null; // Reset after successful self-drop/no-change
                     return;
                 }
                 
@@ -903,11 +897,10 @@ async function displayMatchesAsSchedule() {
                 if (!newDate || !newLocation) {
                     await showMessage('Chyba', 'Cieľové miesto pre presun nie je platné (chýba dátum alebo miesto).');
                     console.error('Target date or location is null:', { newDate, newLocation });
-                    const draggedElement = document.querySelector(`.schedule-cell-match[data-id="${draggedMatchId}"]`);
+                    const draggedElement = document.querySelector(`.schedule-cell-match[data-id="${matchIdToProcess}"]`);
                     if (draggedElement) {
                         draggedElement.classList.remove('dragging');
                     }
-                    draggedMatchId = null; // Reset immediately on error
                     return;
                 }
 
@@ -917,11 +910,10 @@ async function displayMatchesAsSchedule() {
                     if (!draggedMatchDoc.exists()) {
                         await showMessage('Chyba', 'Presúvaný zápas sa nenašiel v databáze.');
                         console.error('Dragged match document not found for ID:', matchIdToProcess);
-                        const draggedElement = document.querySelector(`.schedule-cell-match[data-id="${draggedMatchId}"]`);
+                        const draggedElement = document.querySelector(`.schedule-cell-match[data-id="${matchIdToProcess}"]`);
                         if (draggedElement) {
                             draggedElement.classList.remove('dragging');
                         }
-                        draggedMatchId = null; // Reset immediately on error
                         return;
                     }
                     const draggedMatchData = draggedMatchDoc.data();
@@ -1009,11 +1001,11 @@ async function displayMatchesAsSchedule() {
                     // Clear visual feedback regardless of success or failure
                     matchesContainer.querySelectorAll('.drop-target, .insert-before, .insert-after').forEach(el => el.classList.remove('drop-target', 'insert-before', 'insert-after'));
                     // Remove dragging class from the originally dragged element
-                    const draggedElement = document.querySelector(`.schedule-cell-match[data-id="${draggedMatchId}"]`);
+                    const draggedElement = document.querySelector(`.schedule-cell-match[data-id="${matchIdToProcess}"]`);
                     if (draggedElement) {
                         draggedElement.classList.remove('dragging');
                     }
-                    draggedMatchId = null; // Clear the global ID AFTER all processing
+                    // Removed: draggedMatchId = null; // Clear the global ID AFTER all processing
                 }
             });
             
@@ -1041,10 +1033,10 @@ async function displayMatchesAsSchedule() {
 
             locationBlock.addEventListener('drop', async (e) => {
                 e.preventDefault();
-                // Rely solely on the global variable for the dragged match ID
-                let matchIdToProcess = draggedMatchId;
+                // Get match ID from dataTransfer, preferring 'match/id' then 'text/plain'
+                let matchIdToProcess = e.dataTransfer.getData('match/id') || e.dataTransfer.getData('text/plain');
 
-                console.log('Drop event triggered on location block. Captured matchIdToProcess (from global, location block):', matchIdToProcess); // Log for debugging
+                console.log('Drop event triggered on location block. Captured matchIdToProcess (from dataTransfer, location block):', matchIdToProcess); // Log for debugging
                 console.log('e.target on location drop:', e.target);
                 console.log('e.target.closest(".location-block") on location drop:', e.target.closest('.location-block'));
 
@@ -1062,12 +1054,11 @@ async function displayMatchesAsSchedule() {
 
                 if (!matchIdToProcess || !newDate || !newLocation) {
                     await showMessage('Chyba', 'Presun zápasu zrušený: ID presúvaného zápasu alebo detaily cieľa chýbajú.');
-                    console.error("Drop operation cancelled: matchIdToProcess or target details are null. draggedMatchId was:", draggedMatchId); // More detailed logging
-                    const draggedElement = document.querySelector(`.schedule-cell-match[data-id="${draggedMatchId}"]`);
+                    console.error("Drop operation cancelled: matchIdToProcess or target details are null.");
+                    const draggedElement = document.querySelector(`.schedule-cell-match[data-id="${matchIdToProcess}"]`);
                     if (draggedElement) {
                         draggedElement.classList.remove('dragging');
                     }
-                    draggedMatchId = null; // Reset immediately on error
                     return;
                 }
 
@@ -1077,11 +1068,10 @@ async function displayMatchesAsSchedule() {
                     if (!draggedMatchDoc.exists()) {
                         await showMessage('Chyba', 'Presúvaný zápas sa nenašiel v databáze.');
                         console.error('Dragged match document not found for ID:', matchIdToProcess);
-                        const draggedElement = document.querySelector(`.schedule-cell-match[data-id="${draggedMatchId}"]`);
+                        const draggedElement = document.querySelector(`.schedule-cell-match[data-id="${matchIdToProcess}"]`);
                         if (draggedElement) {
                             draggedElement.classList.remove('dragging');
                         }
-                        draggedMatchId = null; // Reset immediately on error
                         return;
                     }
                     const draggedMatchData = draggedMatchDoc.data();
@@ -1152,11 +1142,11 @@ async function displayMatchesAsSchedule() {
                     // Clear visual feedback regardless of success or failure
                     matchesContainer.querySelectorAll('.drop-target, .insert-before, .insert-after').forEach(el => el.classList.remove('drop-target', 'insert-before', 'insert-after'));
                     // Remove dragging class from the originally dragged element
-                    const draggedElement = document.querySelector(`.schedule-cell-match[data-id="${draggedMatchId}"]`);
+                    const draggedElement = document.querySelector(`.schedule-cell-match[data-id="${matchIdToProcess}"]`);
                     if (draggedElement) {
                         draggedElement.classList.remove('dragging');
                     }
-                    draggedMatchId = null; // Clear the global ID AFTER all processing
+                    // Removed: draggedMatchId = null; // Clear the global ID AFTER all processing
                 }
             });
 
