@@ -621,21 +621,20 @@ async function displayMatchesAsSchedule() {
                 const displayDateObj = new Date(date);
                 const formattedDisplayDate = `${String(displayDateObj.getDate()).padStart(2, '0')}. ${String(displayDateObj.getMonth() + 1).padStart(2, '0')}. ${displayDateObj.getFullYear()}`;
                 
-                // Table for each date
-                // Removed all border and background styles from the table and cells for a "basic table" look
+                // Table for each date - removed all style attributes
                 scheduleHtml += `<table class="match-schedule-table" style="margin-bottom: 30px; border-collapse: collapse; width: 100%;"><thead>`;
                 
-                // Main header row: Date
-                scheduleHtml += `<tr><th colspan="6" class="date-header-clickable" data-date="${date}" title="Kliknutím upravíte hrací deň ${formattedDisplayDate}" style="padding: 10px; text-align: center; font-size: 1.2em;">${formattedDisplayDate}</th></tr>`;
+                // Main header row: Date - removed all style attributes
+                scheduleHtml += `<tr><th colspan="6" class="date-header-clickable" data-date="${date}" title="Kliknutím upravíte hrací deň ${formattedDisplayDate}">${formattedDisplayDate}</th></tr>`;
 
-                // Sub-header row: Detail columns
+                // Sub-header row: Detail columns - removed all style attributes
                 scheduleHtml += `<tr>
-                    <th style="width: 10%; padding: 8px; text-align: left;">Čas začiatok</th>
-                    <th style="width: 10%; padding: 8px; text-align: left;">Čas koniec</th>
-                    <th style="width: 30%; padding: 8px; text-align: left;">Názov domáci</th>
-                    <th style="width: 30%; padding: 8px; text-align: left;">Názov hostia</th>
-                    <th style="width: 10%; padding: 8px; text-align: left;">Kód tímu domáci</th>
-                    <th style="width: 10%; padding: 8px; text-align: left;">Kód tímu hostia</th>
+                    <th style="width: 10%;">Čas začiatok</th>
+                    <th style="width: 10%;">Čas koniec</th>
+                    <th style="width: 30%;">Názov domáci</th>
+                    <th style="width: 30%;">Názov hostia</th>
+                    <th style="width: 10%;">Kód tímu domáci</th>
+                    <th style="width: 10%;">Kód tímu hostia</th>
                 </tr></thead><tbody>`;
 
                 const matchesForThisDate = matchesByDate.get(date);
@@ -653,14 +652,15 @@ async function displayMatchesAsSchedule() {
                     matchEndTime.setHours(startH, startM + match.duration, 0, 0);
                     const formattedEndTime = matchEndTime.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' });
 
+                    // Match row - removed all style attributes except cursor: pointer
                     scheduleHtml += `
                         <tr class="schedule-cell-match" data-id="${match.id}" data-type="${match.type}" style="cursor: pointer;">
-                            <td style="padding: 8px;">${match.startTime}</td>
-                            <td style="padding: 8px;">${formattedEndTime}</td>
-                            <td style="padding: 8px;">${match.team1ClubName || 'N/A'}</td>
-                            <td style="padding: 8px;">${match.team2ClubName || 'N/A'}</td>
-                            <td style="padding: 8px;">${match.team1DisplayName || 'N/A'}</td>
-                            <td style="padding: 8px;">${match.team2DisplayName || 'N/A'}</td>
+                            <td>${match.startTime}</td>
+                            <td>${formattedEndTime}</td>
+                            <td>${match.team1ClubName || 'N/A'}</td>
+                            <td>${match.team2ClubName || 'N/A'}</td>
+                            <td>${match.team1DisplayName || 'N/A'}</td>
+                            <td>${match.team2DisplayName || 'N/A'}</td>
                         </tr>
                     `;
                 });
@@ -1008,7 +1008,7 @@ async function editBus(busId) {
         const busStartLocationSelect = document.getElementById('busStartLocationSelect');
         const busStartTimeInput = document.getElementById('busStartTimeInput');
         const busEndLocationSelect = document.getElementById('busEndLocationSelect');
-        const busEndTimeInput = document.getElementById('busEndTimeInput');
+        const busEndTimeInput = document = document.getElementById('busEndTimeInput');
         const busNotesInput = document.getElementById('busNotesInput');
         const deleteBusButtonModal = document.getElementById('deleteBusButtonModal');
 
