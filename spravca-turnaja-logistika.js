@@ -1958,7 +1958,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 await showMessage('Chyba', `Zápas sa prekrýva s existujúcim zápasom v mieste "${matchLocationName}" dňa ${matchDate}:\n\n` +
                       `Existujúci zápas: ${overlappingMatchDetails.startTime} - ${formattedExistingEndTime}\n` +
-                      `Tímy: ${overlappingMatchDetails.team1ClubName} vs ${overlappingMatchDetails.team2ClubName}\n\n` +
+                      `Tímy: ${overlappingExistingMatchDetails.team1ClubName} vs ${overlappingExistingMatchDetails.team2ClubName}\n\n` +
                       `Prosím, upravte čas začiatku alebo trvanie nového zápasu, alebo prestávku po zápase.`);
                 return;
             }
