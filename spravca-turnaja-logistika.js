@@ -869,7 +869,9 @@ async function displayMatchesAsSchedule() {
                 }
 
                 console.log('DROP (match row) - After dataTransfer/global check, matchIdToProcess:', matchIdToProcess); // Critical log
+                console.log('DROP (match row) - Type of matchIdToProcess:', typeof matchIdToProcess); // NEW: Log type
                 console.log('DROP (match row) - Current global draggedMatchId:', draggedMatchId); // Log global state before cleanup
+                console.log('DROP (match row) - matchesCollectionRef:', matchesCollectionRef); // NEW: Log collection ref
 
                 // Always clean up drop-target class and insertion indicators
                 matchesContainer.querySelectorAll('.drop-target, .insert-before, .insert-after').forEach(el => el.classList.remove('drop-target', 'insert-before', 'insert-after'));
@@ -881,6 +883,11 @@ async function displayMatchesAsSchedule() {
                         console.error("DROP (match row) CANCELLED: matchIdToProcess is null, empty or whitespace. Final value:", matchIdToProcess);
                         return; // Exit early if no valid ID
                     }
+                    
+                    // NEW: Assertion before doc() call
+                    console.assert(matchIdToProcess && typeof matchIdToProcess === 'string', 'matchIdToProcess is not a valid string before doc() call!');
+                    console.assert(matchesCollectionRef, 'matchesCollectionRef is undefined or null before doc() call!');
+                    console.trace('Calling doc() for matchesCollectionRef'); // NEW: Trace before doc() call
 
                     const targetRow = e.target.closest('tr');
                     
@@ -1051,7 +1058,10 @@ async function displayMatchesAsSchedule() {
                 }
 
                 console.log('DROP (location block) - After dataTransfer/global check, matchIdToProcess:', matchIdToProcess); // Critical log
+                console.log('DROP (location block) - Type of matchIdToProcess:', typeof matchIdToProcess); // NEW: Log type
                 console.log('DROP (location block) - Current global draggedMatchId:', draggedMatchId); // Log global state before cleanup
+                console.log('DROP (location block) - matchesCollectionRef:', matchesCollectionRef); // NEW: Log collection ref
+
 
                 const targetTbody = e.target.closest('tbody');
                 if (targetTbody) {
@@ -1078,6 +1088,12 @@ async function displayMatchesAsSchedule() {
                         console.error("DROP (location block) CANCELLED: target location details are null (location block).");
                         return; // Exit early if no valid target
                     }
+                    
+                    // NEW: Assertion before doc() call
+                    console.assert(matchIdToProcess && typeof matchIdToProcess === 'string', 'matchIdToProcess is not a valid string before doc() call!');
+                    console.assert(matchesCollectionRef, 'matchesCollectionRef is undefined or null before doc() call!');
+                    console.trace('Calling doc() for matchesCollectionRef'); // NEW: Trace before doc() call
+
 
                     console.log('DROP (location block) - Attempting to get doc for ID:', matchIdToProcess); // Added log before doc() call
                     const draggedMatchDoc = await getDoc(doc(matchesCollectionRef, matchIdToProcess));
@@ -1362,7 +1378,7 @@ async function editPlace(placeName, placeType) {
         const placeModal = document.getElementById('placeModal');
         const placeIdInput = document.getElementById('placeId');
         const placeTypeSelect = document.getElementById('placeTypeSelect');
-        const placeNameInput = document.getElementById('placeName');
+        const placeNameInput = document = document.getElementById('placeName');
         const placeAddressInput = document.getElementById('placeAddress');
         const placeGoogleMapsUrlInput = document.getElementById('placeGoogleMapsUrl');
         const deletePlaceButtonModal = document.getElementById('deletePlaceButtonModal');
