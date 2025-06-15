@@ -1,8 +1,6 @@
 import { db, categoriesCollectionRef, groupsCollectionRef, clubsCollectionRef, matchesCollectionRef, playingDaysCollectionRef, placesCollectionRef, busesCollectionRef, teamAccommodationsCollectionRef, openModal, closeModal, populateCategorySelect, populateGroupSelect, getDocs, doc, setDoc, addDoc, getDoc, query, where, orderBy, deleteDoc, writeBatch, settingsCollectionRef, showMessage, showConfirmation } from './spravca-turnaja-common.js';
 const SETTINGS_DOC_ID = 'matchTimeSettings';
 
-let draggedMatchId = null; // Global variable to store the ID of the dragged match
-
 /**
  * Populates a select element with playing days from Firestore.
  * @param {HTMLSelectElement} selectElement The select element to populate.
@@ -429,10 +427,66 @@ async function findFirstAvailableTime() {
     }
 
     try {
-        const startTime = await getFirstAvailableTimeForDrop(selectedDate, selectedLocationName, duration, bufferTime);
-        matchStartTimeInput.value = startTime;
-    }
-    catch (error) {
+        const settingsDocRef = doc(settingsCollectionRef, SETTINGS_DOC_ID);
+        const settingsDoc = await getDoc(settingsDocRef);
+        let firstDayStartTime = '08:00';
+        let otherDaysStartTime = '08:00';
+
+        if (settingsDoc.exists()) {
+            const data = settingsDoc.data();
+            firstDayStartTime = data.firstDayStartTime || '08:00';
+            otherDaysStartTime = data.otherDaysStartTime || '08:00';
+        }
+
+        const playingDaysSnapshot = await getDocs(query(playingDaysCollectionRef, orderBy("date", "asc")));
+        const sortedPlayingDays = playingDaysSnapshot.docs.map(d => d.data().date).sort();
+        const isFirstPlayingDay = sortedPlayingDays.length > 0 && selectedDate === sortedPlayingDays[0];
+
+        let [startH, startM] = (isFirstPlayingDay ? firstDayStartTime : otherDaysStartTime).split(':').map(Number);
+        const endSearchHour = 22;
+        const intervalMinutes = 1;
+
+        const existingMatchesQuery = query(
+            matchesCollectionRef,
+            where("date", "==", selectedDate),
+            where("location", "==", selectedLocationName)
+        );
+        const existingMatchesSnapshot = await getDocs(existingMatchesQuery);
+
+        const existingEvents = existingMatchesSnapshot.docs.map(doc => {
+            const data = doc.data();
+            const [eventStartH, eventStartM] = data.startTime.split(':').map(Number);
+            const startInMinutes = eventStartH * 60 + eventStartM;
+            const endInMinutes = startInMinutes + (data.duration || 0) + (data.bufferTime || 0);
+            return { start: startInMinutes, end: endInMinutes };
+        });
+
+        existingEvents.sort((a, b) => a.start - b.start);
+
+        for (let hour = startH; hour <= endSearchHour; hour++) {
+            const currentMinuteStart = (hour === startH) ? startM : 0;
+            for (let minute = currentMinuteStart; minute < 60; minute += intervalMinutes) {
+                const potentialStartInMinutes = hour * 60 + minute;
+                const potentialEndInMinutes = potentialStartInMinutes + duration + bufferTime;
+
+                let overlap = false;
+                for (const existingEvent of existingEvents) {
+                    if (potentialStartInMinutes < existingEvent.end && potentialEndInMinutes > existingEvent.start) {
+                        overlap = true;
+                        break;
+                    }
+                }
+
+                if (!overlap) {
+                    const formattedHour = String(hour).padStart(2, '0');
+                    const formattedMinute = String(minute).padStart(2, '0');
+                    matchStartTimeInput.value = `${formattedHour}:${formattedMinute}`;
+                    return;
+                }
+            }
+        }
+        matchStartTimeInput.value = '';
+    } catch (error) {
         console.error("Chyba pri hľadaní prvého dostupného času:", error);
         matchStartTimeInput.value = '';
     }
@@ -502,185 +556,36 @@ const getTeamName = async (categoryId, groupId, teamNumber, categoriesMap, group
 };
 
 /**
- * Finds the first available time slot for a match on a given date and location.
- * @param {string} date The date string (YYYY-MM-DD).
- * @param {string} locationName The name of the location.
- * @param {number} duration The duration of the match in minutes.
- * @param {number} bufferTime The buffer time after the match in minutes.
- * @returns {Promise<string>} The formatted available start time (HH:MM).
- */
-async function getFirstAvailableTimeForDrop(date, locationName, duration, bufferTime) {
-    try {
-        const settingsDocRef = doc(settingsCollectionRef, SETTINGS_DOC_ID);
-        const settingsDoc = await getDoc(settingsDocRef);
-        let firstDayStartTime = '08:00';
-        let otherDaysStartTime = '08:00';
-
-        if (settingsDoc.exists()) {
-            const data = settingsDoc.data();
-            firstDayStartTime = data.firstDayStartTime || '08:00';
-            otherDaysStartTime = data.otherDaysStartTime || '08:00';
-        }
-
-        const playingDaysSnapshot = await getDocs(query(playingDaysCollectionRef, orderBy("date", "asc")));
-        const sortedPlayingDays = playingDaysSnapshot.docs.map(d => d.data().date).sort();
-        const isFirstPlayingDay = sortedPlayingDays.length > 0 && date === sortedPlayingDays[0];
-
-        let [startH, startM] = (isFirstPlayingDay ? firstDayStartTime : otherDaysStartTime).split(':').map(Number);
-        const endSearchHour = 22; // Hardcoded end of search, can be made configurable
-
-        const existingMatchesQuery = query(
-            matchesCollectionRef,
-            where("date", "==", date),
-            where("location", "==", locationName)
-        );
-        const existingMatchesSnapshot = await getDocs(existingMatchesQuery);
-
-        const existingEvents = existingMatchesSnapshot.docs.map(doc => {
-            const data = doc.data();
-            const [eventStartH, eventStartM] = data.startTime.split(':').map(Number);
-            const startInMinutes = eventStartH * 60 + eventStartM;
-            const endInMinutes = startInMinutes + (data.duration || 0) + (data.bufferTime || 0);
-            return { start: startInMinutes, end: endInMinutes };
-        });
-
-        existingEvents.sort((a, b) => a.start - b.start);
-
-        for (let hour = startH; hour <= endSearchHour; hour++) {
-            const currentMinuteStart = (hour === startH) ? startM : 0;
-            for (let minute = currentMinuteStart; minute < 60; minute++) { // Check every minute for more precision
-                const potentialStartInMinutes = hour * 60 + minute;
-                const potentialEndInMinutes = potentialStartInMinutes + duration + bufferTime;
-
-                let overlap = false;
-                for (const existingEvent of existingEvents) {
-                    if (potentialStartInMinutes < existingEvent.end && potentialEndInMinutes > existingEvent.start) {
-                        overlap = true;
-                        // Move to the end of the overlapping event + 1 minute to check for next slot
-                        const nextAvailableTimeInMinutes = existingEvent.end + 1;
-                        hour = Math.floor(nextAvailableTimeInMinutes / 60);
-                        minute = nextAvailableTimeInMinutes % 60;
-                        if (minute === 0 && nextAvailableTimeInMinutes > 0) { // If it rolls over to a new hour exactly
-                            hour--; // Re-adjust hour for the loop increment
-                        } else if (minute === 0) { // If it was 00 and now 00, special handling
-                            minute = -1; // Next iteration will make it 0, then 1, etc.
-                        }
-                        break; // Break inner loop, continue from new hour/minute
-                    }
-                }
-
-                if (!overlap) {
-                    const formattedHour = String(hour).padStart(2, '0');
-                    const formattedMinute = String(minute).padStart(2, '0');
-                    return `${formattedHour}:${formattedMinute}`;
-                }
-            }
-        }
-        return '08:00'; // Fallback if no slot found till endSearchHour
-    } catch (error) {
-        console.error("Chyba pri hľadaní prvého dostupného času:", error);
-        return '08:00'; // Fallback in case of error
-    }
-}
-
-/**
- * Calculates new start times for a sequence of matches on a given date and location, ensuring no overlaps.
- * @param {string} date The date string (YYYY-MM-DD).
- * @param {string} locationName The name of the location.
- * @param {Array<Object>} matchesInOrder An array of match objects (including id, duration, bufferTime, categoryId) in their desired sequential order.
- * @returns {Promise<Array<{id: string, startTime: string, date: string, location: string, duration: number, bufferTime: number, categoryId: string, groupId: string, team1Number: number, team2Number: number, team1DisplayName: string, team1ClubName: string, team1ClubId: string, team2DisplayName: string, team2ClubName: string, team2ClubId: string, locationType: string}>>} An array of match updates including all necessary fields for a merge update.
- */
-async function calculateSequentialMatchTimes(date, locationName, matchesInOrder) {
-    const updatedMatchDetails = [];
-    if (matchesInOrder.length === 0) {
-        return updatedMatchDetails;
-    }
-
-    try {
-        const settingsDocRef = doc(settingsCollectionRef, SETTINGS_DOC_ID);
-        const settingsDoc = await getDoc(settingsDocRef);
-        let firstDayStartTime = '08:00';
-        let otherDaysStartTime = '08:00';
-
-        if (settingsDoc.exists()) {
-            const data = settingsDoc.data();
-            firstDayStartTime = data.firstDayStartTime || '08:00';
-            otherDaysStartTime = data.otherDaysStartTime || '08:00';
-        }
-
-        const playingDaysSnapshot = await getDocs(query(playingDaysCollectionRef, orderBy("date", "asc")));
-        const sortedPlayingDays = playingDaysSnapshot.docs.map(d => d.data().date).sort();
-        const isFirstPlayingDay = sortedPlayingDays.length > 0 && date === sortedPlayingDays[0];
-
-        let currentTimeInMinutes = 0;
-        const [startH, startM] = (isFirstPlayingDay ? firstDayStartTime : otherDaysStartTime).split(':').map(Number);
-        currentTimeInMinutes = startH * 60 + startM;
-
-        for (const match of matchesInOrder) {
-            // Get category specific duration and buffer time, or use existing if present on match object
-            const categorySettings = await getCategoryMatchSettings(match.categoryId);
-            const effectiveDuration = match.duration || categorySettings.duration;
-            const effectiveBufferTime = match.bufferTime || categorySettings.bufferTime;
-
-            // Ensure the match starts at or after the current calculated time
-            const newStartHour = Math.floor(currentTimeInMinutes / 60);
-            const newStartMinute = currentTimeInMinutes % 60;
-            const formattedStartTime = `${String(newStartHour).padStart(2, '0')}:${String(newStartMinute).padStart(2, '0')}`;
-
-            updatedMatchDetails.push({
-                id: match.id,
-                date: date,
-                location: locationName,
-                startTime: formattedStartTime,
-                duration: effectiveDuration, // Use effective duration
-                bufferTime: effectiveBufferTime, // Use effective bufferTime
-                categoryId: match.categoryId,
-                groupId: match.groupId,
-                team1Number: match.team1Number,
-                team2Number: match.team2Number,
-                team1DisplayName: match.team1DisplayName, // Keep display names if available
-                team1ClubName: match.team1ClubName,
-                team1ClubId: match.team1ClubId,
-                team2DisplayName: match.team2DisplayName,
-                team2ClubName: match.team2ClubName,
-                team2ClubId: match.team2ClubId,
-                locationType: match.locationType, // Keep location type
-            });
-
-            currentTimeInMinutes += effectiveDuration + effectiveBufferTime;
-        }
-    } catch (error) {
-        console.error("Error calculating sequential match times:", error);
-        throw error; // Re-throw to be caught by the caller
-    }
-    return updatedMatchDetails;
-}
-
-
-/**
- * Displays the full match schedule in a new, enhanced table format.
+ * Displays the full match schedule including matches, buses, and accommodation assignments.
  */
 async function displayMatchesAsSchedule() {
     const matchesContainer = document.getElementById('matchesContainer');
     if (!matchesContainer) return;
 
     matchesContainer.innerHTML = '';
-    matchesContainer.insertAdjacentHTML('afterbegin', '<p style="text-align: center; padding: 20px;">Načítavam rozvrh zápasov...</p>');
+    matchesContainer.insertAdjacentHTML('afterbegin', '<p>Načítavam logistiku turnaja...</p>');
+
+    const CELL_WIDTH_PX = 350;
+    const MINUTES_PER_HOUR = 60;
+    const PIXELS_PER_MINUTE = CELL_WIDTH_PX / MINUTES_PER_HOUR;
+    const ITEM_HEIGHT_PX = 140;
 
     try {
-        // Fetch all matches
+        // Fetch all data required for the schedule
         const matchesQuery = query(matchesCollectionRef, orderBy("date", "asc"), orderBy("location", "asc"), orderBy("startTime", "asc"));
         const matchesSnapshot = await getDocs(matchesQuery);
         let allMatches = matchesSnapshot.docs.map(doc => ({ id: doc.id, type: 'match', ...doc.data() }));
+        console.log("displayMatchesAsSchedule: Načítané zápasy:", allMatches);
 
-        // Fetch categories and groups for display names
         const categoriesSnapshot = await getDocs(categoriesCollectionRef);
         const categoriesMap = new Map();
         categoriesSnapshot.forEach(doc => categoriesMap.set(doc.id, doc.data().name || doc.id));
+        console.log("displayMatchesAsSchedule: Načítané kategórie:", Array.from(categoriesMap.entries()));
 
         const groupsSnapshot = await getDocs(groupsCollectionRef);
         const groupsMap = new Map();
         groupsSnapshot.forEach(doc => groupsMap.set(doc.id, doc.data().name || doc.id));
+        console.log("displayMatchesAsSchedule: Načítané skupiny:", Array.from(groupsMap.entries()));
 
         // Populate team display names for matches
         const updatedMatchesPromises = allMatches.map(async match => {
@@ -699,92 +604,463 @@ async function displayMatchesAsSchedule() {
                 team2ClubId: team2Data.status === 'fulfilled' ? team2Data.value.clubId : null,
             };
         });
+
         allMatches = await Promise.all(updatedMatchesPromises);
 
-        // Group matches by date and then by location
-        const matchesByDateAndLocation = new Map(); // Map<date, Map<location, Array<match>>>
-        allMatches.forEach(match => {
-            if (!matchesByDateAndLocation.has(match.date)) {
-                matchesByDateAndLocation.set(match.date, new Map());
+
+        const busesQuery = query(busesCollectionRef, orderBy("date", "asc"), orderBy("busName", "asc"), orderBy("startTime", "asc"));
+        const busesSnapshot = await getDocs(busesQuery);
+        const allBuses = busesSnapshot.docs.map(doc => ({ id: doc.id, type: 'bus', ...doc.data() }));
+        console.log("displayMatchesAsSchedule: Načítané autobusy:", allBuses);
+
+        const accommodationsSnapshot = await getDocs(query(teamAccommodationsCollectionRef, orderBy("dateFrom", "asc"), orderBy("accommodationName", "asc")));
+        const allAccommodations = accommodationsSnapshot.docs.map(doc => ({ id: doc.id, type: 'accommodation', ...doc.data() }));
+        console.log("displayMatchesAsSchedule: Načítané ubytovania:", allAccommodations);
+
+        const playingDaysSnapshot = await getDocs(query(playingDaysCollectionRef, orderBy("date", "asc")));
+        const existingPlayingDays = playingDaysSnapshot.docs.map(doc => doc.data().date);
+        console.log("displayMatchesAsSchedule: Načítané hracie dni (len dátumy):", existingPlayingDays);
+
+        const placesSnapshot = await getDocs(query(placesCollectionRef, orderBy("name", "asc")));
+        const existingPlacesData = placesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        console.log("displayMatchesAsSchedule: Načítané miesta:", existingPlacesData);
+
+        const uniquePlacesForRows = [];
+        const addedPlaceKeys = new Set();
+        existingPlacesData.forEach(place => {
+            const placeKey = `${place.name}:::${place.type}`;
+            if (!addedPlaceKeys.has(placeKey)) {
+                uniquePlacesForRows.push(place);
+                addedPlaceKeys.add(placeKey);
             }
-            const locationsMap = matchesByDateAndLocation.get(match.date);
-            if (!locationsMap.has(match.location)) {
-                locationsMap.set(match.location, []);
-            }
-            locationsMap.get(match.location).push(match);
         });
 
-        const sortedDates = Array.from(matchesByDateAndLocation.keys()).sort();
+        uniquePlacesForRows.sort((a, b) => {
+            if (a.type < b.type) return -1;
+            if (a.type > b.type) return 1;
+            if (a.name < b.name) return -1;
+            if (a.name > b.name) return 1;
+            return 0;
+        });
+
+        const uniqueLocations = new Set();
+        uniquePlacesForRows.forEach(place => uniqueLocations.add(`${place.name}:::${place.type}`));
+
+        const sortedDates = Array.from(new Set(existingPlayingDays)).sort();
+
+        const eventsForTimeRangeCalculation = [...allMatches, ...allBuses];
+        const dailyTimeRanges = new Map();
+
+        eventsForTimeRangeCalculation.forEach(event => {
+            const date = event.date;
+            let startTimeInMinutes, endTimeInMinutes;
+
+            if (event.type === 'match') {
+                const [startH, startM] = event.startTime.split(':').map(Number);
+                const durationWithBuffer = (event.duration || 0) + (event.bufferTime || 0);
+                startTimeInMinutes = startH * 60 + startM;
+                endTimeInMinutes = startTimeInMinutes + durationWithBuffer;
+            } else if (event.type === 'bus') {
+                const [startH, startM] = event.startTime.split(':').map(Number);
+                const [endH, endM] = event.endTime.split(':').map(Number);
+                startTimeInMinutes = startH * 60 + startM;
+                endTimeInMinutes = endH * 60 + endM;
+                if (endTimeInMinutes < startTimeInMinutes) {
+                    endTimeInMinutes += 24 * 60;
+                }
+            }
+
+            let actualEndHour = Math.ceil(endTimeInMinutes / 60);
+
+            if (!dailyTimeRanges.has(date)) {
+                dailyTimeRanges.set(date, { minHour: Math.floor(startTimeInMinutes / 60), maxHour: actualEndHour });
+            } else {
+                const range = dailyTimeRanges.get(date);
+                range.minHour = Math.min(range.minHour, Math.floor(startTimeInMinutes / 60));
+                range.maxHour = Math.max(range.maxHour, actualEndHour);
+            }
+        });
+
+        sortedDates.forEach(date => {
+            if (!dailyTimeRanges.has(date)) {
+                dailyTimeRanges.set(date, { minHour: 8, maxHour: 18 });
+            }
+        });
 
         matchesContainer.innerHTML = '';
-        let scheduleHtml = `<div class="schedule-overview">`;
+        let scheduleHtml = '<div class="schedule-table-container" style="position: relative; overflow: auto;">';
+        scheduleHtml += '<table class="match-schedule-table"><thead><tr>';
+        scheduleHtml += `<th class="fixed-column" style="position: sticky; top: 0; left: 0; z-index: 101; background-color: #d0d0d0;">Miesto ⁄ Čas</th>`;
 
-        if (sortedDates.length === 0) {
-            scheduleHtml += '<p style="text-align: center; padding: 20px; color: #555;">— Žiadne zápasy na zobrazenie —</p>';
-        } else {
+        sortedDates.forEach(date => {
+            const range = dailyTimeRanges.get(date);
+            let hoursForDate = [];
+            if (range) {
+                for (let h = range.minHour; h < range.maxHour; h++) {
+                    hoursForDate.push(h);
+                }
+            }
+
+            const displayDateObj = new Date(date);
+            const displayDay = String(displayDateObj.getDate()).padStart(2, '0');
+            const displayMonth = String(displayDateObj.getMonth() + 1).padStart(2, '0');
+            const displayYear = displayDateObj.getFullYear();
+            const formattedDisplayDate = `${displayDay}. ${displayMonth}. ${displayYear}`;
+
+            const colspan = hoursForDate.length > 0 ? hoursForDate.length : 1;
+            scheduleHtml += `<th colspan="${colspan}" class="date-header-clickable" data-date="${date}" title="Kliknutím upravíte hrací deň ${formattedDisplayDate}" style="position: sticky; top: 0; z-index: 100; background-color: #d0d0d0;">`;
+            scheduleHtml += `<div class="schedule-date-header-content">${formattedDisplayDate}</div>`;
+            scheduleHtml += '<div class="schedule-times-row">';
+            if (hoursForDate.length > 0) {
+                hoursForDate.forEach(hour => {
+                    scheduleHtml += `<span>${String(hour % 24).padStart(2, '0')}:00</span>`;
+                });
+            } else {
+                scheduleHtml += `<span></span>`;
+            }
+            scheduleHtml += '</div>';
+            scheduleHtml += '</th>';
+        });
+        scheduleHtml += '</tr></thead><tbody>';
+
+        uniquePlacesForRows.forEach(placeData => {
+            const locationName = placeData.name;
+            const placeAddress = placeData.address;
+            const placeGoogleMapsUrl = placeData.googleMapsUrl;
+            const placeType = placeData.type;
+
+            let typeClass = '';
+            let specificBackgroundColor = '';
+            switch (placeType) {
+                case 'Športová hala':
+                    typeClass = 'place-type-sport-hall';
+                    specificBackgroundColor = 'background-color: #007bff;';
+                    break;
+                case 'Stravovacie zariadenie':
+                    typeClass = 'place-type-catering';
+                    specificBackgroundColor = 'background-color: #ffc107;';
+                    break;
+                case 'Ubytovanie':
+                    typeClass = 'place-type-accommodation';
+                    specificBackgroundColor = 'background-color: #4CAF50;';
+                    break;
+                default:
+                    typeClass = '';
+            }
+
+            const stickyColumnStyles = `position: sticky; left: 0; z-index: 100; background-color: #e0e0e0;`;
+            const finalColumnStyle = `${stickyColumnStyles} ${specificBackgroundColor}`;
+
+            scheduleHtml += '<tr>';
+            scheduleHtml += `<th class="fixed-column schedule-location-header delete-location-header ${typeClass}" data-location="${locationName}" data-type="${placeType}" title="Kliknutím upravíte miesto ${locationName} (${placeType})" style="${finalColumnStyle}">
+                <div class="hall-name">${locationName} (${placeType})</div> <div class="hall-address">
+                    <a href="${placeGoogleMapsUrl}" target="_blank" rel="noopener noreferrer">${placeAddress}</a>
+                </div>
+            </th>`;
+
             sortedDates.forEach(date => {
-                const displayDateObj = new Date(date);
-                const formattedDisplayDate = `${String(displayDateObj.getDate()).padStart(2, '0')}. ${String(displayDateObj.getMonth() + 1).padStart(2, '0')}. ${displayDateObj.getFullYear()}`;
-                
-                scheduleHtml += `
-                    <div class="schedule-date-block">
-                        <h3 class="date-header-clickable" draggable="true" data-date="${date}" title="Kliknutím upravíte hrací deň ${formattedDisplayDate}">
-                            ${formattedDisplayDate}
-                        </h3>
-                `;
-                const locationsForThisDate = matchesByDateAndLocation.get(date);
-                const sortedLocations = Array.from(locationsForThisDate.keys()).sort();
+                const range = dailyTimeRanges.get(date);
+                const hoursForDateCount = range ? (range.maxHour - range.minHour) : 0;
+                const colspan = hoursForDateCount > 0 ? hoursForDateCount : 1;
+                scheduleHtml += `<td colspan="${colspan}" style="position: relative; background-color: #f7f7f7;">`;
 
-                sortedLocations.forEach(locationName => {
+                const matchesInCell = allMatches.filter(event => {
+                    return event.date === date && placeType === 'Športová hala' && event.location === locationName;
+                });
+
+                const accommodationsInCell = allAccommodations.filter(assignment => {
+                    const dateFrom = new Date(assignment.dateFrom);
+                    const dateTo = new Date(assignment.dateTo);
+                    const currentDate = new Date(date);
+                    return currentDate >= dateFrom && currentDate <= dateTo && placeType === 'Ubytovanie' && assignment.accommodationName === locationName;
+                });
+
+                matchesInCell.sort((a, b) => {
+                    const [aH, aM] = a.startTime.split(':').map(Number);
+                    const [bH, bM] = b.startTime.split(':').map(Number);
+                    return (aH * 60 + aM) - (bH * 60 + bM);
+                });
+
+                matchesInCell.forEach(event => {
+                    const [startH, startM] = event.startTime.split(':').map(Number);
+                    const absoluteStartMin = startH * 60 + startM;
+                    const relativeStartMinInCell = absoluteStartMin - (range.minHour * 60);
+                    const matchBlockLeftPx = relativeStartMinInCell * PIXELS_PER_MINUTE;
+                    const matchBlockWidthPx = event.duration * PIXELS_PER_MINUTE;
+                    const bufferBlockLeftPx = matchBlockLeftPx + matchBlockWidthPx;
+                    const bufferBlockWidthPx = event.bufferTime * PIXELS_PER_MINUTE;
+
+                    const matchEndTime = new Date();
+                    matchEndTime.setHours(startH, startM + event.duration, 0, 0);
+                    const formattedEndTime = matchEndTime.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' });
+
+                    let team1ClubNameDisplay = event.team1ClubName ? `${event.team1ClubName}` : '';
+                    let team2ClubNameDisplay = event.team2ClubName ? `${event.team2ClubName}` : '';
+
+                    let clubNamesHtml = '';
+                    if (team1ClubNameDisplay) {
+                        clubNamesHtml += `${team1ClubNameDisplay}`;
+                    }
+                    if (team2ClubNameDisplay) {
+                        if (clubNamesHtml) clubNamesHtml += `<br>`;
+                        clubNamesHtml += `${team2ClubNameDisplay}`;
+                    }
+                    const finalClubNamesHtml = clubNamesHtml ? `<span style="font-weight: normal;">${clubNamesHtml}</span>` : '';
+
+                    // Get updated category and group names from the maps
+                    const currentCategoryName = categoriesMap.get(event.categoryId) || event.categoryId;
+                    const currentGroupName = groupsMap.get(event.groupId) || event.groupId;
+
                     scheduleHtml += `
-                        <div class="location-block" data-date="${date}" data-location="${locationName}">
-                            <h4 class="location-header">${locationName}</h4>
-                            <table class="modern-schedule-table">
-                                <thead>
-                                    <tr>
-                                        <th>Čas</th>
-                                        <th>Domáci Tím</th>
-                                        <th>Hostia Tím</th>
-                                        <th>Kód Tímu</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
+                        <div class="schedule-cell-match"
+                            data-id="${event.id}" data-type="${event.type}"
+                            style="left: ${matchBlockLeftPx}px; width: ${matchBlockWidthPx}px; top: 0;">
+                            <div class="schedule-cell-content">
+                                <p class="schedule-cell-time">${event.startTime} - ${formattedEndTime}</p>
+                                <p class="schedule-cell-category">${currentCategoryName || 'N/A'}${currentGroupName ? ` ${currentGroupName}` : ''}</p>
+                                <p class="schedule-cell-teams">
+                                    ${event.team1DisplayName}<br>
+                                    ${event.team2DisplayName}<br>
+                                    ${finalClubNamesHtml}
+                                </p>
+                            </div>
+                        </div>
                     `;
+                    if (event.bufferTime > 0) {
+                        scheduleHtml += `
+                            <div class="schedule-cell-buffer"
+                                style="left: ${bufferBlockLeftPx}px; width: ${bufferBlockWidthPx}px; top: 0;">
+                            </div>
+                        `;
+                    }
+                });
 
-                    const matchesForThisLocation = locationsForThisDate.get(locationName);
+                const totalAccommodationsInCell = accommodationsInCell.length;
+                if (totalAccommodationsInCell > 0) {
+                    const cellWidth = (range.maxHour - range.minHour) * CELL_WIDTH_PX;
+                    const blockWidth = totalAccommodationsInCell > 0 ? (cellWidth / totalAccommodationsInCell) : cellWidth;
 
-                    // Sort matches by start time
-                    matchesForThisLocation.sort((a, b) => {
-                        const [aH, aM] = a.startTime.split(':').map(Number);
-                        const [bH, bM] = b.startTime.split(':').map(Number);
-                        return (aH * 60 + aM) - (bH * 60 + bM);
-                    });
+                    accommodationsInCell.forEach((assignment, index) => {
+                        const blockLeft = index * blockWidth;
+                        const accommodationId = assignment.id;
 
-                    matchesForThisLocation.forEach(match => {
-                        const matchEndTime = new Date();
-                        const [startH, startM] = match.startTime.split(':').map(Number);
-                        matchEndTime.setHours(startH, startM + match.duration, 0, 0);
-                        const formattedEndTime = matchEndTime.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' });
+                        let displayText;
+                        if (assignment.teams.length === 1) {
+                            displayText = assignment.teams[0].teamName.split('(')[0].trim();
+                        } else {
+                            const baseClubNames = new Set();
+                            assignment.teams.forEach(team => {
+                                let baseName;
+                                const fullTeamName = team.teamName.split('(')[0].trim();
+                                if (fullTeamName.includes('⁄')) {
+                                    baseName = fullTeamName;
+                                } else {
+                                    baseName = fullTeamName.replace(/\s[A-Z]$/, '');
+                                }
+                                baseClubNames.add(baseName);
+                            });
+                            if (baseClubNames.size === 1) {
+                                displayText = Array.from(baseClubNames)[0];
+                            } else {
+                                displayText = assignment.teams.map(team => team.teamName.split('(')[0].trim()).join(', ');
+                            }
+                        }
 
                         scheduleHtml += `
-                            <tr class="schedule-cell-match" draggable="true" data-id="${match.id}" data-type="${match.type}" data-date="${match.date}" data-location="${match.location}" title="Kliknutím upravíte zápas">
-                                <td>${match.startTime} - ${formattedEndTime}</td>
-                                <td>${match.team1ClubName || 'N/A'}</td>
-                                <td>${match.team2ClubName || 'N/A'}</td>
-                                <td>${match.team1DisplayName || 'N/A'} vs ${match.team2DisplayName || 'N/A'}</td>
-                            </tr>
+                            <div class="schedule-cell-accommodation"
+                                data-id="${accommodationId}" data-type="${assignment.type}"
+                                style="position: absolute; left: ${blockLeft}px; width: ${blockWidth}px; top: 0; height: 100%;">
+                                <div class="schedule-cell-content">
+                                    <p class="schedule-cell-title">Ubytovanie</p>
+                                    <p class="schedule-cell-teams">${displayText}</p>
+                                </div>
+                            </div>
                         `;
                     });
-                    scheduleHtml += `</tbody></table></div>`; // Close location-block table
-                });
-                scheduleHtml += `</div>`; // Close schedule-date-block
+                }
+                scheduleHtml += '</td>';
+            });
+            scheduleHtml += '</tr>';
+        });
+
+        scheduleHtml += '</tbody></table>';
+        scheduleHtml += '</div>';
+
+        matchesContainer.insertAdjacentHTML('beforeend', scheduleHtml);
+
+        const scheduleTableContainer = matchesContainer.querySelector('.schedule-table-container');
+        const scheduleTable = matchesContainer.querySelector('.match-schedule-table');
+        // Define scheduleTableContainerRect here
+        const scheduleTableContainerRect = scheduleTableContainer.getBoundingClientRect();
+
+
+        if (!scheduleTableContainer || !scheduleTable) {
+            matchesContainer.innerHTML = '<p>Chyba pri zobrazení rozvrhu. Chýbajú komponenty tabuľky.</p>';
+            return;
+        }
+
+        const busOverlayContainer = document.createElement('div');
+        busOverlayContainer.id = 'busOverlayContainer';
+        busOverlayContainer.style.cssText = `
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: ${scheduleTable.offsetWidth}px;
+                height: ${scheduleTable.offsetHeight}px;
+                pointer-events: none;
+            `;
+        scheduleTableContainer.appendChild(busOverlayContainer);
+
+        const locationRowTopOffsets = new Map();
+        scheduleTable.querySelectorAll('tbody tr').forEach(row => {
+            const locationHeader = row.querySelector('th.fixed-column');
+            if (locationHeader) {
+                const locationName = locationHeader.dataset.location;
+                const locationType = locationHeader.dataset.type;
+                locationRowTopOffsets.set(`${locationName}:::${locationType}`, locationHeader.getBoundingClientRect().top - scheduleTableContainerRect.top);
+            }
+        });
+
+        const timeColumnLeftOffsets = new Map();
+        const firstTimeHeader = scheduleTable.querySelector('thead th:not(.fixed-column)');
+        if (firstTimeHeader) {
+            sortedDates.forEach(date => {
+                const dateHeader = scheduleTable.querySelector(`th[data-date="${date}"]`);
+                if (dateHeader) {
+                    const timeSpans = dateHeader.querySelectorAll('.schedule-times-row span');
+                    const hourOffsets = [];
+                    const range = dailyTimeRanges.get(date);
+                    const firstHourInDay = range ? range.minHour : 0;
+                    timeSpans.forEach((span, index) => {
+                        const hour = firstHourInDay + index;
+                        hourOffsets.push({
+                            hour: hour,
+                            left: (dateHeader.getBoundingClientRect().left - scheduleTableContainerRect.left) + (index * CELL_WIDTH_PX)
+                        });
+                    });
+                    timeColumnLeftOffsets.set(date, hourOffsets);
+                }
             });
         }
 
-        scheduleHtml += '</div>'; // Close schedule-overview
-        matchesContainer.innerHTML = scheduleHtml;
+        allBuses.forEach(bus => {
+            const startLocationKey = bus.startLocation;
+            const endLocationKey = bus.endLocation;
+            const date = bus.date;
 
-        // Re-add event listeners for editing matches and playing days
+            let busStartY, busEndY;
+            const startLocationTop = locationRowTopOffsets.get(startLocationKey);
+            const endLocationTop = locationRowTopOffsets.get(endLocationKey);
+
+            if (startLocationTop === undefined || endLocationTop === undefined) {
+                return;
+            }
+
+            if (startLocationTop <= endLocationTop) {
+                busStartY = startLocationTop;
+                busEndY = endLocationTop + ITEM_HEIGHT_PX;
+            } else {
+                busStartY = startLocationTop + ITEM_HEIGHT_PX;
+                busEndY = endLocationTop;
+            }
+
+            const [startH, startM] = bus.startTime.split(':').map(Number);
+            const [endH, endM] = bus.endTime.split(':').map(Number);
+            const startTimeInMinutes = startH * 60 + startM;
+            let endTimeInMinutes = endH * 60 + endM;
+
+            if (endTimeInMinutes < startTimeInMinutes) {
+                endTimeInMinutes += 24 * 60;
+            }
+            const durationInMinutes = endTimeInMinutes - startTimeInMinutes;
+            const busWidthPx = (durationInMinutes * PIXELS_PER_MINUTE) / 4;
+            const slantOffset = 30;
+            const svgWidth = busWidthPx + Math.abs(slantOffset);
+            const svgHeight = Math.abs(busEndY - busStartY);
+
+            let points;
+            let svgLeftOffset = 0;
+            if (startLocationTop <= endLocationTop) {
+                points = `0,0 ${busWidthPx},0 ${svgWidth},${svgHeight} ${slantOffset},${svgHeight}`.trim();
+                svgLeftOffset = 0;
+            } else {
+                points = `${slantOffset},0 ${svgWidth},0 ${busWidthPx},${svgHeight} 0,${svgHeight}`.trim();
+                svgLeftOffset = slantOffset;
+            }
+
+            const timeOffsets = timeColumnLeftOffsets.get(date);
+            let busLeftPx = 0;
+            if (timeOffsets && timeOffsets.length > 0) {
+                const firstHourInDay = dailyTimeRanges.get(date) ? dailyTimeRanges.get(date).minHour : 0;
+                const relativeStartMin = startTimeInMinutes - (firstHourInDay * 60);
+                busLeftPx = timeOffsets[0].left + (relativeStartMin * PIXELS_PER_MINUTE);
+            } else {
+                return;
+            }
+
+            const svgElement = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            svgElement.setAttribute("class", "bus-svg");
+            svgElement.setAttribute("width", svgWidth);
+            svgElement.setAttribute("height", svgHeight);
+            svgElement.setAttribute("viewBox", `0 0 ${svgWidth} ${svgHeight}`);
+            svgElement.style.cssText = `
+                position: absolute;
+                left: ${busLeftPx - svgLeftOffset}px;
+                top: ${Math.min(busStartY, busEndY)}px;
+                pointer-events: all;
+            `;
+            svgElement.dataset.id = bus.id;
+            svgElement.dataset.type = bus.type;
+
+            const polygon = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+            polygon.setAttribute("class", "schedule-bus-polygon");
+            polygon.setAttribute("points", points);
+            svgElement.appendChild(polygon);
+
+            const textYBase = svgHeight / 2;
+            const textXBase = svgWidth / 2;
+
+            const busNameText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            busNameText.setAttribute("class", "schedule-bus-text");
+            busNameText.setAttribute("x", textXBase);
+            busNameText.setAttribute("y", textYBase - 20);
+            busNameText.setAttribute("text-anchor", "middle");
+            busNameText.setAttribute("dominant-baseline", "middle");
+            busNameText.textContent = bus.busName;
+            svgElement.appendChild(busNameText);
+
+            const busRouteText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            busRouteText.setAttribute("class", "schedule-bus-route-text");
+            busRouteText.setAttribute("x", textXBase);
+            busRouteText.setAttribute("y", textYBase);
+            busRouteText.setAttribute("text-anchor", "middle");
+            busRouteText.setAttribute("dominant-baseline", "middle");
+            busRouteText.textContent = `${bus.startLocation.split(':::')[0]} → ${bus.endLocation.split(':::')[0]}`;
+            svgElement.appendChild(busRouteText);
+
+            const busTimeText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            busTimeText.setAttribute("class", "schedule-bus-time-text");
+            busTimeText.setAttribute("x", textXBase);
+            busTimeText.setAttribute("y", textYBase + 20);
+            busTimeText.setAttribute("text-anchor", "middle");
+            busTimeText.setAttribute("dominant-baseline", "middle");
+            busTimeText.textContent = `${bus.startTime} - ${bus.endTime}`;
+            svgElement.appendChild(busTimeText);
+
+            if (bus.notes) {
+                const busNotesText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                busNotesText.setAttribute("class", "schedule-bus-notes-text");
+                busNotesText.setAttribute("x", textXBase);
+                busNotesText.setAttribute("y", textYBase + 40);
+                busNotesText.setAttribute("text-anchor", "middle");
+                busNotesText.setAttribute("dominant-baseline", "middle");
+                busNotesText.textContent = bus.notes;
+                svgElement.appendChild(busNotesText);
+            }
+
+            busOverlayContainer.appendChild(svgElement);
+        });
+
         matchesContainer.querySelectorAll('.schedule-cell-match').forEach(element => {
             element.addEventListener('click', (event) => {
                 const id = event.currentTarget.dataset.id;
@@ -792,402 +1068,52 @@ async function displayMatchesAsSchedule() {
             });
         });
 
+        busOverlayContainer.querySelectorAll('.bus-svg').forEach(element => {
+            element.addEventListener('click', (event) => {
+                const id = event.currentTarget.dataset.id;
+                editBus(id);
+            });
+        });
+
+        matchesContainer.querySelectorAll('.schedule-cell-accommodation').forEach(element => {
+            element.addEventListener('click', (event) => {
+                const id = event.currentTarget.dataset.id;
+                editAccommodationAssignment(id);
+            });
+        });
+
         matchesContainer.querySelectorAll('.date-header-clickable').forEach(header => {
             header.addEventListener('click', (event) => {
-                const dateToEdit = header.dataset.date;
-                editPlayingDay(dateToEdit);
+                if (event.target.tagName === 'A' || event.target.closest('.hall-address')) {
+                    return;
+                }
+                if (event.target === header || event.target.closest('.schedule-date-header-content')) {
+                    const dateToEdit = header.dataset.date;
+                    editPlayingDay(dateToEdit);
+                }
             });
         });
 
-        // Drag and Drop Event Listeners
-        matchesContainer.querySelectorAll('.schedule-cell-match').forEach(row => {
-            row.addEventListener('dragstart', (e) => {
-                const matchId = e.currentTarget.dataset.id;
-                if (matchId) {
-                    draggedMatchId = matchId; // Set the global variable
-                    e.dataTransfer.setData('text/plain', matchId); // Set for compatibility
-                    e.dataTransfer.effectAllowed = 'move'; // Indicate a move operation
-                    e.currentTarget.classList.add('dragging');
-                    console.log('DRAGSTART: match ID (SET TO GLOBAL):', draggedMatchId); // More precise log
-                    console.log('DRAGSTART: e.currentTarget.dataset:', e.currentTarget.dataset);
-                    console.log('DRAGSTART: e.dataTransfer.types:', e.dataTransfer.types); // What types are available
-                } else {
-                    console.error('DRAGSTART FAILED: No data-id found on currentTarget. e.currentTarget:', e.currentTarget);
-                    draggedMatchId = null; // Ensure global is null on failure
-                    e.preventDefault(); // Prevent drag operation if no ID
+        matchesContainer.querySelectorAll('.delete-location-header').forEach(header => {
+            header.addEventListener('click', (event) => {
+                if (event.target.tagName === 'A' || event.target.closest('.hall-address')) {
+                    return;
                 }
-            });
-
-            row.addEventListener('dragover', (e) => {
-                e.preventDefault(); // Allow drop
-                const targetRow = e.target.closest('tr');
-                console.log('Drag over on element:', e.target);
-                console.log('Closest targetRow:', targetRow);
-
-                if (targetRow && !targetRow.classList.contains('dragging')) {
-                    const rect = targetRow.getBoundingClientRect();
-                    const mouseY = e.clientY;
-                    const topThreshold = rect.top + 10;    // 10px from top border
-                    const bottomThreshold = rect.bottom - 10; // 10px from bottom border
-
-                    // Clear previous visual feedback
-                    matchesContainer.querySelectorAll('.schedule-cell-match.insert-before, .schedule-cell-match.insert-after').forEach(el => {
-                        el.classList.remove('insert-before', 'insert-after');
-                    });
-                    
-                    if (mouseY < topThreshold) {
-                        targetRow.classList.add('insert-before');
-                    } else if (mouseY > bottomThreshold) {
-                        targetRow.classList.add('insert-after');
-                    } else {
-                        // In the middle, no specific insertion point visual
-                        targetRow.classList.add('drop-target'); // Keep general drop highlight
-                    }
-                    e.dataTransfer.dropEffect = 'move'; // Visual feedback for move operation
+                if (event.target === header || event.target.closest('.hall-name')) {
+                    const locationToEdit = header.dataset.location;
+                    const locationTypeToEdit = header.dataset.type;
+                    editPlace(locationToEdit, locationTypeToEdit);
                 }
-            });
-
-            row.addEventListener('dragleave', (e) => {
-                const targetRow = e.target.closest('tr');
-                if (targetRow) {
-                    targetRow.classList.remove('drop-target', 'insert-before', 'insert-after');
-                }
-            });
-
-            row.addEventListener('drop', async (e) => {
-                e.preventDefault();
-                console.log('DROP (match row) - EVENT FIRED.');
-                console.log('DROP (match row) - e.dataTransfer.types:', e.dataTransfer.types);
-                console.log('DROP (match row) - e.dataTransfer.getData("text/plain"):', e.dataTransfer.getData('text/plain'));
-                
-                let matchIdToProcess = e.dataTransfer.getData('text/plain'); 
-                
-                // Fallback to global variable if dataTransfer is empty or null, though it should ideally be set.
-                if (!matchIdToProcess || matchIdToProcess.trim() === '') {
-                    matchIdToProcess = draggedMatchId;
-                    console.warn('DROP (match row) - dataTransfer.getData("text/plain") was empty/invalid. Falling back to global draggedMatchId:', draggedMatchId);
-                }
-
-                console.log('DROP (match row) - After dataTransfer/global check, matchIdToProcess:', matchIdToProcess); // Critical log
-                console.log('DROP (match row) - Type of matchIdToProcess:', typeof matchIdToProcess); // NEW: Log type
-                console.log('DROP (match row) - Current global draggedMatchId:', draggedMatchId); // Log global state before cleanup
-                console.log('DROP (match row) - matchesCollectionRef:', matchesCollectionRef); // NEW: Log collection ref
-
-                // Always clean up drop-target class and insertion indicators
-                matchesContainer.querySelectorAll('.drop-target, .insert-before, .insert-after').forEach(el => el.classList.remove('drop-target', 'insert-before', 'insert-after'));
-
-                try {
-                    // Critical validation: check if matchIdToProcess is truly valid
-                    if (!matchIdToProcess || matchIdToProcess.trim() === '') { 
-                        await showMessage('Chyba', 'Presun zápasu zrušený: ID presúvaného zápasu nie je platné. Zápas nebol správne identifikovaný (ID je prázdne alebo neplatné).');
-                        console.error("DROP (match row) CANCELLED: matchIdToProcess is null, empty or whitespace. Final value:", matchIdToProcess);
-                        return; // Exit early if no valid ID
-                    }
-                    
-                    // NEW: Assertion before doc() call
-                    console.assert(matchIdToProcess && typeof matchIdToProcess === 'string', 'matchIdToProcess is not a valid string before doc() call!');
-                    console.assert(matchesCollectionRef, 'matchesCollectionRef is undefined or null before doc() call!');
-                    console.trace('Calling doc() for matchesCollectionRef'); // NEW: Trace before doc() call
-
-                    const targetRow = e.target.closest('tr');
-                    
-                    const targetMatchId = targetRow ? targetRow.dataset.id : null;
-                    const newDate = targetRow ? targetRow.dataset.date : null;
-                    const newLocation = targetRow ? targetRow.dataset.location : null;
-
-                    console.log('DROP (match row) - Target row dataset ID:', targetMatchId); // Debugging
-                    console.log('DROP (match row) - Target row dataset Date:', newDate); // Debugging
-                    console.log('DROP (match row) - Target row dataset Location:', newLocation); // Debugging
-
-                    if (matchIdToProcess === targetMatchId) { 
-                        console.log('Dropping onto itself or no effective change, ignoring.');
-                        return;
-                    }
-                    
-                    // Ensure newDate and newLocation are not null before proceeding
-                    if (!newDate || !newLocation) {
-                        await showMessage('Chyba', 'Cieľové miesto pre presun nie je platné (chýba dátum alebo miesto).');
-                        console.error('DROP (match row) - Target date or location is null:', { newDate, newLocation });
-                        return;
-                    }
-
-                    console.log('DROP (match row) - Attempting to get doc for ID:', matchIdToProcess); // Added log before doc() call
-                    const draggedMatchDoc = await getDoc(doc(matchesCollectionRef, matchIdToProcess));
-                    if (!draggedMatchDoc.exists()) {
-                        await showMessage('Chyba', 'Presúvaný zápas sa nenašiel v databáze.');
-                        console.error('DROP (match row) - Dragged match document not found for ID:', matchIdToProcess);
-                        return;
-                    }
-                    const draggedMatchData = draggedMatchDoc.data();
-
-                    const originalDate = draggedMatchData.date;
-                    const originalLocation = draggedMatchData.location;
-
-                    console.log('DROP (match row) - Original match data - Date:', originalDate, 'Location:', originalLocation); // Debugging
-                    console.log('DROP (match row) - New target - Date:', newDate, 'Location:', newLocation); // Debugging
-
-                    const batch = writeBatch(db);
-                    
-                    // Handle original location/date block (if different)
-                    if (originalDate !== newDate || originalLocation !== newLocation) {
-                        // Get all matches from the original block, excluding the dragged one
-                        const originalMatchesQuery = query(
-                            matchesCollectionRef,
-                            where("date", "==", originalDate),
-                            where("location", "==", originalLocation)
-                        );
-                        const originalMatchesSnapshot = await getDocs(originalMatchesQuery);
-                        let matchesInOriginalBlock = originalMatchesSnapshot.docs
-                            .map(doc => ({ id: doc.id, ...doc.data() }))
-                            .filter(match => match.id !== matchIdToProcess)
-                            .sort((a, b) => {
-                                const [aH, aM] = (a.startTime || '00:00').split(':').map(Number);
-                                const [bH, bM] = (b.startTime || '00:00').split(':').map(Number);
-                                return (aH * 60 + aM) - (bH * 60 + bM);
-                            });
-                        
-                        const updatedOriginalMatches = await calculateSequentialMatchTimes(originalDate, originalLocation, matchesInOriginalBlock);
-                        updatedOriginalMatches.forEach(update => {
-                            batch.update(doc(matchesCollectionRef, update.id), update);
-                        });
-                    }
-
-                    // Handle new location/date block
-                    const newMatchesQuery = query(
-                        matchesCollectionRef,
-                        where("date", "==", newDate),
-                        where("location", "==", newLocation)
-                    );
-                    const newMatchesSnapshot = await getDocs(newMatchesQuery);
-                    
-                    let matchesInNewBlock = newMatchesSnapshot.docs
-                        .map(doc => ({ id: doc.id, ...doc.data() }))
-                        .filter(match => match.id !== matchIdToProcess)
-                        .sort((a, b) => {
-                            const [aH, aM] = (a.startTime || '00:00').split(':').map(Number);
-                            const [bH, bM] = (b.startTime || '00:00').split(':').map(Number);
-                            return (aH * 60 + aM) - (bH * 60 + bM);
-                        });
-
-                    let insertionIndex = 0;
-                    if (targetRow) { // If dropped on a specific row
-                        insertionIndex = matchesInNewBlock.findIndex(match => match.id === targetMatchId);
-                        // Adjust insertion index based on visual feedback classes
-                        if (targetRow.classList.contains('insert-after')) {
-                            insertionIndex++;
-                        }
-                        // If targetRow has 'insert-before', insertionIndex is already correct (insert before found element)
-                    } else { // Dropped on an empty space (e.g. into tbody not on a specific row)
-                         insertionIndex = matchesInNewBlock.length; // Append to end
-                    }
-
-                    const draggedMatchDataForNewBlock = { ...draggedMatchData, date: newDate, location: newLocation };
-                    let orderedMatchesInNewBlock = [
-                        ...matchesInNewBlock.slice(0, insertionIndex),
-                        draggedMatchDataForNewBlock,
-                        ...matchesInNewBlock.slice(insertionIndex)
-                    ];
-                    
-                    const updatedNewMatches = await calculateSequentialMatchTimes(newDate, newLocation, orderedMatchesInNewBlock);
-                    updatedNewMatches.forEach(update => {
-                        batch.update(doc(matchesCollectionRef, update.id), update);
-                    });
-
-                    await batch.commit();
-                    await showMessage('Úspech', 'Zápas úspešne presunutý a časy aktualizované! Rozvrh sa aktualizuje.');
-                    await displayMatchesAsSchedule(); // Refresh display
-                } catch (error) {
-                    console.error("Chyba pri presune zápasu (zachytená chyba):", error);
-                    await showMessage('Chyba', `Chyba pri presune zápasu: ${error.message}`);
-                } finally {
-                    // Clear visual feedback regardless of success or failure
-                    matchesContainer.querySelectorAll('.drop-target, .insert-before, .insert-after').forEach(el => el.classList.remove('drop-target', 'insert-before', 'insert-after'));
-                    // Remove dragging class from the originally dragged element
-                    const draggedElement = document.querySelector(`.schedule-cell-match[data-id="${matchIdToProcess}"]`);
-                    if (draggedElement) {
-                        draggedElement.classList.remove('dragging');
-                    }
-                    // For `drop` event, it's safe to clear here if it's the final action.
-                    // However, `dragend` is the most reliable place to clear it as it fires after `drop` OR if drag is cancelled.
-                    // Relying on dragend for clearing global state to avoid premature clearing.
-                    // draggedMatchId = null; // Removed from here, relying on dragend for consistent cleanup
-                }
-            });
-            
-            // Add dragend listener to ensure cleanup on drag completion/cancellation
-            row.addEventListener('dragend', (e) => {
-                const draggedElement = e.currentTarget;
-                if (draggedElement) {
-                    draggedElement.classList.remove('dragging');
-                }
-                console.log('DRAGEND: Global draggedMatchId cleared. Previous value:', draggedMatchId); // Log for verification
-                draggedMatchId = null; // Always clear the global ID on drag end
             });
         });
-
-        // Add dragover/dragleave/drop to location blocks for dropping into an empty location block
-        matchesContainer.querySelectorAll('.location-block').forEach(locationBlock => {
-            locationBlock.addEventListener('dragover', (e) => {
-                e.preventDefault(); // Allow drop
-                // Only add drop-target if dropping on the table body, not the header or other parts
-                const targetTbody = e.target.closest('tbody');
-                if (targetTbody) {
-                    targetTbody.classList.add('drop-target');
-                }
-            });
-
-            locationBlock.addEventListener('dragleave', (e) => {
-                const targetTbody = e.target.closest('tbody');
-                if (targetTbody) {
-                    targetTbody.classList.remove('drop-target');
-                }
-            });
-
-            locationBlock.addEventListener('drop', async (e) => {
-                e.preventDefault();
-                console.log('DROP (location block) - EVENT FIRED.');
-                console.log('DROP (location block) - e.dataTransfer.types:', e.dataTransfer.types);
-                console.log('DROP (location block) - e.dataTransfer.getData("text/plain"):', e.dataTransfer.getData('text/plain'));
-
-                let matchIdToProcess = e.dataTransfer.getData('text/plain'); 
-
-                // Fallback to global variable if dataTransfer is empty or null.
-                if (!matchIdToProcess || matchIdToProcess.trim() === '') {
-                    matchIdToProcess = draggedMatchId;
-                    console.warn('DROP (location block) - dataTransfer.getData("text/plain") was empty/invalid. Falling back to global draggedMatchId:', draggedMatchId);
-                }
-
-                console.log('DROP (location block) - After dataTransfer/global check, matchIdToProcess:', matchIdToProcess); // Critical log
-                console.log('DROP (location block) - Type of matchIdToProcess:', typeof matchIdToProcess); // NEW: Log type
-                console.log('DROP (location block) - Current global draggedMatchId:', draggedMatchId); // Log global state before cleanup
-                console.log('DROP (location block) - matchesCollectionRef:', matchesCollectionRef); // NEW: Log collection ref
-
-
-                const targetTbody = e.target.closest('tbody');
-                if (targetTbody) {
-                    targetTbody.classList.remove('drop-target');
-                }
-                const targetLocationBlock = e.target.closest('.location-block');
-                const newDate = targetLocationBlock ? targetLocationBlock.dataset.date : null;
-                const newLocation = targetLocationBlock ? targetLocationBlock.dataset.location : null;
-                
-                console.log('DROP (location block) - Target location block dataset Date:', newDate); // Debugging
-                console.log('DROP (location block) - Target location block dataset Location:', newLocation); // Debugging
-
-                // The finally block will handle removing 'dragging' class and resetting draggedMatchId
-                try {
-                    // Critical validation: check if matchIdToProcess is truly valid
-                    if (!matchIdToProcess || matchIdToProcess.trim() === '') { 
-                        await showMessage('Chyba', 'Presun zápasu zrušený: ID presúvaného zápasu nie je platné. Zápas nebol správne identifikovaný (ID je prázdne alebo neplatné) pre cieľový blok.');
-                        console.error("DROP (location block) CANCELLED: matchIdToProcess is null, empty or whitespace. Final value:", matchIdToProcess);
-                        return; // Exit early if no valid ID
-                    }
-
-                    if (!newDate || !newLocation) {
-                        await showMessage('Chyba', 'Presun zápasu zrušený: Detaily cieľového miesta chýbajú.');
-                        console.error("DROP (location block) CANCELLED: target location details are null (location block).");
-                        return; // Exit early if no valid target
-                    }
-                    
-                    // NEW: Assertion before doc() call
-                    console.assert(matchIdToProcess && typeof matchIdToProcess === 'string', 'matchIdToProcess is not a valid string before doc() call!');
-                    console.assert(matchesCollectionRef, 'matchesCollectionRef is undefined or null before doc() call!');
-                    console.trace('Calling doc() for matchesCollectionRef'); // NEW: Trace before doc() call
-
-
-                    console.log('DROP (location block) - Attempting to get doc for ID:', matchIdToProcess); // Added log before doc() call
-                    const draggedMatchDoc = await getDoc(doc(matchesCollectionRef, matchIdToProcess));
-                    if (!draggedMatchDoc.exists()) {
-                        await showMessage('Chyba', 'Presúvaný zápas sa nenašiel v databáze.');
-                        console.error('DROP (location block) - Dragged match document not found for ID (location block):', matchIdToProcess);
-                        return;
-                    }
-                    const draggedMatchData = draggedMatchDoc.data();
-
-                    const originalDate = draggedMatchData.date;
-                    const originalLocation = draggedMatchData.location;
-
-                    console.log('DROP (location block) - Original match data - Date:', originalDate, 'Location:', originalLocation); // Debugging
-                    console.log('DROP (location block) - New target - Date:', newDate, 'Location:', newLocation); // Debugging
-
-                    const batch = writeBatch(db);
-
-                    // Handle original location/date block (if different)
-                    if (originalDate !== newDate || originalLocation !== newLocation) {
-                        const originalMatchesQuery = query(
-                            matchesCollectionRef,
-                            where("date", "==", originalDate),
-                            where("location", "==", originalLocation)
-                        );
-                        const originalMatchesSnapshot = await getDocs(originalMatchesQuery);
-                        let matchesInOriginalBlock = originalMatchesSnapshot.docs
-                            .map(doc => ({ id: doc.id, ...doc.data() }))
-                            .filter(match => match.id !== matchIdToProcess)
-                            .sort((a, b) => {
-                                const [aH, aM] = (a.startTime || '00:00').split(':').map(Number);
-                                const [bH, bM] = (b.startTime || '00:00').split(':').map(Number);
-                                return (aH * 60 + aM) - (bH * 60 + bM);
-                            });
-                        
-                        const updatedOriginalMatches = await calculateSequentialMatchTimes(originalDate, originalLocation, matchesInOriginalBlock);
-                        updatedOriginalMatches.forEach(update => {
-                            batch.update(doc(matchesCollectionRef, update.id), update);
-                        });
-                    }
-
-                    // Handle new location/date block
-                    const newMatchesQuery = query(
-                        matchesCollectionRef,
-                        where("date", "==", newDate),
-                        where("location", "==", newLocation)
-                    );
-                    const newMatchesSnapshot = await getDocs(newMatchesQuery);
-                    
-                    let matchesInNewBlock = newMatchesSnapshot.docs
-                        .map(doc => ({ id: doc.id, ...doc.data() }))
-                        .filter(match => match.id !== matchIdToProcess)
-                        .sort((a, b) => {
-                            const [aH, aM] = (a.startTime || '00:00').split(':').map(Number);
-                            const [bH, bM] = (b.startTime || '00:00').split(':').map(Number);
-                            return (aH * 60 + aM) - (bH * 60 + bM);
-                        });
-
-                    // For dropping into a location block (not on a specific row), we append to the end.
-                    matchesInNewBlock.push({ ...draggedMatchData, date: newDate, location: newLocation });
-
-                    const updatedNewMatches = await calculateSequentialMatchTimes(newDate, newLocation, matchesInNewBlock);
-                    updatedNewMatches.forEach(update => {
-                        batch.update(doc(matchesCollectionRef, update.id), update);
-                    });
-
-                    await batch.commit();
-                    await showMessage('Úspech', 'Zápas úspešne presunutý a časy aktualizované! Rozvrh sa aktualizuje.');
-                    await displayMatchesAsSchedule(); // Refresh display
-                } catch (error) {
-                    console.error("Chyba pri presune zápasu na prázdny blok (zachytená chyba):", error);
-                    await showMessage('Chyba', `Chyba pri presune zápasu: ${error.message}`);
-                } finally {
-                    // Clear visual feedback regardless of success or failure
-                    matchesContainer.querySelectorAll('.drop-target, .insert-before, .insert-after').forEach(el => el.classList.remove('drop-target', 'insert-before', 'insert-after'));
-                    // Remove dragging class from the originally dragged element
-                    const draggedElement = document.querySelector(`.schedule-cell-match[data-id="${matchIdToProcess}"]`);
-                    if (draggedElement) {
-                        draggedElement.classList.remove('dragging');
-                    }
-                    // draggedMatchId = null; // Removed from here, relying on dragend for consistent cleanup
-                }
-            });
-
-            // No dragend listener needed for locationBlock itself as dragend fires on the source element (the match row)
-        });
-
 
     } catch (error) {
         console.error("Chyba pri načítaní rozvrhu zápasov (zachytená chyba):", error);
         matchesContainer.innerHTML = `
-            <div class="error-message" style="text-align: center; padding: 20px; border: 1px solid #ff0000; background-color: #ffe0e0; color: #ff0000; border-radius: 8px;">
+            <div class="error-message">
                 <h3>Chyba pri načítaní rozvrhu zápasov!</h3>
                 <p>Prosím, skontrolujte konzolu prehliadača (F12 > Console) pre detaily.</p>
+                <p>Možné príčiny:</p>
                 <ul>
                     <li>Chýbajúce indexy vo Firestore. Skontrolujte záložku "Network" v konzole a Firebase Console.</li>
                     <li>Problém s pripojením k databáze alebo bezpečnostné pravidlá.</li>
@@ -1196,6 +1122,7 @@ async function displayMatchesAsSchedule() {
                 <p>Detail chyby: ${error.message}</p>
             </div>
         `;
+        // If the error is related to being offline or connection issues, show a more specific message
         if (error.code === 'unavailable' || (error.message && error.message.includes('offline'))) {
              matchesContainer.innerHTML += '<p class="error-message">Zdá sa, že nie ste pripojení k internetu, alebo je problém s pripojením k Firebase.</p>';
         }
@@ -1232,29 +1159,22 @@ async function deletePlayingDay(dateToDelete) {
                 batch.delete(doc(matchesCollectionRef, matchDoc.id));
             });
 
-            // Delete associated bus routes (STILL NEEDED IF YOU WANT TO DELETE BUSES FROM DB)
+            // Delete associated bus routes
             const busesQuery = query(busesCollectionRef, where("date", "==", dateToDelete));
             const busesSnapshot = await getDocs(busesQuery);
             busesSnapshot.docs.forEach(busDoc => {
                 batch.delete(doc(busesCollectionRef, busDoc.id));
             });
 
-            // Delete associated accommodation assignments (STILL NEEDED IF YOU WANT TO DELETE ACCOMMODATIONS FROM DB)
-            const allAccommodationsSnapshot = await getDocs(teamAccommodationsCollectionRef);
-            const dateToDeleteObj = new Date(dateToDelete);
-            dateToDeleteObj.setHours(0, 0, 0, 0);
-
-            allAccommodationsSnapshot.docs.forEach(accDoc => {
-                const assignment = accDoc.data();
-                const assignmentDateFrom = new Date(assignment.dateFrom);
-                const assignmentDateTo = new Date(assignment.dateTo);
-
-                assignmentDateFrom.setHours(0, 0, 0, 0);
-                assignmentDateTo.setHours(0, 0, 0, 0);
-
-                if (dateToDeleteObj >= assignmentDateFrom && dateToDeleteObj <= assignmentDateTo) {
-                    batch.delete(doc(teamAccommodationsCollectionRef, accDoc.id));
-                }
+            // Delete associated accommodation assignments that overlap with the date
+            const accommodationsQuery = query(
+                teamAccommodationsCollectionRef,
+                where("dateFrom", "<=", dateToDelete),
+                where("dateTo", ">=", dateToDelete)
+            );
+            const accommodationsSnapshot = await getDocs(accommodationsQuery);
+            accommodationsSnapshot.docs.forEach(accDoc => {
+                batch.delete(doc(teamAccommodationsCollectionRef, accDoc.id));
             });
 
             await batch.commit();
@@ -1263,7 +1183,7 @@ async function deletePlayingDay(dateToDelete) {
             await displayMatchesAsSchedule();
         } catch (error) {
             console.error("Chyba pri mazaní hracieho dňa:", error);
-            await showMessage('Chyba', `Chyba pri mazaní hracieho dňa. Detail: ${error.message}`);
+            await showMessage('Chyba', `Chyba pri mazaní hracieho dňa ${dateToDelete}. Detail: ${error.message}`);
         }
     }
 }
@@ -1299,7 +1219,7 @@ async function deletePlace(placeNameToDelete, placeTypeToDelete) {
                 batch.delete(doc(matchesCollectionRef, matchDoc.id));
             });
 
-            // Delete associated bus routes (both as start and end location) (STILL NEEDED IF YOU WANT TO DELETE BUSES FROM DB)
+            // Delete associated bus routes (both as start and end location)
             const combinedPlaceKey = `${placeNameToDelete}:::${placeTypeToDelete}`;
             const busesStartQuery = query(busesCollectionRef, where("startLocation", "==", combinedPlaceKey));
             const busesStartSnapshot = await getDocs(busesStartQuery);
@@ -1313,7 +1233,7 @@ async function deletePlace(placeNameToDelete, placeTypeToDelete) {
                 batch.delete(doc(busesCollectionRef, busDoc.id));
             });
 
-            // If it's an accommodation, delete associated team accommodations (STILL NEEDED IF YOU WANT TO DELETE ACCOMMODATIONS FROM DB)
+            // If it's an accommodation, delete associated team accommodations
             if (placeTypeToDelete === 'Ubytovanie') {
                 const accommodationsQuery = query(teamAccommodationsCollectionRef, where("accommodationId", "==", placeSnapshot.docs[0].id));
                 const accommodationsSnapshot = await getDocs(accommodationsQuery);
@@ -1328,7 +1248,7 @@ async function deletePlace(placeNameToDelete, placeTypeToDelete) {
             await displayMatchesAsSchedule();
         } catch (error) {
             console.error("Chyba pri mazaní miesta:", error);
-            await showMessage('Chyba', `Chyba pri mazaní miesta. Detail: ${error.message}`);
+            await showMessage('Chyba', `Chyba pri mazaní miesta ${placeNameToDelete} (${placeTypeToDelete}). Detail: ${error.message}`);
         }
     }
 }
@@ -1378,7 +1298,7 @@ async function editPlace(placeName, placeType) {
         const placeModal = document.getElementById('placeModal');
         const placeIdInput = document.getElementById('placeId');
         const placeTypeSelect = document.getElementById('placeTypeSelect');
-        const placeNameInput = document = document.getElementById('placeName');
+        const placeNameInput = document.getElementById('placeName');
         const placeAddressInput = document.getElementById('placeAddress');
         const placeGoogleMapsUrlInput = document.getElementById('placeGoogleMapsUrl');
         const deletePlaceButtonModal = document.getElementById('deletePlaceButtonModal');
@@ -1408,27 +1328,6 @@ async function editPlace(placeName, placeType) {
         await showMessage('Chyba', "Vyskytla sa chyba pri načítavaní dát miesta. Skúste to znova.");
     }
 }
-
-/**
- * This function handles the update of a match's properties directly in the database.
- * It's designed to be used after a drag-and-drop operation or any other
- * scenario where a match's details (like date, location, start time) need
- * to be updated programmatically, without opening a modal.
- * * @param {string} matchId The ID of the match to update.
- * @param {object} updates An object containing the fields to update for the match.
- * Example: { date: 'YYYY-MM-DD', location: 'New Hall', startTime: 'HH:MM' }
- */
-async function updateMatchDataDirectly(matchId, updates) {
-    try {
-        const matchDocRef = doc(matchesCollectionRef, matchId);
-        await updateDoc(matchDocRef, updates);
-        console.log(`Match ${matchId} updated directly with:`, updates);
-    } catch (error) {
-        console.error(`Chyba pri priamej aktualizácii zápasu ${matchId}:`, error);
-        await showMessage('Chyba', `Chyba pri priamej aktualizácii zápasu ${matchId}. Detail: ${error.message}`);
-    }
-}
-
 
 /**
  * Opens the modal to edit an existing match.
@@ -1516,13 +1415,13 @@ async function editBus(busId) {
     try {
         const busModal = document.getElementById('busModal');
         const busIdInput = document.getElementById('busId');
-        const busModalTitle = document.getElementById('busModalModalTitle');
+        const busModalTitle = document.getElementById('busModalTitle');
         const busNameInput = document.getElementById('busNameInput');
         const busDateSelect = document.getElementById('busDateSelect');
         const busStartLocationSelect = document.getElementById('busStartLocationSelect');
         const busStartTimeInput = document.getElementById('busStartTimeInput');
-        const busEndLocationSelect = document.getElementById('busEndLocationSelect'); 
-        const busEndTimeInput = document.getElementById('busEndTimeInput'); 
+        const busEndLocationSelect = document.getElementById('busEndLocationSelect');
+        const busEndTimeInput = document.getElementById('busEndTimeInput'); // Corrected: removed 'document ='
         const busNotesInput = document.getElementById('busNotesInput');
         const deleteBusButtonModal = document.getElementById('deleteBusButtonModal');
 
@@ -1586,7 +1485,7 @@ async function editAccommodationAssignment(assignmentId) {
         const assignmentIdInput = document.getElementById('assignmentId');
         const assignAccommodationModalTitle = document.getElementById('assignAccommodationModalTitle');
         const assignmentDateFromSelect = document.getElementById('assignmentDateFromSelect');
-        const assignmentDateToSelect = document.getElementById('assignAccommodationModalTitle');
+        const assignmentDateToSelect = document.getElementById('assignmentDateToSelect');
         const clubSelect = document.getElementById('clubSelect');
         const specificTeamSelect = document.getElementById('specificTeamSelect');
         const accommodationSelect = document.getElementById('accommodationSelect');
@@ -1669,9 +1568,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const addPlayingDayButton = document.getElementById('addPlayingDayButton');
     const addPlaceButton = document.getElementById('addPlaceButton');
     const addMatchButton = document.getElementById('addMatchButton');
-    // Removed direct references to addBusButton and assignAccommodationButton from constants
-    // const addBusButton = document.getElementById('addBusButton');
-    // const assignAccommodationButton = document.getElementById('assignAccommodationButton');
+    const addBusButton = document.getElementById('addBusButton');
+    const assignAccommodationButton = document.getElementById('assignAccommodationButton');
 
     const matchModal = document.getElementById('matchModal');
     const closeMatchModalButton = document.getElementById('closeMatchModal');
@@ -1708,11 +1606,31 @@ document.addEventListener('DOMContentLoaded', async () => {
     const placeGoogleMapsUrlInput = document.getElementById('placeGoogleMapsUrl');
     const deletePlaceButtonModal = document.getElementById('deletePlaceButtonModal');
 
-    // Removed bus and accommodation modals and their related elements from constants
-    // const busModal = document.getElementById('busModal');
-    // const closeBusModalButton = document.getElementById('closeBusModal');
-    // const busForm = document.getElementById('busForm');
-    // ... and so on for bus and accommodation elements
+    const busModal = document.getElementById('busModal');
+    const closeBusModalButton = document.getElementById('closeBusModal');
+    const busForm = document.getElementById('busForm');
+    const busIdInput = document.getElementById('busId');
+    const busModalTitle = document.getElementById('busModalTitle');
+    const busNameInput = document.getElementById('busNameInput');
+    const busDateSelect = document.getElementById('busDateSelect');
+    const busStartLocationSelect = document.getElementById('busStartLocationSelect');
+    const busStartTimeInput = document.getElementById('busStartTimeInput');
+    const busEndLocationSelect = document.getElementById('busEndLocationSelect');
+    const busEndTimeInput = document.getElementById('busEndTimeInput');
+    const busNotesInput = document.getElementById('busNotesInput');
+    const deleteBusButtonModal = document.getElementById('deleteBusButtonModal');
+
+    const assignAccommodationModal = document.getElementById('assignAccommodationModal');
+    const closeAssignAccommodationModalButton = document.getElementById('closeAssignAccommodationModal');
+    const assignAccommodationForm = document.getElementById('assignAccommodationForm');
+    const assignmentIdInput = document.getElementById('assignmentId');
+    const assignmentDateFromSelect = document.getElementById('assignmentDateFromSelect');
+    const assignmentDateToSelect = document.getElementById('assignmentDateToSelect');
+    const clubSelect = document.getElementById('clubSelect');
+    const specificTeamSelect = document.getElementById('specificTeamSelect');
+    const accommodationSelect = document.getElementById('accommodationSelect');
+    const assignAccommodationModalTitle = document.getElementById('assignAccommodationModalTitle');
+    const deleteAssignmentButtonModal = document.getElementById('deleteAssignmentButtonModal');
 
     if (categoriesContentSection) {
         categoriesContentSection.style.display = 'block';
@@ -1786,18 +1704,36 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // Hidden as per user request to only show matches
-    const addBusButtonElement = document.getElementById('addBusButton');
-    if (addBusButtonElement) {
-        addBusButtonElement.style.display = 'none';
-    }
+    addBusButton.addEventListener('click', async () => {
+        busForm.reset();
+        busIdInput.value = '';
+        busModalTitle.textContent = 'Pridať autobusovú linku';
+        await populatePlayingDaysSelect(busDateSelect);
+        await populateAllPlaceSelects(busStartLocationSelect);
+        await populateAllPlaceSelects(busEndLocationSelect, ''); // Populate end location without pre-selection
+        deleteBusButtonModal.style.display = 'none';
+        openModal(busModal);
+        addOptions.classList.remove('show');
+    });
 
-    const assignAccommodationButtonElement = document.getElementById('assignAccommodationButton');
-    if (assignAccommodationButtonElement) {
-        assignAccommodationButtonElement.style.display = 'none';
-    }
+    assignAccommodationButton.addEventListener('click', async () => {
+        assignAccommodationForm.reset();
+        assignmentIdInput.value = '';
+        assignAccommodationModalTitle.textContent = 'Priradiť ubytovanie';
+        await populatePlayingDaysSelect(assignmentDateFromSelect);
+        await populatePlayingDaysSelect(assignmentDateToSelect);
+        await populateClubSelect(clubSelect);
+        if (specificTeamSelect) {
+            specificTeamSelect.innerHTML = '<option value="">-- Vyberte konkrétny tím (nepovinné) --</option>';
+            specificTeamSelect.disabled = true;
+        }
+        await populateAccommodationSelect(accommodationSelect);
+        deleteAssignmentButtonModal.style.display = 'none';
+        openModal(assignAccommodationModal);
+        addOptions.classList.remove('show');
+    });
 
-    // Close modal event listeners - only keep for relevant modals
+    // Close modal event listeners
     closePlayingDayModalButton.addEventListener('click', () => {
         closeModal(playingDayModal);
         displayMatchesAsSchedule(); // Refresh schedule after closing
@@ -1813,9 +1749,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         displayMatchesAsSchedule(); // Refresh schedule after closing
     });
 
-    // Removed close listeners for bus and accommodation modals
-    // closeBusModalButton.addEventListener('click', () => { /* ... */ });
-    // closeAssignAccommodationModalButton.addEventListener('click', () => { /* ... */ });
+    closeBusModalButton.addEventListener('click', () => {
+        closeModal(busModal);
+        displayMatchesAsSchedule(); // Refresh schedule after closing
+    });
+
+    closeAssignAccommodationModalButton.addEventListener('click', () => {
+        closeModal(assignAccommodationModal);
+        displayMatchesAsSchedule(); // Refresh schedule after closing
+    });
 
     // Event listeners for dynamic updates in match form
     matchCategorySelect.addEventListener('change', async () => {
@@ -1844,10 +1786,40 @@ document.addEventListener('DOMContentLoaded', async () => {
     matchDurationInput.addEventListener('change', findFirstAvailableTime);
     matchBufferTimeInput.addEventListener('change', findFirstAvailableTime);
 
-    // Removed event listeners for dynamic updates in accommodation assignment form
-    // if (clubSelect) { clubSelect.addEventListener('change', async () => { /* ... */ }); }
-    // if (assignmentDateFromSelect) { assignmentDateFromSelect.addEventListener('change', async () => { /* ... */ }); }
-    // if (assignmentDateToSelect) { assignmentDateDateToSelect.addEventListener('change', async () => { /* ... */ }); }
+    // Event listeners for dynamic updates in accommodation assignment form
+    if (clubSelect) {
+        clubSelect.addEventListener('change', async () => {
+            const selectedClubName = clubSelect.value;
+            await populateSpecificTeamSelect(specificTeamSelect, selectedClubName);
+            if (specificTeamSelect) {
+                specificTeamSelect.disabled = !selectedClubName;
+            }
+        });
+    }
+
+    if (assignmentDateFromSelect) {
+        assignmentDateFromSelect.addEventListener('change', async () => {
+            // Re-populate club select to filter out already assigned clubs for the new date range
+            await populateClubSelect(clubSelect, clubSelect.value);
+            const selectedClubName = clubSelect.value;
+            await populateSpecificTeamSelect(specificTeamSelect, selectedClubName);
+            if (specificTeamSelect) {
+                specificTeamSelect.disabled = !selectedClubName;
+            }
+        });
+    }
+
+    if (assignmentDateToSelect) {
+        assignmentDateToSelect.addEventListener('change', async () => {
+            // Re-populate club select to filter out already assigned clubs for the new date range
+            await populateClubSelect(clubSelect, clubSelect.value);
+            const selectedClubName = clubSelect.value;
+            await populateSpecificTeamSelect(specificTeamSelect, selectedClubName);
+            if (specificTeamSelect) {
+                specificTeamSelect.disabled = !selectedClubName;
+            }
+        });
+    }
 
     /**
      * Handles the submission of the match form.
@@ -1993,7 +1965,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 await showMessage('Chyba', `Zápas sa prekrýva s existujúcim zápasom v mieste "${matchLocationName}" dňa ${matchDate}:\n\n` +
                       `Existujúci zápas: ${overlappingMatchDetails.startTime} - ${formattedExistingEndTime}\n` +
-                      `Tímy: ${overlappingExistingMatchDetails.team1ClubName} vs ${overlappingExistingMatchDetails.team2ClubName}\n\n` +
+                      `Tímy: ${overlappingMatchDetails.team1DisplayName} vs ${overlappingMatchDetails.team2DisplayName}\n\n` +
                       `Prosím, upravte čas začiatku alebo trvanie nového zápasu, alebo prestávku po zápase.`);
                 return;
             }
@@ -2054,7 +2026,119 @@ document.addEventListener('DOMContentLoaded', async () => {
     /**
      * Handles the submission of the bus form.
      */
-    // busForm.addEventListener('submit', async (e) => { /* ... removed ... */ });
+    busForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const busName = busNameInput.value.trim();
+        const busDate = busDateSelect.value;
+        const busStartLocationCombined = busStartLocationSelect.value;
+        const busStartTime = busStartTimeInput.value;
+        const busEndLocationCombined = busEndLocationSelect.value;
+        const busEndTime = busEndTimeInput.value;
+        const busNotes = busNotesInput.value.trim();
+        const currentBusId = busIdInput.value;
+
+        // Basic validation for required fields
+        if (!busName || !busDate || !busStartLocationCombined || !busStartTime || !busEndLocationCombined || !busEndTime) {
+            await showMessage('Chyba', 'Prosím, vyplňte všetky povinné polia (Názov autobusu, Dátum, Miesto začiatku, Čas odchodu, Miesto cieľa, Čas príchodu).');
+            return;
+        }
+
+        // Validate that start and end locations are different
+        if (busStartLocationCombined === busEndLocationCombined) {
+            await showMessage('Chyba', 'Miesto začiatku a miesto cieľa nemôžu byť rovnaké. Prosím, zvoľte rôzne miesta.');
+            return;
+        }
+
+        // Validate bus time
+        const [startH, startM] = busStartTime.split(':').map(Number);
+        const [endH, endM] = busEndTime.split(':').map(Number);
+        const startTimeInMinutes = startH * 60 + startM;
+        let endTimeInMinutes = endH * 60 + endM; // Corrected: was endM * 60 + endM
+
+        if (endTimeInMinutes < startTimeInMinutes) {
+            endTimeInMinutes += 24 * 60; // Handle overnight routes
+        }
+
+        const durationInMinutes = endTimeInMinutes - startTimeInMinutes;
+        if (durationInMinutes <= 0) {
+            await showMessage('Chyba', 'Čas príchodu musí byť po čase odchodu.');
+            return;
+        }
+
+        // Check for overlap with existing bus routes with the same name on the same date
+        try {
+            const existingBusesQuery = query(
+                busesCollectionRef,
+                where("date", "==", busDate),
+                where("busName", "==", busName)
+            );
+            const existingBusesSnapshot = await getDocs(existingBusesQuery);
+
+            let overlapFound = false;
+            let overlappingBusDetails = null;
+
+            existingBusesSnapshot.docs.forEach(doc => {
+                const existingBus = doc.data();
+                const existingBusId = doc.id;
+
+                if (currentBusId && existingBusId === currentBusId) {
+                    return;
+                }
+
+                const [existingStartH, existingStartM] = existingBus.startTime.split(':').map(Number);
+                const [existingEndH, existingEndM] = existingBus.endTime.split(':').map(Number);
+                const existingBusStartInMinutes = existingStartH * 60 + existingStartM;
+                let existingBusEndInMinutes = existingEndH * 60 + existingEndM;
+
+                if (existingBusEndInMinutes < existingBusStartInMinutes) {
+                    existingBusEndInMinutes += 24 * 60;
+                }
+
+                if (startTimeInMinutes < existingBusEndInMinutes && endTimeInMinutes > existingBusStartInMinutes) {
+                    overlapFound = true;
+                    overlappingBusDetails = existingBus;
+                    return;
+                }
+            });
+
+            if (overlapFound) {
+                await showMessage('Chyba', `Autobus "${busName}" sa prekrýva s existujúcou linkou dňa ${busDate}:\n\n` +
+                      `Existujúca linka: ${overlappingBusDetails.startTime} - ${overlappingBusDetails.endTime} (${overlappingBusDetails.startLocation.split(':::')[0]} → ${overlappingBusDetails.endLocation.split(':::')[0]})\n\n` +
+                      `Prosím, upravte čas odchodu alebo príchodu novej linky.`);
+                return;
+            }
+        } catch (error) {
+            console.error("Chyba pri kontrole prekrývania autobusových liniek:", error);
+            await showMessage('Chyba', "Vyskytla sa chyba pri kontrole prekrývania autobusových liniek. Skúste to znova.");
+            return;
+        }
+
+        const busData = {
+            busName: busName,
+            date: busDate,
+            startLocation: busStartLocationCombined,
+            startTime: busStartTime,
+            endLocation: busEndLocationCombined,
+            endTime: busEndTime,
+            notes: busNotes,
+            createdAt: new Date()
+        };
+
+        try {
+            if (currentBusId) {
+                await setDoc(doc(busesCollectionRef, currentBusId), busData, { merge: true });
+                await showMessage('Úspech', 'Autobusová linka úspešne upravená!');
+            } else {
+                await addDoc(busesCollectionRef, busData);
+                await showMessage('Úspech', 'Autobusová linka úspešne pridaná!');
+            }
+            closeModal(busModal);
+            await displayMatchesAsSchedule();
+        } catch (error) {
+            console.error("Chyba pri ukladaní autobusovej linky:", error);
+            await showMessage('Chyba', `Chyba pri ukladaní autobusovej linky. Detail: ${error.message}`);
+        }
+    });
 
     /**
      * Handles the submission of the place form.
@@ -2157,5 +2241,104 @@ document.addEventListener('DOMContentLoaded', async () => {
     /**
      * Handles the submission of the accommodation assignment form.
      */
-    // assignAccommodationForm.addEventListener('submit', async (e) => { /* ... removed ... */ });
+    assignAccommodationForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = assignmentIdInput.value;
+        const assignmentDateFrom = assignmentDateFromSelect.value;
+        const assignmentDateTo = assignmentDateToSelect.value;
+        const selectedClubName = clubSelect.value;
+        const selectedSpecificTeamId = specificTeamSelect.value;
+        const selectedAccommodationId = accommodationSelect.value;
+
+        // Basic validation
+        if (!assignmentDateFrom || !assignmentDateTo || !selectedClubName || !selectedAccommodationId) {
+            await showMessage('Chyba', 'Prosím, vyplňte všetky povinné polia (Dátum od, Dátum do, Klub, Ubytovňa).');
+            return;
+        }
+
+        // Validate date range
+        if (new Date(assignmentDateFrom) > new Date(assignmentDateTo)) {
+            await showMessage('Chyba', 'Dátum "Od" nemôže byť po dátume "Do".');
+            return;
+        }
+
+        try {
+            let teamsData = [];
+            if (selectedSpecificTeamId) {
+                // If a specific team is selected, get only that team
+                const teamDoc = await getDoc(doc(clubsCollectionRef, selectedSpecificTeamId));
+                if (teamDoc.exists()) {
+                    const team = teamDoc.data();
+                    teamsData.push({
+                        teamId: selectedSpecificTeamId,
+                        teamName: `${team.name} (Kat: ${team.categoryName}, Skup: ${team.groupName}, Tím: ${team.orderInGroup})`
+                    });
+                } else {
+                    await showMessage('Chyba', 'Vybraný konkrétny tím sa nenašiel v databáze.');
+                    return;
+                }
+            } else {
+                // If no specific team, get all teams for the base club name
+                const allClubsSnapshot = await getDocs(clubsCollectionRef);
+                const teamsForBaseClub = [];
+                allClubsSnapshot.forEach(doc => {
+                    const team = doc.data();
+                    // Check if team name matches base club name (handling '⁄' and ' A', ' B' suffixes)
+                    if (selectedClubName.includes('⁄')) {
+                        if (team.name === selectedClubName) {
+                            teamsForBaseClub.push({
+                                teamId: doc.id,
+                                teamName: `${team.name} (Kat: ${team.categoryName}, Skup: ${team.groupName}, Tím: ${team.orderInGroup})`
+                            });
+                        }
+                    } else {
+                        if (team.name.match(new RegExp(`^${selectedClubName}(?:\\s[A-Z])?$`))) {
+                            teamsForBaseClub.push({
+                                teamId: doc.id,
+                                teamName: `${team.name} (Kat: ${team.categoryName}, Skup: ${team.groupName}, Tím: ${team.orderInGroup})`
+                            });
+                        }
+                    }
+                });
+                if (teamsForBaseClub.length > 0) {
+                    teamsData = teamsForBaseClub;
+                } else {
+                    await showMessage('Chyba', 'Pre vybraný základný názov klubu sa nenašli žiadne tímy v databáze.');
+                    return;
+                }
+            }
+
+            // Get accommodation name
+            const accommodationDoc = await getDoc(doc(placesCollectionRef, selectedAccommodationId));
+            let accommodationName = '';
+            if (accommodationDoc.exists()) {
+                accommodationName = accommodationDoc.data().name;
+            } else {
+                await showMessage('Chyba', 'Vybraná ubytovňa sa nenašla v databáze.');
+                return;
+            }
+
+            const assignmentData = {
+                dateFrom: assignmentDateFrom,
+                dateTo: assignmentDateTo,
+                teams: teamsData, // Array of {teamId, teamName}
+                accommodationId: selectedAccommodationId,
+                accommodationName: accommodationName,
+                createdAt: new Date()
+            };
+
+            if (id) {
+                await setDoc(doc(teamAccommodationsCollectionRef, id), assignmentData, { merge: true });
+                await showMessage('Úspech', 'Priradenie ubytovania úspešne upravené!');
+            } else {
+                await addDoc(teamAccommodationsCollectionRef, assignmentData);
+                await showMessage('Úspech', 'Priradenie ubytovania úspešne pridané!');
+            }
+            closeModal(assignAccommodationModal);
+            await displayMatchesAsSchedule();
+        } catch (error) {
+            console.error("Chyba pri ukladaní priradenia ubytovania:", error);
+            await showMessage('Chyba', `Chyba pri ukladaní priradenia ubytovania. Detail: ${error.message}`);
+        }
+    });
 });
