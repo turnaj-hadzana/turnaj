@@ -802,9 +802,10 @@ async function displayMatchesAsSchedule() {
         // Drag and Drop Event Listeners
         matchesContainer.querySelectorAll('.schedule-cell-match').forEach(row => {
             row.addEventListener('dragstart', (e) => {
-                draggedMatchId = e.target.dataset.id;
+                draggedMatchId = e.target.dataset.id; // Ensure this is correctly set
                 e.dataTransfer.setData('text/plain', draggedMatchId);
                 e.target.classList.add('dragging');
+                console.log('Drag started for match ID:', draggedMatchId); // Log for debugging
             });
 
             row.addEventListener('dragover', (e) => {
@@ -824,6 +825,18 @@ async function displayMatchesAsSchedule() {
 
             row.addEventListener('drop', async (e) => {
                 e.preventDefault();
+                const currentDraggedMatchId = e.dataTransfer.getData('text/plain'); // Get ID directly from dataTransfer
+                console.log('Drop event triggered. draggedMatchId from dataTransfer:', currentDraggedMatchId); // Log for debugging
+
+                if (!currentDraggedMatchId) {
+                    await showMessage('Chyba', 'Presun zápasu zrušený: ID presúvaného zápasu chýba v dátach presunu.');
+                    console.warn("Drop operation cancelled: currentDraggedMatchId from dataTransfer is null or empty.");
+                    e.target.classList.remove('dragging');
+                    draggedMatchId = null; 
+                    matchesContainer.querySelectorAll('.drop-target').forEach(el => el.classList.remove('drop-target'));
+                    return;
+                }
+
                 const targetRow = e.target.closest('tr');
                 if (targetRow) {
                     targetRow.classList.remove('drop-target');
@@ -831,20 +844,19 @@ async function displayMatchesAsSchedule() {
                 
                 const targetMatchId = targetRow ? targetRow.dataset.id : null;
 
-                // Ensure draggedMatchId is valid and not dropping on itself
-                if (!draggedMatchId) { // Added check for draggedMatchId
-                    await showMessage('Chyba', 'Presun zápasu zrušený: ID presúvaného zápasu chýba.');
-                    console.warn("Drop operation cancelled: draggedMatchId is null.");
-                    return;
-                }
-                if (draggedMatchId === targetMatchId) { // Allow dropping on itself if it means reordering
+                if (currentDraggedMatchId === targetMatchId) { 
+                    console.log('Dropping onto itself or no effective change, ignoring.');
+                    e.target.classList.remove('dragging');
+                    draggedMatchId = null; 
+                    matchesContainer.querySelectorAll('.drop-target').forEach(el => el.classList.remove('drop-target'));
                     return;
                 }
 
                 try {
-                    const draggedMatchDoc = await getDoc(doc(matchesCollectionRef, draggedMatchId));
+                    const draggedMatchDoc = await getDoc(doc(matchesCollectionRef, currentDraggedMatchId));
                     if (!draggedMatchDoc.exists()) {
-                        await showMessage('Chyba', 'Presúvaný zápas sa nenašiel.');
+                        await showMessage('Chyba', 'Presúvaný zápas sa nenašiel v databáze.');
+                        console.error('Dragged match document not found for ID:', currentDraggedMatchId);
                         return;
                     }
                     const draggedMatchData = draggedMatchDoc.data();
@@ -854,6 +866,9 @@ async function displayMatchesAsSchedule() {
 
                     const newDate = targetRow.dataset.date;
                     const newLocation = targetRow.dataset.location;
+
+                    console.log('Original: ', originalDate, originalLocation); // Debugging
+                    console.log('New: ', newDate, newLocation); // Debugging
 
                     let confirmationMessage = '';
                     if (originalDate !== newDate || originalLocation !== newLocation) {
@@ -866,6 +881,9 @@ async function displayMatchesAsSchedule() {
 
                     if (!confirmed) {
                         await showMessage('Zrušené', 'Presun zápasu bol zrušený.');
+                        e.target.classList.remove('dragging');
+                        draggedMatchId = null; 
+                        matchesContainer.querySelectorAll('.drop-target').forEach(el => el.classList.remove('drop-target'));
                         return;
                     }
 
@@ -882,7 +900,7 @@ async function displayMatchesAsSchedule() {
                         const originalMatchesSnapshot = await getDocs(originalMatchesQuery);
                         let matchesInOriginalBlock = originalMatchesSnapshot.docs
                             .map(doc => ({ id: doc.id, ...doc.data() }))
-                            .filter(match => match.id !== draggedMatchId)
+                            .filter(match => match.id !== currentDraggedMatchId) // Use currentDraggedMatchId here
                             .sort((a, b) => {
                                 const [aH, aM] = (a.startTime || '00:00').split(':').map(Number);
                                 const [bH, bM] = (b.startTime || '00:00').split(':').map(Number);
@@ -905,7 +923,7 @@ async function displayMatchesAsSchedule() {
                     
                     let matchesInNewBlock = newMatchesSnapshot.docs
                         .map(doc => ({ id: doc.id, ...doc.data() }))
-                        .filter(match => match.id !== draggedMatchId) // Ensure dragged one is not duplicated if it was already there
+                        .filter(match => match.id !== currentDraggedMatchId) // Use currentDraggedMatchId here
                         .sort((a, b) => {
                             const [aH, aM] = (a.startTime || '00:00').split(':').map(Number);
                             const [bH, bM] = (b.startTime || '00:00').split(':').map(Number);
@@ -979,6 +997,9 @@ async function displayMatchesAsSchedule() {
 
             locationBlock.addEventListener('drop', async (e) => {
                 e.preventDefault();
+                const currentDraggedMatchId = e.dataTransfer.getData('text/plain'); // Get ID directly from dataTransfer
+                console.log('Drop event triggered on location block. draggedMatchId from dataTransfer:', currentDraggedMatchId); // Log for debugging
+
                 const targetTbody = e.target.closest('tbody');
                 if (targetTbody) {
                     targetTbody.classList.remove('drop-target');
@@ -987,22 +1008,29 @@ async function displayMatchesAsSchedule() {
                 const newDate = targetLocationBlock ? targetLocationBlock.dataset.date : null;
                 const newLocation = targetLocationBlock ? targetLocationBlock.dataset.location : null;
                 
-                if (!draggedMatchId || !newDate || !newLocation) {
+                if (!currentDraggedMatchId || !newDate || !newLocation) {
                     await showMessage('Chyba', 'Presun zápasu zrušený: ID presúvaného zápasu alebo detaily cieľa chýbajú.');
-                    console.warn("Drop operation cancelled: draggedMatchId or target details are null.");
+                    console.warn("Drop operation cancelled: currentDraggedMatchId or target details are null.");
+                    e.target.classList.remove('dragging');
+                    draggedMatchId = null; 
+                    matchesContainer.querySelectorAll('.drop-target').forEach(el => el.classList.remove('drop-target'));
                     return;
                 }
 
                 try {
-                    const draggedMatchDoc = await getDoc(doc(matchesCollectionRef, draggedMatchId));
+                    const draggedMatchDoc = await getDoc(doc(matchesCollectionRef, currentDraggedMatchId));
                     if (!draggedMatchDoc.exists()) {
-                        await showMessage('Chyba', 'Presúvaný zápas sa nenašiel.');
+                        await showMessage('Chyba', 'Presúvaný zápas sa nenašiel v databáze.');
+                        console.error('Dragged match document not found for ID:', currentDraggedMatchId);
                         return;
                     }
                     const draggedMatchData = draggedMatchDoc.data();
 
                     const originalDate = draggedMatchData.date;
                     const originalLocation = draggedMatchData.location;
+
+                    console.log('Original: ', originalDate, originalLocation); // Debugging
+                    console.log('New: ', newDate, newLocation); // Debugging
 
                     let confirmationMessage = '';
                     if (originalDate !== newDate || originalLocation !== newLocation) {
@@ -1015,6 +1043,9 @@ async function displayMatchesAsSchedule() {
                     const confirmed = await showConfirmation('Potvrdenie presunu zápasu', confirmationMessage);
                     if (!confirmed) {
                         await showMessage('Zrušené', 'Presun zápasu bol zrušený.');
+                        e.target.classList.remove('dragging');
+                        draggedMatchId = null; 
+                        matchesContainer.querySelectorAll('.drop-target').forEach(el => el.classList.remove('drop-target'));
                         return;
                     }
 
@@ -1030,7 +1061,7 @@ async function displayMatchesAsSchedule() {
                         const originalMatchesSnapshot = await getDocs(originalMatchesQuery);
                         let matchesInOriginalBlock = originalMatchesSnapshot.docs
                             .map(doc => ({ id: doc.id, ...doc.data() }))
-                            .filter(match => match.id !== draggedMatchId)
+                            .filter(match => match.id !== currentDraggedMatchId) // Use currentDraggedMatchId here
                             .sort((a, b) => {
                                 const [aH, aM] = (a.startTime || '00:00').split(':').map(Number);
                                 const [bH, bM] = (b.startTime || '00:00').split(':').map(Number);
@@ -1053,7 +1084,7 @@ async function displayMatchesAsSchedule() {
                     
                     let matchesInNewBlock = newMatchesSnapshot.docs
                         .map(doc => ({ id: doc.id, ...doc.data() }))
-                        .filter(match => match.id !== draggedMatchId) // Filter out if it already exists there (shouldn't if moved)
+                        .filter(match => match.id !== currentDraggedMatchId) // Filter out if it already exists there (shouldn't if moved)
                         .sort((a, b) => {
                             const [aH, aM] = (a.startTime || '00:00').split(':').map(Number);
                             const [bH, bM] = (b.startTime || '00:00').split(':').map(Number);
