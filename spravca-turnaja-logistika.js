@@ -556,15 +556,14 @@ const getTeamName = async (categoryId, groupId, teamNumber, categoriesMap, group
 };
 
 /**
- * Displays the full match schedule in a simplified table format.
- * Buses and accommodation assignments are excluded.
+ * Displays the full match schedule in a new, enhanced table format.
  */
 async function displayMatchesAsSchedule() {
     const matchesContainer = document.getElementById('matchesContainer');
     if (!matchesContainer) return;
 
     matchesContainer.innerHTML = '';
-    matchesContainer.insertAdjacentHTML('afterbegin', '<p>Načítavam rozvrh zápasov...</p>');
+    matchesContainer.insertAdjacentHTML('afterbegin', '<p style="text-align: center; padding: 20px;">Načítavam rozvrh zápasov...</p>');
 
     try {
         // Fetch all matches
@@ -612,30 +611,32 @@ async function displayMatchesAsSchedule() {
         const sortedDates = Array.from(matchesByDate.keys()).sort();
 
         matchesContainer.innerHTML = '';
-        let scheduleHtml = '<div class="schedule-table-container">'; // Re-introduced a container for overall styling
+        let scheduleHtml = `<div class="schedule-overview">`;
 
         if (sortedDates.length === 0) {
-            scheduleHtml += '<p style="text-align: center; padding: 20px;">— Žiadne zápasy na zobrazenie —</p>';
+            scheduleHtml += '<p style="text-align: center; padding: 20px; color: #555;">— Žiadne zápasy na zobrazenie —</p>';
         } else {
             sortedDates.forEach(date => {
                 const displayDateObj = new Date(date);
                 const formattedDisplayDate = `${String(displayDateObj.getDate()).padStart(2, '0')}. ${String(displayDateObj.getMonth() + 1).padStart(2, '0')}. ${displayDateObj.getFullYear()}`;
                 
-                // Table for each date
-                scheduleHtml += `<table class="match-schedule-table" style="margin-bottom: 30px; border-collapse: collapse; width: 100%;"><thead>`;
-                
-                // Main header row: Date
-                scheduleHtml += `<tr><th colspan="6" class="date-header-clickable" data-date="${date}" title="Kliknutím upravíte hrací deň ${formattedDisplayDate}">${formattedDisplayDate}</th></tr>`; // Colspan is now 6
-
-                // Sub-header row: Detail columns
-                scheduleHtml += `<tr>
-                    <th style="width: 10%;">Čas začiatok</th>
-                    <th style="width: 10%;">Čas koniec</th>
-                    <th style="width: 20%;">Miesto</th>
-                    <th style="width: 20%;">Domáci tím</th>
-                    <th style="width: 20%;">Hostia tím</th>
-                    <th style="width: 20%;">Kód tímu</th>
-                </tr></thead><tbody>`;
+                scheduleHtml += `
+                    <div class="schedule-date-block">
+                        <h3 class="date-header-clickable" data-date="${date}" title="Kliknutím upravíte hrací deň ${formattedDisplayDate}">
+                            ${formattedDisplayDate}
+                        </h3>
+                        <table class="modern-schedule-table">
+                            <thead>
+                                <tr>
+                                    <th>Čas</th>
+                                    <th>Miesto</th>
+                                    <th>Domáci Tím</th>
+                                    <th>Hostia Tím</th>
+                                    <th>Kód Tímu</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
 
                 const matchesForThisDate = matchesByDate.get(date);
 
@@ -652,11 +653,9 @@ async function displayMatchesAsSchedule() {
                     matchEndTime.setHours(startH, startM + match.duration, 0, 0);
                     const formattedEndTime = matchEndTime.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' });
 
-                    // Single match row with all details
                     scheduleHtml += `
-                        <tr class="schedule-cell-match" data-id="${match.id}" data-type="${match.type}" style="cursor: pointer;">
-                            <td>${match.startTime}</td>
-                            <td>${formattedEndTime}</td>
+                        <tr class="schedule-cell-match" data-id="${match.id}" data-type="${match.type}" title="Kliknutím upravíte zápas">
+                            <td>${match.startTime} - ${formattedEndTime}</td>
                             <td>${match.location || 'N/A'}</td>
                             <td>${match.team1ClubName || 'N/A'}</td>
                             <td>${match.team2ClubName || 'N/A'}</td>
@@ -664,12 +663,12 @@ async function displayMatchesAsSchedule() {
                         </tr>
                     `;
                 });
-                scheduleHtml += '</tbody></table>';
+                scheduleHtml += `</tbody></table></div>`;
             });
         }
 
-        scheduleHtml += '</div>';
-        matchesContainer.insertAdjacentHTML('beforeend', scheduleHtml);
+        scheduleHtml += '</div>'; // Close schedule-overview
+        matchesContainer.innerHTML = scheduleHtml;
 
         // Re-add event listeners for editing matches and playing days
         matchesContainer.querySelectorAll('.schedule-cell-match').forEach(element => {
@@ -689,7 +688,7 @@ async function displayMatchesAsSchedule() {
     } catch (error) {
         console.error("Chyba pri načítaní rozvrhu zápasov (zachytená chyba):", error);
         matchesContainer.innerHTML = `
-            <div class="error-message">
+            <div class="error-message" style="text-align: center; padding: 20px; border: 1px solid #ff0000; background-color: #ffe0e0; color: #ff0000; border-radius: 8px;">
                 <h3>Chyba pri načítaní rozvrhu zápasov!</h3>
                 <p>Prosím, skontrolujte konzolu prehliadača (F12 > Console) pre detaily.</p>
                 <p>Možné príčiny:</p>
@@ -1005,8 +1004,7 @@ async function editBus(busId) {
         const busDateSelect = document.getElementById('busDateSelect');
         const busStartLocationSelect = document.getElementById('busStartLocationSelect');
         const busStartTimeInput = document.getElementById('busStartTimeInput');
-        const busEndLocationSelect = document.getElementById('busEndLocationSelect');
-        const busEndTimeInput = document = document.getElementById('busEndTimeInput');
+        const busEndLocationSelect = document = document.getElementById('busEndTimeInput');
         const busNotesInput = document.getElementById('busNotesInput');
         const deleteBusButtonModal = document.getElementById('deleteBusButtonModal');
 
