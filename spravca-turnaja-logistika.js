@@ -556,8 +556,8 @@ const getTeamName = async (categoryId, groupId, teamNumber, categoriesMap, group
 };
 
 /**
- * Displays the full match schedule as plain text.
- * No tables, no interactive elements directly on the display.
+ * Displays the full match schedule in a simplified table format.
+ * Buses and accommodation assignments are excluded.
  */
 async function displayMatchesAsSchedule() {
     const matchesContainer = document.getElementById('matchesContainer');
@@ -612,7 +612,7 @@ async function displayMatchesAsSchedule() {
         const sortedDates = Array.from(matchesByDate.keys()).sort();
 
         matchesContainer.innerHTML = '';
-        let scheduleHtml = '';
+        let scheduleHtml = '<div class="schedule-table-container">'; // Re-introduced a container for overall styling
 
         if (sortedDates.length === 0) {
             scheduleHtml += '<p style="text-align: center; padding: 20px;">— Žiadne zápasy na zobrazenie —</p>';
@@ -621,8 +621,21 @@ async function displayMatchesAsSchedule() {
                 const displayDateObj = new Date(date);
                 const formattedDisplayDate = `${String(displayDateObj.getDate()).padStart(2, '0')}. ${String(displayDateObj.getMonth() + 1).padStart(2, '0')}. ${displayDateObj.getFullYear()}`;
                 
-                scheduleHtml += `<div style="margin-bottom: 20px; border: 1px solid #ccc; padding: 10px; border-radius: 8px;">`;
-                scheduleHtml += `<h3>${formattedDisplayDate}</h3>`;
+                // Table for each date
+                scheduleHtml += `<table class="match-schedule-table" style="margin-bottom: 30px; border-collapse: collapse; width: 100%;"><thead>`;
+                
+                // Main header row: Date
+                scheduleHtml += `<tr><th colspan="6" class="date-header-clickable" data-date="${date}" title="Kliknutím upravíte hrací deň ${formattedDisplayDate}">${formattedDisplayDate}</th></tr>`; // Colspan is now 6
+
+                // Sub-header row: Detail columns
+                scheduleHtml += `<tr>
+                    <th style="width: 10%;">Čas začiatok</th>
+                    <th style="width: 10%;">Čas koniec</th>
+                    <th style="width: 20%;">Miesto</th>
+                    <th style="width: 20%;">Domáci tím</th>
+                    <th style="width: 20%;">Hostia tím</th>
+                    <th style="width: 20%;">Kód tímu</th>
+                </tr></thead><tbody>`;
 
                 const matchesForThisDate = matchesByDate.get(date);
 
@@ -639,24 +652,39 @@ async function displayMatchesAsSchedule() {
                     matchEndTime.setHours(startH, startM + match.duration, 0, 0);
                     const formattedEndTime = matchEndTime.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' });
 
+                    // Single match row with all details
                     scheduleHtml += `
-                        <p style="margin-bottom: 5px;">
-                            <strong>Čas:</strong> ${match.startTime} - ${formattedEndTime}<br>
-                            <strong>Miesto:</strong> ${match.location || 'N/A'}<br>
-                            <strong>Tímy:</strong> ${match.team1ClubName || 'N/A'} vs ${match.team2ClubName || 'N/A'}<br>
-                            <strong>Kód tímu:</strong> ${match.team1DisplayName || 'N/A'} vs ${match.team2DisplayName || 'N/A'}
-                        </p>
-                        <hr style="border: none; border-top: 1px dashed #eee; margin: 10px 0;">
+                        <tr class="schedule-cell-match" data-id="${match.id}" data-type="${match.type}" style="cursor: pointer;">
+                            <td>${match.startTime}</td>
+                            <td>${formattedEndTime}</td>
+                            <td>${match.location || 'N/A'}</td>
+                            <td>${match.team1ClubName || 'N/A'}</td>
+                            <td>${match.team2ClubName || 'N/A'}</td>
+                            <td>${match.team1DisplayName || 'N/A'} vs ${match.team2DisplayName || 'N/A'}</td>
+                        </tr>
                     `;
                 });
-                scheduleHtml += '</div>';
+                scheduleHtml += '</tbody></table>';
             });
         }
 
-        matchesContainer.innerHTML = scheduleHtml;
+        scheduleHtml += '</div>';
+        matchesContainer.insertAdjacentHTML('beforeend', scheduleHtml);
 
-        // Removed event listeners for editing matches and playing days
-        // as the display is now plain text and not interactive for editing.
+        // Re-add event listeners for editing matches and playing days
+        matchesContainer.querySelectorAll('.schedule-cell-match').forEach(element => {
+            element.addEventListener('click', (event) => {
+                const id = event.currentTarget.dataset.id;
+                editMatch(id);
+            });
+        });
+
+        matchesContainer.querySelectorAll('.date-header-clickable').forEach(header => {
+            header.addEventListener('click', (event) => {
+                const dateToEdit = header.dataset.date;
+                editPlayingDay(dateToEdit);
+            });
+        });
 
     } catch (error) {
         console.error("Chyba pri načítaní rozvrhu zápasov (zachytená chyba):", error);
@@ -673,7 +701,6 @@ async function displayMatchesAsSchedule() {
                 <p>Detail chyby: ${error.message}</p>
             </div>
         `;
-        // If the error is related to being offline or connection issues, show a more specific message
         if (error.code === 'unavailable' || (error.message && error.message.includes('offline'))) {
              matchesContainer.innerHTML += '<p class="error-message">Zdá sa, že nie ste pripojení k internetu, alebo je problém s pripojením k Firebase.</p>';
         }
