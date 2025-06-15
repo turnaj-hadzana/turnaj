@@ -802,11 +802,12 @@ async function displayMatchesAsSchedule() {
         // Drag and Drop Event Listeners
         matchesContainer.querySelectorAll('.schedule-cell-match').forEach(row => {
             row.addEventListener('dragstart', (e) => {
-                draggedMatchId = e.target.dataset.id; // Store ID in global variable
+                // Use currentTarget to ensure we get the data-id from the <tr>
+                draggedMatchId = e.currentTarget.dataset.id; 
                 e.dataTransfer.setData('text/plain', draggedMatchId); // For older browsers/fallbacks
                 e.dataTransfer.setData('match/id', draggedMatchId); // Specific type for our app
-                e.target.classList.add('dragging');
-                console.log('Drag started for match ID:', draggedMatchId); // Log for debugging
+                e.currentTarget.classList.add('dragging'); // Apply class to the currentTarget
+                console.log('Drag started for match ID (from currentTarget):', draggedMatchId); // Log for debugging
             });
 
             row.addEventListener('dragover', (e) => {
@@ -854,7 +855,7 @@ async function displayMatchesAsSchedule() {
 
                 if (!matchIdToProcess) {
                     await showMessage('Chyba', 'Presun zápasu zrušený: ID presúvaného zápasu nie je platné.');
-                    console.warn("Drop operation cancelled: matchIdToProcess is null or empty.");
+                    console.error("Drop operation cancelled: matchIdToProcess is null or empty. draggedMatchId was:", draggedMatchId); // More detailed logging
                     // Ensure the dragged item's class is removed in case of early exit
                     const draggedElement = document.querySelector(`.schedule-cell-match[data-id="${draggedMatchId}"]`);
                     if (draggedElement) {
@@ -897,6 +898,7 @@ async function displayMatchesAsSchedule() {
                 }
 
                 try {
+                    console.log('DROP (match row) - Attempting to get doc for ID:', matchIdToProcess); // Added log before doc() call
                     const draggedMatchDoc = await getDoc(doc(matchesCollectionRef, matchIdToProcess));
                     if (!draggedMatchDoc.exists()) {
                         await showMessage('Chyba', 'Presúvaný zápas sa nenašiel v databáze.');
@@ -990,20 +992,19 @@ async function displayMatchesAsSchedule() {
                     console.error("Chyba pri presune zápasu (zachytená chyba):", error);
                     await showMessage('Chyba', `Chyba pri presune zápasu: ${error.message}`);
                 } finally {
+                    // Clear visual feedback regardless of success or failure
+                    matchesContainer.querySelectorAll('.drop-target, .insert-before, .insert-after').forEach(el => el.classList.remove('drop-target', 'insert-before', 'insert-after'));
+                    // Remove dragging class from the originally dragged element
                     const draggedElement = document.querySelector(`.schedule-cell-match[data-id="${draggedMatchId}"]`);
                     if (draggedElement) {
                         draggedElement.classList.remove('dragging');
                     }
-                    draggedMatchId = null; // Always reset after drop attempt
+                    draggedMatchId = null; // Clear the global ID AFTER all processing
                 }
             });
             
-            row.addEventListener('dragend', (e) => {
-                e.target.classList.remove('dragging');
-                draggedMatchId = null;
-                // Remove drop-target class from any elements that might still have it
-                matchesContainer.querySelectorAll('.drop-target, .insert-before, .insert-after').forEach(el => el.classList.remove('drop-target', 'insert-before', 'insert-after'));
-            });
+            // Removed direct dragend listener here, as cleanup is handled in the drop's finally block
+            // row.addEventListener('dragend', (e) => { /* ... */ });
         });
 
         // Add dragover/dragleave/drop to location blocks for dropping into an empty location block
@@ -1044,7 +1045,7 @@ async function displayMatchesAsSchedule() {
 
                 if (!matchIdToProcess || !newDate || !newLocation) {
                     await showMessage('Chyba', 'Presun zápasu zrušený: ID presúvaného zápasu alebo detaily cieľa chýbajú.');
-                    console.warn("Drop operation cancelled: matchIdToProcess or target details are null.");
+                    console.error("Drop operation cancelled: matchIdToProcess or target details are null. draggedMatchId was:", draggedMatchId); // More detailed logging
                     const draggedElement = document.querySelector(`.schedule-cell-match[data-id="${draggedMatchId}"]`);
                     if (draggedElement) {
                         draggedElement.classList.remove('dragging');
@@ -1054,6 +1055,7 @@ async function displayMatchesAsSchedule() {
                 }
 
                 try {
+                    console.log('DROP (location block) - Attempting to get doc for ID:', matchIdToProcess); // Added log before doc() call
                     const draggedMatchDoc = await getDoc(doc(matchesCollectionRef, matchIdToProcess));
                     if (!draggedMatchDoc.exists()) {
                         await showMessage('Chyba', 'Presúvaný zápas sa nenašiel v databáze.');
@@ -1130,11 +1132,14 @@ async function displayMatchesAsSchedule() {
                     console.error("Chyba pri presune zápasu na prázdny blok (zachytená chyba):", error);
                     await showMessage('Chyba', `Chyba pri presune zápasu: ${error.message}`);
                 } finally {
+                    // Clear visual feedback regardless of success or failure
+                    matchesContainer.querySelectorAll('.drop-target, .insert-before, .insert-after').forEach(el => el.classList.remove('drop-target', 'insert-before', 'insert-after'));
+                    // Remove dragging class from the originally dragged element
                     const draggedElement = document.querySelector(`.schedule-cell-match[data-id="${draggedMatchId}"]`);
                     if (draggedElement) {
                         draggedElement.classList.remove('dragging');
                     }
-                    draggedMatchId = null; // Always reset after drop attempt
+                    draggedMatchId = null; // Clear the global ID AFTER all processing
                 }
             });
 
