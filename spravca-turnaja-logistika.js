@@ -431,7 +431,8 @@ async function findFirstAvailableTime() {
     try {
         const startTime = await getFirstAvailableTimeForDrop(selectedDate, selectedLocationName, duration, bufferTime);
         matchStartTimeInput.value = startTime;
-    } catch (error) {
+    }
+    catch (error) {
         console.error("Chyba pri hľadaní prvého dostupného času:", error);
         matchStartTimeInput.value = '';
     }
@@ -832,6 +833,7 @@ async function displayMatchesAsSchedule() {
 
                 // Ensure draggedMatchId is valid and not dropping on itself
                 if (!draggedMatchId) { // Added check for draggedMatchId
+                    await showMessage('Chyba', 'Presun zápasu zrušený: ID presúvaného zápasu chýba.');
                     console.warn("Drop operation cancelled: draggedMatchId is null.");
                     return;
                 }
@@ -986,6 +988,7 @@ async function displayMatchesAsSchedule() {
                 const newLocation = targetLocationBlock ? targetLocationBlock.dataset.location : null;
                 
                 if (!draggedMatchId || !newDate || !newLocation) {
+                    await showMessage('Chyba', 'Presun zápasu zrušený: ID presúvaného zápasu alebo detaily cieľa chýbajú.');
                     console.warn("Drop operation cancelled: draggedMatchId or target details are null.");
                     return;
                 }
