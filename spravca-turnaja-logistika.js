@@ -803,16 +803,27 @@ async function displayMatchesAsSchedule() {
         matchesContainer.querySelectorAll('.schedule-cell-match').forEach(row => {
             row.addEventListener('dragstart', (e) => {
                 // Use currentTarget to ensure we get the data-id from the <tr>
-                draggedMatchId = e.currentTarget.dataset.id; 
-                e.dataTransfer.setData('text/plain', draggedMatchId); // For older browsers/fallbacks
-                e.dataTransfer.setData('match/id', draggedMatchId); // Specific type for our app
-                e.currentTarget.classList.add('dragging'); // Apply class to the currentTarget
-                console.log('Drag started for match ID (from currentTarget):', draggedMatchId); // Log for debugging
+                const potentialMatchId = e.currentTarget.dataset.id;
+                if (potentialMatchId) {
+                    draggedMatchId = potentialMatchId; 
+                    e.dataTransfer.setData('text/plain', draggedMatchId); // For older browsers/fallbacks
+                    e.dataTransfer.setData('match/id', draggedMatchId); // Specific type for our app
+                    e.currentTarget.classList.add('dragging'); // Apply class to the currentTarget
+                    console.log('Drag started for match ID (from currentTarget):', draggedMatchId); // Log for debugging
+                    console.log('e.currentTarget:', e.currentTarget);
+                    console.log('e.currentTarget.dataset:', e.currentTarget.dataset);
+                } else {
+                    console.error('Drag start failed: No data-id found on currentTarget.', e.currentTarget);
+                    draggedMatchId = null; // Ensure it's null if ID is missing
+                }
             });
 
             row.addEventListener('dragover', (e) => {
                 e.preventDefault(); // Allow drop
                 const targetRow = e.target.closest('tr');
+                console.log('Drag over on element:', e.target);
+                console.log('Closest targetRow:', targetRow);
+
                 if (targetRow && !targetRow.classList.contains('dragging')) {
                     const rect = targetRow.getBoundingClientRect();
                     const mouseY = e.clientY;
@@ -849,6 +860,9 @@ async function displayMatchesAsSchedule() {
                 let matchIdToProcess = draggedMatchId; 
 
                 console.log('Drop event triggered on match row. Captured matchIdToProcess (from global):', matchIdToProcess); // Log for debugging
+                console.log('e.target on drop:', e.target);
+                console.log('e.target.closest("tr") on drop:', e.target.closest('tr'));
+
 
                 // Always clean up drop-target class and insertion indicators
                 matchesContainer.querySelectorAll('.drop-target, .insert-before, .insert-after').forEach(el => el.classList.remove('drop-target', 'insert-before', 'insert-after'));
@@ -1031,6 +1045,9 @@ async function displayMatchesAsSchedule() {
                 let matchIdToProcess = draggedMatchId;
 
                 console.log('Drop event triggered on location block. Captured matchIdToProcess (from global, location block):', matchIdToProcess); // Log for debugging
+                console.log('e.target on location drop:', e.target);
+                console.log('e.target.closest(".location-block") on location drop:', e.target.closest('.location-block'));
+
 
                 const targetTbody = e.target.closest('tbody');
                 if (targetTbody) {
