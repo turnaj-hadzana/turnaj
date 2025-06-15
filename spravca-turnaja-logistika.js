@@ -814,85 +814,89 @@ async function displayMatchesAsSchedule() {
                         const draggedMatchDoc = await getDoc(doc(matchesCollectionRef, draggedMatchId));
                         const targetMatchDoc = await getDoc(doc(matchesCollectionRef, targetMatchId));
 
-                        if (draggedMatchDoc.exists() && targetMatchDoc.exists()) {
-                            const targetMatchData = targetMatchDoc.data();
-                            const draggedMatchData = draggedMatchDoc.data();
-
-                            const targetDate = targetMatchData.date;
-                            const targetLocation = targetMatchData.location;
-
-                            // Fetch ALL matches for the target date and location (including potential dragged match if it was already there)
-                            const currentMatchesQuery = query(
-                                matchesCollectionRef,
-                                where("date", "==", targetDate),
-                                where("location", "==", targetLocation)
-                            );
-                            const currentMatchesSnapshot = await getDocs(currentMatchesQuery);
-                            
-                            // Create an array of existing matches, excluding the dragged one
-                            let existingMatchesSorted = currentMatchesSnapshot.docs
-                                .map(doc => ({ id: doc.id, ...doc.data() }))
-                                .filter(match => match.id !== draggedMatchId)
-                                .sort((a, b) => { // Sort existing matches by their current start times
-                                    const [aH, aM] = (a.startTime || '00:00').split(':').map(Number);
-                                    const [bH, bM] = (b.startTime || '00:00').split(':').map(Number);
-                                    return (aH * 60 + aM) - (bH * 60 + bM);
-                                });
-
-                            // Find the insertion point for the dragged match
-                            const targetIndex = existingMatchesSorted.findIndex(match => match.id === targetMatchId);
-                            let orderedMatchesForRecalculation = [];
-
-                            if (targetIndex !== -1) {
-                                // Insert the dragged match right before the target match
-                                orderedMatchesForRecalculation = [
-                                    ...existingMatchesSorted.slice(0, targetIndex),
-                                    { id: draggedMatchId, ...draggedMatchData },
-                                    ...existingMatchesSorted.slice(targetIndex)
-                                ];
-                            } else {
-                                // If target match is not found (shouldn't happen if dropped on a row), append to end
-                                orderedMatchesForRecalculation = [...existingMatchesSorted, { id: draggedMatchId, ...draggedMatchData }];
-                            }
-                            
-                            // Recalculate times for the newly ordered sequence
-                            const updatedMatchDetails = await calculateSequentialMatchTimes(targetDate, targetLocation, orderedMatchesForRecalculation);
-
-                            const confirmed = await showConfirmation(
-                                'Potvrdenie presunu zápasu',
-                                `Naozaj chcete presunúť zápas "${draggedMatchData.team1ClubName} vs ${draggedMatchData.team2ClubName}" do rozvrhu na dátum ${targetDate} a miesto ${targetLocation}? Časy ostatných zápasov sa prispôsobia.`
-                            );
-
-                            if (confirmed) {
-                                const batch = writeBatch(db);
-                                for (const update of updatedMatchDetails) {
-                                    // Make sure to only update the fields that change, and include all required fields if merged
-                                    batch.update(doc(matchesCollectionRef, update.id), {
-                                        date: update.date,
-                                        location: update.location,
-                                        startTime: update.startTime,
-                                        duration: update.duration,
-                                        bufferTime: update.bufferTime,
-                                        categoryId: update.categoryId,
-                                        groupId: update.groupId,
-                                        team1Number: update.team1Number,
-                                        team2Number: update.team2Number,
-                                        team1DisplayName: update.team1DisplayName, // Re-adding these for a safer merge
-                                        team1ClubName: update.team1ClubName,
-                                        team1ClubId: update.team1ClubId,
-                                        team2DisplayName: update.team2DisplayName,
-                                        team2ClubName: update.team2ClubName,
-                                        team2ClubId: update.team2ClubId,
-                                        locationType: update.locationType,
-                                    });
-                                }
-                                await batch.commit();
-                                await showMessage('Úspech', 'Zápas úspešne presunutý a časy aktualizované! Rozvrh sa aktualizuje.');
-                            } else {
-                                await showMessage('Zrušené', 'Presun zápasu bol zrušený.');
-                            }
-                        } else {
+                        if (!draggedMatchDoc.exists() || !targetMatchDoc.exists()) {
                             await showMessage('Chyba', 'Presúvaný alebo cieľový zápas sa nenašiel.');
+                            return;
+                        }
+
+                        const draggedMatchData = draggedMatchDoc.data();
+                        const targetMatchData = targetMatchDoc.data();
+
+                        const targetDate = targetMatchData.date; // Use target date for the group
+                        const originalDraggedLocation = draggedMatchData.location; // Preserve original location
+
+                        // Fetch ALL matches for the target date and original dragged location
+                        const currentMatchesQuery = query(
+                            matchesCollectionRef,
+                            where("date", "==", targetDate),
+                            where("location", "==", originalDraggedLocation) // IMPORTANT: Filter by original location
+                        );
+                        const currentMatchesSnapshot = await getDocs(currentMatchesQuery);
+                        
+                        let matchesForRecalculation = currentMatchesSnapshot.docs
+                            .map(doc => ({ id: doc.id, ...doc.data() }))
+                            .filter(match => match.id !== draggedMatchId) // Exclude the dragged one
+                            .sort((a, b) => { // Sort existing matches by their current start times
+                                const [aH, aM] = (a.startTime || '00:00').split(':').map(Number);
+                                const [bH, bM] = (b.startTime || '00:00').split(':').map(Number);
+                                return (aH * 60 + aM) - (bH * 60 + bM);
+                            });
+
+                        // Determine insertion point based on mouse Y position
+                        const targetRect = targetRow.getBoundingClientRect();
+                        const mouseY = e.clientY;
+                        const insertAfter = (mouseY > (targetRect.top + targetRect.height / 2));
+
+                        let insertionIndex = matchesForRecalculation.findIndex(match => match.id === targetMatchId);
+                        if (insertionIndex === -1) {
+                            // This should ideally not happen if dropped on a row that exists in the filtered list
+                            // As a fallback, if target is somehow not found, append
+                            insertionIndex = matchesForRecalculation.length;
+                        } else if (insertAfter) {
+                            insertionIndex++; // Insert after the target match
+                        }
+
+                        // Insert the dragged match into the new ordered list
+                        let orderedMatches = [
+                            ...matchesForRecalculation.slice(0, insertionIndex),
+                            { id: draggedMatchId, ...draggedMatchData },
+                            ...matchesForRecalculation.slice(insertionIndex)
+                        ];
+
+                        const confirmed = await showConfirmation(
+                            'Potvrdenie presunu zápasu',
+                            `Naozaj chcete presunúť zápas "${draggedMatchData.team1ClubName} vs ${draggedMatchData.team2ClubName}" v rozvrhu na dátum ${targetDate} a miesto ${originalDraggedLocation}? Časy zápasov sa prispôsobia.`
+                        );
+
+                        if (confirmed) {
+                            const updatedMatchDetails = await calculateSequentialMatchTimes(targetDate, originalDraggedLocation, orderedMatches);
+
+                            const batch = writeBatch(db);
+                            for (const update of updatedMatchDetails) {
+                                // Make sure to only update the fields that change, and include all required fields if merged
+                                batch.update(doc(matchesCollectionRef, update.id), {
+                                    date: update.date,
+                                    location: update.location,
+                                    startTime: update.startTime,
+                                    duration: update.duration,
+                                    bufferTime: update.bufferTime,
+                                    categoryId: update.categoryId,
+                                    groupId: update.groupId,
+                                    team1Number: update.team1Number,
+                                    team2Number: update.team2Number,
+                                    team1DisplayName: update.team1DisplayName, // Re-adding these for a safer merge
+                                    team1ClubName: update.team1ClubName,
+                                    team1ClubId: update.team1ClubId,
+                                    team2DisplayName: update.team2DisplayName,
+                                    team2ClubName: update.team2ClubName,
+                                    team2ClubId: update.team2ClubId,
+                                    locationType: update.locationType,
+                                });
+                            }
+                            await batch.commit();
+                            await showMessage('Úspech', 'Zápas úspešne presunutý a časy aktualizované! Rozvrh sa aktualizuje.');
+                        } else {
+                            await showMessage('Zrušené', 'Presun zápasu bol zrušený.');
                         }
                     } catch (error) {
                         console.error("Chyba pri presune zápasu:", error);
