@@ -808,11 +808,11 @@ async function displayMatchesAsSchedule() {
                     e.dataTransfer.setData('text/plain', matchId); // Set for compatibility
                     e.dataTransfer.effectAllowed = 'move'; // Indicate a move operation
                     e.currentTarget.classList.add('dragging');
-                    console.log('Drag started for match ID (SET TO GLOBAL):', draggedMatchId);
-                    console.log('e.currentTarget:', e.currentTarget);
-                    console.log('e.currentTarget.dataset:', e.currentTarget.dataset);
+                    console.log('DRAGSTART: match ID (SET TO GLOBAL):', draggedMatchId); // More precise log
+                    console.log('DRAGSTART: e.currentTarget.dataset:', e.currentTarget.dataset);
+                    console.log('DRAGSTART: e.dataTransfer.types:', e.dataTransfer.types); // What types are available
                 } else {
-                    console.error('Drag start failed: No data-id found on currentTarget.', e.currentTarget);
+                    console.error('DRAGSTART FAILED: No data-id found on currentTarget. e.currentTarget:', e.currentTarget);
                     draggedMatchId = null; // Ensure global is null on failure
                     e.preventDefault(); // Prevent drag operation if no ID
                 }
@@ -856,19 +856,20 @@ async function displayMatchesAsSchedule() {
 
             row.addEventListener('drop', async (e) => {
                 e.preventDefault();
-                // Prioritize dataTransfer.getData('text/plain') as it's the standard way to retrieve dragged data.
+                console.log('DROP (match row) - EVENT FIRED.');
+                console.log('DROP (match row) - e.dataTransfer.types:', e.dataTransfer.types);
+                console.log('DROP (match row) - e.dataTransfer.getData("text/plain"):', e.dataTransfer.getData('text/plain'));
+                
                 let matchIdToProcess = e.dataTransfer.getData('text/plain'); 
                 
                 // Fallback to global variable if dataTransfer is empty or null, though it should ideally be set.
                 if (!matchIdToProcess || matchIdToProcess.trim() === '') {
                     matchIdToProcess = draggedMatchId;
-                    console.warn('Drop (match row) - dataTransfer.getData("text/plain") was empty/invalid. Falling back to global draggedMatchId:', draggedMatchId);
+                    console.warn('DROP (match row) - dataTransfer.getData("text/plain") was empty/invalid. Falling back to global draggedMatchId:', draggedMatchId);
                 }
 
-                console.log('Drop event triggered on match row. Final matchIdToProcess:', matchIdToProcess); // Log for debugging
-                console.log('Current global draggedMatchId at drop:', draggedMatchId); // Log global state
-                console.log('e.target on drop:', e.target);
-                console.log('e.target.closest("tr") on drop:', e.target.closest('tr'));
+                console.log('DROP (match row) - After dataTransfer/global check, matchIdToProcess:', matchIdToProcess); // Critical log
+                console.log('DROP (match row) - Current global draggedMatchId:', draggedMatchId); // Log global state before cleanup
 
                 // Always clean up drop-target class and insertion indicators
                 matchesContainer.querySelectorAll('.drop-target, .insert-before, .insert-after').forEach(el => el.classList.remove('drop-target', 'insert-before', 'insert-after'));
@@ -877,7 +878,7 @@ async function displayMatchesAsSchedule() {
                     // Critical validation: check if matchIdToProcess is truly valid
                     if (!matchIdToProcess || matchIdToProcess.trim() === '') { 
                         await showMessage('Chyba', 'Presun zápasu zrušený: ID presúvaného zápasu nie je platné. Zápas nebol správne identifikovaný (ID je prázdne alebo neplatné).');
-                        console.error("Drop operation cancelled: matchIdToProcess is null, empty or whitespace.");
+                        console.error("DROP (match row) CANCELLED: matchIdToProcess is null, empty or whitespace. Final value:", matchIdToProcess);
                         return; // Exit early if no valid ID
                     }
 
@@ -887,9 +888,9 @@ async function displayMatchesAsSchedule() {
                     const newDate = targetRow ? targetRow.dataset.date : null;
                     const newLocation = targetRow ? targetRow.dataset.location : null;
 
-                    console.log('Target row dataset ID:', targetMatchId); // Debugging
-                    console.log('Target row dataset Date:', newDate); // Debugging
-                    console.log('Target row dataset Location:', newLocation); // Debugging
+                    console.log('DROP (match row) - Target row dataset ID:', targetMatchId); // Debugging
+                    console.log('DROP (match row) - Target row dataset Date:', newDate); // Debugging
+                    console.log('DROP (match row) - Target row dataset Location:', newLocation); // Debugging
 
                     if (matchIdToProcess === targetMatchId) { 
                         console.log('Dropping onto itself or no effective change, ignoring.');
@@ -899,7 +900,7 @@ async function displayMatchesAsSchedule() {
                     // Ensure newDate and newLocation are not null before proceeding
                     if (!newDate || !newLocation) {
                         await showMessage('Chyba', 'Cieľové miesto pre presun nie je platné (chýba dátum alebo miesto).');
-                        console.error('Target date or location is null:', { newDate, newLocation });
+                        console.error('DROP (match row) - Target date or location is null:', { newDate, newLocation });
                         return;
                     }
 
@@ -907,7 +908,7 @@ async function displayMatchesAsSchedule() {
                     const draggedMatchDoc = await getDoc(doc(matchesCollectionRef, matchIdToProcess));
                     if (!draggedMatchDoc.exists()) {
                         await showMessage('Chyba', 'Presúvaný zápas sa nenašiel v databáze.');
-                        console.error('Dragged match document not found for ID:', matchIdToProcess);
+                        console.error('DROP (match row) - Dragged match document not found for ID:', matchIdToProcess);
                         return;
                     }
                     const draggedMatchData = draggedMatchDoc.data();
@@ -915,8 +916,8 @@ async function displayMatchesAsSchedule() {
                     const originalDate = draggedMatchData.date;
                     const originalLocation = draggedMatchData.location;
 
-                    console.log('Original match data - Date:', originalDate, 'Location:', originalLocation); // Debugging
-                    console.log('New target - Date:', newDate, 'Location:', newLocation); // Debugging
+                    console.log('DROP (match row) - Original match data - Date:', originalDate, 'Location:', originalLocation); // Debugging
+                    console.log('DROP (match row) - New target - Date:', newDate, 'Location:', newLocation); // Debugging
 
                     const batch = writeBatch(db);
                     
@@ -999,7 +1000,10 @@ async function displayMatchesAsSchedule() {
                     if (draggedElement) {
                         draggedElement.classList.remove('dragging');
                     }
-                    draggedMatchId = null; // Clear the global ID AFTER all processing
+                    // For `drop` event, it's safe to clear here if it's the final action.
+                    // However, `dragend` is the most reliable place to clear it as it fires after `drop` OR if drag is cancelled.
+                    // Relying on dragend for clearing global state to avoid premature clearing.
+                    // draggedMatchId = null; // Removed from here, relying on dragend for consistent cleanup
                 }
             });
             
@@ -1009,7 +1013,7 @@ async function displayMatchesAsSchedule() {
                 if (draggedElement) {
                     draggedElement.classList.remove('dragging');
                 }
-                console.log('Drag ended. Global draggedMatchId cleared. New value:', draggedMatchId); // Log for verification
+                console.log('DRAGEND: Global draggedMatchId cleared. Previous value:', draggedMatchId); // Log for verification
                 draggedMatchId = null; // Always clear the global ID on drag end
             });
         });
@@ -1034,20 +1038,20 @@ async function displayMatchesAsSchedule() {
 
             locationBlock.addEventListener('drop', async (e) => {
                 e.preventDefault();
-                // Prioritize dataTransfer.getData('text/plain')
+                console.log('DROP (location block) - EVENT FIRED.');
+                console.log('DROP (location block) - e.dataTransfer.types:', e.dataTransfer.types);
+                console.log('DROP (location block) - e.dataTransfer.getData("text/plain"):', e.dataTransfer.getData('text/plain'));
+
                 let matchIdToProcess = e.dataTransfer.getData('text/plain'); 
 
                 // Fallback to global variable if dataTransfer is empty or null.
                 if (!matchIdToProcess || matchIdToProcess.trim() === '') {
                     matchIdToProcess = draggedMatchId;
-                    console.warn('Drop (location block) - dataTransfer.getData("text/plain") was empty/invalid. Falling back to global draggedMatchId:', draggedMatchId);
+                    console.warn('DROP (location block) - dataTransfer.getData("text/plain") was empty/invalid. Falling back to global draggedMatchId:', draggedMatchId);
                 }
 
-                console.log('Drop event triggered on location block. Final matchIdToProcess (location block):', matchIdToProcess); // Log for debugging
-                console.log('Current global draggedMatchId at drop (location block):', draggedMatchId); // Log global state
-                console.log('e.target on location drop:', e.target);
-                console.log('e.target.closest(".location-block") on location drop:', e.target.closest('.location-block'));
-
+                console.log('DROP (location block) - After dataTransfer/global check, matchIdToProcess:', matchIdToProcess); // Critical log
+                console.log('DROP (location block) - Current global draggedMatchId:', draggedMatchId); // Log global state before cleanup
 
                 const targetTbody = e.target.closest('tbody');
                 if (targetTbody) {
@@ -1057,21 +1061,21 @@ async function displayMatchesAsSchedule() {
                 const newDate = targetLocationBlock ? targetLocationBlock.dataset.date : null;
                 const newLocation = targetLocationBlock ? targetLocationBlock.dataset.location : null;
                 
-                console.log('Target location block dataset Date:', newDate); // Debugging
-                console.log('Target location block dataset Location:', newLocation); // Debugging
+                console.log('DROP (location block) - Target location block dataset Date:', newDate); // Debugging
+                console.log('DROP (location block) - Target location block dataset Location:', newLocation); // Debugging
 
                 // The finally block will handle removing 'dragging' class and resetting draggedMatchId
                 try {
                     // Critical validation: check if matchIdToProcess is truly valid
                     if (!matchIdToProcess || matchIdToProcess.trim() === '') { 
                         await showMessage('Chyba', 'Presun zápasu zrušený: ID presúvaného zápasu nie je platné. Zápas nebol správne identifikovaný (ID je prázdne alebo neplatné) pre cieľový blok.');
-                        console.error("Drop operation cancelled: matchIdToProcess is null, empty or whitespace (location block).");
+                        console.error("DROP (location block) CANCELLED: matchIdToProcess is null, empty or whitespace. Final value:", matchIdToProcess);
                         return; // Exit early if no valid ID
                     }
 
                     if (!newDate || !newLocation) {
                         await showMessage('Chyba', 'Presun zápasu zrušený: Detaily cieľového miesta chýbajú.');
-                        console.error("Drop operation cancelled: target location details are null (location block).");
+                        console.error("DROP (location block) CANCELLED: target location details are null (location block).");
                         return; // Exit early if no valid target
                     }
 
@@ -1079,7 +1083,7 @@ async function displayMatchesAsSchedule() {
                     const draggedMatchDoc = await getDoc(doc(matchesCollectionRef, matchIdToProcess));
                     if (!draggedMatchDoc.exists()) {
                         await showMessage('Chyba', 'Presúvaný zápas sa nenašiel v databáze.');
-                        console.error('Dragged match document not found for ID (location block):', matchIdToProcess);
+                        console.error('DROP (location block) - Dragged match document not found for ID (location block):', matchIdToProcess);
                         return;
                     }
                     const draggedMatchData = draggedMatchDoc.data();
@@ -1087,8 +1091,8 @@ async function displayMatchesAsSchedule() {
                     const originalDate = draggedMatchData.date;
                     const originalLocation = draggedMatchData.location;
 
-                    console.log('Original match data - Date:', originalDate, 'Location:', originalLocation); // Debugging
-                    console.log('New target - Date:', newDate, 'Location:', newLocation); // Debugging
+                    console.log('DROP (location block) - Original match data - Date:', originalDate, 'Location:', originalLocation); // Debugging
+                    console.log('DROP (location block) - New target - Date:', newDate, 'Location:', newLocation); // Debugging
 
                     const batch = writeBatch(db);
 
@@ -1154,7 +1158,7 @@ async function displayMatchesAsSchedule() {
                     if (draggedElement) {
                         draggedElement.classList.remove('dragging');
                     }
-                    draggedMatchId = null; // Clear the global ID AFTER all processing
+                    // draggedMatchId = null; // Removed from here, relying on dragend for consistent cleanup
                 }
             });
 
@@ -1168,7 +1172,6 @@ async function displayMatchesAsSchedule() {
             <div class="error-message" style="text-align: center; padding: 20px; border: 1px solid #ff0000; background-color: #ffe0e0; color: #ff0000; border-radius: 8px;">
                 <h3>Chyba pri načítaní rozvrhu zápasov!</h3>
                 <p>Prosím, skontrolujte konzolu prehliadača (F12 > Console) pre detaily.</p>
-                <p>Možné príčiny:</p>
                 <ul>
                     <li>Chýbajúce indexy vo Firestore. Skontrolujte záložku "Network" v konzole a Firebase Console.</li>
                     <li>Problém s pripojením k databáze alebo bezpečnostné pravidlá.</li>
