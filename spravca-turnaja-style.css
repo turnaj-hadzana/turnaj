@@ -3,6 +3,7 @@ html, body {
     height: 100%; /* Zabezpečí, že 100vh sa vzťahuje na celú výšku okna */
     margin: 0; /* Zabezpečí, že telo nemá predvolené okraje */
     padding: 0; /* Zabezpečí, že telo nemá predvolené odsadenie */
+    width: 100%;
 }
 
 header {
