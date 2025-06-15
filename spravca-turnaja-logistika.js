@@ -806,6 +806,7 @@ async function displayMatchesAsSchedule() {
                 if (matchId) {
                     draggedMatchId = matchId; // Set the global variable
                     e.dataTransfer.setData('text/plain', matchId); // Set for compatibility
+                    e.dataTransfer.effectAllowed = 'move'; // Indicate a move operation
                     e.currentTarget.classList.add('dragging');
                     console.log('Drag started for match ID (SET TO GLOBAL):', draggedMatchId);
                     console.log('e.currentTarget:', e.currentTarget);
@@ -861,7 +862,7 @@ async function displayMatchesAsSchedule() {
                 // Fallback to global variable if dataTransfer is empty or null, though it should ideally be set.
                 if (!matchIdToProcess || matchIdToProcess.trim() === '') {
                     matchIdToProcess = draggedMatchId;
-                    console.warn('DataTransfer was empty, falling back to global draggedMatchId:', draggedMatchId);
+                    console.warn('Drop (match row) - dataTransfer.getData("text/plain") was empty/invalid. Falling back to global draggedMatchId:', draggedMatchId);
                 }
 
                 console.log('Drop event triggered on match row. Final matchIdToProcess:', matchIdToProcess); // Log for debugging
@@ -1039,7 +1040,7 @@ async function displayMatchesAsSchedule() {
                 // Fallback to global variable if dataTransfer is empty or null.
                 if (!matchIdToProcess || matchIdToProcess.trim() === '') {
                     matchIdToProcess = draggedMatchId;
-                    console.warn('DataTransfer was empty, falling back to global draggedMatchId (location block):', draggedMatchId);
+                    console.warn('Drop (location block) - dataTransfer.getData("text/plain") was empty/invalid. Falling back to global draggedMatchId:', draggedMatchId);
                 }
 
                 console.log('Drop event triggered on location block. Final matchIdToProcess (location block):', matchIdToProcess); // Log for debugging
