@@ -622,19 +622,20 @@ async function displayMatchesAsSchedule() {
                 const formattedDisplayDate = `${String(displayDateObj.getDate()).padStart(2, '0')}. ${String(displayDateObj.getMonth() + 1).padStart(2, '0')}. ${displayDateObj.getFullYear()}`;
                 
                 // Table for each date
+                // Removed all border and background styles from the table and cells for a "basic table" look
                 scheduleHtml += `<table class="match-schedule-table" style="margin-bottom: 30px; border-collapse: collapse; width: 100%;"><thead>`;
                 
                 // Main header row: Date
-                scheduleHtml += `<tr><th colspan="6" class="date-header-clickable" data-date="${date}" title="Kliknutím upravíte hrací deň ${formattedDisplayDate}" style="background-color: #f0f0f0; padding: 10px; text-align: center; font-size: 1.2em; border: 1px solid #ccc;">${formattedDisplayDate}</th></tr>`;
+                scheduleHtml += `<tr><th colspan="6" class="date-header-clickable" data-date="${date}" title="Kliknutím upravíte hrací deň ${formattedDisplayDate}" style="padding: 10px; text-align: center; font-size: 1.2em;">${formattedDisplayDate}</th></tr>`;
 
                 // Sub-header row: Detail columns
                 scheduleHtml += `<tr>
-                    <th style="width: 10%; padding: 8px; border: 1px solid #ccc; text-align: left;">Čas začiatok</th>
-                    <th style="width: 10%; padding: 8px; border: 1px solid #ccc; text-align: left;">Čas koniec</th>
-                    <th style="width: 30%; padding: 8px; border: 1px solid #ccc; text-align: left;">Názov domáci</th>
-                    <th style="width: 30%; padding: 8px; border: 1px solid #ccc; text-align: left;">Názov hostia</th>
-                    <th style="width: 10%; padding: 8px; border: 1px solid #ccc; text-align: left;">Kód tímu domáci</th>
-                    <th style="width: 10%; padding: 8px; border: 1px solid #ccc; text-align: left;">Kód tímu hostia</th>
+                    <th style="width: 10%; padding: 8px; text-align: left;">Čas začiatok</th>
+                    <th style="width: 10%; padding: 8px; text-align: left;">Čas koniec</th>
+                    <th style="width: 30%; padding: 8px; text-align: left;">Názov domáci</th>
+                    <th style="width: 30%; padding: 8px; text-align: left;">Názov hostia</th>
+                    <th style="width: 10%; padding: 8px; text-align: left;">Kód tímu domáci</th>
+                    <th style="width: 10%; padding: 8px; text-align: left;">Kód tímu hostia</th>
                 </tr></thead><tbody>`;
 
                 const matchesForThisDate = matchesByDate.get(date);
@@ -654,12 +655,12 @@ async function displayMatchesAsSchedule() {
 
                     scheduleHtml += `
                         <tr class="schedule-cell-match" data-id="${match.id}" data-type="${match.type}" style="cursor: pointer;">
-                            <td style="padding: 8px; border: 1px solid #ccc;">${match.startTime}</td>
-                            <td style="padding: 8px; border: 1px solid #ccc;">${formattedEndTime}</td>
-                            <td style="padding: 8px; border: 1px solid #ccc;">${match.team1ClubName || 'N/A'}</td>
-                            <td style="padding: 8px; border: 1px solid #ccc;">${match.team2ClubName || 'N/A'}</td>
-                            <td style="padding: 8px; border: 1px solid #ccc;">${match.team1DisplayName || 'N/A'}</td>
-                            <td style="padding: 8px; border: 1px solid #ccc;">${match.team2DisplayName || 'N/A'}</td>
+                            <td style="padding: 8px;">${match.startTime}</td>
+                            <td style="padding: 8px;">${formattedEndTime}</td>
+                            <td style="padding: 8px;">${match.team1ClubName || 'N/A'}</td>
+                            <td style="padding: 8px;">${match.team2ClubName || 'N/A'}</td>
+                            <td style="padding: 8px;">${match.team1DisplayName || 'N/A'}</td>
+                            <td style="padding: 8px;">${match.team2DisplayName || 'N/A'}</td>
                         </tr>
                     `;
                 });
