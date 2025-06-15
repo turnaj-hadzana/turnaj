@@ -21,6 +21,7 @@ body {
     display: flex;
     flex-direction: column; /* Uloží priame deti (vrátane main) pod sebou */
     min-height: 100%; /* Zabezpečí, že telo má minimálne výšku okna */
+    min-width: 100%;
     /* Ostatné pôvodné štýly tela */
     font-family: 'Arial', sans-serif;
     line-height: 1.6;
@@ -95,7 +96,7 @@ form {
     display: flex;
     flex-direction: column;
     gap: 15px;
-    max-width: 500px;
+    /*max-width: 500px;*/
     margin: 0 auto;
     padding: 20px;
     border: 1px solid #eee;
