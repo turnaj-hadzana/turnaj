@@ -1,6 +1,8 @@
 import { db, categoriesCollectionRef, groupsCollectionRef, clubsCollectionRef, matchesCollectionRef, playingDaysCollectionRef, placesCollectionRef, busesCollectionRef, teamAccommodationsCollectionRef, openModal, closeModal, populateCategorySelect, populateGroupSelect, getDocs, doc, setDoc, addDoc, getDoc, query, where, orderBy, deleteDoc, writeBatch, settingsCollectionRef, showMessage, showConfirmation } from './spravca-turnaja-common.js';
 const SETTINGS_DOC_ID = 'matchTimeSettings';
 
+let draggedMatchId = null; // Global variable to store the ID of the dragged match
+
 /**
  * Populates a select element with playing days from Firestore.
  * @param {HTMLSelectElement} selectElement The select element to populate.
@@ -427,65 +429,8 @@ async function findFirstAvailableTime() {
     }
 
     try {
-        const settingsDocRef = doc(settingsCollectionRef, SETTINGS_DOC_ID);
-        const settingsDoc = await getDoc(settingsDocRef);
-        let firstDayStartTime = '08:00';
-        let otherDaysStartTime = '08:00';
-
-        if (settingsDoc.exists()) {
-            const data = settingsDoc.data();
-            firstDayStartTime = data.firstDayStartTime || '08:00';
-            otherDaysStartTime = data.otherDaysStartTime || '08:00';
-        }
-
-        const playingDaysSnapshot = await getDocs(query(playingDaysCollectionRef, orderBy("date", "asc")));
-        const sortedPlayingDays = playingDaysSnapshot.docs.map(d => d.data().date).sort();
-        const isFirstPlayingDay = sortedPlayingDays.length > 0 && selectedDate === sortedPlayingDays[0];
-
-        let [startH, startM] = (isFirstPlayingDay ? firstDayStartTime : otherDaysStartTime).split(':').map(Number);
-        const endSearchHour = 22;
-        const intervalMinutes = 1;
-
-        const existingMatchesQuery = query(
-            matchesCollectionRef,
-            where("date", "==", selectedDate),
-            where("location", "==", selectedLocationName)
-        );
-        const existingMatchesSnapshot = await getDocs(existingMatchesQuery);
-
-        const existingEvents = existingMatchesSnapshot.docs.map(doc => {
-            const data = doc.data();
-            const [eventStartH, eventStartM] = data.startTime.split(':').map(Number);
-            const startInMinutes = eventStartH * 60 + eventStartM;
-            const endInMinutes = startInMinutes + (data.duration || 0) + (data.bufferTime || 0);
-            return { start: startInMinutes, end: endInMinutes };
-        });
-
-        existingEvents.sort((a, b) => a.start - b.start);
-
-        for (let hour = startH; hour <= endSearchHour; hour++) {
-            const currentMinuteStart = (hour === startH) ? startM : 0;
-            for (let minute = currentMinuteStart; minute < 60; minute += intervalMinutes) {
-                const potentialStartInMinutes = hour * 60 + minute;
-                const potentialEndInMinutes = potentialStartInMinutes + duration + bufferTime;
-
-                let overlap = false;
-                for (const existingEvent of existingEvents) {
-                    if (potentialStartInMinutes < existingEvent.end && potentialEndInMinutes > existingEvent.start) {
-                        overlap = true;
-                        break;
-                    }
-                }
-
-                if (!overlap) {
-                    const formattedHour = String(hour).padStart(2, '0');
-                    const formattedMinute = String(minute).padStart(2, '0');
-                    matchStartTimeInput.value = `${formattedHour}:${formattedMinute}`;
-                    return;
-                }
-            }
-        }
-        matchStartTimeInput.value = '';
+        const startTime = await getFirstAvailableTimeForDrop(selectedDate, selectedLocationName, duration, bufferTime);
+        matchStartTimeInput.value = startTime;
     } catch (error) {
         console.error("Chyba pri hľadaní prvého dostupného času:", error);
         matchStartTimeInput.value = '';
@@ -556,6 +501,88 @@ const getTeamName = async (categoryId, groupId, teamNumber, categoriesMap, group
 };
 
 /**
+ * Finds the first available time slot for a match on a given date and location.
+ * @param {string} date The date string (YYYY-MM-DD).
+ * @param {string} locationName The name of the location.
+ * @param {number} duration The duration of the match in minutes.
+ * @param {number} bufferTime The buffer time after the match in minutes.
+ * @returns {Promise<string>} The formatted available start time (HH:MM).
+ */
+async function getFirstAvailableTimeForDrop(date, locationName, duration, bufferTime) {
+    try {
+        const settingsDocRef = doc(settingsCollectionRef, SETTINGS_DOC_ID);
+        const settingsDoc = await getDoc(settingsDocRef);
+        let firstDayStartTime = '08:00';
+        let otherDaysStartTime = '08:00';
+
+        if (settingsDoc.exists()) {
+            const data = settingsDoc.data();
+            firstDayStartTime = data.firstDayStartTime || '08:00';
+            otherDaysStartTime = data.otherDaysStartTime || '08:00';
+        }
+
+        const playingDaysSnapshot = await getDocs(query(playingDaysCollectionRef, orderBy("date", "asc")));
+        const sortedPlayingDays = playingDaysSnapshot.docs.map(d => d.data().date).sort();
+        const isFirstPlayingDay = sortedPlayingDays.length > 0 && date === sortedPlayingDays[0];
+
+        let [startH, startM] = (isFirstPlayingDay ? firstDayStartTime : otherDaysStartTime).split(':').map(Number);
+        const endSearchHour = 22; // Hardcoded end of search, can be made configurable
+
+        const existingMatchesQuery = query(
+            matchesCollectionRef,
+            where("date", "==", date),
+            where("location", "==", locationName)
+        );
+        const existingMatchesSnapshot = await getDocs(existingMatchesQuery);
+
+        const existingEvents = existingMatchesSnapshot.docs.map(doc => {
+            const data = doc.data();
+            const [eventStartH, eventStartM] = data.startTime.split(':').map(Number);
+            const startInMinutes = eventStartH * 60 + eventStartM;
+            const endInMinutes = startInMinutes + (data.duration || 0) + (data.bufferTime || 0);
+            return { start: startInMinutes, end: endInMinutes };
+        });
+
+        existingEvents.sort((a, b) => a.start - b.start);
+
+        for (let hour = startH; hour <= endSearchHour; hour++) {
+            const currentMinuteStart = (hour === startH) ? startM : 0;
+            for (let minute = currentMinuteStart; minute < 60; minute++) { // Check every minute for more precision
+                const potentialStartInMinutes = hour * 60 + minute;
+                const potentialEndInMinutes = potentialStartInMinutes + duration + bufferTime;
+
+                let overlap = false;
+                for (const existingEvent of existingEvents) {
+                    if (potentialStartInMinutes < existingEvent.end && potentialEndInMinutes > existingEvent.start) {
+                        overlap = true;
+                        // Move to the end of the overlapping event + 1 minute to check for next slot
+                        const nextAvailableTimeInMinutes = existingEvent.end + 1;
+                        hour = Math.floor(nextAvailableTimeInMinutes / 60);
+                        minute = nextAvailableTimeInMinutes % 60;
+                        if (minute === 0 && nextAvailableTimeInMinutes > 0) { // If it rolls over to a new hour exactly
+                            hour--; // Re-adjust hour for the loop increment
+                        } else if (minute === 0) { // If it was 00 and now 00, special handling
+                            minute = -1; // Next iteration will make it 0, then 1, etc.
+                        }
+                        break; // Break inner loop, continue from new hour/minute
+                    }
+                }
+
+                if (!overlap) {
+                    const formattedHour = String(hour).padStart(2, '0');
+                    const formattedMinute = String(minute).padStart(2, '0');
+                    return `${formattedHour}:${formattedMinute}`;
+                }
+            }
+        }
+        return '08:00'; // Fallback if no slot found till endSearchHour
+    } catch (error) {
+        console.error("Chyba pri hľadaní prvého dostupného času pre drop:", error);
+        return '08:00'; // Fallback in case of error
+    }
+}
+
+/**
  * Displays the full match schedule in a new, enhanced table format.
  */
 async function displayMatchesAsSchedule() {
@@ -622,7 +649,7 @@ async function displayMatchesAsSchedule() {
                 
                 scheduleHtml += `
                     <div class="schedule-date-block">
-                        <h3 class="date-header-clickable" data-date="${date}" title="Kliknutím upravíte hrací deň ${formattedDisplayDate}">
+                        <h3 class="date-header-clickable" draggable="true" data-date="${date}" title="Kliknutím upravíte hrací deň ${formattedDisplayDate}">
                             ${formattedDisplayDate}
                         </h3>
                         <table class="modern-schedule-table">
@@ -654,7 +681,7 @@ async function displayMatchesAsSchedule() {
                     const formattedEndTime = matchEndTime.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' });
 
                     scheduleHtml += `
-                        <tr class="schedule-cell-match" data-id="${match.id}" data-type="${match.type}" title="Kliknutím upravíte zápas">
+                        <tr class="schedule-cell-match" draggable="true" data-id="${match.id}" data-type="${match.type}" title="Kliknutím upravíte zápas">
                             <td>${match.startTime} - ${formattedEndTime}</td>
                             <td>${match.location || 'N/A'}</td>
                             <td>${match.team1ClubName || 'N/A'}</td>
@@ -684,6 +711,151 @@ async function displayMatchesAsSchedule() {
                 editPlayingDay(dateToEdit);
             });
         });
+
+        // Drag and Drop Event Listeners
+        matchesContainer.querySelectorAll('.schedule-cell-match').forEach(row => {
+            row.addEventListener('dragstart', (e) => {
+                draggedMatchId = e.target.dataset.id;
+                e.dataTransfer.setData('text/plain', draggedMatchId);
+                e.target.classList.add('dragging');
+            });
+
+            row.addEventListener('dragover', (e) => {
+                e.preventDefault(); // Allow drop
+                e.target.closest('tr').classList.add('drop-target');
+            });
+
+            row.addEventListener('dragleave', (e) => {
+                e.target.closest('tr').classList.remove('drop-target');
+            });
+
+            row.addEventListener('drop', async (e) => {
+                e.preventDefault();
+                e.target.closest('tr').classList.remove('drop-target');
+                const targetRow = e.target.closest('tr');
+                const targetMatchId = targetRow.dataset.id; // The ID of the match row it was dropped ON
+
+                if (draggedMatchId && draggedMatchId !== targetMatchId) {
+                    try {
+                        const draggedMatchDoc = await getDoc(doc(matchesCollectionRef, draggedMatchId));
+                        const targetMatchDoc = await getDoc(doc(matchesCollectionRef, targetMatchId));
+
+                        if (draggedMatchDoc.exists() && targetMatchDoc.exists()) {
+                            const targetMatchData = targetMatchDoc.data();
+                            const targetMatchDate = targetMatchData.date;
+                            const targetMatchStartTime = targetMatchData.startTime;
+                            const targetMatchLocation = targetMatchData.location; 
+
+                            const draggedMatchData = draggedMatchDoc.data();
+                            
+                            const confirmed = await showConfirmation(
+                                'Potvrdenie presunu zápasu',
+                                `Naozaj chcete presunúť zápas "${draggedMatchData.team1ClubName} vs ${draggedMatchData.team2ClubName}" na dátum ${targetMatchDate} a čas ${targetMatchStartTime} (na miesto ${targetMatchLocation})?`
+                            );
+
+                            if (confirmed) {
+                                const updatedMatchData = {
+                                    date: targetMatchDate,
+                                    location: targetMatchLocation,
+                                    startTime: targetMatchStartTime,
+                                    duration: draggedMatchData.duration,
+                                    bufferTime: draggedMatchData.bufferTime,
+                                    categoryId: draggedMatchData.categoryId,
+                                    groupId: draggedMatchData.groupId,
+                                    team1Number: draggedMatchData.team1Number,
+                                    team2Number: draggedMatchData.team2Number
+                                };
+                                await setDoc(doc(matchesCollectionRef, draggedMatchId), updatedMatchData, { merge: true });
+                                await showMessage('Úspech', 'Zápas úspešne presunutý! Rozvrh sa aktualizuje.');
+                            } else {
+                                await showMessage('Zrušené', 'Presun zápasu bol zrušený.');
+                            }
+                        } else {
+                            await showMessage('Chyba', 'Presúvaný alebo cieľový zápas sa nenašiel.');
+                        }
+                    } catch (error) {
+                        console.error("Chyba pri presune zápasu:", error);
+                        await showMessage('Chyba', `Chyba pri presune zápasu: ${error.message}`);
+                    }
+                }
+                e.target.classList.remove('dragging');
+                draggedMatchId = null; // Reset after drop
+                await displayMatchesAsSchedule(); // Re-render the schedule to reflect changes
+            });
+            
+            row.addEventListener('dragend', (e) => {
+                e.target.classList.remove('dragging');
+                draggedMatchId = null;
+                // Remove drop-target class from any elements that might still have it
+                matchesContainer.querySelectorAll('.drop-target').forEach(el => el.classList.remove('drop-target'));
+            });
+        });
+
+        // Add dragover/dragleave/drop to date headers as well for dropping onto a new day
+        matchesContainer.querySelectorAll('.date-header-clickable').forEach(header => {
+            header.addEventListener('dragover', (e) => {
+                e.preventDefault(); // Allow drop
+                e.target.classList.add('drop-target');
+            });
+
+            header.addEventListener('dragleave', (e) => {
+                e.target.classList.remove('drop-target');
+            });
+
+            header.addEventListener('drop', async (e) => {
+                e.preventDefault();
+                e.target.classList.remove('drop-target');
+                const targetDate = e.target.dataset.date; // The date of the day header it was dropped ON
+
+                if (draggedMatchId) {
+                    try {
+                        const draggedMatchDoc = await getDoc(doc(matchesCollectionRef, draggedMatchId));
+                        if (draggedMatchDoc.exists()) {
+                            const draggedMatchData = draggedMatchDoc.data();
+
+                            const newStartTime = await getFirstAvailableTimeForDrop(targetDate, draggedMatchData.location, draggedMatchData.duration, draggedMatchData.bufferTime);
+
+                            const confirmed = await showConfirmation(
+                                'Potvrdenie presunu zápasu',
+                                `Naozaj chcete presunúť zápas "${draggedMatchData.team1ClubName} vs ${draggedMatchData.team2ClubName}" na dátum ${targetDate} (na miesto ${draggedMatchData.location}) a nájsť mu prvý voľný čas ${newStartTime}?`
+                            );
+
+                            if (confirmed) {
+                                const updatedMatchData = {
+                                    date: targetDate,
+                                    startTime: newStartTime, // Use found available time
+                                    location: draggedMatchData.location, // Keep original location
+                                    duration: draggedMatchData.duration,
+                                    bufferTime: draggedMatchData.bufferTime,
+                                    categoryId: draggedMatchData.categoryId,
+                                    groupId: draggedMatchData.groupId,
+                                    team1Number: draggedMatchData.team1Number,
+                                    team2Number: draggedMatchData.team2Number
+                                };
+                                await setDoc(doc(matchesCollectionRef, draggedMatchId), updatedMatchData, { merge: true });
+                                await showMessage('Úspech', 'Zápas úspešne presunutý! Rozvrh sa aktualizuje.');
+                            } else {
+                                await showMessage('Zrušené', 'Presun zápasu bol zrušený.');
+                            }
+                        } else {
+                            await showMessage('Chyba', 'Presúvaný zápas sa nenašiel.');
+                        }
+                    } catch (error) {
+                        console.error("Chyba pri presune zápasu na nový deň:", error);
+                        await showMessage('Chyba', `Chyba pri presune zápasu na nový deň: ${error.message}`);
+                    }
+                }
+                draggedMatchId = null; // Reset after drop
+                await displayMatchesAsSchedule(); // Re-render the schedule to reflect changes
+            });
+
+            header.addEventListener('dragend', (e) => {
+                // Clean up dragging classes
+                e.target.classList.remove('dragging');
+                matchesContainer.querySelectorAll('.drop-target').forEach(el => el.classList.remove('drop-target'));
+            });
+        });
+
 
     } catch (error) {
         console.error("Chyba pri načítaní rozvrhu zápasov (zachytená chyba):", error);
@@ -1004,7 +1176,8 @@ async function editBus(busId) {
         const busDateSelect = document.getElementById('busDateSelect');
         const busStartLocationSelect = document.getElementById('busStartLocationSelect');
         const busStartTimeInput = document.getElementById('busStartTimeInput');
-        const busEndLocationSelect = document = document.getElementById('busEndTimeInput');
+        const busEndLocationSelect = document.getElementById('busEndLocationSelect'); // Corrected from document = document.getElementById('busEndTimeInput');
+        const busEndTimeInput = document.getElementById('busEndTimeInput'); // Added for clarity
         const busNotesInput = document.getElementById('busNotesInput');
         const deleteBusButtonModal = document.getElementById('deleteBusButtonModal');
 
@@ -1475,7 +1648,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 await showMessage('Chyba', `Zápas sa prekrýva s existujúcim zápasom v mieste "${matchLocationName}" dňa ${matchDate}:\n\n` +
                       `Existujúci zápas: ${overlappingMatchDetails.startTime} - ${formattedExistingEndTime}\n` +
-                      `Tímy: ${overlappingMatchDetails.team1DisplayName} vs ${overlappingMatchDetails.team2DisplayName}\n\n` +
+                      `Tímy: ${overlappingMatchDetails.team1ClubName} vs ${overlappingMatchDetails.team2ClubName}\n\n` +
                       `Prosím, upravte čas začiatku alebo trvanie nového zápasu, alebo prestávku po zápase.`);
                 return;
             }
