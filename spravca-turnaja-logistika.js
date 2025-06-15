@@ -772,6 +772,10 @@ async function displayMatchesAsSchedule() {
                     const dateFrom = new Date(assignment.dateFrom);
                     const dateTo = new Date(assignment.dateTo);
                     const currentDate = new Date(date);
+                    // Compare dates only, ignore time component
+                    currentDate.setHours(0, 0, 0, 0);
+                    dateFrom.setHours(0, 0, 0, 0);
+                    dateTo.setHours(0, 0, 0, 0);
                     return currentDate >= dateFrom && currentDate <= dateTo && placeType === 'Ubytovanie' && assignment.accommodationName === locationName;
                 });
 
@@ -1166,15 +1170,24 @@ async function deletePlayingDay(dateToDelete) {
                 batch.delete(doc(busesCollectionRef, busDoc.id));
             });
 
-            // Delete associated accommodation assignments that overlap with the date
-            const accommodationsQuery = query(
-                teamAccommodationsCollectionRef,
-                where("dateFrom", "<=", dateToDelete),
-                where("dateTo", ">=", dateToDelete)
-            );
-            const accommodationsSnapshot = await getDocs(accommodationsQuery);
-            accommodationsSnapshot.docs.forEach(accDoc => {
-                batch.delete(doc(teamAccommodationsCollectionRef, accDoc.id));
+            // --- OPRAVA: Pôvodný kód s dvoma nerovnosťami na rôznych poliach v jednom dotaze bol chybný. ---
+            // Namiesto toho získame všetky ubytovania a filtrujeme ich v JS.
+            const allAccommodationsSnapshot = await getDocs(teamAccommodationsCollectionRef); // Získanie všetkých ubytovaní
+            const dateToDeleteObj = new Date(dateToDelete);
+            dateToDeleteObj.setHours(0, 0, 0, 0); // Normalizácia dátumu pre porovnanie
+
+            allAccommodationsSnapshot.docs.forEach(accDoc => {
+                const assignment = accDoc.data();
+                const assignmentDateFrom = new Date(assignment.dateFrom);
+                const assignmentDateTo = new Date(assignment.dateTo);
+
+                assignmentDateFrom.setHours(0, 0, 0, 0);
+                assignmentDateTo.setHours(0, 0, 0, 0);
+
+                // Kontrola prekrývania rozsahu dátumov
+                if (dateToDeleteObj >= assignmentDateFrom && dateToDeleteObj <= assignmentDateTo) {
+                    batch.delete(doc(teamAccommodationsCollectionRef, accDoc.id));
+                }
             });
 
             await batch.commit();
