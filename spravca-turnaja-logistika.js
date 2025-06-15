@@ -812,8 +812,25 @@ async function displayMatchesAsSchedule() {
             row.addEventListener('dragover', (e) => {
                 e.preventDefault(); // Allow drop
                 const targetRow = e.target.closest('tr');
-                if (targetRow) {
-                    targetRow.classList.add('drop-target');
+                if (targetRow && !targetRow.classList.contains('dragging')) {
+                    const rect = targetRow.getBoundingClientRect();
+                    const mouseY = e.clientY;
+                    const topThreshold = rect.top + 10;    // 10px from top border
+                    const bottomThreshold = rect.bottom - 10; // 10px from bottom border
+
+                    // Clear previous visual feedback
+                    matchesContainer.querySelectorAll('.schedule-cell-match.insert-before, .schedule-cell-match.insert-after').forEach(el => {
+                        el.classList.remove('insert-before', 'insert-after');
+                    });
+                    
+                    if (mouseY < topThreshold) {
+                        targetRow.classList.add('insert-before');
+                    } else if (mouseY > bottomThreshold) {
+                        targetRow.classList.add('insert-after');
+                    } else {
+                        // In the middle, no specific insertion point visual
+                        targetRow.classList.add('drop-target'); // Keep general drop highlight
+                    }
                     e.dataTransfer.dropEffect = 'move'; // Visual feedback for move operation
                 }
             });
@@ -821,7 +838,7 @@ async function displayMatchesAsSchedule() {
             row.addEventListener('dragleave', (e) => {
                 const targetRow = e.target.closest('tr');
                 if (targetRow) {
-                    targetRow.classList.remove('drop-target');
+                    targetRow.classList.remove('drop-target', 'insert-before', 'insert-after');
                 }
             });
 
@@ -832,8 +849,8 @@ async function displayMatchesAsSchedule() {
 
                 console.log('Drop event triggered on match row. Captured matchIdToProcess (from dataTransfer/global):', matchIdToProcess); // Log for debugging
 
-                // Always clean up drop-target class
-                matchesContainer.querySelectorAll('.drop-target').forEach(el => el.classList.remove('drop-target'));
+                // Always clean up drop-target class and insertion indicators
+                matchesContainer.querySelectorAll('.drop-target, .insert-before, .insert-after').forEach(el => el.classList.remove('drop-target', 'insert-before', 'insert-after'));
 
                 if (!matchIdToProcess) {
                     await showMessage('Chyba', 'Presun zápasu zrušený: ID presúvaného zápasu nie je platné.');
@@ -925,16 +942,18 @@ async function displayMatchesAsSchedule() {
                         });
 
                     let insertionIndex = 0;
-                    if (targetMatchId) {
+                    if (targetRow) { // If dropped on a specific row
                         insertionIndex = matchesInNewBlock.findIndex(match => match.id === targetMatchId);
-                        const targetRect = targetRow.getBoundingClientRect();
+                        const rect = targetRow.getBoundingClientRect();
                         const mouseY = e.clientY;
-                        const insertAfter = (mouseY > (targetRect.top + targetRect.height / 2));
-                        if (insertionIndex !== -1 && insertAfter) {
+                        const middle = rect.top + rect.height / 2;
+                        const buffer = 10; // +/- buffer from midpoint
+
+                        if (mouseY > middle + buffer) { // Dropped on the bottom half, insert after
                             insertionIndex++;
-                        } else if (insertionIndex === -1) {
-                            insertionIndex = matchesInNewBlock.length; // Append if target not found (e.g., re-dropping current item)
                         }
+                        // If mouseY < middle - buffer, insertionIndex remains as found (insert before)
+                        // If in the middle, insert at the same index
                     } else { // Dropped on an empty space (e.g. into tbody not on a specific row)
                          insertionIndex = matchesInNewBlock.length; // Append to end
                     }
@@ -966,7 +985,7 @@ async function displayMatchesAsSchedule() {
                 e.target.classList.remove('dragging');
                 draggedMatchId = null;
                 // Remove drop-target class from any elements that might still have it
-                matchesContainer.querySelectorAll('.drop-target').forEach(el => el.classList.remove('drop-target'));
+                matchesContainer.querySelectorAll('.drop-target, .insert-before, .insert-after').forEach(el => el.classList.remove('drop-target', 'insert-before', 'insert-after'));
             });
         });
 
@@ -1339,7 +1358,7 @@ async function updateMatchDataDirectly(matchId, updates) {
         await updateDoc(matchDocRef, updates);
         console.log(`Match ${matchId} updated directly with:`, updates);
     } catch (error) {
-        console.error(`Error updating match ${matchId} directly:`, error);
+        console.error(`Chyba pri priamej aktualizácii zápasu ${matchId}:`, error);
         await showMessage('Chyba', `Chyba pri priamej aktualizácii zápasu ${matchId}. Detail: ${error.message}`);
     }
 }
