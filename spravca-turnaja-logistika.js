@@ -612,8 +612,8 @@ async function displayMatchesAsSchedule() {
         const sortedDates = Array.from(matchesByDate.keys()).sort();
 
         matchesContainer.innerHTML = '';
-        let scheduleHtml = '<div class="schedule-table-container" style="overflow-x: auto;">';
-        
+        let scheduleHtml = '<div class="schedule-table-container">'; // Removed style for overflow
+
         if (sortedDates.length === 0) {
             scheduleHtml += '<p style="text-align: center; padding: 20px;">— Žiadne zápasy na zobrazenie —</p>';
         } else {
@@ -625,17 +625,15 @@ async function displayMatchesAsSchedule() {
                 scheduleHtml += `<table class="match-schedule-table" style="margin-bottom: 30px; border-collapse: collapse; width: 100%;"><thead>`;
                 
                 // Main header row: Date - removed all style attributes
-                scheduleHtml += `<tr><th colspan="6" class="date-header-clickable" data-date="${date}" title="Kliknutím upravíte hrací deň ${formattedDisplayDate}">${formattedDisplayDate}</th></tr>`;
+                scheduleHtml += `<tr><th colspan="5" class="date-header-clickable" data-date="${date}" title="Kliknutím upravíte hrací deň ${formattedDisplayDate}">${formattedDisplayDate}</th></tr>`; // Changed colspan to 5
 
-                // Sub-header row: Detail columns - removed all style attributes
+                // Sub-header row: Detail columns - removed "Miesto" column
                 scheduleHtml += `<tr>
-                    <th style="width: 10%;">Čas začiatok</th>
-                    <th style="width: 10%;">Čas koniec</th>
-                    <th style="width: 20%;">Miesto</th> <!-- Added new column for 'Miesto' -->
-                    <th style="width: 20%;">Názov domáci</th>
-                    <th style="width: 20%;">Názov hostia</th>
-                    <th style="width: 10%;">Kód tímu domáci</th>
-                    <th style="width: 10%;">Kód tímu hostia</th>
+                    <th style="width: 15%;">Čas začiatok</th>
+                    <th style="width: 15%;">Čas koniec</th>
+                    <th style="width: 25%;">Názov domáci</th>
+                    <th style="width: 25%;">Názov hostia</th>
+                    <th style="width: 20%;">Kód tímu</th>
                 </tr></thead><tbody>`;
 
                 const matchesForThisDate = matchesByDate.get(date);
@@ -653,16 +651,19 @@ async function displayMatchesAsSchedule() {
                     matchEndTime.setHours(startH, startM + match.duration, 0, 0);
                     const formattedEndTime = matchEndTime.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' });
 
-                    // Match row - removed all style attributes except cursor: pointer
+                    // Main match row
                     scheduleHtml += `
                         <tr class="schedule-cell-match" data-id="${match.id}" data-type="${match.type}" style="cursor: pointer;">
                             <td>${match.startTime}</td>
                             <td>${formattedEndTime}</td>
-                            <td>${match.location || 'N/A'}</td> <!-- Added match.location -->
                             <td>${match.team1ClubName || 'N/A'}</td>
                             <td>${match.team2ClubName || 'N/A'}</td>
-                            <td>${match.team1DisplayName || 'N/A'}</td>
-                            <td>${match.team2DisplayName || 'N/A'}</td>
+                            <td>${match.team1DisplayName || 'N/A'} vs ${match.team2DisplayName || 'N/A'}</td>
+                        </tr>
+                        <tr class="schedule-cell-match-detail" data-id="${match.id}" data-type="${match.type}" style="cursor: pointer;">
+                            <td colspan="5" style="text-align: left; padding-left: 20px;">
+                                Miesto: ${match.location || 'N/A'}
+                            </td>
                         </tr>
                     `;
                 });
