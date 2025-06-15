@@ -827,17 +827,17 @@ async function displayMatchesAsSchedule() {
 
             row.addEventListener('drop', async (e) => {
                 e.preventDefault();
-                // Use the global variable for the dragged match ID
-                const matchIdToProcess = draggedMatchId; 
+                // Prioritize data from dataTransfer, fallback to global variable
+                let matchIdToProcess = e.dataTransfer.getData('match/id') || draggedMatchId; 
 
-                console.log('Drop event triggered on match row. Captured matchIdToProcess (from global):', matchIdToProcess); // Log for debugging
+                console.log('Drop event triggered on match row. Captured matchIdToProcess (from dataTransfer/global):', matchIdToProcess); // Log for debugging
 
                 // Always clean up drop-target class
                 matchesContainer.querySelectorAll('.drop-target').forEach(el => el.classList.remove('drop-target'));
 
                 if (!matchIdToProcess) {
                     await showMessage('Chyba', 'Presun zápasu zrušený: ID presúvaného zápasu nie je platné.');
-                    console.warn("Drop operation cancelled: matchIdToProcess from global is null or empty.");
+                    console.warn("Drop operation cancelled: matchIdToProcess is null or empty.");
                     e.target.classList.remove('dragging');
                     return;
                 }
@@ -990,10 +990,10 @@ async function displayMatchesAsSchedule() {
 
             locationBlock.addEventListener('drop', async (e) => {
                 e.preventDefault();
-                // Use the global variable for the dragged match ID
-                const matchIdToProcess = draggedMatchId;
+                // Prioritize data from dataTransfer, fallback to global variable
+                let matchIdToProcess = e.dataTransfer.getData('match/id') || draggedMatchId;
 
-                console.log('Drop event triggered on location block. Captured matchIdToProcess (from global, location block):', matchIdToProcess); // Log for debugging
+                console.log('Drop event triggered on location block. Captured matchIdToProcess (from dataTransfer/global, location block):', matchIdToProcess); // Log for debugging
 
                 const targetTbody = e.target.closest('tbody');
                 if (targetTbody) {
