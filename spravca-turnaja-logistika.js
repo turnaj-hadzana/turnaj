@@ -416,7 +416,7 @@ async function findFirstAvailableTime() {
     const matchLocationSelect = document.getElementById('matchLocationSelect');
     const matchDurationInput = document.getElementById('matchDuration');
     const matchBufferTimeInput = document.getElementById('matchBufferTime');
-    const matchStartTimeInput = document.getElementById('matchStartTime');
+    const matchStartTimeInput = document = document.getElementById('matchStartTime');
 
     const selectedDate = matchDateSelect.value;
     const selectedLocationName = matchLocationSelect.value;
@@ -827,13 +827,15 @@ async function displayMatchesAsSchedule() {
 
             row.addEventListener('drop', async (e) => {
                 e.preventDefault();
-                const currentDraggedMatchId = e.dataTransfer.getData('text/plain'); // Get ID directly from dataTransfer
-                console.log('Drop event triggered. draggedMatchId from dataTransfer:', currentDraggedMatchId); // Log for debugging
+                // Capture the draggedMatchId at the very beginning of the drop function
+                let matchIdToProcess = draggedMatchId; 
+
+                console.log('Drop event triggered on match row. Captured matchIdToProcess:', matchIdToProcess); // Log for debugging
                 console.log('e.dataTransfer.types at drop:', e.dataTransfer.types); // Debugging
 
-                if (!currentDraggedMatchId) {
-                    await showMessage('Chyba', 'Presun zápasu zrušený: ID presúvaného zápasu chýba v dátach presunu.');
-                    console.warn("Drop operation cancelled: currentDraggedMatchId from dataTransfer is null or empty.");
+                if (!matchIdToProcess) {
+                    await showMessage('Chyba', 'Presun zápasu zrušený: ID presúvaného zápasu chýba.');
+                    console.warn("Drop operation cancelled: matchIdToProcess is null or empty.");
                     e.target.classList.remove('dragging');
                     draggedMatchId = null; 
                     matchesContainer.querySelectorAll('.drop-target').forEach(el => el.classList.remove('drop-target'));
@@ -853,7 +855,7 @@ async function displayMatchesAsSchedule() {
                 console.log('Target row dataset Date:', newDate); // Debugging
                 console.log('Target row dataset Location:', newLocation); // Debugging
 
-                if (currentDraggedMatchId === targetMatchId) { 
+                if (matchIdToProcess === targetMatchId) { 
                     console.log('Dropping onto itself or no effective change, ignoring.');
                     e.target.classList.remove('dragging');
                     draggedMatchId = null; 
@@ -862,10 +864,11 @@ async function displayMatchesAsSchedule() {
                 }
 
                 try {
-                    const draggedMatchDoc = await getDoc(doc(matchesCollectionRef, currentDraggedMatchId));
+                    // Use matchIdToProcess here
+                    const draggedMatchDoc = await getDoc(doc(matchesCollectionRef, matchIdToProcess));
                     if (!draggedMatchDoc.exists()) {
                         await showMessage('Chyba', 'Presúvaný zápas sa nenašiel v databáze.');
-                        console.error('Dragged match document not found for ID:', currentDraggedMatchId);
+                        console.error('Dragged match document not found for ID:', matchIdToProcess);
                         return;
                     }
                     const draggedMatchData = draggedMatchDoc.data();
@@ -906,7 +909,7 @@ async function displayMatchesAsSchedule() {
                         const originalMatchesSnapshot = await getDocs(originalMatchesQuery);
                         let matchesInOriginalBlock = originalMatchesSnapshot.docs
                             .map(doc => ({ id: doc.id, ...doc.data() }))
-                            .filter(match => match.id !== currentDraggedMatchId) // Use currentDraggedMatchId here
+                            .filter(match => match.id !== matchIdToProcess) // Use matchIdToProcess here
                             .sort((a, b) => {
                                 const [aH, aM] = (a.startTime || '00:00').split(':').map(Number);
                                 const [bH, bM] = (b.startTime || '00:00').split(':').map(Number);
@@ -929,7 +932,7 @@ async function displayMatchesAsSchedule() {
                     
                     let matchesInNewBlock = newMatchesSnapshot.docs
                         .map(doc => ({ id: doc.id, ...doc.data() }))
-                        .filter(match => match.id !== currentDraggedMatchId) // Use currentDraggedMatchId here
+                        .filter(match => match.id !== matchIdToProcess) // Use matchIdToProcess here
                         .sort((a, b) => {
                             const [aH, aM] = (a.startTime || '00:00').split(':').map(Number);
                             const [bH, bM] = (b.startTime || '00:00').split(':').map(Number);
@@ -1003,8 +1006,10 @@ async function displayMatchesAsSchedule() {
 
             locationBlock.addEventListener('drop', async (e) => {
                 e.preventDefault();
-                const currentDraggedMatchId = e.dataTransfer.getData('text/plain'); // Get ID directly from dataTransfer
-                console.log('Drop event triggered on location block. draggedMatchId from dataTransfer:', currentDraggedMatchId); // Log for debugging
+                // Capture the draggedMatchId at the very beginning of the drop function
+                let matchIdToProcess = draggedMatchId;
+
+                console.log('Drop event triggered on location block. Captured matchIdToProcess:', matchIdToProcess); // Log for debugging
                 console.log('e.dataTransfer.types at drop (location block):', e.dataTransfer.types); // Debugging
 
                 const targetTbody = e.target.closest('tbody');
@@ -1018,9 +1023,9 @@ async function displayMatchesAsSchedule() {
                 console.log('Target location block dataset Date:', newDate); // Debugging
                 console.log('Target location block dataset Location:', newLocation); // Debugging
 
-                if (!currentDraggedMatchId || !newDate || !newLocation) {
+                if (!matchIdToProcess || !newDate || !newLocation) {
                     await showMessage('Chyba', 'Presun zápasu zrušený: ID presúvaného zápasu alebo detaily cieľa chýbajú.');
-                    console.warn("Drop operation cancelled: currentDraggedMatchId or target details are null.");
+                    console.warn("Drop operation cancelled: matchIdToProcess or target details are null.");
                     e.target.classList.remove('dragging');
                     draggedMatchId = null; 
                     matchesContainer.querySelectorAll('.drop-target').forEach(el => el.classList.remove('drop-target'));
@@ -1028,10 +1033,11 @@ async function displayMatchesAsSchedule() {
                 }
 
                 try {
-                    const draggedMatchDoc = await getDoc(doc(matchesCollectionRef, currentDraggedMatchId));
+                    // Use matchIdToProcess here
+                    const draggedMatchDoc = await getDoc(doc(matchesCollectionRef, matchIdToProcess));
                     if (!draggedMatchDoc.exists()) {
                         await showMessage('Chyba', 'Presúvaný zápas sa nenašiel v databáze.');
-                        console.error('Dragged match document not found for ID:', currentDraggedMatchId);
+                        console.error('Dragged match document not found for ID:', matchIdToProcess);
                         return;
                     }
                     const draggedMatchData = draggedMatchDoc.data();
@@ -1071,7 +1077,7 @@ async function displayMatchesAsSchedule() {
                         const originalMatchesSnapshot = await getDocs(originalMatchesQuery);
                         let matchesInOriginalBlock = originalMatchesSnapshot.docs
                             .map(doc => ({ id: doc.id, ...doc.data() }))
-                            .filter(match => match.id !== currentDraggedMatchId) // Use currentDraggedMatchId here
+                            .filter(match => match.id !== matchIdToProcess) // Use matchIdToProcess here
                             .sort((a, b) => {
                                 const [aH, aM] = (a.startTime || '00:00').split(':').map(Number);
                                 const [bH, bM] = (b.startTime || '00:00').split(':').map(Number);
@@ -1094,7 +1100,7 @@ async function displayMatchesAsSchedule() {
                     
                     let matchesInNewBlock = newMatchesSnapshot.docs
                         .map(doc => ({ id: doc.id, ...doc.data() }))
-                        .filter(match => match.id !== currentDraggedMatchId) // Filter out if it already exists there (shouldn't if moved)
+                        .filter(match => match.id !== matchIdToProcess) // Filter out if it already exists there (shouldn't if moved)
                         .sort((a, b) => {
                             const [aH, aM] = (a.startTime || '00:00').split(':').map(Number);
                             const [bH, bM] = (b.startTime || '00:00').split(':').map(Number);
