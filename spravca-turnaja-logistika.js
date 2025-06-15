@@ -827,17 +827,17 @@ async function displayMatchesAsSchedule() {
 
             row.addEventListener('drop', async (e) => {
                 e.preventDefault();
-                // Capture the draggedMatchId at the very beginning of the drop function
-                let matchIdToProcess = draggedMatchId; 
+                // Capture the draggedMatchId from dataTransfer, which is explicitly set in dragstart
+                const matchIdToProcess = e.dataTransfer.getData('text/plain'); 
 
-                console.log('Drop event triggered on match row. Captured matchIdToProcess:', matchIdToProcess); // Log for debugging
+                console.log('Drop event triggered on match row. Captured matchIdToProcess from dataTransfer:', matchIdToProcess); // Log for debugging
                 console.log('e.dataTransfer.types at drop:', e.dataTransfer.types); // Debugging
 
                 if (!matchIdToProcess) {
-                    await showMessage('Chyba', 'Presun zápasu zrušený: ID presúvaného zápasu chýba.');
-                    console.warn("Drop operation cancelled: matchIdToProcess is null or empty.");
+                    await showMessage('Chyba', 'Presun zápasu zrušený: ID presúvaného zápasu chýba v dátach presunu.');
+                    console.warn("Drop operation cancelled: matchIdToProcess from dataTransfer is null or empty.");
                     e.target.classList.remove('dragging');
-                    draggedMatchId = null; 
+                    // draggedMatchId = null; // No need to reset here, dragend will handle it
                     matchesContainer.querySelectorAll('.drop-target').forEach(el => el.classList.remove('drop-target'));
                     return;
                 }
@@ -858,7 +858,7 @@ async function displayMatchesAsSchedule() {
                 if (matchIdToProcess === targetMatchId) { 
                     console.log('Dropping onto itself or no effective change, ignoring.');
                     e.target.classList.remove('dragging');
-                    draggedMatchId = null; 
+                    // draggedMatchId = null; // No need to reset here, dragend will handle it
                     matchesContainer.querySelectorAll('.drop-target').forEach(el => el.classList.remove('drop-target'));
                     return;
                 }
@@ -891,7 +891,7 @@ async function displayMatchesAsSchedule() {
                     if (!confirmed) {
                         await showMessage('Zrušené', 'Presun zápasu bol zrušený.');
                         e.target.classList.remove('dragging');
-                        draggedMatchId = null; 
+                        // draggedMatchId = null; // No need to reset here, dragend will handle it
                         matchesContainer.querySelectorAll('.drop-target').forEach(el => el.classList.remove('drop-target'));
                         return;
                     }
@@ -1006,10 +1006,10 @@ async function displayMatchesAsSchedule() {
 
             locationBlock.addEventListener('drop', async (e) => {
                 e.preventDefault();
-                // Capture the draggedMatchId at the very beginning of the drop function
-                let matchIdToProcess = draggedMatchId;
+                // Capture the draggedMatchId from dataTransfer
+                const matchIdToProcess = e.dataTransfer.getData('text/plain');
 
-                console.log('Drop event triggered on location block. Captured matchIdToProcess:', matchIdToProcess); // Log for debugging
+                console.log('Drop event triggered on location block. Captured matchIdToProcess from dataTransfer:', matchIdToProcess); // Log for debugging
                 console.log('e.dataTransfer.types at drop (location block):', e.dataTransfer.types); // Debugging
 
                 const targetTbody = e.target.closest('tbody');
@@ -1027,7 +1027,7 @@ async function displayMatchesAsSchedule() {
                     await showMessage('Chyba', 'Presun zápasu zrušený: ID presúvaného zápasu alebo detaily cieľa chýbajú.');
                     console.warn("Drop operation cancelled: matchIdToProcess or target details are null.");
                     e.target.classList.remove('dragging');
-                    draggedMatchId = null; 
+                    // draggedMatchId = null; // No need to reset here, dragend will handle it
                     matchesContainer.querySelectorAll('.drop-target').forEach(el => el.classList.remove('drop-target'));
                     return;
                 }
@@ -1060,7 +1060,7 @@ async function displayMatchesAsSchedule() {
                     if (!confirmed) {
                         await showMessage('Zrušené', 'Presun zápasu bol zrušený.');
                         e.target.classList.remove('dragging');
-                        draggedMatchId = null; 
+                        // draggedMatchId = null; // No need to reset here, dragend will handle it
                         matchesContainer.querySelectorAll('.drop-target').forEach(el => el.classList.remove('drop-target'));
                         return;
                     }
