@@ -556,7 +556,8 @@ const getTeamName = async (categoryId, groupId, teamNumber, categoriesMap, group
 };
 
 /**
- * Displays the full match schedule including matches. Buses and accommodation assignments are excluded.
+ * Displays the full match schedule in a simplified table format.
+ * Buses and accommodation assignments are excluded.
  */
 async function displayMatchesAsSchedule() {
     const matchesContainer = document.getElementById('matchesContainer');
@@ -566,21 +567,19 @@ async function displayMatchesAsSchedule() {
     matchesContainer.insertAdjacentHTML('afterbegin', '<p>Načítavam rozvrh zápasov...</p>');
 
     try {
-        // Fetch all data required for the schedule
+        // Fetch all matches
         const matchesQuery = query(matchesCollectionRef, orderBy("date", "asc"), orderBy("location", "asc"), orderBy("startTime", "asc"));
         const matchesSnapshot = await getDocs(matchesQuery);
         let allMatches = matchesSnapshot.docs.map(doc => ({ id: doc.id, type: 'match', ...doc.data() }));
-        console.log("displayMatchesAsSchedule: Načítané zápasy:", allMatches);
 
+        // Fetch categories and groups for display names
         const categoriesSnapshot = await getDocs(categoriesCollectionRef);
         const categoriesMap = new Map();
         categoriesSnapshot.forEach(doc => categoriesMap.set(doc.id, doc.data().name || doc.id));
-        console.log("displayMatchesAsSchedule: Načítané kategórie:", Array.from(categoriesMap.entries()));
 
         const groupsSnapshot = await getDocs(groupsCollectionRef);
         const groupsMap = new Map();
         groupsSnapshot.forEach(doc => groupsMap.set(doc.id, doc.data().name || doc.id));
-        console.log("displayMatchesAsSchedule: Načítané skupiny:", Array.from(groupsMap.entries()));
 
         // Populate team display names for matches
         const updatedMatchesPromises = allMatches.map(async match => {
@@ -599,12 +598,7 @@ async function displayMatchesAsSchedule() {
                 team2ClubId: team2Data.status === 'fulfilled' ? team2Data.value.clubId : null,
             };
         });
-
         allMatches = await Promise.all(updatedMatchesPromises);
-
-        const playingDaysSnapshot = await getDocs(query(playingDaysCollectionRef, orderBy("date", "asc")));
-        const existingPlayingDays = playingDaysSnapshot.docs.map(doc => doc.data().date);
-        console.log("displayMatchesAsSchedule: Načítané hracie dni (len dátumy):", existingPlayingDays);
 
         // Group matches by date
         const matchesByDate = new Map();
@@ -619,33 +613,30 @@ async function displayMatchesAsSchedule() {
 
         matchesContainer.innerHTML = '';
         let scheduleHtml = '<div class="schedule-table-container" style="overflow-x: auto;">';
-        scheduleHtml += '<table class="match-schedule-table"><thead>';
         
-        // First header row: Date
-        scheduleHtml += '<tr>';
-        sortedDates.forEach(date => {
-            const displayDateObj = new Date(date);
-            const formattedDisplayDate = `${String(displayDateObj.getDate()).padStart(2, '0')}. ${String(displayDateObj.getMonth() + 1).padStart(2, '0')}. ${displayDateObj.getFullYear()}`;
-            // Colspan is 6 for the 6 detail columns
-            scheduleHtml += `<th colspan="6" class="date-header-clickable" data-date="${date}" title="Kliknutím upravíte hrací deň ${formattedDisplayDate}">${formattedDisplayDate}</th>`;
-        });
-        scheduleHtml += '</tr>';
-
-        // Second header row: Detail columns
-        scheduleHtml += '<tr>';
-        scheduleHtml += `<th style="width: 10%;">Čas začiatok</th>`;
-        scheduleHtml += `<th style="width: 10%;">Čas koniec</th>`;
-        scheduleHtml += `<th style="width: 30%;">Názov domáci</th>`;
-        scheduleHtml += `<th style="width: 30%;">Názov hostia</th>`;
-        scheduleHtml += `<th style="width: 10%;">Kód tímu domáci</th>`;
-        scheduleHtml += `<th style="width: 10%;">Kód tímu hostia</th>`;
-        scheduleHtml += '</tr></thead><tbody>';
-
-        // Table body
         if (sortedDates.length === 0) {
-            scheduleHtml += '<tr><td colspan="6" style="text-align: center; padding: 20px;">— Žiadne zápasy na zobrazenie —</td></tr>';
+            scheduleHtml += '<p style="text-align: center; padding: 20px;">— Žiadne zápasy na zobrazenie —</p>';
         } else {
             sortedDates.forEach(date => {
+                const displayDateObj = new Date(date);
+                const formattedDisplayDate = `${String(displayDateObj.getDate()).padStart(2, '0')}. ${String(displayDateObj.getMonth() + 1).padStart(2, '0')}. ${displayDateObj.getFullYear()}`;
+                
+                // Table for each date
+                scheduleHtml += `<table class="match-schedule-table" style="margin-bottom: 30px; border-collapse: collapse; width: 100%;"><thead>`;
+                
+                // Main header row: Date
+                scheduleHtml += `<tr><th colspan="6" class="date-header-clickable" data-date="${date}" title="Kliknutím upravíte hrací deň ${formattedDisplayDate}" style="background-color: #f0f0f0; padding: 10px; text-align: center; font-size: 1.2em; border: 1px solid #ccc;">${formattedDisplayDate}</th></tr>`;
+
+                // Sub-header row: Detail columns
+                scheduleHtml += `<tr>
+                    <th style="width: 10%; padding: 8px; border: 1px solid #ccc; text-align: left;">Čas začiatok</th>
+                    <th style="width: 10%; padding: 8px; border: 1px solid #ccc; text-align: left;">Čas koniec</th>
+                    <th style="width: 30%; padding: 8px; border: 1px solid #ccc; text-align: left;">Názov domáci</th>
+                    <th style="width: 30%; padding: 8px; border: 1px solid #ccc; text-align: left;">Názov hostia</th>
+                    <th style="width: 10%; padding: 8px; border: 1px solid #ccc; text-align: left;">Kód tímu domáci</th>
+                    <th style="width: 10%; padding: 8px; border: 1px solid #ccc; text-align: left;">Kód tímu hostia</th>
+                </tr></thead><tbody>`;
+
                 const matchesForThisDate = matchesByDate.get(date);
 
                 // Sort matches by start time
@@ -662,22 +653,21 @@ async function displayMatchesAsSchedule() {
                     const formattedEndTime = matchEndTime.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' });
 
                     scheduleHtml += `
-                        <tr class="schedule-cell-match" data-id="${match.id}" data-type="${match.type}">
-                            <td>${match.startTime}</td>
-                            <td>${formattedEndTime}</td>
-                            <td>${match.team1ClubName || 'N/A'}</td>
-                            <td>${match.team2ClubName || 'N/A'}</td>
-                            <td>${match.team1DisplayName || 'N/A'}</td>
-                            <td>${match.team2DisplayName || 'N/A'}</td>
+                        <tr class="schedule-cell-match" data-id="${match.id}" data-type="${match.type}" style="cursor: pointer;">
+                            <td style="padding: 8px; border: 1px solid #ccc;">${match.startTime}</td>
+                            <td style="padding: 8px; border: 1px solid #ccc;">${formattedEndTime}</td>
+                            <td style="padding: 8px; border: 1px solid #ccc;">${match.team1ClubName || 'N/A'}</td>
+                            <td style="padding: 8px; border: 1px solid #ccc;">${match.team2ClubName || 'N/A'}</td>
+                            <td style="padding: 8px; border: 1px solid #ccc;">${match.team1DisplayName || 'N/A'}</td>
+                            <td style="padding: 8px; border: 1px solid #ccc;">${match.team2DisplayName || 'N/A'}</td>
                         </tr>
                     `;
                 });
+                scheduleHtml += '</tbody></table>';
             });
         }
 
-        scheduleHtml += '</tbody></table>';
         scheduleHtml += '</div>';
-
         matchesContainer.insertAdjacentHTML('beforeend', scheduleHtml);
 
         // Add event listeners for editing matches
@@ -695,8 +685,6 @@ async function displayMatchesAsSchedule() {
                 editPlayingDay(dateToEdit);
             });
         });
-
-        // Removed event listeners for buses, accommodations, and specific place headers as they are no longer displayed
 
     } catch (error) {
         console.error("Chyba pri načítaní rozvrhu zápasov (zachytená chyba):", error);
