@@ -806,6 +806,8 @@ async function displayMatchesAsSchedule() {
                 e.dataTransfer.setData('text/plain', draggedMatchId);
                 e.target.classList.add('dragging');
                 console.log('Drag started for match ID:', draggedMatchId); // Log for debugging
+                console.log('e.dataTransfer.types after setData:', e.dataTransfer.types); // Debugging
+                console.log('e.dataTransfer.getData("text/plain") after setData:', e.dataTransfer.getData('text/plain')); // Debugging
             });
 
             row.addEventListener('dragover', (e) => {
@@ -827,6 +829,7 @@ async function displayMatchesAsSchedule() {
                 e.preventDefault();
                 const currentDraggedMatchId = e.dataTransfer.getData('text/plain'); // Get ID directly from dataTransfer
                 console.log('Drop event triggered. draggedMatchId from dataTransfer:', currentDraggedMatchId); // Log for debugging
+                console.log('e.dataTransfer.types at drop:', e.dataTransfer.types); // Debugging
 
                 if (!currentDraggedMatchId) {
                     await showMessage('Chyba', 'Presun zápasu zrušený: ID presúvaného zápasu chýba v dátach presunu.');
@@ -843,6 +846,12 @@ async function displayMatchesAsSchedule() {
                 }
                 
                 const targetMatchId = targetRow ? targetRow.dataset.id : null;
+                const newDate = targetRow.dataset.date;
+                const newLocation = targetRow.dataset.location;
+
+                console.log('Target row dataset ID:', targetMatchId); // Debugging
+                console.log('Target row dataset Date:', newDate); // Debugging
+                console.log('Target row dataset Location:', newLocation); // Debugging
 
                 if (currentDraggedMatchId === targetMatchId) { 
                     console.log('Dropping onto itself or no effective change, ignoring.');
@@ -864,11 +873,8 @@ async function displayMatchesAsSchedule() {
                     const originalDate = draggedMatchData.date;
                     const originalLocation = draggedMatchData.location;
 
-                    const newDate = targetRow.dataset.date;
-                    const newLocation = targetRow.dataset.location;
-
-                    console.log('Original: ', originalDate, originalLocation); // Debugging
-                    console.log('New: ', newDate, newLocation); // Debugging
+                    console.log('Original match data - Date:', originalDate, 'Location:', originalLocation); // Debugging
+                    console.log('New target - Date:', newDate, 'Location:', newLocation); // Debugging
 
                     let confirmationMessage = '';
                     if (originalDate !== newDate || originalLocation !== newLocation) {
@@ -961,7 +967,7 @@ async function displayMatchesAsSchedule() {
                     await batch.commit();
                     await showMessage('Úspech', 'Zápas úspešne presunutý a časy aktualizované! Rozvrh sa aktualizuje.');
                 } catch (error) {
-                    console.error("Chyba pri presune zápasu:", error);
+                    console.error("Chyba pri presune zápasu (zachytená chyba):", error);
                     await showMessage('Chyba', `Chyba pri presune zápasu: ${error.message}`);
                 }
                 e.target.classList.remove('dragging');
@@ -999,6 +1005,7 @@ async function displayMatchesAsSchedule() {
                 e.preventDefault();
                 const currentDraggedMatchId = e.dataTransfer.getData('text/plain'); // Get ID directly from dataTransfer
                 console.log('Drop event triggered on location block. draggedMatchId from dataTransfer:', currentDraggedMatchId); // Log for debugging
+                console.log('e.dataTransfer.types at drop (location block):', e.dataTransfer.types); // Debugging
 
                 const targetTbody = e.target.closest('tbody');
                 if (targetTbody) {
@@ -1008,6 +1015,9 @@ async function displayMatchesAsSchedule() {
                 const newDate = targetLocationBlock ? targetLocationBlock.dataset.date : null;
                 const newLocation = targetLocationBlock ? targetLocationBlock.dataset.location : null;
                 
+                console.log('Target location block dataset Date:', newDate); // Debugging
+                console.log('Target location block dataset Location:', newLocation); // Debugging
+
                 if (!currentDraggedMatchId || !newDate || !newLocation) {
                     await showMessage('Chyba', 'Presun zápasu zrušený: ID presúvaného zápasu alebo detaily cieľa chýbajú.');
                     console.warn("Drop operation cancelled: currentDraggedMatchId or target details are null.");
@@ -1029,8 +1039,8 @@ async function displayMatchesAsSchedule() {
                     const originalDate = draggedMatchData.date;
                     const originalLocation = draggedMatchData.location;
 
-                    console.log('Original: ', originalDate, originalLocation); // Debugging
-                    console.log('New: ', newDate, newLocation); // Debugging
+                    console.log('Original match data - Date:', originalDate, 'Location:', originalLocation); // Debugging
+                    console.log('New target - Date:', newDate, 'Location:', newLocation); // Debugging
 
                     let confirmationMessage = '';
                     if (originalDate !== newDate || originalLocation !== newLocation) {
@@ -1103,7 +1113,7 @@ async function displayMatchesAsSchedule() {
                     await showMessage('Úspech', 'Zápas úspešne presunutý a časy aktualizované! Rozvrh sa aktualizuje.');
 
                 } catch (error) {
-                    console.error("Chyba pri presune zápasu na prázdny blok:", error);
+                    console.error("Chyba pri presune zápasu na prázdny blok (zachytená chyba):", error);
                     await showMessage('Chyba', `Chyba pri presune zápasu: ${error.message}`);
                 }
                 draggedMatchId = null; // Reset after drop
