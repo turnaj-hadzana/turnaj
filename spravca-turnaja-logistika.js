@@ -855,13 +855,17 @@ async function displayMatchesAsSchedule() {
 
             row.addEventListener('drop', async (e) => {
                 e.preventDefault();
-                let matchIdToProcess = e.dataTransfer.getData('text/plain'); // Try to get from dataTransfer first
-                if (!matchIdToProcess) { // If dataTransfer didn't provide it, fall back to global
+                // Prioritize dataTransfer.getData('text/plain') as it's the standard way to retrieve dragged data.
+                let matchIdToProcess = e.dataTransfer.getData('text/plain'); 
+                
+                // Fallback to global variable if dataTransfer is empty or null, though it should ideally be set.
+                if (!matchIdToProcess || matchIdToProcess.trim() === '') {
                     matchIdToProcess = draggedMatchId;
-                    console.log('Fallback to global draggedMatchId:', draggedMatchId);
+                    console.warn('DataTransfer was empty, falling back to global draggedMatchId:', draggedMatchId);
                 }
 
                 console.log('Drop event triggered on match row. Final matchIdToProcess:', matchIdToProcess); // Log for debugging
+                console.log('Current global draggedMatchId at drop:', draggedMatchId); // Log global state
                 console.log('e.target on drop:', e.target);
                 console.log('e.target.closest("tr") on drop:', e.target.closest('tr'));
 
@@ -869,9 +873,9 @@ async function displayMatchesAsSchedule() {
                 matchesContainer.querySelectorAll('.drop-target, .insert-before, .insert-after').forEach(el => el.classList.remove('drop-target', 'insert-before', 'insert-after'));
 
                 try {
-                    // This check now comes AFTER trying both dataTransfer and global variable
-                    if (!matchIdToProcess || matchIdToProcess.trim() === '') { // Explicitly check for empty string after trim
-                        await showMessage('Chyba', 'Presun zápasu zrušený: ID presúvaného zápasu nie je platné. Zápas nebol správne identifikovaný.');
+                    // Critical validation: check if matchIdToProcess is truly valid
+                    if (!matchIdToProcess || matchIdToProcess.trim() === '') { 
+                        await showMessage('Chyba', 'Presun zápasu zrušený: ID presúvaného zápasu nie je platné. Zápas nebol správne identifikovaný (ID je prázdne alebo neplatné).');
                         console.error("Drop operation cancelled: matchIdToProcess is null, empty or whitespace.");
                         return; // Exit early if no valid ID
                     }
@@ -1004,8 +1008,8 @@ async function displayMatchesAsSchedule() {
                 if (draggedElement) {
                     draggedElement.classList.remove('dragging');
                 }
+                console.log('Drag ended. Global draggedMatchId cleared. New value:', draggedMatchId); // Log for verification
                 draggedMatchId = null; // Always clear the global ID on drag end
-                console.log('Drag ended. Global draggedMatchId cleared.');
             });
         });
 
@@ -1029,13 +1033,17 @@ async function displayMatchesAsSchedule() {
 
             locationBlock.addEventListener('drop', async (e) => {
                 e.preventDefault();
-                let matchIdToProcess = e.dataTransfer.getData('text/plain'); // Try to get from dataTransfer first
-                if (!matchIdToProcess) { // If dataTransfer didn't provide it, fall back to global
+                // Prioritize dataTransfer.getData('text/plain')
+                let matchIdToProcess = e.dataTransfer.getData('text/plain'); 
+
+                // Fallback to global variable if dataTransfer is empty or null.
+                if (!matchIdToProcess || matchIdToProcess.trim() === '') {
                     matchIdToProcess = draggedMatchId;
-                    console.log('Fallback to global draggedMatchId (location block):', draggedMatchId);
+                    console.warn('DataTransfer was empty, falling back to global draggedMatchId (location block):', draggedMatchId);
                 }
 
                 console.log('Drop event triggered on location block. Final matchIdToProcess (location block):', matchIdToProcess); // Log for debugging
+                console.log('Current global draggedMatchId at drop (location block):', draggedMatchId); // Log global state
                 console.log('e.target on location drop:', e.target);
                 console.log('e.target.closest(".location-block") on location drop:', e.target.closest('.location-block'));
 
@@ -1053,8 +1061,9 @@ async function displayMatchesAsSchedule() {
 
                 // The finally block will handle removing 'dragging' class and resetting draggedMatchId
                 try {
-                    if (!matchIdToProcess || matchIdToProcess.trim() === '') { // Explicitly check for empty string after trim
-                        await showMessage('Chyba', 'Presun zápasu zrušený: ID presúvaného zápasu nie je platné. Zápas nebol správne identifikovaný.');
+                    // Critical validation: check if matchIdToProcess is truly valid
+                    if (!matchIdToProcess || matchIdToProcess.trim() === '') { 
+                        await showMessage('Chyba', 'Presun zápasu zrušený: ID presúvaného zápasu nie je platné. Zápas nebol správne identifikovaný (ID je prázdne alebo neplatné) pre cieľový blok.');
                         console.error("Drop operation cancelled: matchIdToProcess is null, empty or whitespace (location block).");
                         return; // Exit early if no valid ID
                     }
@@ -1557,7 +1566,7 @@ async function editAccommodationAssignment(assignmentId) {
         const assignmentIdInput = document.getElementById('assignmentId');
         const assignAccommodationModalTitle = document.getElementById('assignAccommodationModalTitle');
         const assignmentDateFromSelect = document.getElementById('assignmentDateFromSelect');
-        const assignmentDateToSelect = document.getElementById('assignmentDateToSelect');
+        const assignmentDateToSelect = document.getElementById('assignAccommodationModalTitle');
         const clubSelect = document.getElementById('clubSelect');
         const specificTeamSelect = document.getElementById('specificTeamSelect');
         const accommodationSelect = document.getElementById('accommodationSelect');
