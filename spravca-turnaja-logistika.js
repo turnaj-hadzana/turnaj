@@ -961,8 +961,9 @@ async function displayMatchesAsSchedule() {
 
                     await batch.commit();
                     await showMessage('Úspech', 'Zápas úspešne presunutý a časy aktualizované! Rozvrh sa aktualizuje.');
-                    await displayMatchesAsSchedule(); // Refresh display first
-                    editMatch(matchIdToProcess); // Then open modal for the dragged match
+                    await displayMatchesAsSchedule(); // Refresh display
+                    // The request is to NOT open the modal, so remove this line:
+                    // editMatch(matchIdToProcess); // Then open modal for the dragged match
                 } catch (error) {
                     console.error("Chyba pri presune zápasu (zachytená chyba):", error);
                     await showMessage('Chyba', `Chyba pri presune zápasu: ${error.message}`);
@@ -1091,8 +1092,9 @@ async function displayMatchesAsSchedule() {
 
                     await batch.commit();
                     await showMessage('Úspech', 'Zápas úspešne presunutý a časy aktualizované! Rozvrh sa aktualizuje.');
-                    await displayMatchesAsSchedule(); // Refresh display first
-                    editMatch(matchIdToProcess); // Then open modal for the dragged match
+                    await displayMatchesAsSchedule(); // Refresh display
+                    // The request is to NOT open the modal, so remove this line:
+                    // editMatch(matchIdToProcess); // Then open modal for the dragged match
 
                 } catch (error) {
                     console.error("Chyba pri presune zápasu na prázdny blok (zachytená chyba):", error);
@@ -1336,6 +1338,27 @@ async function editPlace(placeName, placeType) {
         await showMessage('Chyba', "Vyskytla sa chyba pri načítavaní dát miesta. Skúste to znova.");
     }
 }
+
+/**
+ * This function handles the update of a match's properties directly in the database.
+ * It's designed to be used after a drag-and-drop operation or any other
+ * scenario where a match's details (like date, location, start time) need
+ * to be updated programmatically, without opening a modal.
+ * * @param {string} matchId The ID of the match to update.
+ * @param {object} updates An object containing the fields to update for the match.
+ * Example: { date: 'YYYY-MM-DD', location: 'New Hall', startTime: 'HH:MM' }
+ */
+async function updateMatchDataDirectly(matchId, updates) {
+    try {
+        const matchDocRef = doc(matchesCollectionRef, matchId);
+        await updateDoc(matchDocRef, updates);
+        console.log(`Match ${matchId} updated directly with:`, updates);
+    } catch (error) {
+        console.error(`Error updating match ${matchId} directly:`, error);
+        await showMessage('Chyba', `Chyba pri priamej aktualizácii zápasu ${matchId}. Detail: ${error.message}`);
+    }
+}
+
 
 /**
  * Opens the modal to edit an existing match.
