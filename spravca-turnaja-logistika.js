@@ -1,7 +1,7 @@
 import { db, categoriesCollectionRef, groupsCollectionRef, clubsCollectionRef, matchesCollectionRef, playingDaysCollectionRef, placesCollectionRef, busesCollectionRef, teamAccommodationsCollectionRef, openModal, closeModal, populateCategorySelect, populateGroupSelect, getDocs, doc, setDoc, addDoc, getDoc, query, where, orderBy, deleteDoc, writeBatch, settingsCollectionRef, showMessage, showConfirmation } from './spravca-turnaja-common.js';
 const SETTINGS_DOC_ID = 'matchTimeSettings';
 
-// Removed: let draggedMatchId = null; // Global variable is no longer needed
+let draggedMatchId = null; // Global variable to store the ID of the dragged match
 
 /**
  * Populates a select element with playing days from Firestore.
@@ -804,14 +804,15 @@ async function displayMatchesAsSchedule() {
             row.addEventListener('dragstart', (e) => {
                 const matchId = e.currentTarget.dataset.id;
                 if (matchId) {
-                    e.dataTransfer.setData('match/id', matchId); // Primary data type
-                    e.dataTransfer.setData('text/plain', matchId); // Fallback for broader compatibility
+                    draggedMatchId = matchId; // Set the global variable
+                    e.dataTransfer.setData('text/plain', matchId); // Set for compatibility
                     e.currentTarget.classList.add('dragging');
-                    console.log('Drag started for match ID:', matchId);
+                    console.log('Drag started for match ID (SET TO GLOBAL):', draggedMatchId);
                     console.log('e.currentTarget:', e.currentTarget);
                     console.log('e.currentTarget.dataset:', e.currentTarget.dataset);
                 } else {
                     console.error('Drag start failed: No data-id found on currentTarget.', e.currentTarget);
+                    draggedMatchId = null; // Ensure global is null on failure
                     e.preventDefault(); // Prevent drag operation if no ID
                 }
             });
@@ -854,66 +855,51 @@ async function displayMatchesAsSchedule() {
 
             row.addEventListener('drop', async (e) => {
                 e.preventDefault();
-                // Get match ID from dataTransfer, preferring 'match/id' then 'text/plain'
-                let matchIdToProcess = e.dataTransfer.getData('match/id') || e.dataTransfer.getData('text/plain'); 
+                // Get match ID from the global variable
+                let matchIdToProcess = draggedMatchId; 
 
-                console.log('Drop event triggered on match row. Captured matchIdToProcess (from dataTransfer):', matchIdToProcess); // Log for debugging
+                console.log('Drop event triggered on match row. Captured matchIdToProcess (FROM GLOBAL):', matchIdToProcess); // Log for debugging
                 console.log('e.target on drop:', e.target);
                 console.log('e.target.closest("tr") on drop:', e.target.closest('tr'));
 
                 // Always clean up drop-target class and insertion indicators
                 matchesContainer.querySelectorAll('.drop-target, .insert-before, .insert-after').forEach(el => el.classList.remove('drop-target', 'insert-before', 'insert-after'));
 
-                if (!matchIdToProcess) {
-                    await showMessage('Chyba', 'Presun zápasu zrušený: ID presúvaného zápasu nie je platné alebo sa nepodarilo preniesť.');
-                    console.error("Drop operation cancelled: matchIdToProcess is null or empty after dataTransfer.getData().");
-                    const draggedElement = document.querySelector(`.schedule-cell-match[data-id="${matchIdToProcess}"]`);
-                    if (draggedElement) {
-                        draggedElement.classList.remove('dragging');
-                    }
-                    return;
-                }
-
-                const targetRow = e.target.closest('tr');
-                
-                const targetMatchId = targetRow ? targetRow.dataset.id : null;
-                const newDate = targetRow ? targetRow.dataset.date : null;
-                const newLocation = targetRow ? targetRow.dataset.location : null;
-
-                console.log('Target row dataset ID:', targetMatchId); // Debugging
-                console.log('Target row dataset Date:', newDate); // Debugging
-                console.log('Target row dataset Location:', newLocation); // Debugging
-
-                if (matchIdToProcess === targetMatchId) { 
-                    console.log('Dropping onto itself or no effective change, ignoring.');
-                    const draggedElement = document.querySelector(`.schedule-cell-match[data-id="${matchIdToProcess}"]`);
-                    if (draggedElement) {
-                        draggedElement.classList.remove('dragging');
-                    }
-                    return;
-                }
-                
-                // Ensure newDate and newLocation are not null before proceeding
-                if (!newDate || !newLocation) {
-                    await showMessage('Chyba', 'Cieľové miesto pre presun nie je platné (chýba dátum alebo miesto).');
-                    console.error('Target date or location is null:', { newDate, newLocation });
-                    const draggedElement = document.querySelector(`.schedule-cell-match[data-id="${matchIdToProcess}"]`);
-                    if (draggedElement) {
-                        draggedElement.classList.remove('dragging');
-                    }
-                    return;
-                }
-
+                // The finally block will handle removing 'dragging' class and resetting draggedMatchId
                 try {
+                    if (!matchIdToProcess) {
+                        await showMessage('Chyba', 'Presun zápasu zrušený: ID presúvaného zápasu nie je platné.');
+                        console.error("Drop operation cancelled: matchIdToProcess is null or empty from global variable.");
+                        return; // Exit early if no valid ID
+                    }
+
+                    const targetRow = e.target.closest('tr');
+                    
+                    const targetMatchId = targetRow ? targetRow.dataset.id : null;
+                    const newDate = targetRow ? targetRow.dataset.date : null;
+                    const newLocation = targetRow ? targetRow.dataset.location : null;
+
+                    console.log('Target row dataset ID:', targetMatchId); // Debugging
+                    console.log('Target row dataset Date:', newDate); // Debugging
+                    console.log('Target row dataset Location:', newLocation); // Debugging
+
+                    if (matchIdToProcess === targetMatchId) { 
+                        console.log('Dropping onto itself or no effective change, ignoring.');
+                        return;
+                    }
+                    
+                    // Ensure newDate and newLocation are not null before proceeding
+                    if (!newDate || !newLocation) {
+                        await showMessage('Chyba', 'Cieľové miesto pre presun nie je platné (chýba dátum alebo miesto).');
+                        console.error('Target date or location is null:', { newDate, newLocation });
+                        return;
+                    }
+
                     console.log('DROP (match row) - Attempting to get doc for ID:', matchIdToProcess); // Added log before doc() call
                     const draggedMatchDoc = await getDoc(doc(matchesCollectionRef, matchIdToProcess));
                     if (!draggedMatchDoc.exists()) {
                         await showMessage('Chyba', 'Presúvaný zápas sa nenašiel v databáze.');
                         console.error('Dragged match document not found for ID:', matchIdToProcess);
-                        const draggedElement = document.querySelector(`.schedule-cell-match[data-id="${matchIdToProcess}"]`);
-                        if (draggedElement) {
-                            draggedElement.classList.remove('dragging');
-                        }
                         return;
                     }
                     const draggedMatchData = draggedMatchDoc.data();
@@ -1005,12 +991,19 @@ async function displayMatchesAsSchedule() {
                     if (draggedElement) {
                         draggedElement.classList.remove('dragging');
                     }
-                    // Removed: draggedMatchId = null; // Clear the global ID AFTER all processing
+                    draggedMatchId = null; // Clear the global ID AFTER all processing
                 }
             });
             
-            // Removed direct dragend listener here, as cleanup is handled in the drop's finally block
-            // row.addEventListener('dragend', (e) => { /* ... */ });
+            // Add dragend listener to ensure cleanup on drag completion/cancellation
+            row.addEventListener('dragend', (e) => {
+                const draggedElement = e.currentTarget;
+                if (draggedElement) {
+                    draggedElement.classList.remove('dragging');
+                }
+                draggedMatchId = null; // Always clear the global ID on drag end
+                console.log('Drag ended. Global draggedMatchId cleared.');
+            });
         });
 
         // Add dragover/dragleave/drop to location blocks for dropping into an empty location block
@@ -1033,10 +1026,10 @@ async function displayMatchesAsSchedule() {
 
             locationBlock.addEventListener('drop', async (e) => {
                 e.preventDefault();
-                // Get match ID from dataTransfer, preferring 'match/id' then 'text/plain'
-                let matchIdToProcess = e.dataTransfer.getData('match/id') || e.dataTransfer.getData('text/plain');
+                // Get match ID from the global variable
+                let matchIdToProcess = draggedMatchId;
 
-                console.log('Drop event triggered on location block. Captured matchIdToProcess (from dataTransfer, location block):', matchIdToProcess); // Log for debugging
+                console.log('Drop event triggered on location block. Captured matchIdToProcess (FROM GLOBAL, location block):', matchIdToProcess); // Log for debugging
                 console.log('e.target on location drop:', e.target);
                 console.log('e.target.closest(".location-block") on location drop:', e.target.closest('.location-block'));
 
@@ -1052,26 +1045,25 @@ async function displayMatchesAsSchedule() {
                 console.log('Target location block dataset Date:', newDate); // Debugging
                 console.log('Target location block dataset Location:', newLocation); // Debugging
 
-                if (!matchIdToProcess || !newDate || !newLocation) {
-                    await showMessage('Chyba', 'Presun zápasu zrušený: ID presúvaného zápasu alebo detaily cieľa chýbajú.');
-                    console.error("Drop operation cancelled: matchIdToProcess or target details are null.");
-                    const draggedElement = document.querySelector(`.schedule-cell-match[data-id="${matchIdToProcess}"]`);
-                    if (draggedElement) {
-                        draggedElement.classList.remove('dragging');
-                    }
-                    return;
-                }
-
+                // The finally block will handle removing 'dragging' class and resetting draggedMatchId
                 try {
+                    if (!matchIdToProcess) {
+                        await showMessage('Chyba', 'Presun zápasu zrušený: ID presúvaného zápasu nie je platné.');
+                        console.error("Drop operation cancelled: matchIdToProcess is null or empty from global variable.");
+                        return; // Exit early if no valid ID
+                    }
+
+                    if (!newDate || !newLocation) {
+                        await showMessage('Chyba', 'Presun zápasu zrušený: Detaily cieľového miesta chýbajú.');
+                        console.error("Drop operation cancelled: target location details are null.");
+                        return; // Exit early if no valid target
+                    }
+
                     console.log('DROP (location block) - Attempting to get doc for ID:', matchIdToProcess); // Added log before doc() call
                     const draggedMatchDoc = await getDoc(doc(matchesCollectionRef, matchIdToProcess));
                     if (!draggedMatchDoc.exists()) {
                         await showMessage('Chyba', 'Presúvaný zápas sa nenašiel v databáze.');
                         console.error('Dragged match document not found for ID:', matchIdToProcess);
-                        const draggedElement = document.querySelector(`.schedule-cell-match[data-id="${matchIdToProcess}"]`);
-                        if (draggedElement) {
-                            draggedElement.classList.remove('dragging');
-                        }
                         return;
                     }
                     const draggedMatchData = draggedMatchDoc.data();
@@ -1146,12 +1138,11 @@ async function displayMatchesAsSchedule() {
                     if (draggedElement) {
                         draggedElement.classList.remove('dragging');
                     }
-                    // Removed: draggedMatchId = null; // Clear the global ID AFTER all processing
+                    draggedMatchId = null; // Clear the global ID AFTER all processing
                 }
             });
 
-            // Removed dragend listener from locationBlock as it's handled by match row dragend
-            // locationBlock.addEventListener('dragend', (e) => { /* ... */ });
+            // No dragend listener needed for locationBlock itself as dragend fires on the source element (the match row)
         });
 
 
@@ -1490,7 +1481,7 @@ async function editBus(busId) {
     try {
         const busModal = document.getElementById('busModal');
         const busIdInput = document.getElementById('busId');
-        const busModalTitle = document.getElementById('busModalTitle');
+        const busModalTitle = document.getElementById('busModalModalTitle');
         const busNameInput = document.getElementById('busNameInput');
         const busDateSelect = document.getElementById('busDateSelect');
         const busStartLocationSelect = document.getElementById('busStartLocationSelect');
