@@ -930,7 +930,7 @@ async function displayMatchesAsSchedule() {
                                 const blockedSlotStartHour = String(Math.floor(blockedSlot.startInMinutes / 60)).padStart(2, '0');
                                 const blockedSlotStartMinute = String(blockedSlot.startInMinutes % 60).padStart(2, '0');
                                 const blockedSlotEndHour = String(Math.floor(blockedSlot.endInMinutes / 60)).padStart(2, '0');
-                                const blockedSlotEndMinute = String(Math.floor(blockedSlot.endInMinutes % 60)).padStart(2, '0');
+                                const blockedSlotEndMinute = String(Math.floor(blockedSlot.endInMinutes % 60).padStart(2, '0');
                                 console.log(`displayMatchesAsSchedule: Renderujem zablokovaný slot: ID ${blockedSlot.id}, Čas: ${blockedSlotStartHour}:${blockedSlotStartMinute}-${blockedSlotEndHour}:${blockedSlotEndMinute}, Miesto: ${blockedSlot.location}, Dátum: ${blockedSlot.date}`);
 
                                 scheduleHtml += `
@@ -1491,18 +1491,17 @@ async function openFreeSlotModal(date, location, startTime, endTime, blockedSlot
     freeSlotLocationDisplay.textContent = location;
     freeSlotTimeRangeDisplay.textContent = `${startTime} - ${endTime}`;
 
-    // Clear previous event listeners to prevent multiple calls
     // Odstrániť starých poslucháčov, aby sa predišlo viacnásobným spusteniam
     blockFreeSlotButton.removeEventListener('click', createBlockedSlotAndRecalculate);
     unblockFreeSlotButton.removeEventListener('click', deleteSlotAndRecalculate);
-
+    unblockFreeSlotButton.classList.remove('delete-button'); // Vždy odstráňte pre istotu na začiatku
 
     if (blockedSlotId) {
         freeSlotModalTitle.textContent = 'Upraviť zablokovaný slot';
         blockFreeSlotButton.style.display = 'none'; // Skryť tlačidlo Zablokovať
         unblockFreeSlotButton.style.display = 'inline-block'; // Zobraziť tlačidlo Odblokovať
         unblockFreeSlotButton.textContent = 'Odblokovať'; // Zabezpečiť správny text
-        // Pridaj poslucháča pre tlačidlo Odblokovať (ktoré teraz volá deleteSlotAndRecalculate)
+        // Pridaj poslucháča pre tlačidlo Odblokovať (ktoré teraz volá deleteSlotAndRecalculate s ID)
         unblockFreeSlotButton.addEventListener('click', () => deleteSlotAndRecalculate(blockedSlotId, date, location));
     } else {
         freeSlotModalTitle.textContent = 'Spravovať voľný slot';
@@ -1511,10 +1510,10 @@ async function openFreeSlotModal(date, location, startTime, endTime, blockedSlot
         blockFreeSlotButton.textContent = 'Zablokovať'; // Zabezpečiť správny text
         unblockFreeSlotButton.textContent = 'Vymazať'; // Zmeniť text tlačidla na "Vymazať"
         unblockFreeSlotButton.classList.add('delete-button'); // Pridať triedu pre červenú farbu
-        // Pridaj poslucháča pre tlačidlo Zablokovať (ktoré teraz volá createBlockedSlotAndRecalculate)
+        // Pridaj poslucháča pre tlačidlo Zablokovať (ktoré volá createBlockedSlotAndRecalculate)
         blockFreeSlotButton.addEventListener('click', () => createBlockedSlotAndRecalculate(date, location, startTime, endTime));
-        // Pridaj poslucháča pre tlačidlo Vymazať (ktoré teraz volá deleteSlotAndRecalculate)
-        unblockFreeSlotButton.addEventListener('click', () => deleteSlotAndRecalculate(blockedSlotId, date, location));
+        // Pridaj poslucháča pre tlačidlo Vymazať (ktoré volá deleteSlotAndRecalculate bez ID)
+        unblockFreeSlotButton.addEventListener('click', () => deleteSlotAndRecalculate(null, date, location));
     }
 
     openModal(freeSlotModal);
@@ -1644,7 +1643,7 @@ async function deleteSlotAndRecalculate(slotId, date, location) {
             if (slotId) { // Ak existuje ID (je to zablokovaný slot)
                 await deleteDoc(doc(blockedSlotsCollectionRef, slotId));
                 await showMessage('Úspech', 'Slot bol odblokovaný!');
-            } else { // Ak ID neexistuje (je to voľný slot, ktorý chceme odstrániť z rozvrhu)
+            } else { // Ak ID neexistuje (je to voľný slot, ktorý chceme "vymazať" z rozvrhu - len vizuálne)
                 await showMessage('Úspech', 'Voľný slot bol odstránený z rozvrhu!');
             }
             closeModal(freeSlotModal);
