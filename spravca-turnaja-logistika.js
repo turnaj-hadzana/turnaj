@@ -617,7 +617,7 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, drag
 
         // --- Nová logika pre automatické vymazanie prázdnych slotov na konci dňa ---
         // Táto logika zmaže akékoľvek dokumenty zablokovaných slotov (fantóm, odblokované)
-        // ktoré sú na samom konci rozvrhu po prepočítaní.
+        // ktoré sú na samom konci rozvrhu po prepočítaní A NIE SÚ explicitne zablokované.
         console.log(`recalculateAndSaveScheduleForDateAndLocation: Spúšťam čistenie koncových zablokovaných slotov. Posledný currentTimePointer: ${currentTimePointer}`);
 
         const trailingBlockedSlotsQuery = query(
@@ -633,8 +633,10 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, drag
             const [bsStartH, bsStartM] = blockedSlotData.startTime.split(':').map(Number);
             const bsStartInMinutes = bsStartH * 60 + bsStartM;
 
-            // Vymazať, ak sa zablokovaný slot začína na alebo po našom konečnom vypočítanom konci rozvrhu.
-            if (bsStartInMinutes >= currentTimePointer) {
+            // Vymazať, ak sa zablokovaný slot začína na alebo po našom konečnom vypočítanom konci rozvrhu,
+            // A ak je to fantómový slot (isPhantom === true) ALEBO je to odblokovaný placeholder slot (isBlocked === false).
+            // Tým sa zabezpečí, že skutočné, používateľom zablokované sloty (isBlocked === true a isPhantom === false) zostanú.
+            if (bsStartInMinutes >= currentTimePointer && (blockedSlotData.isPhantom === true || blockedSlotData.isBlocked === false)) {
                  console.log(`Čistím koncový zablokovaný slot: ID ${docToDelete.id}, začiatok: ${blockedSlotData.startTime}, isPhantom: ${blockedSlotData.isPhantom}, isBlocked: ${blockedSlotData.isBlocked}`);
                  cleanupBatch.delete(doc(blockedSlotsCollectionRef, docToDelete.id));
             }
@@ -731,7 +733,7 @@ async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation
             try {
                 const docRef = await addDoc(blockedSlotsCollectionRef, phantomSlotData);
                 phantomSlotCreatedId = docRef.id;
-                console.log(`Vytvorený fantómový zablokovaný slot ID: ${phantomSlotCreatedId} pre presun v rámci rozvrhu.`);
+                console.log(`Vytvorený fantómový zablokovaný slot ID: ${docRef.id} pre presun v rámci rozvrhu.`);
             } catch (phantomError) {
                 console.error("Chyba pri vytváraní fantómového zablokovaného slotu:", phantomError);
                 await showMessage('Chyba', `Chyba pri vytváraní voľného slotu: ${phantomError.message}`);
@@ -948,6 +950,7 @@ async function displayMatchesAsSchedule() {
                         scheduleHtml += `<th>Hostia</th>`;
                         scheduleHtml += `<th>ID Domáci</th>`;
                         scheduleHtml += `<th>ID Hostia</th>`;
+                        N;
                         scheduleHtml += `</tr></thead><tbody>`;
 
                         const isFirstPlayingDayForDate = allPlayingDayDates.length > 0 && date === allPlayingDayDates[0];
@@ -1464,7 +1467,7 @@ async function editPlace(placeName, placeType) {
             placeGoogleMapsUrlInput.value = placeData.googleMapsUrl || '';
 
             deletePlaceButtonModal.style.display = 'inline-block';
-            // Odstráňte starý poslucháč pred pridaním nového
+            // Odstráňte starý posluchovač pred pridaním nového
             if (deletePlaceButtonModal._currentHandler) {
                 deletePlaceButtonModal.removeEventListener('click', deletePlaceButtonModal._currentHandler);
             }
@@ -2125,7 +2128,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         playingDayModalTitle.textContent = 'Pridať hrací deň';
         deletePlayingDayButtonModal.style.display = 'none';
         // Ensure no old handler is present before opening for add
-        if (deletePlayingDayButtonModal._currentHandler) { // Check if handler exists before removing
+        if (deletePlayingDayButtonModal && deletePlayingDayButtonModal._currentHandler) { // Check if handler exists before removing
             deletePlayingDayButtonModal.removeEventListener('click', deletePlayingDayButtonModal._currentHandler);
             delete deletePlayingDayButtonModal._currentHandler;
         }
@@ -2142,7 +2145,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         placeGoogleMapsUrlInput.value = '';
         deletePlaceButtonModal.style.display = 'none';
         // Ensure no old handler is present before opening for add
-        if (deletePlaceButtonModal._currentHandler) { // Check if handler exists before removing
+        if (deletePlaceButtonModal && deletePlaceButtonModal._currentHandler) { // Check if handler exists before removing
             deletePlaceButtonModal.removeEventListener('click', deletePlaceButtonModal._currentHandler);
             delete deletePlaceButtonModal._currentHandler;
         }
