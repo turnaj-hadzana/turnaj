@@ -941,21 +941,6 @@ async function displayMatchesAsSchedule() {
                             currentTimePointerInMinutes = Math.max(currentTimePointerInMinutes, event.endInMinutes);
                         }
 
-                        // Zostávajúce voľné sloty do konca dňa (24:00)
-                        // KÓD NIŽŠIE BOL ODSTRÁNENÝ:
-                        // const endOfDayMinutes = 24 * 60; // 24:00
-                        // if (currentTimePointerInMinutes < endOfDayMinutes) {
-                        //     const formattedEmptySlotStartTime = `${String(Math.floor(currentTimePointerInMinutes / 60)).padStart(2, '0')}:${String(currentTimePointerInMinutes % 60).padStart(2, '0')}`;
-                        //     const formattedEmptySlotEndTime = `${String(Math.floor(endOfDayMinutes / 60)).padStart(2, '0')}:${String(endOfDayMinutes % 60).padStart(2, '0')}`;
-                        //     scheduleHtml += `
-                        //         <tr class="empty-slot-row" data-date="${date}" data-location="${location}" data-start-time="${formattedEmptySlotStartTime}" data-end-time="${formattedEmptySlotEndTime}">
-                        //             <td>${formattedEmptySlotStartTime} - ${formattedEmptySlotEndTime}</td>
-                        //             <td colspan="4" style="text-align: center; color: #888; font-style: italic;">Voľný slot dostupný</td>
-                        //         </tr>
-                        //     `;
-                        //     contentAddedForThisDate = true;
-                        // }
-
                         if (!contentAddedForThisDate) {
                             scheduleHtml += `<tr><td colspan="5" style="text-align: center; color: #888; font-style: italic; padding: 15px;">Žiadne zápasy ani zablokované sloty pre tento deň.</td></tr>`;
                         }
@@ -1094,21 +1079,6 @@ async function displayMatchesAsSchedule() {
                 }
             });
         });
-
-        // Táto časť bola duplicitná s .location-header-clickable, takže ju odstraňujem.
-        // matchesContainer.querySelectorAll('.delete-location-header').forEach(header => {
-        //     header.addEventListener('click', (event) => {
-        //         if (event.target.tagName === 'A' || event.target.closest('.hall-address')) {
-        //             return;
-        //         }
-        //         if (event.target === header || event.target.closest('.hall-name')) {
-        //             const locationToEdit = header.dataset.location;
-        //             const locationTypeToEdit = header.dataset.type;
-        //             editPlace(locationToEdit, locationTypeToEdit);
-        //         }
-        //     });
-        // });
-
     } catch (error) {
         console.error("Chyba pri načítaní rozvrhu zápasov (zachytená chyba):", error);
         matchesContainer.innerHTML = `
