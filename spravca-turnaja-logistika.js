@@ -807,7 +807,11 @@ async function displayMatchesAsSchedule() {
         if (sortedLocations.length === 0) {
             scheduleHtml += '<p>Žiadne zápasy na zobrazenie. Pridajte nové zápasy pomocou tlačidla "+".</p>';
         } else {
-            for (const location of sortedLocations) { // Použite for...of pre asynchrónne vnútorné slučky
+            // Kontrola nepárneho počtu hál
+            const isOddNumberOfLocations = sortedLocations.length % 2 !== 0;
+
+            for (let i = 0; i < sortedLocations.length; i++) {
+                const location = sortedLocations[i]; // Použite index i
                 const matchesByDateForLocation = groupedMatchesByLocation.get(location);
                 // Zoraďte dátumy v rámci každého miesta
                 const sortedDatesForLocation = Array.from(matchesByDateForLocation.keys()).sort((a, b) => a.localeCompare(b));
@@ -833,9 +837,14 @@ async function displayMatchesAsSchedule() {
                     groupAlignmentMapForLocation.set(groupIdsArrayInLocation[2], 'center');
                 }
 
+                let locationGroupStyle = "flex: 1 1 45%; min-width: 300px; margin-bottom: 0; border: 1px solid #ccc; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 8px rgba(0,0,0,0.1);";
+                // Ak je nepárny počet hál a toto je posledná hala, pridajte margin-right: auto
+                if (isOddNumberOfLocations && i === sortedLocations.length - 1) {
+                    locationGroupStyle += " margin-right: auto;";
+                }
 
                 // Flex položka pre každú skupinu miest
-                scheduleHtml += `<div class="location-group" style="flex: 1 1 45%; min-width: 300px; margin-bottom: 0; border: 1px solid #ccc; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">`;
+                scheduleHtml += `<div class="location-group" style="${locationGroupStyle}">`;
                 scheduleHtml += `<h2 style="background-color: #007bff; color: white; padding: 18px; margin: 0; text-align: center;">${location}</h2>`;
 
                 for (const date of sortedDatesForLocation) { // Použite for...of pre asynchrónne vnútorné slučky
