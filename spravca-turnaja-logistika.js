@@ -24,1388 +24,945 @@ async function populatePlayingDaysSelect(selectElement, selectedDate = '') {
             selectElement.value = selectedDate;
         }
     } catch (error) {
-        console.error("Chyba pri načítavaní hracích dní:", error);
+        console.error("Chyba pri načítaní hracích dní:", error);
         const option = document.createElement('option');
         option.value = '';
-        option.textContent = '-- Chyba pri načítaní --';
+        option.textContent = '-- Chyba pri načítaní dátumov --';
         option.disabled = true;
         selectElement.appendChild(option);
     }
 }
 
 /**
- * Populates a select element with available places from Firestore.
+ * Populates a select element with sport halls from Firestore.
  * @param {HTMLSelectElement} selectElement The select element to populate.
- * @param {string} [selectedPlaceId=''] The ID of the place to pre-select.
+ * @param {string} [selectedPlaceName=''] The name of the place to pre-select.
  */
-async function populatePlacesSelect(selectElement, selectedPlaceId = '') {
+async function populateSportHallSelects(selectElement, selectedPlaceName = '') {
+    if (!selectElement) return;
+    selectElement.innerHTML = '<option value="">-- Vyberte miesto (športovú halu) --</option>';
+    try {
+        const querySnapshot = await getDocs(query(placesCollectionRef, where("type", "==", "Športová hala"), orderBy("name", "asc")));
+        if (querySnapshot.empty) {
+            const option = document.createElement('option');
+            option.value = '';
+            option.textContent = '-- Žiadne športové haly nenájdené --';
+            option.disabled = true;
+            selectElement.appendChild(option);
+        } else {
+            querySnapshot.forEach((doc) => {
+                const place = { id: doc.id, ...doc.data() };
+                const option = document.createElement('option');
+                option.value = place.name;
+                option.textContent = `${place.name}`;
+                selectElement.appendChild(option);
+            });
+        }
+        if (selectedPlaceName) {
+            selectElement.value = selectedPlaceName;
+        }
+    } catch (error) {
+        console.error("Chyba pri načítaní hál:", error);
+        const option = document.createElement('option');
+        option.value = '';
+        option.textContent = '-- Chyba pri načítaní hál --';
+        option.disabled = true;
+        selectElement.appendChild(option);
+    }
+}
+
+/**
+ * Populates a select element with all places (sport halls, catering, accommodation) from Firestore.
+ * This function remains as places are still relevant for matches.
+ * @param {HTMLSelectElement} selectElement The select element to populate.
+ * @param {string} [selectedPlaceCombined=''] The combined value (name:::type) of the place to pre-select.
+ */
+async function populateAllPlaceSelects(selectElement, selectedPlaceCombined = '') {
     if (!selectElement) return;
     selectElement.innerHTML = '<option value="">-- Vyberte miesto --</option>';
     try {
         const querySnapshot = await getDocs(query(placesCollectionRef, orderBy("name", "asc")));
-        querySnapshot.forEach((doc) => {
-            const place = doc.data();
+        if (querySnapshot.empty) {
             const option = document.createElement('option');
-            option.value = doc.id;
-            option.textContent = place.name;
+            option.value = '';
+            option.textContent = '-- Žiadne miesta nenájdené --';
+            option.disabled = true;
             selectElement.appendChild(option);
-        });
-        if (selectedPlaceId) {
-            selectElement.value = selectedPlaceId;
+        } else {
+            querySnapshot.forEach((doc) => {
+                const place = { id: doc.id, ...doc.data() };
+                const option = document.createElement('option');
+                option.value = `${place.name}:::${place.type}`;
+                option.textContent = `${place.name} (${place.type})`;
+                selectElement.appendChild(option);
+            });
+        }
+        if (selectedPlaceCombined) {
+            selectElement.value = selectedPlaceCombined;
         }
     } catch (error) {
-        console.error("Chyba pri načítavaní miest:", error);
+        console.error("Chyba pri načítaní miest:", error);
         const option = document.createElement('option');
         option.value = '';
-        option.textContent = '-- Chyba pri načítaní --';
+        option.textContent = '-- Chyba pri načítaní miest --';
         option.disabled = true;
         selectElement.appendChild(option);
     }
 }
 
 /**
- * Loads and displays matches grouped by playing day and then by place.
- * This function also handles drag-and-drop functionality for reordering matches.
+ * Retrieves match duration and buffer time settings for a given category.
+ * @param {string} categoryId The ID of the category.
+ * @returns {Promise<{duration: number, bufferTime: number}>} The match settings.
+ */
+async function getCategoryMatchSettings(categoryId) {
+    try {
+        const settingsDocRef = doc(settingsCollectionRef, SETTINGS_DOC_ID);
+        const settingsDoc = await getDoc(settingsDocRef);
+        if (settingsDoc.exists()) {
+            const data = settingsDoc.data();
+            const categorySettings = data.categoryMatchSettings && data.categoryMatchSettings[categoryId];
+            if (categorySettings) {
+                return {
+                    duration: categorySettings.duration || 60,
+                    bufferTime: categorySettings.bufferTime || 5
+                };
+            }
+        }
+    } catch (error) {
+        console.error("Chyba pri načítaní nastavení kategórie:", error);
+    }
+    return { duration: 60, bufferTime: 5 };
+}
+
+/**
+ * Updates the match duration and buffer time inputs based on the selected category.
+ */
+async function updateMatchDurationAndBuffer() {
+    const selectedCategoryId = document.getElementById('matchCategory').value;
+    const matchDurationInput = document.getElementById('matchDuration');
+    const matchBufferTimeInput = document.getElementById('matchBufferTime');
+
+    if (selectedCategoryId) {
+        const settings = await getCategoryMatchSettings(selectedCategoryId);
+        matchDurationInput.value = settings.duration;
+        matchBufferTimeInput.value = settings.bufferTime;
+    } else {
+        matchDurationInput.value = 60;
+        matchBufferTimeInput.value = 5;
+    }
+    findFirstAvailableTime();
+}
+
+/**
+ * Finds the first available time slot for a match based on date, location, duration, and buffer time.
+ */
+async function findFirstAvailableTime() {
+    const matchDateSelect = document.getElementById('matchDateSelect');
+    const matchLocationSelect = document.getElementById('matchLocationSelect');
+    const matchDurationInput = document.getElementById('matchDuration');
+    const matchBufferTimeInput = document.getElementById('matchBufferTime');
+    const matchStartTimeInput = document.getElementById('matchStartTime');
+
+    const selectedDate = matchDateSelect.value;
+    const selectedLocationName = matchLocationSelect.value;
+    const duration = parseInt(matchDurationInput.value) || 60;
+    const bufferTime = parseInt(matchBufferTimeInput.value) || 5;
+
+    if (!selectedDate || !selectedLocationName) {
+        matchStartTimeInput.value = '';
+        return;
+    }
+
+    try {
+        const settingsDocRef = doc(settingsCollectionRef, SETTINGS_DOC_ID);
+        const settingsDoc = await getDoc(settingsDocRef);
+        let firstDayStartTime = '08:00';
+        let otherDaysStartTime = '08:00';
+
+        if (settingsDoc.exists()) {
+            const data = settingsDoc.data();
+            firstDayStartTime = data.firstDayStartTime || '08:00';
+            otherDaysStartTime = data.otherDaysStartTime || '08:00';
+        }
+
+        const playingDaysSnapshot = await getDocs(query(playingDaysCollectionRef, orderBy("date", "asc")));
+        const sortedPlayingDays = playingDaysSnapshot.docs.map(d => d.data().date).sort();
+        const isFirstPlayingDay = sortedPlayingDays.length > 0 && selectedDate === sortedPlayingDays[0];
+
+        let [startH, startM] = (isFirstPlayingDay ? firstDayStartTime : otherDaysStartTime).split(':').map(Number);
+        const endSearchHour = 22;
+        const intervalMinutes = 1;
+
+        const existingMatchesQuery = query(
+            matchesCollectionRef,
+            where("date", "==", selectedDate),
+            where("location", "==", selectedLocationName)
+        );
+        const existingMatchesSnapshot = await getDocs(existingMatchesQuery);
+
+        const existingEvents = existingMatchesSnapshot.docs.map(doc => {
+            const data = doc.data();
+            const [eventStartH, eventStartM] = data.startTime.split(':').map(Number);
+            const startInMinutes = eventStartH * 60 + eventStartM;
+            const endInMinutes = startInMinutes + (data.duration || 0) + (data.bufferTime || 0);
+            return { start: startInMinutes, end: endInMinutes };
+        });
+
+        existingEvents.sort((a, b) => a.start - b.start);
+
+        for (let hour = startH; hour <= endSearchHour; hour++) {
+            const currentMinuteStart = (hour === startH) ? startM : 0;
+            for (let minute = currentMinuteStart; minute < 60; minute += intervalMinutes) {
+                const potentialStartInMinutes = hour * 60 + minute;
+                const potentialEndInMinutes = potentialStartInMinutes + duration + bufferTime;
+
+                let overlap = false;
+                for (const existingEvent of existingEvents) {
+                    if (potentialStartInMinutes < existingEvent.end && potentialEndInMinutes > existingEvent.start) {
+                        overlap = true;
+                        break;
+                    }
+                }
+
+                if (!overlap) {
+                    const formattedHour = String(hour).padStart(2, '0');
+                    const formattedMinute = String(minute).padStart(2, '0');
+                    matchStartTimeInput.value = `${formattedHour}:${formattedMinute}`;
+                    return;
+                }
+            }
+        }
+        matchStartTimeInput.value = '';
+    } catch (error) {
+        console.error("Chyba pri hľadaní prvého dostupného času:", error);
+        matchStartTimeInput.value = '';
+    }
+}
+
+/**
+ * Gets the full display name and club information for a team.
+ * @param {string} categoryId The ID of the category.
+ * @param {string} groupId The ID of the group.
+ * @param {number} teamNumber The order number of the team in the group.
+ * @param {Map<string, string>} categoriesMap Map of category IDs to names.
+ * @param {Map<string, string>} groupsMap Map of group IDs to names.
+ * @returns {Promise<{fullDisplayName: string|null, clubName: string|null, clubId: string|null}>} Team display information.
+ */
+const getTeamName = async (categoryId, groupId, teamNumber, categoriesMap, groupsMap) => {
+    if (!categoryId || !groupId || !teamNumber) {
+        return { fullDisplayName: null, clubName: null, clubId: null };
+    }
+    try {
+        const categoryName = categoriesMap.get(categoryId) || categoryId;
+        const groupName = groupsMap.get(groupId) || groupId;
+
+        let clubName = `Tím ${teamNumber}`;
+        let clubId = null;
+
+        // Still need to query clubs collection specifically for the team number within category/group
+        const clubsQuery = query(
+            clubsCollectionRef,
+            where("categoryId", "==", categoryId),
+            where("groupId", "==", groupId),
+            where("orderInGroup", "==", parseInt(teamNumber))
+        );
+        const clubsSnapshot = await getDocs(clubsQuery);
+
+        if (!clubsSnapshot.empty) {
+            const teamDocData = clubsSnapshot.docs[0].data();
+            clubId = clubsSnapshot.docs[0].id;
+            if (teamDocData.name) {
+                clubName = teamDocData.name;
+            }
+        }
+
+        let shortCategoryName = categoryName;
+        if (shortCategoryName) {
+            shortCategoryName = shortCategoryName.replace(/U(\d+)\s*([CHZ])/i, 'U$1$2').toUpperCase();
+        }
+
+        let shortGroupName = '';
+        if (groupName) {
+            const match = groupName.match(/(?:skupina\s*)?([A-Z])/i);
+            if (match && match[1]) {
+                shortGroupName = match[1].toUpperCase();
+            }
+        }
+
+        const fullDisplayName = `${shortCategoryName} ${shortGroupName}${teamNumber}`;
+
+        return {
+            fullDisplayName: fullDisplayName,
+            clubName: clubName,
+            clubId: clubId
+        };
+    } catch (error) {
+        console.error("Chyba pri získavaní názvu tímu:", error);
+        return { fullDisplayName: `Chyba`, clubName: `Chyba`, clubId: null };
+    }
+};
+
+/**
+ * Calculates the next available start time for a match given a previous match's end time and buffer.
+ * @param {string} prevEndTime HH:MM string of the previous match's end time.
+ * @param {number} prevBufferTime Buffer time in minutes after the previous match.
+ * @returns {string} HH:MM string of the next available start time.
+ */
+function calculateNextAvailableTime(prevStartTime, duration, bufferTime) {
+    let [prevH, prevM] = prevStartTime.split(':').map(Number);
+    let totalMinutes = (prevH * 60) + prevM + duration + bufferTime;
+
+    let newH = Math.floor(totalMinutes / 60);
+    let newM = totalMinutes % 60;
+
+    return `${String(newH).padStart(2, '0')}:${String(newM).padStart(2, '0')}`;
+}
+
+
+/**
+ * Recalculates and reschedules matches for a specific date and location after a drag & drop operation.
+ * This function handles inserting a match and shifting subsequent matches' times.
+ * @param {string} draggedMatchId The ID of the match that was dragged.
+ * @param {string} targetDate The date of the drop target.
+ * @param {string} targetLocation The location of the drop target.
+ * @param {string|null} droppedBeforeMatchId The ID of the match the dragged match was dropped before, or null if dropped at the end.
+ */
+async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation, droppedBeforeMatchId = null) {
+    try {
+        const draggedMatchDoc = await getDoc(doc(matchesCollectionRef, draggedMatchId));
+        if (!draggedMatchDoc.exists()) {
+            await showMessage('Chyba', 'Presúvaný zápas nebol nájdený.');
+            return;
+        }
+        const movedMatchData = { id: draggedMatchDoc.id, ...draggedMatchDoc.data() };
+
+        // Fetch all matches for the target date and location, excluding the dragged match if it was already there
+        const existingMatchesQuery = query(
+            matchesCollectionRef,
+            where("date", "==", targetDate),
+            where("location", "==", targetLocation),
+            orderBy("startTime", "asc")
+        );
+        const existingMatchesSnapshot = await getDocs(existingMatchesQuery);
+        let matchesForReschedule = existingMatchesSnapshot.docs
+            .map(doc => ({ id: doc.id, ...doc.data() }))
+            .filter(match => match.id !== draggedMatchId); // Ensure the dragged match isn't duplicated
+
+        // Get global start times from settings
+        const settingsDocRef = doc(settingsCollectionRef, SETTINGS_DOC_ID);
+        const settingsDoc = await getDoc(settingsDocRef);
+        let firstDayStartTime = '08:00';
+        let otherDaysStartTime = '08:00';
+        if (settingsDoc.exists()) {
+            const data = settingsDoc.data();
+            firstDayStartTime = data.firstDayStartTime || '08:00';
+            otherDaysStartTime = data.otherDaysStartTime || '08:00';
+        }
+
+        const playingDaysSnapshot = await getDocs(query(playingDaysCollectionRef, orderBy("date", "asc")));
+        const sortedPlayingDays = playingDaysSnapshot.docs.map(d => d.data().date).sort();
+        const isFirstPlayingDay = sortedPlayingDays.length > 0 && targetDate === sortedPlayingDays[0];
+        const initialStartTime = isFirstPlayingDay ? firstDayStartTime : otherDaysStartTime;
+
+        // Determine insertion index
+        let insertionIndex = matchesForReschedule.length; // Default to end
+        if (droppedBeforeMatchId) {
+            const targetMatchIndex = matchesForReschedule.findIndex(m => m.id === droppedBeforeMatchId);
+            if (targetMatchIndex !== -1) {
+                insertionIndex = targetMatchIndex;
+            }
+        }
+
+        // Insert the moved match into the correct position
+        matchesForReschedule.splice(insertionIndex, 0, movedMatchData);
+
+        const batch = writeBatch(db);
+        let currentAvailableTime = initialStartTime;
+
+        // Iterate through the reordered list and update start times
+        for (let i = 0; i < matchesForReschedule.length; i++) {
+            const match = matchesForReschedule[i];
+            const matchRef = doc(matchesCollectionRef, match.id);
+
+            // Get duration and buffer for this specific match (important if categories have different settings)
+            const categorySettings = await getCategoryMatchSettings(match.categoryId);
+            const duration = categorySettings.duration;
+            const bufferTime = categorySettings.bufferTime;
+
+            // Calculate new start time
+            let newStartTime = currentAvailableTime;
+
+            // Update the match document with new date, location, and start time
+            batch.update(matchRef, {
+                date: targetDate,
+                location: targetLocation,
+                startTime: newStartTime,
+                duration: duration, // Ensure these are up-to-date
+                bufferTime: bufferTime // Ensure these are up-to-date
+            });
+
+            // Calculate next available time for the subsequent match
+            currentAvailableTime = calculateNextAvailableTime(newStartTime, duration, bufferTime);
+
+            // Basic check to prevent excessively long schedules
+            if (parseInt(currentAvailableTime.split(':')[0]) >= 24) { // If next available time goes past midnight
+                console.warn(`Rozvrh pre ${targetDate} v ${targetLocation} presiahol 24:00. Posledný zápas: ${match.id} do ${currentAvailableTime}`);
+                // This scenario means the schedule overflows the day.
+                // A more robust solution might involve:
+                // 1. Alerting the user about the overflow.
+                // 2. Not saving these changes, or allowing user to manually correct.
+                // For this implementation, we will still save, but log a warning.
+            }
+        }
+
+        await batch.commit();
+        // await showMessage('Úspech', `Zápas bol presunutý a rozvrh pre ${targetLocation} dňa ${targetDate} bol prepočítaný.`); // Správa zakomentovaná
+        await displayMatchesAsSchedule(); // Refresh the display
+    } catch (error) {
+        console.error("Chyba pri presúvaní a prepočítavaní rozvrhu:", error);
+        await showMessage('Chyba', `Chyba pri presúvaní zápasu: ${error.message}.`);
+        await displayMatchesAsSchedule(); // Refresh to show current state even with error
+    }
+}
+
+
+/**
+ * Displays the full match schedule. Buses and accommodation removed.
+ * Changed to table display (one row per match).
  */
 async function displayMatchesAsSchedule() {
-    const scheduleContainer = document.getElementById('scheduleContainer');
-    if (!scheduleContainer) return;
-    scheduleContainer.innerHTML = '<h2>Rozpis zápasov</h2><p>Načítavam rozpis zápasov...</p>';
+    const matchesContainer = document.getElementById('matchesContainer');
+    if (!matchesContainer) return;
+
+    matchesContainer.innerHTML = '';
+    matchesContainer.insertAdjacentHTML('afterbegin', '<p>Načítavam logistiku turnaja...</p>');
 
     try {
-        const playingDaysSnapshot = await getDocs(query(playingDaysCollectionRef, orderBy("date", "asc")));
-        const placesSnapshot = await getDocs(query(placesCollectionRef, orderBy("name", "asc")));
-        const matchesSnapshot = await getDocs(query(matchesCollectionRef, orderBy("dateTime", "asc")));
-        const clubsSnapshot = await getDocs(clubsCollectionRef);
-        const categoriesSnapshot = await getDocs(categoriesCollectionRef);
-        const settingsDoc = await getDoc(doc(settingsCollectionRef, SETTINGS_DOC_ID));
+        // Fetch all data required for the schedule
+        const matchesQuery = query(matchesCollectionRef, orderBy("date", "asc"), orderBy("location", "asc"), orderBy("startTime", "asc"));
+        const matchesSnapshot = await getDocs(matchesQuery);
+        let allMatches = matchesSnapshot.docs.map(doc => ({ id: doc.id, type: 'match', ...doc.data() }));
+        console.log("displayMatchesAsSchedule: Načítané zápasy:", allMatches);
 
-        const playingDays = playingDaysSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        const places = placesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        const matches = matchesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        const clubs = {};
-        clubsSnapshot.forEach(doc => {
-            const data = doc.data();
-            if (!clubs[data.categoryId]) {
-                clubs[data.categoryId] = {};
-            }
-            if (!clubs[data.categoryId][data.groupId]) {
-                clubs[data.categoryId][data.groupId] = {};
-            }
-            if (!clubs[data.categoryId][data.groupId][data.clubBaseName]) {
-                clubs[data.categoryId][data.groupId][data.clubBaseName] = [];
-            }
-            clubs[data.categoryId][data.groupId][data.clubBaseName].push({ id: doc.id, ...data });
+        const categoriesSnapshot = await getDocs(categoriesCollectionRef);
+        const categoriesMap = new Map();
+        categoriesSnapshot.forEach(doc => categoriesMap.set(doc.id, doc.data().name || doc.id));
+        console.log("displayMatchesAsSchedule: Načítané kategórie:", Array.from(categoriesMap.entries()));
+
+        const groupsSnapshot = await getDocs(groupsCollectionRef);
+        const groupsMap = new Map();
+        groupsSnapshot.forEach(doc => groupsMap.set(doc.id, doc.data().name || doc.id));
+        console.log("displayMatchesAsSchedule: Načítané skupiny:", Array.from(groupsMap.entries()));
+
+        // Populate team display names for matches
+        const updatedMatchesPromises = allMatches.map(async match => {
+            const [team1Data, team2Data] = await Promise.allSettled([
+                getTeamName(match.categoryId, match.groupId, match.team1Number, categoriesMap, groupsMap),
+                getTeamName(match.categoryId, match.groupId, match.team2Number, categoriesMap, groupsMap)
+            ]);
+
+            return {
+                ...match,
+                team1DisplayName: team1Data.status === 'fulfilled' ? team1Data.value.fullDisplayName : 'N/A',
+                team1ClubName: team1Data.status === 'fulfilled' ? team1Data.value.clubName : 'N/A',
+                team1ClubId: team1Data.status === 'fulfilled' ? team1Data.value.clubId : null,
+                team2DisplayName: team2Data.status === 'fulfilled' ? team2Data.value.fullDisplayName : 'N/A',
+                team2ClubName: team2Data.status === 'fulfilled' ? team2Data.value.clubName : 'N/A',
+                team2ClubId: team2Data.status === 'fulfilled' ? team2Data.value.clubId : null,
+            };
         });
 
-        const categories = {};
-        categoriesSnapshot.forEach(doc => categories[doc.id] = doc.data().name);
+        allMatches = await Promise.all(updatedMatchesPromises);
 
-        const globalSettings = settingsDoc.exists() ? settingsDoc.data() : {};
-        const categoryMatchSettings = globalSettings.categoryMatchSettings || {};
-        const firstDayStartTime = globalSettings.firstDayStartTime || '08:00'; // Default
-        const otherDaysStartTime = globalSettings.otherDaysStartTime || '08:00'; // Default
+        const playingDaysSnapshot = await getDocs(query(playingDaysCollectionRef, orderBy("date", "asc")));
+        const existingPlayingDays = playingDaysSnapshot.docs.map(doc => doc.data().date);
+        console.log("displayMatchesAsSchedule: Načítané hracie dni (len dátumy):", existingPlayingDays);
 
-        if (playingDays.length === 0) {
-            scheduleContainer.innerHTML = '<p>Zatiaľ nie sú pridané žiadne hracie dni.</p>';
-            return;
-        }
+        const placesSnapshot = await getDocs(query(placesCollectionRef, orderBy("name", "asc")));
+        const existingPlacesData = placesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        console.log("displayMatchesAsSchedule: Načítané miesta:", existingPlacesData);
 
-        if (places.length === 0) {
-            scheduleContainer.innerHTML = '<p>Zatiaľ nie sú pridané žiadne miesta.</p>';
-            return;
-        }
+        // Group matches first by Location, then by Date
+        const groupedMatchesByLocation = new Map(); // Key: "location", Value: Map (Key: "date", Value: Array of matches)
+        allMatches.forEach(match => {
+            if (match.locationType === 'Športová hala') { // Only show matches in sport halls
+                const location = match.location;
+                const date = match.date;
 
-        let scheduleHTML = '';
-        playingDays.forEach((day, dayIndex) => {
-            const dayDate = new Date(day.date);
-            const formattedDate = `${String(dayDate.getDate()).padStart(2, '0')}. ${String(dayDate.getMonth() + 1).padStart(2, '0')}. ${dayDate.getFullYear()}`;
-            const isFirstPlayingDay = dayIndex === 0;
+                if (!groupedMatchesByLocation.has(location)) {
+                    groupedMatchesByLocation.set(location, new Map());
+                }
+                const matchesByDate = groupedMatchesByLocation.get(location);
+                if (!matchesByDate.has(date)) {
+                    matchesByDate.set(date, []);
+                }
+                matchesByDate.get(date).push(match);
+            }
+        });
 
-            scheduleHTML += `<div class="day-group" data-day-id="${day.id}">`;
-            scheduleHTML += `<h3>Hrací deň: ${formattedDate}</h3>`;
-            scheduleHTML += `<table class="schedule-table"><thead><tr><th>Čas</th><th>Miesto</th><th>Zápas</th><th>Kategória</th><th></th></tr></thead><tbody>`;
+        let scheduleHtml = '<div style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: flex-start;">'; // Main flex container
 
-            let currentDayMatches = matches.filter(match => {
-                const matchDate = new Date(match.dateTime);
-                return matchDate.toDateString() === dayDate.toDateString();
-            }).sort((a, b) => new Date(a.dateTime) - new Date(b.dateTime));
+        // Sort locations alphabetically
+        const sortedLocations = Array.from(groupedMatchesByLocation.keys()).sort((a, b) => a.localeCompare(b));
 
-            // Populate time slots
-            const timeSlots = generateTimeSlots(dayDate, currentDayMatches, places.length, isFirstPlayingDay ? firstDayStartTime : otherDaysStartTime, categoryMatchSettings);
+        if (sortedLocations.length === 0) {
+            scheduleHtml += '<p>Žiadne zápasy na zobrazenie. Pridajte nové zápasy pomocou tlačidla "+".</p>';
+        } else {
+            sortedLocations.forEach(location => {
+                const matchesByDateForLocation = groupedMatchesByLocation.get(location);
+                // Sort dates within each location
+                const sortedDatesForLocation = Array.from(matchesByDateForLocation.keys()).sort((a, b) => a.localeCompare(b));
 
-            timeSlots.forEach(slot => {
-                places.forEach(place => {
-                    const matchInSlot = currentDayMatches.find(match => {
-                        const matchTime = new Date(match.dateTime).toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' });
-                        return matchTime === slot.time && match.placeId === place.id;
+                // Flex item for each location group
+                scheduleHtml += `<div class="location-group" style="flex: 1 1 45%; min-width: 300px; margin-bottom: 0; border: 1px solid #ccc; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">`; // Removed margin-bottom and added flex properties and shadow
+                scheduleHtml += `<h2 style="background-color: #007bff; color: white; padding: 18px; margin: 0; text-align: center;">Miesto: ${location}</h2>`;
+
+                sortedDatesForLocation.forEach(date => {
+                    const matchesForDateAndLocation = matchesByDateForLocation.get(date);
+
+                    // Sort matches by start time
+                    matchesForDateAndLocation.sort((a, b) => {
+                        const [aH, aM] = a.startTime.split(':').map(Number);
+                        const [bH, bM] = b.startTime.split(':').map(Number);
+                        return (aH * 60 + aM) - (bH * 60 + bM);
                     });
 
-                    let matchInfo = '<span class="no-match-placeholder">Voľné</span>';
-                    let rowClass = '';
-                    let matchId = '';
-                    let draggableAttribute = '';
-                    let categoryName = '';
+                    const displayDateObj = new Date(date);
+                    const formattedDisplayDate = `${String(displayDateObj.getDate()).padStart(2, '0')}. ${String(displayDateObj.getMonth() + 1).padStart(2, '0')}. ${displayDateObj.getFullYear()}`;
 
-                    if (matchInSlot) {
-                        const team1 = clubs[matchInSlot.categoryId]?.[matchInSlot.group1Id]?.[matchInSlot.team1BaseName]?.find(team => team.id === matchInSlot.team1Id);
-                        const team2 = clubs[matchInSlot.categoryId]?.[matchInSlot.group2Id]?.[matchInSlot.team2BaseName]?.find(team => team.id === matchInSlot.team2Id);
-                        
-                        const team1Display = team1 ? `${team1.clubBaseName} ${team1.orderNumber ? '(' + team1.orderNumber + ')' : ''}` : 'Neznámy tím';
-                        const team2Display = team2 ? `${team2.clubBaseName} ${team2.orderNumber ? '(' + team2.orderNumber + ')' : ''}` : 'Neznámy tím';
-                        
-                        matchInfo = `${team1Display} vs ${team2Display}`;
-                        rowClass = 'match-row';
-                        matchId = matchInSlot.id;
-                        draggableAttribute = 'draggable="true"';
-                        categoryName = categories[matchInSlot.categoryId] || 'Neznáma kategória';
-                    }
+                    scheduleHtml += `<div class="date-group" data-date="${date}" data-location="${location}" style="margin: 20px; border: 1px solid #eee; border-radius: 8px; overflow: hidden;">`; // Added data-date and data-location
+                    scheduleHtml += `<h3 style="background-color: #f7f7f7; padding: 15px; margin: 0; border-bottom: 1px solid #ddd;">Dátum: ${formattedDisplayDate}</h3>`;
+                    scheduleHtml += `<table class="data-table match-list-table compact-table" style="width: 100%; border-collapse: collapse;">`; // Added compact-table class
+                    scheduleHtml += `<thead><tr>`;
+                    scheduleHtml += `<th>Čas</th>`;
+                    scheduleHtml += `<th>Domáci klub</th>`;
+                    scheduleHtml += `<th>Hostia klub</th>`;
+                    scheduleHtml += `<th>ID Domáci</th>`;
+                    scheduleHtml += `<th>ID Hostia</th>`;
+                    scheduleHtml += `</tr></thead><tbody>`;
 
-                    scheduleHTML += `<tr class="${rowClass}" data-match-id="${matchId}" ${draggableAttribute} data-time="${slot.time}" data-place-id="${place.id}" data-day-id="${day.id}" data-category-id="${matchInSlot ? matchInSlot.categoryId : ''}">`;
-                    scheduleHTML += `<td>${slot.time}</td>`;
-                    scheduleHTML += `<td>${place.name}</td>`;
-                    scheduleHTML += `<td class="match-cell">${matchInfo}</td>`;
-                    scheduleHTML += `<td>${categoryName}</td>`;
-                    scheduleHTML += `<td>`;
-                    if (matchInSlot) {
-                        scheduleHTML += `<button class="action-button edit-match-button" data-id="${matchId}" title="Upraviť zápas">&#9998;</button>`;
-                        scheduleHTML += `<button class="action-button delete-match-button" data-id="${matchId}" title="Vymazať zápas">&#128465;</button>`;
-                    } else {
-                        scheduleHTML += `<button class="action-button add-match-button" data-day-id="${day.id}" data-place-id="${place.id}" data-time="${slot.time}" title="Pridať zápas">&#x2795;</button>`;
-                    }
-                    scheduleHTML += `</td>`;
-                    scheduleHTML += `</tr>`;
+                    matchesForDateAndLocation.forEach(match => {
+                        const [startH, startM] = match.startTime.split(':').map(Number);
+                        const matchEndTime = new Date();
+                        matchEndTime.setHours(startH, startM + match.duration, 0, 0);
+                        const formattedEndTime = matchEndTime.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' });
+
+                        scheduleHtml += `
+                            <tr draggable="true" data-id="${match.id}" class="match-row">
+                                <td>${match.startTime} - ${formattedEndTime}</td>
+                                <td>${match.team1ClubName || 'N/A'}</td>
+                                <td>${match.team2ClubName || 'N/A'}</td>
+                                <td>${match.team1DisplayName || 'N/A'}</td>
+                                <td>${match.team2DisplayName || 'N/A'}</td>
+                            </tr>
+                        `;
+                    });
+
+                    scheduleHtml += `</tbody></table></div>`; // Close date-group table and div
                 });
+                scheduleHtml += `</div>`; // Close location-group div
             });
-            scheduleHTML += `</tbody></table></div>`;
-        });
-        scheduleContainer.innerHTML = scheduleHTML;
-        addDragAndDropListeners(); // Attach listeners after rendering
-
-        // Add event listeners for buttons
-        document.querySelectorAll('.edit-match-button').forEach(button => {
-            button.addEventListener('click', (event) => openMatchModal(event.target.dataset.id));
-        });
-        document.querySelectorAll('.delete-match-button').forEach(button => {
-            button.addEventListener('click', (event) => deleteMatch(event.target.dataset.id));
-        });
-        document.querySelectorAll('.add-match-button').forEach(button => {
-            button.addEventListener('click', (event) => openMatchModal(null, event.target.dataset.dayId, event.target.dataset.placeId, event.target.dataset.time));
-        });
-
-    } catch (error) {
-        console.error("Chyba pri načítavaní rozpisu zápasov:", error);
-        scheduleContainer.innerHTML = '<p>Nastala chyba pri načítavaní rozpisu zápasov. Skúste to znova.</p>';
-    }
-}
-
-/**
- * Generates time slots for a given day, considering existing matches, places, and category settings.
- * @param {Date} dayDate The date for which to generate time slots.
- * @param {Array<Object>} currentDayMatches An array of match objects for the current day.
- * @param {number} numberOfPlaces The total number of available places.
- * @param {string} startTime The start time for the day (e.g., "08:00").
- * @param {Object} categoryMatchSettings Object containing duration and bufferTime settings per category.
- * @returns {Array<Object>} An array of time slot objects.
- */
-function generateTimeSlots(dayDate, currentDayMatches, numberOfPlaces, startTime, categoryMatchSettings) {
-    const slots = [];
-    let currentTime = new Date(dayDate);
-    const [startHour, startMinute] = startTime.split(':').map(Number);
-    currentTime.setHours(startHour, startMinute, 0, 0);
-
-    const endTime = new Date(dayDate);
-    endTime.setHours(23, 0, 0, 0); // End of the day for scheduling
-
-    // Create a set of occupied slots to avoid duplicates
-    const occupiedSlots = new Set();
-    currentDayMatches.forEach(match => {
-        const matchTime = new Date(match.dateTime);
-        const formattedMatchTime = matchTime.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' });
-        occupiedSlots.add(`${formattedMatchTime}-${match.placeId}`);
-    });
-
-    while (currentTime < endTime) {
-        let hasMatchAtCurrentTime = false;
-        // Check if any match starts at the current time slot across all places
-        for (let i = 0; i < numberOfPlaces; i++) {
-            if (currentDayMatches.some(match => {
-                const matchTime = new Date(match.dateTime);
-                return matchTime.getHours() === currentTime.getHours() &&
-                       matchTime.getMinutes() === currentTime.getMinutes();
-            })) {
-                hasMatchAtCurrentTime = true;
-                break;
-            }
         }
+        scheduleHtml += '</div>'; // Close main flex container
 
-        // Add the current time slot if there's a match, or if it's an empty slot that hasn't been added yet
-        const formattedCurrentTime = currentTime.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' });
-        
-        // Add this time slot regardless, if it's the beginning of the day or there's an existing match
-        // or if it's the next logical step after a match duration + buffer
-        slots.push({ time: formattedCurrentTime });
+        matchesContainer.innerHTML = scheduleHtml;
 
-        // Determine next time based on match durations and buffer times
-        let maxAdvanceTime = 15; // Default minimum step
-        
-        currentDayMatches.forEach(match => {
-            const matchStart = new Date(match.dateTime);
-            const matchEnd = new Date(matchStart);
+        // Add event listeners to each match row for click (edit) and drag
+        matchesContainer.querySelectorAll('.match-row').forEach(row => {
+            row.addEventListener('click', (event) => {
+                const matchId = event.currentTarget.dataset.id;
+                editMatch(matchId);
+            });
+            // Add dragstart listener
+            row.addEventListener('dragstart', (event) => {
+                event.dataTransfer.setData('text/plain', event.target.dataset.id);
+                event.dataTransfer.effectAllowed = 'move';
+                // Optional: Add a class to the dragged element for visual feedback
+                event.target.classList.add('dragging');
+            });
 
-            const categorySettings = categoryMatchSettings[match.categoryId];
-            const matchDuration = categorySettings ? (categorySettings.duration || 15) : 15;
-            const bufferTime = categorySettings ? (categorySettings.bufferTime || 0) : 0;
-            
-            matchEnd.setMinutes(matchEnd.getMinutes() + matchDuration + bufferTime);
+            // Optional: Remove dragging class on dragend
+            row.addEventListener('dragend', (event) => {
+                event.target.classList.remove('dragging');
+            });
 
-            // If the current time is when a match *starts*, then consider its duration for the next slot
-            if (currentTime.getHours() === matchStart.getHours() && currentTime.getMinutes() === matchStart.getMinutes()) {
-                const difference = (matchEnd.getTime() - currentTime.getTime()) / (1000 * 60);
-                if (difference > maxAdvanceTime) {
-                    maxAdvanceTime = difference;
+            // Add dragover and drop listeners for inserting between rows
+            row.addEventListener('dragover', (event) => {
+                event.preventDefault();
+                event.dataTransfer.dropEffect = 'move';
+                // Visual feedback for insertion point (e.g., a border)
+                event.currentTarget.classList.add('drop-over-row');
+            });
+
+            row.addEventListener('dragleave', (event) => {
+                event.currentTarget.classList.remove('drop-over-row');
+            });
+
+            row.addEventListener('drop', async (event) => {
+                event.preventDefault();
+                event.currentTarget.classList.remove('drop-over-row');
+
+                const draggedMatchId = event.dataTransfer.getData('text/plain');
+                const targetMatchId = event.currentTarget.dataset.id; // The match we dropped BEFORE
+                const parentDateGroup = event.currentTarget.closest('.date-group');
+                const newDate = parentDateGroup.dataset.date;
+                const newLocation = parentDateGroup.dataset.location;
+
+                if (draggedMatchId && newDate && newLocation && targetMatchId) {
+                    await moveAndRescheduleMatch(draggedMatchId, newDate, newLocation, targetMatchId);
                 }
-            }
+            });
         });
 
-        // Advance the time
-        currentTime.setMinutes(currentTime.getMinutes() + maxAdvanceTime);
-    }
-    
-    // Ensure all unique match start times are present
-    currentDayMatches.forEach(match => {
-        const matchTime = new Date(match.dateTime);
-        const formattedMatchTime = matchTime.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' });
-        if (!slots.some(slot => slot.time === formattedMatchTime)) {
-            slots.push({ time: formattedMatchTime });
-        }
-    });
+        // Add dragover and drop listeners to the date-group divs for dropping at the end
+        matchesContainer.querySelectorAll('.date-group').forEach(dateGroupDiv => {
+            dateGroupDiv.addEventListener('dragover', (event) => {
+                event.preventDefault(); // Crucial to allow a drop
+                event.dataTransfer.dropEffect = 'move';
+                // Only activate drop-target if dropping into an empty table body or at the very end
+                const tableBody = dateGroupDiv.querySelector('tbody');
+                if (tableBody && tableBody.children.length === 0) {
+                     dateGroupDiv.classList.add('drop-target-active');
+                } else if (event.target === tableBody || event.target.closest('tbody') === tableBody) {
+                    // This allows dropping anywhere in the date-group, assuming it will go to the end if not on a specific row.
+                    // The logic in moveAndRescheduleMatch (droppedBeforeMatchId = null) will handle appending.
+                    dateGroupDiv.classList.add('drop-target-active');
+                }
+            });
 
-    // Sort slots by time
-    slots.sort((a, b) => {
-        const [h1, m1] = a.time.split(':').map(Number);
-        const [h2, m2] = b.time.split(':').map(Number);
-        if (h1 !== h2) return h1 - h2;
-        return m1 - m2;
-    });
+            dateGroupDiv.addEventListener('dragleave', () => {
+                dateGroupDiv.classList.remove('drop-target-active'); // Optional: visual feedback
+            });
 
-    // Remove duplicates if any were introduced by ensuring match times
-    const uniqueSlots = [];
-    const seenTimes = new Set();
-    for (const slot of slots) {
-        if (!seenTimes.has(slot.time)) {
-            uniqueSlots.push(slot);
-            seenTimes.add(slot.time);
-        }
-    }
+            dateGroupDiv.addEventListener('drop', async (event) => {
+                event.preventDefault();
+                dateGroupDiv.classList.remove('drop-target-active'); // Optional: visual feedback
 
-    return uniqueSlots;
-}
+                const draggedMatchId = event.dataTransfer.getData('text/plain');
+                const newDate = dateGroupDiv.dataset.date;
+                const newLocation = dateGroupDiv.dataset.location;
 
-// Global variables for drag and drop
-let draggedMatch = null;
+                // Check if the drop occurred on a specific row inside this date-group
+                const droppedOnRow = event.target.closest('.match-row');
+                if (droppedOnRow && droppedOnRow.closest('.date-group') === dateGroupDiv) {
+                    // This case is handled by the row's own drop listener, do nothing here
+                    return;
+                }
 
-/**
- * Adds drag and drop event listeners to match rows.
- */
-function addDragAndDropListeners() {
-    const matchRows = document.querySelectorAll('.match-row');
-    matchRows.forEach(row => {
-        row.addEventListener('dragstart', handleDragStart);
-        row.addEventListener('dragover', handleDragOver);
-        row.addEventListener('dragleave', handleDragLeave);
-        row.addEventListener('drop', handleDrop);
-        row.addEventListener('dragend', handleDragEnd);
-    });
-}
-
-/**
- * Handles the start of a drag operation.
- * @param {DragEvent} e The drag event.
- */
-function handleDragStart(e) {
-    draggedMatch = e.target;
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', draggedMatch.dataset.matchId);
-    setTimeout(() => {
-        draggedMatch.classList.add('dragging');
-    }, 0); // Add class after a short delay to avoid immediate flicker
-}
-
-/**
- * Handles the drag over event. Prevents default to allow dropping.
- * @param {DragEvent} e The drag event.
- */
-function handleDragOver(e) {
-    e.preventDefault();
-    const targetRow = e.target.closest('tr');
-    if (targetRow && draggedMatch && targetRow !== draggedMatch) {
-        const boundingBox = targetRow.getBoundingClientRect();
-        const offset = e.clientY - boundingBox.top;
-
-        // Determine if dragging above or below the current row
-        if (offset < boundingBox.height / 2) {
-            targetRow.classList.add('drop-over-row-before');
-            targetRow.classList.remove('drop-over-row-after');
-        } else {
-            targetRow.classList.add('drop-over-row-after');
-            targetRow.classList.remove('drop-over-row-before');
-        }
-    }
-}
-
-/**
- * Handles the drag leave event. Removes visual indicators.
- * @param {DragEvent} e The drag event.
- */
-function handleDragLeave(e) {
-    const targetRow = e.target.closest('tr');
-    if (targetRow) {
-        targetRow.classList.remove('drop-over-row-before', 'drop-over-row-after');
-    }
-}
-
-/**
- * Handles the drop event. Reorders matches and updates Firestore.
- * @param {DragEvent} e The drag event.
- */
-async function handleDrop(e) {
-    e.preventDefault();
-    const targetRow = e.target.closest('tr');
-
-    if (draggedMatch && targetRow && targetRow !== draggedMatch) {
-        const draggedMatchId = draggedMatch.dataset.matchId;
-        const targetMatchId = targetRow.dataset.matchId;
-
-        if (!draggedMatchId) {
-             // This happens if you drag an empty slot onto another empty slot or a match.
-             // We can allow adding a new match to an empty slot.
-             const targetDayId = targetRow.dataset.dayId;
-             const targetPlaceId = targetRow.dataset.placeId;
-             const targetTime = targetRow.dataset.time;
-             openMatchModal(null, targetDayId, targetPlaceId, targetTime);
-             removeDragClasses();
-             return;
-        }
-
-        const isBefore = targetRow.classList.contains('drop-over-row-before');
-
-        // Check if moving within the same day and place
-        const samePlace = draggedMatch.dataset.placeId === targetRow.dataset.placeId;
-        const sameDay = draggedMatch.dataset.dayId === targetRow.dataset.dayId;
-
-        if (samePlace && sameDay) {
-            // Reorder within the same place and day
-            await reorderMatchesInPlace(draggedMatchId, targetMatchId, isBefore);
-        } else {
-            // Move match to a different place/time slot
-            await moveMatchToNewSlot(draggedMatchId, targetRow.dataset.dayId, targetRow.dataset.placeId, targetRow.dataset.time, targetRow.dataset.categoryId);
-        }
-    }
-    removeDragClasses();
-}
-
-/**
- * Handles the end of a drag operation. Cleans up.
- * @param {DragEvent} e The drag event.
- */
-function handleDragEnd(e) {
-    draggedMatch.classList.remove('dragging');
-    removeDragClasses();
-    draggedMatch = null;
-}
-
-/**
- * Removes drag-related CSS classes from all table rows.
- */
-function removeDragClasses() {
-    document.querySelectorAll('.schedule-table tbody tr').forEach(row => {
-        row.classList.remove('drop-over-row-before', 'drop-over-row-after');
-    });
-}
-
-/**
- * Reorders matches within the same place and updates their dateTime to reflect the new order.
- * This is a simplified reordering logic. A more robust solution might involve:
- * 1. Fetching all matches for the given day and place.
- * 2. Adjusting their times based on their new sequence.
- * 3. Saving all modified matches in a batch.
- *
- * For now, it will simply swap the times of the dragged and target match.
- * @param {string} draggedMatchId The ID of the dragged match.
- * @param {string} targetMatchId The ID of the target match.
- * @param {boolean} isBefore True if dragged match should be placed before target.
- */
-async function reorderMatchesInPlace(draggedMatchId, targetMatchId, isBefore) {
-    if (draggedMatchId === targetMatchId) return; // No change if dropping on itself
-
-    try {
-        const draggedMatchRef = doc(matchesCollectionRef, draggedMatchId);
-        const targetMatchRef = doc(matchesCollectionRef, targetMatchId);
-
-        const [draggedDoc, targetDoc] = await Promise.all([
-            getDoc(draggedMatchRef),
-            getDoc(targetMatchRef)
-        ]);
-
-        if (!draggedDoc.exists() || !targetDoc.exists()) {
-            await showMessage('Chyba', 'Jeden zo zápasov sa nenašiel.');
-            return;
-        }
-
-        const draggedData = draggedDoc.data();
-        const targetData = targetDoc.data();
-
-        // Check for same place and day explicitly
-        if (draggedData.placeId !== targetData.placeId || new Date(draggedData.dateTime).toDateString() !== new Date(targetData.dateTime).toDateString()) {
-            await showMessage('Chyba', 'Preusporiadanie je možné iba v rámci toho istého miesta a dňa. Pre presun na iné miesto/čas použite drag and drop do voľného slotu alebo existujúceho zápasu na inom mieste/čase.');
-            return;
-        }
-
-        // Swap the times
-        const batch = writeBatch(db);
-        batch.update(draggedMatchRef, { dateTime: targetData.dateTime });
-        batch.update(targetMatchRef, { dateTime: draggedData.dateTime });
-        await batch.commit();
-
-        await showMessage('Úspech', 'Zápas úspešne preusporiadaný!');
-        displayMatchesAsSchedule(); // Re-render the schedule
-    } catch (error) {
-        console.error('Chyba pri preusporiadaní zápasov:', error);
-        await showMessage('Chyba', 'Chyba pri preusporiadaní zápasov. Skúste to znova.');
-    }
-}
-
-
-/**
- * Moves a match to a new time slot (new date, place, or time).
- * @param {string} matchId The ID of the match to move.
- * @param {string} newDayId The ID of the target playing day.
- * @param {string} newPlaceId The ID of the target place.
- * @param {string} newTime The new time in HH:MM format.
- * @param {string} newCategoryId The category ID of the target slot (if it was an existing match).
- */
-async function moveMatchToNewSlot(matchId, newDayId, newPlaceId, newTime, newCategoryId) {
-    try {
-        const matchRef = doc(matchesCollectionRef, matchId);
-        const matchDoc = await getDoc(matchRef);
-
-        if (!matchDoc.exists()) {
-            await showMessage('Chyba', 'Zápas na presun sa nenašiel.');
-            return;
-        }
-
-        const oldMatchData = matchDoc.data();
-        const playingDayDoc = await getDoc(doc(playingDaysCollectionRef, newDayId));
-        if (!playingDayDoc.exists()) {
-            await showMessage('Chyba', 'Cieľový hrací deň sa nenašiel.');
-            return;
-        }
-        const newDateString = playingDayDoc.data().date; // "YYYY-MM-DD"
-
-        const newDateTimeString = `${newDateString}T${newTime}:00`;
-        const newDateTime = new Date(newDateTimeString);
-
-        // Check for overlaps at the target slot
-        const qOverlap = query(matchesCollectionRef, 
-            where('dateTime', '==', newDateTimeString),
-            where('placeId', '==', newPlaceId)
-        );
-        const overlapSnapshot = await getDocs(qOverlap);
-
-        if (!overlapSnapshot.empty && overlapSnapshot.docs[0].id !== matchId) {
-            await showMessage('Chyba', 'Na tomto mieste a čase už existuje iný zápas!');
-            return;
-        }
-
-        // If a new category is provided (meaning dropping onto an existing match's slot),
-        // we should try to keep the original category, otherwise update it.
-        // This logic needs to be carefully considered. For now, we'll try to preserve the original category
-        // unless the UI explicitly indicates a category change by dragging to a different category's specific slot.
-        // For simplicity, we will update the category only if the target slot had a different category and we allow it.
-        // Here, we just use the original match's category.
-
-        await updateDoc(matchRef, {
-            dateTime: newDateTimeString,
-            placeId: newPlaceId,
-            // categoryId: oldMatchData.categoryId // Preserve original category, unless specific logic dictates change
+                if (draggedMatchId && newDate && newLocation) {
+                    // If dropped directly on the date-group, it means append to end or find first available
+                    await moveAndRescheduleMatch(draggedMatchId, newDate, newLocation, null); // null indicates append to end
+                }
+            });
         });
 
-        await showMessage('Úspech', 'Zápas úspešne presunutý!');
-        displayMatchesAsSchedule();
+
+        // The following event listeners for date and location headers should still work conceptually,
+        // but their click targets might need adjustment if the HTML structure for headers changes significantly.
+        // For now, I'll keep them as is assuming there are still clickable elements representing these.
+        // If they become redundant or problematic with the new layout, they can be removed or refined.
+        matchesContainer.querySelectorAll('.date-header-clickable').forEach(header => {
+            header.addEventListener('click', (event) => {
+                if (event.target.tagName === 'A' || event.target.closest('.hall-address')) {
+                    return;
+                }
+                if (event.target === header || event.target.closest('.schedule-date-header-content')) {
+                    const dateToEdit = header.dataset.date;
+                    editPlayingDay(dateToEdit);
+                }
+            });
+        });
+
+        matchesContainer.querySelectorAll('.delete-location-header').forEach(header => {
+            header.addEventListener('click', (event) => {
+                if (event.target.tagName === 'A' || event.target.closest('.hall-address')) {
+                    return;
+                }
+                if (event.target === header || event.target.closest('.hall-name')) {
+                    const locationToEdit = header.dataset.location;
+                    const locationTypeToEdit = header.dataset.type;
+                    editPlace(locationToEdit, locationTypeToEdit);
+                }
+            });
+        });
+
     } catch (error) {
-        console.error('Chyba pri presune zápasu:', error);
-        await showMessage('Chyba', `Chyba pri presune zápasu. Detail: ${error.message}`);
-    }
-}
-
-
-const playingDayModal = document.getElementById('playingDayModal');
-const playingDayForm = document.getElementById('playingDayForm');
-const playingDayModalTitle = document.getElementById('playingDayModalTitle');
-const playingDayIdInput = document.getElementById('playingDayId');
-const playingDayDateInput = document.getElementById('playingDayDate');
-const deletePlayingDayButtonModal = document.getElementById('deletePlayingDayButtonModal');
-
-const placeModal = document.getElementById('placeModal');
-const placeForm = document.getElementById('placeForm');
-const placeModalTitle = document.getElementById('placeModalTitle');
-const placeIdInput = document.getElementById('placeId');
-const placeNameInput = document.getElementById('placeName');
-const placeAccommodationCheckbox = document.getElementById('placeAccommodation');
-const deletePlaceButtonModal = document.getElementById('deletePlaceButtonModal');
-
-const matchModal = document.getElementById('matchModal');
-const matchForm = document.getElementById('matchForm');
-const matchModalTitle = document.getElementById('matchModalTitle');
-const matchIdInput = document.getElementById('matchId');
-const matchCategorySelect = document.getElementById('matchCategorySelect');
-const matchGroup1Select = document.getElementById('matchGroup1Select');
-const matchTeam1Select = document.getElementById('matchTeam1Select');
-const matchGroup2Select = document.getElementById('matchGroup2Select');
-const matchTeam2Select = document.getElementById('matchTeam2Select');
-const matchPlayingDaySelect = document.getElementById('matchPlayingDaySelect');
-const matchPlaceSelect = document.getElementById('matchPlaceSelect');
-const matchTimeInput = document.getElementById('matchTimeInput');
-const deleteMatchButtonModal = document.getElementById('deleteMatchButtonModal');
-
-const accommodationModal = document.getElementById('accommodationModal');
-const accommodationForm = document.getElementById('accommodationForm');
-const accommodationModalTitle = document.getElementById('accommodationModalTitle');
-const accommodationIdInput = document.getElementById('accommodationId');
-const accommodationTeamSelect = document.getElementById('accommodationTeamSelect');
-const accommodationSelect = document.getElementById('accommodationSelect');
-const deleteAssignmentButtonModal = document.getElementById('deleteAssignmentButtonModal');
-const unassignedTeamRadio = document.getElementById('unassignedTeamRadio');
-const assignedTeamRadio = document.getElementById('assignedTeamRadio');
-const accommodationTeamContainer = document.getElementById('accommodationTeamContainer');
-const unassignedTeamSelect = document.getElementById('unassignedTeamSelect');
-const assignedTeamSelect = document.getElementById('assignedTeamSelect');
-
-
-// Event listeners for opening/closing modals
-document.querySelectorAll('.modal .close').forEach(button => {
-    button.addEventListener('click', (event) => closeModal(event.target.closest('.modal')));
-});
-
-window.addEventListener('click', (event) => {
-    // Close modal if clicked outside of modal-content
-    document.querySelectorAll('.modal').forEach(modal => {
-        const modalContent = modal.querySelector('.modal-content');
-        if (event.target === modal && modalContent && !modalContent.contains(event.target)) {
-            closeModal(modal);
-            // Specific reset logic for match modal
-            if (modal.id === 'matchModal') {
-                resetMatchModal();
-            } else if (modal.id === 'playingDayModal') {
-                resetPlayingDayModal();
-            } else if (modal.id === 'placeModal') {
-                resetPlaceModal();
-            } else if (modal.id === 'accommodationModal') {
-                resetAccommodationModal();
-            }
+        console.error("Chyba pri načítaní rozvrhu zápasov (zachytená chyba):", error);
+        matchesContainer.innerHTML = `
+            <div class="error-message">
+                <h3>Chyba pri načítaní rozvrhu zápasov!</h3>
+                <p>Prosím, skontrolujte konzolu prehliadača (F12 > Console) pre detaily.</p>
+                <p>Možné príčiny:</p>
+                <ul>
+                    <li>Chýbajúce indexy vo Firestore. Skontrolujte záložku "Network" v konzole a Firebase Console.</li>
+                    <li>Problém s pripojením k databáze alebo bezpečnostné pravidlá.</li>
+                    <li>Žiadne dáta v kolekciách.</li>
+                </ul>
+                <p>Detail chyby: ${error.message}</p>
+            </div>
+        `;
+        // If the error is related to being offline or connection issues, show a more specific message
+        if (error.code === 'unavailable' || (error.message && error.message.includes('offline'))) {
+             matchesContainer.innerHTML += '<p class="error-message">Zdá sa, že nie ste pripojení k internetu, alebo je problém s pripojením k Firebase.</p>';
         }
-    });
-    // Close addOptions dropdown
-    const addOptions = document.getElementById('addOptions');
-    const addButton = document.getElementById('addButton');
-    if (addOptions && addButton && event.target !== addButton && !addOptions.contains(event.target)) {
-        addOptions.style.display = 'none';
     }
-});
-
-
-/**
- * Resets the playing day modal form.
- */
-function resetPlayingDayModal() {
-    playingDayForm.reset();
-    playingDayIdInput.value = '';
-    playingDayModalTitle.textContent = 'Pridať hrací deň';
-    deletePlayingDayButtonModal.style.display = 'none';
 }
 
 /**
- * Resets the place modal form.
+ * Deletes a playing day and all associated matches. Bus routes and accommodation assignments removed.
+ * @param {string} dateToDelete The date of the playing day to delete.
  */
-function resetPlaceModal() {
-    placeForm.reset();
-    placeIdInput.value = '';
-    placeModalTitle.textContent = 'Pridať miesto';
-    deletePlaceButtonModal.style.display = 'none';
+async function deletePlayingDay(dateToDelete) {
+    const confirmed = await showConfirmation(
+        'Potvrdenie vymazania',
+        `Naozaj chcete vymazať hrací deň ${dateToDelete} a VŠETKY zápasy, ktoré sa konajú v tento deň?`
+    );
+
+    if (confirmed) {
+        try {
+            const batch = writeBatch(db);
+
+            // Delete playing day document
+            const playingDayQuery = query(playingDaysCollectionRef, where("date", "==", dateToDelete));
+            const playingDaySnapshot = await getDocs(playingDayQuery);
+            if (!playingDaySnapshot.empty) {
+                playingDaySnapshot.docs.forEach(docToDelete => {
+                    batch.delete(doc(playingDaysCollectionRef, docToDelete.id));
+                });
+            }
+
+            // Delete associated matches
+            const matchesQuery = query(matchesCollectionRef, where("date", "==", dateToDelete));
+            const matchesSnapshot = await getDocs(matchesQuery);
+            matchesSnapshot.docs.forEach(matchDoc => {
+                batch.delete(doc(matchesCollectionRef, matchDoc.id));
+            });
+
+            await batch.commit();
+            await showMessage('Úspech', `Hrací deň ${dateToDelete} a všetky súvisiace zápasy boli vymazané!`);
+            closeModal(document.getElementById('playingDayModal'));
+            await displayMatchesAsSchedule();
+        } catch (error) {
+            console.error("Chyba pri mazaní hracieho dňa:", error);
+            await showMessage('Chyba', `Chyba pri mazaní hracieho dňa. Detail: ${error.message}`);
+        }
+    }
 }
 
 /**
- * Resets the match modal form.
+ * Deletes a place (sport hall or catering) and all associated matches. Bus routes and accommodation removed.
+ * @param {string} placeNameToDelete The name of the place to delete.
+ * @param {string} placeTypeToDelete The type of the place to delete.
  */
-function resetMatchModal() {
-    matchForm.reset();
-    matchIdInput.value = '';
-    matchModalTitle.textContent = 'Pridať zápas';
-    deleteMatchButtonModal.style.display = 'none';
-    // Clear dynamic select options but keep default placeholder
-    matchCategorySelect.innerHTML = '<option value="">-- Vyberte kategóriu --</option>';
-    matchGroup1Select.innerHTML = '<option value="">-- Vyberte skupinu tímu 1 --</option>';
-    matchTeam1Select.innerHTML = '<option value="">-- Vyberte tím 1 --</option>';
-    matchGroup2Select.innerHTML = '<option value="">-- Vyberte skupinu tímu 2 --</option>';
-    matchTeam2Select.innerHTML = '<option value="">-- Vyberte tím 2 --</option>';
-    matchPlayingDaySelect.innerHTML = '<option value="">-- Vyberte dátum --</option>';
-    matchPlaceSelect.innerHTML = '<option value="">-- Vyberte miesto --</option>';
+async function deletePlace(placeNameToDelete, placeTypeToDelete) {
+    const confirmed = await showConfirmation(
+        'Potvrdenie vymazania',
+        `Naozaj chcete vymazať miesto ${placeNameToDelete} (${placeTypeToDelete}) a VŠETKY zápasy, ktoré sa viažu na toto miesto?`
+    );
+
+    if (confirmed) {
+        try {
+            const batch = writeBatch(db);
+
+            // Delete place document
+            const placeQuery = query(placesCollectionRef, where("name", "==", placeNameToDelete), where("type", "==", placeTypeToDelete));
+            const placeSnapshot = await getDocs(placeQuery);
+            if (!placeSnapshot.empty) {
+                placeSnapshot.docs.forEach(docToDelete => {
+                    batch.delete(doc(placesCollectionRef, docToDelete.id));
+                });
+            }
+
+            // Delete associated matches
+            const matchesQuery = query(matchesCollectionRef, where("location", "==", placeNameToDelete), where("locationType", "==", placeTypeToDelete));
+            const matchesSnapshot = await getDocs(matchesQuery);
+            matchesSnapshot.docs.forEach(matchDoc => {
+                batch.delete(doc(matchesCollectionRef, matchDoc.id));
+            });
+
+            await batch.commit();
+            await showMessage('Úspech', `Miesto ${placeNameToDelete} (${placeTypeToDelete}) a všetky súvisiace zápasy boli vymazané!`);
+            closeModal(document.getElementById('placeModal'));
+            await displayMatchesAsSchedule();
+        } catch (error) {
+            console.error("Chyba pri mazaní miesta:", error);
+            await showMessage('Chyba', `Chyba pri mazaní miesta ${placeNameToDelete} (${placeTypeToDelete}). Detail: ${error.message}`);
+        }
+    }
 }
 
 /**
- * Resets the accommodation modal form.
+ * Opens the modal to edit an existing playing day.
+ * @param {string} dateToEdit The date of the playing day to edit.
  */
-function resetAccommodationModal() {
-    accommodationForm.reset();
-    accommodationIdInput.value = '';
-    accommodationModalTitle.textContent = 'Priradiť ubytovanie';
-    deleteAssignmentButtonModal.style.display = 'none';
-    unassignedTeamRadio.checked = true; // Default to unassigned teams
-    accommodationTeamContainer.style.display = 'block';
-    populateUnassignedTeamsSelect(unassignedTeamSelect);
-    accommodationSelect.innerHTML = '<option value="">-- Vyberte ubytovňu --</option>';
-    assignedTeamSelect.innerHTML = '<option value="">-- Vyberte priradený tím --</option>';
-    assignedTeamSelect.style.display = 'none';
-}
+async function editPlayingDay(dateToEdit) {
+    try {
+        const playingDayModal = document.getElementById('playingDayModal');
+        const playingDayIdInput = document.getElementById('playingDayId');
+        const playingDayDateInput = document.getElementById('playingDayDate');
+        const playingDayModalTitle = document.getElementById('playingDayModalTitle');
+        const deletePlayingDayButtonModal = document.getElementById('deletePlayingDayButtonModal');
 
-/**
- * Opens the playing day modal for adding or editing.
- * @param {string|null} dayId The ID of the playing day to edit, or null to add a new one.
- */
-async function openPlayingDayModal(dayId = null) {
-    resetPlayingDayModal();
-    if (dayId) {
-        const docRef = doc(playingDaysCollectionRef, dayId);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-            const data = docSnap.data();
-            playingDayIdInput.value = dayId;
-            playingDayDateInput.value = data.date;
+        const q = query(playingDaysCollectionRef, where("date", "==", dateToEdit));
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+            const playingDayDoc = querySnapshot.docs[0];
+            const playingDayData = playingDayDoc.data();
+            const playingDayId = playingDayDoc.id;
+
+            playingDayIdInput.value = playingDayId;
+            playingDayDateInput.value = playingDayData.date || '';
             playingDayModalTitle.textContent = 'Upraviť hrací deň';
             deletePlayingDayButtonModal.style.display = 'inline-block';
+            deletePlayingDayButtonModal.onclick = () => deletePlayingDay(playingDayData.date);
+            openModal(playingDayModal);
+        } else {
+            await showMessage('Informácia', "Hrací deň sa nenašiel.");
         }
+    } catch (error) {
+        console.error("Chyba pri načítavaní dát hracieho dňa:", error);
+        await showMessage('Chyba', "Vyskytla sa chyba pri načítavaní dát hracieho dňa. Skúste to znova.");
     }
-    openModal(playingDayModal);
 }
 
 /**
- * Opens the place modal for adding or editing.
- * @param {string|null} placeId The ID of the place to edit, or null to add a new one.
+ * Opens the modal to edit an existing place.
+ * @param {string} placeName The name of the place to edit.
+ * @param {string} placeType The type of the place to edit.
  */
-async function openPlaceModal(placeId = null) {
-    resetPlaceModal();
-    if (placeId) {
-        const docRef = doc(placesCollectionRef, placeId);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-            const data = docSnap.data();
+async function editPlace(placeName, placeType) {
+    try {
+        const placeModal = document.getElementById('placeModal');
+        const placeIdInput = document.getElementById('placeId');
+        const placeTypeSelect = document.getElementById('placeTypeSelect');
+        const placeNameInput = document.getElementById('placeName');
+        const placeAddressInput = document.getElementById('placeAddress');
+        const placeGoogleMapsUrlInput = document.getElementById('placeGoogleMapsUrl');
+        const deletePlaceButtonModal = document.getElementById('deletePlaceButtonModal');
+
+        const q = query(placesCollectionRef, where("name", "==", placeName), where("type", "==", placeType));
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+            const placeDoc = querySnapshot.docs[0];
+            const placeData = placeDoc.data();
+            const placeId = placeDoc.id;
+
             placeIdInput.value = placeId;
-            placeNameInput.value = data.name;
-            placeAccommodationCheckbox.checked = data.isAccommodation || false;
-            placeModalTitle.textContent = 'Upraviť miesto';
+            placeTypeSelect.value = placeData.type || '';
+            placeNameInput.value = placeData.name || '';
+            placeAddressInput.value = placeData.address || '';
+            placeGoogleMapsUrlInput.value = placeData.googleMapsUrl || '';
+
             deletePlaceButtonModal.style.display = 'inline-block';
+            deletePlaceButtonModal.onclick = () => deletePlace(placeData.name, placeData.type);
+            openModal(placeModal);
+        } else {
+            await showMessage('Informácia', "Miesto sa nenašlo.");
         }
+    } catch (error) {
+        console.error("Chyba pri načítavaní dát miesta:", error);
+        await showMessage('Chyba', "Vyskytla sa chyba pri načítavaní dát miesta. Skúste to znova.");
     }
-    openModal(placeModal);
 }
 
 /**
- * Opens the match modal for adding or editing.
- * @param {string|null} matchId The ID of the match to edit, or null to add a new one.
- * @param {string} [initialDayId=''] Initial playing day ID for new match.
- * @param {string} [initialPlaceId=''] Initial place ID for new match.
- * @param {string} [initialTime=''] Initial time for new match.
+ * Opens the modal to edit an existing match.
+ * @param {string} matchId The ID of the match to edit.
+ * @param {string} [newDate=''] Optional: New date to pre-fill the modal with.
+ * @param {string} [newLocation=''] Optional: New location to pre-fill the modal with.
  */
-async function openMatchModal(matchId = null, initialDayId = '', initialPlaceId = '', initialTime = '') {
-    resetMatchModal();
-    await populateCategorySelect(matchCategorySelect);
-    await populatePlayingDaysSelect(matchPlayingDaySelect, initialDayId);
-    await populatePlacesSelect(matchPlaceSelect, initialPlaceId);
+async function editMatch(matchId, newDate = '', newLocation = '') {
+    try {
+        const matchModal = document.getElementById('matchModal');
+        const matchIdInput = document.getElementById('matchId');
+        const matchModalTitle = document.getElementById('matchModalTitle');
+        const matchDateSelect = document.getElementById('matchDateSelect');
+        const matchLocationSelect = document.getElementById('matchLocationSelect');
+        const matchStartTimeInput = document.getElementById('matchStartTime');
+        const matchDurationInput = document.getElementById('matchDuration');
+        const matchBufferTimeInput = document.getElementById('matchBufferTime');
+        const matchCategorySelect = document.getElementById('matchCategory');
+        const matchGroupSelect = document.getElementById('matchGroup');
+        const team1NumberInput = document.getElementById('team1NumberInput');
+        const team2NumberInput = document.getElementById('team2NumberInput');
+        const deleteMatchButtonModal = document.getElementById('deleteMatchButtonModal');
 
-    // Initial population for groups/teams based on pre-selected category if editing
-    let initialCategoryId = '';
+        const matchDocRef = doc(matchesCollectionRef, matchId);
+        const matchDoc = await getDoc(matchDocRef);
 
-    if (matchId) {
-        const docRef = doc(matchesCollectionRef, matchId);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-            const data = docSnap.data();
+        if (matchDoc.exists()) {
+            const matchData = matchDoc.data();
             matchIdInput.value = matchId;
             matchModalTitle.textContent = 'Upraviť zápas';
-            deleteMatchButtonModal.style.display = 'inline-block';
 
-            initialCategoryId = data.categoryId;
-            matchCategorySelect.value = data.categoryId;
-
-            await populateGroupSelect(matchGroup1Select, data.categoryId, data.group1Id);
-            await populateTeamsInGroupSelect(matchTeam1Select, data.group1Id, data.team1Id);
-
-            await populateGroupSelect(matchGroup2Select, data.categoryId, data.group2Id);
-            await populateTeamsInGroupSelect(matchTeam2Select, data.group2Id, data.team2Id);
-
-            matchPlayingDaySelect.value = data.dateTime.substring(0, 10); // Extract date part
-            matchPlaceSelect.value = data.placeId;
-            matchTimeInput.value = data.dateTime.substring(11, 16); // Extract time part
-        }
-    } else {
-        // For adding new match, if initial values are provided
-        if (initialCategoryId) {
-            matchCategorySelect.value = initialCategoryId;
-        }
-        if (initialDayId) {
-            matchPlayingDaySelect.value = initialDayId;
-        }
-        if (initialPlaceId) {
-            matchPlaceSelect.value = initialPlaceId;
-        }
-        if (initialTime) {
-            matchTimeInput.value = initialTime;
-        }
-    }
-
-    openModal(matchModal);
-}
-
-/**
- * Opens the accommodation modal for adding or editing.
- * @param {string|null} assignmentId The ID of the assignment to edit, or null to add a new one.
- */
-async function openAccommodationModal(assignmentId = null) {
-    resetAccommodationModal();
-    await populateAccommodationPlacesSelect(accommodationSelect);
-
-    if (assignmentId) {
-        const docRef = doc(db, 'tournamentData', 'mainTournamentData', 'accommodationAssignments', assignmentId);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-            const data = docSnap.data();
-            accommodationIdInput.value = assignmentId;
-            accommodationModalTitle.textContent = 'Upraviť priradenie ubytovania';
-            deleteAssignmentButtonModal.style.display = 'inline-block';
-
-            // Determine if the team is currently unassigned or assigned
-            const clubDoc = await getDoc(doc(clubsCollectionRef, data.clubId));
-            if (clubDoc.exists() && clubDoc.data().accommodationPlaceId) {
-                // Team is currently assigned, switch to assigned team radio
-                assignedTeamRadio.checked = true;
-                accommodationTeamContainer.style.display = 'none';
-                assignedTeamSelect.style.display = 'block';
-                await populateAssignedTeamsSelect(assignedTeamSelect, data.clubId);
-            } else {
-                // Team is unassigned, keep unassigned team radio checked
-                unassignedTeamRadio.checked = true;
-                accommodationTeamContainer.style.display = 'block';
-                await populateUnassignedTeamsSelect(unassignedTeamSelect, data.clubId);
-            }
+            // Pre-fill date and location from drag & drop, otherwise use existing match data
+            await populatePlayingDaysSelect(matchDateSelect, newDate || matchData.date);
+            await populateSportHallSelects(matchLocationSelect, newLocation || matchData.location);
             
-            accommodationSelect.value = data.accommodationPlaceId;
-        }
-    } else {
-        // Default to unassigned teams when adding a new assignment
-        unassignedTeamRadio.checked = true;
-        accommodationTeamContainer.style.display = 'block';
-        await populateUnassignedTeamsSelect(unassignedTeamSelect);
-    }
-    openModal(accommodationModal);
-}
+            // Set start time, duration, and buffer time from existing match data
+            matchStartTimeInput.value = matchData.startTime || '';
+            matchDurationInput.value = matchData.duration || '';
+            matchBufferTimeInput.value = matchData.bufferTime || '';
 
-/**
- * Populates the accommodation select element with places marked as accommodation.
- * @param {HTMLSelectElement} selectElement The select element to populate.
- * @param {string} [selectedPlaceId=''] The ID of the place to pre-select.
- */
-async function populateAccommodationPlacesSelect(selectElement, selectedPlaceId = '') {
-    if (!selectElement) return;
-    selectElement.innerHTML = '<option value="">-- Vyberte ubytovňu --</option>';
-    try {
-        const q = query(placesCollectionRef, where("isAccommodation", "==", true), orderBy("name", "asc"));
-        const querySnapshot = await getDocs(q);
-        querySnapshot.forEach((doc) => {
-            const place = doc.data();
-            const option = document.createElement('option');
-            option.value = doc.id;
-            option.textContent = place.name;
-            selectElement.appendChild(option);
-        });
-        if (selectedPlaceId) {
-            selectElement.value = selectedPlaceId;
-        }
-    } catch (error) {
-        console.error("Chyba pri načítavaní ubytovní:", error);
-        const option = document.createElement('option');
-        option.value = '';
-        option.textContent = '-- Chyba pri načítaní --';
-        option.disabled = true;
-        selectElement.appendChild(option);
-    }
-}
-
-/**
- * Populates a select element with teams that are not yet assigned to an accommodation.
- * @param {HTMLSelectElement} selectElement The select element to populate.
- * @param {string} [selectedClubId=''] The ID of the club to pre-select.
- */
-async function populateUnassignedTeamsSelect(selectElement, selectedClubId = '') {
-    if (!selectElement) return;
-    selectElement.innerHTML = '<option value="">-- Vyberte tím --</option>';
-    try {
-        // Query for clubs that do NOT have accommodationPlaceId set or it's empty
-        const q = query(clubsCollectionRef, where("accommodationPlaceId", "==", "")); // Check for empty string
-        const querySnapshot = await getDocs(q);
-        querySnapshot.forEach((doc) => {
-            const club = doc.data();
-            const option = document.createElement('option');
-            option.value = doc.id;
-            option.textContent = `${club.clubBaseName} (${club.categoryName} - ${club.groupName})`;
-            selectElement.appendChild(option);
-        });
-        if (selectedClubId) {
-            selectElement.value = selectedClubId;
-        }
-    } catch (error) {
-        console.error("Chyba pri načítavaní nepriradených tímov:", error);
-        const option = document.createElement('option');
-        option.value = '';
-        option.textContent = '-- Chyba pri načítaní --';
-        option.disabled = true;
-        selectElement.appendChild(option);
-    }
-}
-
-/**
- * Populates a select element with teams that are already assigned to an accommodation.
- * @param {HTMLSelectElement} selectElement The select element to populate.
- * @param {string} [selectedClubId=''] The ID of the club to pre-select.
- */
-async function populateAssignedTeamsSelect(selectElement, selectedClubId = '') {
-    if (!selectElement) return;
-    selectElement.innerHTML = '<option value="">-- Vyberte priradený tím --</option>';
-    try {
-        // Query for clubs that have accommodationPlaceId set
-        const q = query(clubsCollectionRef, where("accommodationPlaceId", "!=", "")); // Check for non-empty string
-        const querySnapshot = await getDocs(q);
-        querySnapshot.forEach((doc) => {
-            const club = doc.data();
-            const option = document.createElement('option');
-            option.value = doc.id;
-            option.textContent = `${club.clubBaseName} (${club.categoryName} - ${club.groupName})`;
-            selectElement.appendChild(option);
-        });
-        if (selectedClubId) {
-            selectElement.value = selectedClubId;
-        }
-    } catch (error) {
-        console.error("Chyba pri načítavaní priradených tímov:", error);
-        const option = document.createElement('option');
-        option.value = '';
-        option.textContent = '-- Chyba pri načítaní --';
-        option.disabled = true;
-        selectElement.appendChild(option);
-    }
-}
-
-
-/**
- * Displays accommodation assignments in a table-like structure.
- */
-async function displayAccommodationAssignments() {
-    const accommodationScheduleContainer = document.getElementById('accommodationScheduleContainer');
-    if (!accommodationScheduleContainer) return;
-    accommodationScheduleContainer.innerHTML = '<h2>Priradenie ubytovania</h2><p>Načítavam priradenia ubytovania...</p>';
-
-    try {
-        const placesSnapshot = await getDocs(query(placesCollectionRef, where("isAccommodation", "==", true), orderBy("name", "asc")));
-        const clubsSnapshot = await getDocs(clubsCollectionRef);
-
-        const accommodationPlaces = placesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        const clubs = {};
-        clubsSnapshot.forEach(doc => {
-            const data = doc.data();
-            if (data.accommodationPlaceId) { // Only add clubs with accommodation assigned
-                if (!clubs[data.accommodationPlaceId]) {
-                    clubs[data.accommodationPlaceId] = [];
-                }
-                clubs[data.accommodationPlaceId].push({ id: doc.id, ...data });
-            }
-        });
-
-        if (accommodationPlaces.length === 0) {
-            accommodationScheduleContainer.innerHTML = '<p>Zatiaľ nie sú pridané žiadne ubytovne.</p>';
-            return;
-        }
-
-        let accommodationHTML = '';
-        accommodationPlaces.forEach(place => {
-            const assignedTeams = clubs[place.id] || [];
-            accommodationHTML += `<div class="schedule-cell-accommodation">`;
-            accommodationHTML += `<div class="schedule-cell-title">${place.name}</div>`;
-            accommodationHTML += `<div class="schedule-cell-teams">`;
-            if (assignedTeams.length > 0) {
-                assignedTeams.forEach(team => {
-                    accommodationHTML += `<p>${team.clubBaseName} (${team.categoryName} - ${team.groupName}) <button class="action-button edit-accommodation-assignment-button" data-assignment-club-id="${team.id}" data-assignment-place-id="${place.id}" title="Upraviť">&#9998;</button></p>`;
-                });
+            // Populate category and group, and update duration/buffer if category changes
+            await populateCategorySelect(matchCategorySelect, matchData.categoryId);
+            if (matchData.categoryId) {
+                await populateGroupSelect(matchData.categoryId, matchGroupSelect, matchData.groupId);
+                matchGroupSelect.disabled = false;
             } else {
-                accommodationHTML += `<p>Žiadne tímy priradené k tomuto miestu.</p>`;
+                matchGroupSelect.innerHTML = '<option value="">-- Vyberte skupinu --</option>';
+                matchGroupSelect.disabled = true;
             }
-            accommodationHTML += `</div>`;
-            accommodationHTML += `</div>`;
-        });
-        accommodationScheduleContainer.innerHTML = accommodationHTML;
 
-        document.querySelectorAll('.edit-accommodation-assignment-button').forEach(button => {
-            button.addEventListener('click', async (event) => {
-                const clubId = event.target.dataset.assignmentClubId;
-                const placeId = event.target.dataset.assignmentPlaceId;
-                // Find the assignment document ID based on clubId (since assignment doc stores clubId and accommodationPlaceId)
-                // This assumes a 1:1 relationship between club and assignment for simplicity or we need to query assignments.
-                // For simplicity, we directly open modal based on clubId to modify its accommodation.
-                await openAccommodationModalForClub(clubId);
-            });
-        });
+            team1NumberInput.value = matchData.team1Number || '';
+            team2NumberInput.value = matchData.team2Number || '';
 
+            deleteMatchButtonModal.style.display = 'inline-block';
+            deleteMatchButtonModal.onclick = () => deleteMatch(matchId);
+
+            openModal(matchModal);
+
+            // After opening the modal and setting date/location, find the first available time
+            // This will recalculate the start time based on the new date/location
+            // Only find first available if newDate/newLocation are provided (from drag/drop)
+            // If just editing existing match, keep its time.
+            if (newDate || newLocation) {
+                 await findFirstAvailableTime(); // This will suggest the first available time in the new spot
+            }
+
+
+        } else {
+            await showMessage('Informácia', "Zápas sa nenašiel.");
+        }
     } catch (error) {
-        console.error("Chyba pri načítavaní priradení ubytovania:", error);
-        accommodationScheduleContainer.innerHTML = '<p>Nastala chyba pri načítavaní priradení ubytovania. Skúste to znova.</p>';
+        console.error("Chyba pri načítavaní dát zápasu:", error);
+        await showMessage('Chyba', "Vyskytla sa chyba pri načítavaní dát zápasu. Skúste to znova.");
     }
 }
 
 /**
- * Opens the accommodation modal to edit an existing assignment for a given club.
- * @param {string} clubId The ID of the club whose accommodation assignment is to be edited.
+ * Deletes a match from Firestore.
+ * @param {string} matchId The ID of the match to delete.
  */
-async function openAccommodationModalForClub(clubId) {
-    resetAccommodationModal();
-    await populateAccommodationPlacesSelect(accommodationSelect);
-
-    const clubDocRef = doc(clubsCollectionRef, clubId);
-    const clubDocSnap = await getDoc(clubDocRef);
-
-    if (clubDocSnap.exists()) {
-        const clubData = clubDocSnap.data();
-        accommodationModalTitle.textContent = 'Upraviť priradenie ubytovania';
-        deleteAssignmentButtonModal.style.display = 'inline-block';
-
-        // Select the correct radio button based on whether the club currently has an assignment
-        if (clubData.accommodationPlaceId) {
-            assignedTeamRadio.checked = true;
-            accommodationTeamContainer.style.display = 'none'; // Hide unassigned select
-            assignedTeamSelect.style.display = 'block'; // Show assigned select
-            await populateAssignedTeamsSelect(assignedTeamSelect, clubId); // Populate with the specific club selected
-            accommodationSelect.value = clubData.accommodationPlaceId;
-            accommodationIdInput.value = clubId; // Use clubId as 'assignmentId' for update context
-        } else {
-            unassignedTeamRadio.checked = true; // Should not happen if called from edit button for assigned team, but as fallback
-            accommodationTeamContainer.style.display = 'block';
-            assignedTeamSelect.style.display = 'none';
-            await populateUnassignedTeamsSelect(unassignedTeamSelect, clubId);
-            accommodationIdInput.value = clubId; // Use clubId as 'assignmentId' for update context
-        }
-    }
-    openModal(accommodationModal);
-}
-
-// Event Listeners for Forms and Buttons
-
-// Add/Edit Playing Day Form
-playingDayForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const id = playingDayIdInput.value;
-    const date = playingDayDateInput.value;
-
-    // Basic validation
-    if (!date) {
-        await showMessage('Chyba', 'Prosím, zadajte dátum hracieho dňa.');
-        return;
-    }
-
-    try {
-        const q = query(playingDaysCollectionRef, where("date", "==", date));
-        const querySnapshot = await getDocs(q);
-
-        // Check for duplicate playing day date
-        if (!querySnapshot.empty && querySnapshot.docs[0].id !== id) {
-            await showMessage('Chyba', 'Hrací deň s týmto dátumom už existuje!');
-            return;
-        }
-
-        const playingDayData = { date: date };
-
-        if (id) {
-            await setDoc(doc(playingDaysCollectionRef, id), playingDayData, { merge: true });
-            await showMessage('Úspech', 'Hrací deň úspešne upravený!');
-        } else {
-            await addDoc(playingDaysCollectionRef, { ...playingDayData, createdAt: new Date() });
-            await showMessage('Úspech', 'Hrací deň úspešne pridaný!');
-        }
-        closeModal(playingDayModal);
-        await displayMatchesAsSchedule();
-    } catch (error) {
-        console.error("Chyba pri ukladaní hracieho dňa:", error);
-        await showMessage('Chyba', `Chyba pri ukladaní hracieho dňa. Detail: ${error.message}`);
-    }
-});
-
-// Delete Playing Day Button (inside modal)
-deletePlayingDayButtonModal.addEventListener('click', async () => {
-    const dayId = playingDayIdInput.value;
-    if (!dayId) return;
-
-    const confirmation = await showConfirmation('Potvrdenie', 'Naozaj chcete vymazať tento hrací deň? Vymažú sa aj všetky súvisiace zápasy!');
-    if (!confirmation) return;
-
-    try {
-        // Delete all matches associated with this playing day first
-        const qMatches = query(matchesCollectionRef, where("dateTime", ">=", `${playingDayDateInput.value}T00:00:00`), where("dateTime", "<=", `${playingDayDateInput.value}T23:59:59`));
-        const matchesSnapshot = await getDocs(qMatches);
-        const batch = writeBatch(db);
-        matchesSnapshot.forEach(matchDoc => {
-            batch.delete(matchDoc.ref);
-        });
-        await batch.commit();
-
-        await deleteDoc(doc(playingDaysCollectionRef, dayId));
-        await showMessage('Úspech', 'Hrací deň a súvisiace zápasy boli úspešne vymazané!');
-        closeModal(playingDayModal);
-        await displayMatchesAsSchedule(); // Refresh schedule
-    } catch (error) {
-        console.error("Chyba pri mazaní hracieho dňa:", error);
-        await showMessage('Chyba', `Chyba pri mazaní hracieho dňa. Detail: ${error.message}`);
-    }
-});
-
-
-// Add/Edit Place Form
-placeForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const id = placeIdInput.value;
-    const name = placeNameInput.value.trim();
-    const isAccommodation = placeAccommodationCheckbox.checked;
-
-    if (!name) {
-        await showMessage('Chyba', 'Prosím, zadajte názov miesta.');
-        return;
-    }
-
-    try {
-        const q = query(placesCollectionRef, where("name", "==", name));
-        const querySnapshot = await getDocs(q);
-
-        if (!querySnapshot.empty && querySnapshot.docs[0].id !== id) {
-            await showMessage('Chyba', 'Miesto s týmto názvom už existuje!');
-            return;
-        }
-
-        const placeData = { name: name, isAccommodation: isAccommodation };
-
-        if (id) {
-            await setDoc(doc(placesCollectionRef, id), placeData, { merge: true });
-            await showMessage('Úspech', 'Miesto úspešne upravené!');
-        } else {
-            await addDoc(placesCollectionRef, { ...placeData, createdAt: new Date() });
-            await showMessage('Úspech', 'Miesto úspešne pridané!');
-        }
-        closeModal(placeModal);
-        await displayMatchesAsSchedule(); // Refresh schedule to include new/updated places
-        await displayAccommodationAssignments(); // Refresh accommodation to include new/updated places
-    } catch (error) {
-        console.error("Chyba pri ukladaní miesta:", error);
-        await showMessage('Chyba', `Chyba pri ukladaní miesta. Detail: ${error.message}`);
-    }
-});
-
-// Delete Place Button (inside modal)
-deletePlaceButtonModal.addEventListener('click', async () => {
-    const placeId = placeIdInput.value;
-    if (!placeId) return;
-
-    const confirmation = await showConfirmation('Potvrdenie', 'Naozaj chcete vymazať toto miesto? Vymažú sa aj všetky súvisiace zápasy a priradenia ubytovania!');
-    if (!confirmation) return;
-
-    try {
-        // Delete all matches associated with this place
-        const qMatches = query(matchesCollectionRef, where("placeId", "==", placeId));
-        const matchesSnapshot = await getDocs(qMatches);
-        const batch = writeBatch(db);
-        matchesSnapshot.forEach(matchDoc => {
-            batch.delete(matchDoc.ref);
-        });
-        await batch.commit();
-
-        // Remove accommodation assignment from clubs if this place was an accommodation
-        const qClubsWithAccommodation = query(clubsCollectionRef, where("accommodationPlaceId", "==", placeId));
-        const clubsSnapshot = await getDocs(qClubsWithAccommodation);
-        const clubBatch = writeBatch(db);
-        clubsSnapshot.forEach(clubDoc => {
-            clubBatch.update(clubDoc.ref, { accommodationPlaceId: "" }); // Set to empty string
-        });
-        await clubBatch.commit();
-        
-        await deleteDoc(doc(placesCollectionRef, placeId));
-        await showMessage('Úspech', 'Miesto, súvisiace zápasy a priradenia ubytovania boli úspešne vymazané!');
-        closeModal(placeModal);
-        await displayMatchesAsSchedule(); // Refresh schedule
-        await displayAccommodationAssignments(); // Refresh accommodation
-    } catch (error) {
-        console.error("Chyba pri mazaní miesta:", error);
-        await showMessage('Chyba', `Chyba pri mazaní miesta. Detail: ${error.message}`);
-    }
-});
-
-// Add/Edit Match Form
-matchCategorySelect.addEventListener('change', async () => {
-    const categoryId = matchCategorySelect.value;
-    if (categoryId) {
-        await populateGroupSelect(matchGroup1Select, categoryId);
-        matchGroup2Select.innerHTML = matchGroup1Select.innerHTML; // Populate group2 with same options
-    } else {
-        matchGroup1Select.innerHTML = '<option value="">-- Vyberte skupinu tímu 1 --</option>';
-        matchTeam1Select.innerHTML = '<option value="">-- Vyberte tím 1 --</option>';
-        matchGroup2Select.innerHTML = '<option value="">-- Vyberte skupinu tímu 2 --</option>';
-        matchTeam2Select.innerHTML = '<option value="">-- Vyberte tím 2 --</option>';
-    }
-});
-
-matchGroup1Select.addEventListener('change', async () => {
-    const groupId = matchGroup1Select.value;
-    if (groupId) {
-        await populateTeamsInGroupSelect(matchTeam1Select, groupId);
-    } else {
-        matchTeam1Select.innerHTML = '<option value="">-- Vyberte tím 1 --</option>';
-    }
-});
-
-matchGroup2Select.addEventListener('change', async () => {
-    const groupId = matchGroup2Select.value;
-    if (groupId) {
-        await populateTeamsInGroupSelect(matchTeam2Select, groupId);
-    } else {
-        matchTeam2Select.innerHTML = '<option value="">-- Vyberte tím 2 --</option>';
-    }
-});
-
-/**
- * Populates a select element with teams belonging to a specific group.
- * @param {HTMLSelectElement} selectElement The select element to populate.
- * @param {string} groupId The ID of the group.
- * @param {string} [selectedTeamId=''] The ID of the team to pre-select.
- */
-async function populateTeamsInGroupSelect(selectElement, groupId, selectedTeamId = '') {
-    if (!selectElement) return;
-    selectElement.innerHTML = '<option value="">-- Vyberte tím --</option>';
-    if (!groupId) return;
-
-    try {
-        const q = query(clubsCollectionRef, where("groupId", "==", groupId), orderBy("clubBaseName", "asc"), orderBy("orderNumber", "asc"));
-        const querySnapshot = await getDocs(q);
-        querySnapshot.forEach((doc) => {
-            const team = doc.data();
-            const option = document.createElement('option');
-            option.value = doc.id;
-            option.textContent = `${team.clubBaseName} ${team.orderNumber ? '(' + team.orderNumber + ')' : ''}`;
-            selectElement.appendChild(option);
-        });
-        if (selectedTeamId) {
-            selectElement.value = selectedTeamId;
-        }
-    } catch (error) {
-        console.error("Chyba pri načítavaní tímov v skupine:", error);
-        const option = document.createElement('option');
-        option.value = '';
-        option.textContent = '-- Chyba pri načítaní --';
-        option.disabled = true;
-        selectElement.appendChild(option);
-    }
-}
-
-matchForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const id = matchIdInput.value;
-    const categoryId = matchCategorySelect.value;
-    const group1Id = matchGroup1Select.value;
-    const team1Id = matchTeam1Select.value;
-    const group2Id = matchGroup2Select.value;
-    const team2Id = matchTeam2Select.value;
-    const playingDayDate = matchPlayingDaySelect.value;
-    const placeId = matchPlaceSelect.value;
-    const matchTime = matchTimeInput.value;
-
-    // Basic validation
-    if (!categoryId || !group1Id || !team1Id || !group2Id || !team2Id || !playingDayDate || !placeId || !matchTime) {
-        await showMessage('Chyba', 'Prosím, vyplňte všetky povinné polia zápasu.');
-        return;
-    }
-
-    if (team1Id === team2Id) {
-        await showMessage('Chyba', 'Tím 1 a Tím 2 nemôžu byť rovnaké!');
-        return;
-    }
-    
-    // Construct dateTime string in ISO format
-    const dateTime = `${playingDayDate}T${matchTime}:00`;
-
-    try {
-        // Get full club names and category/group names for display purposes (denormalization)
-        const team1Doc = await getDoc(doc(clubsCollectionRef, team1Id));
-        const team2Doc = await getDoc(doc(clubsCollectionRef, team2Id));
-        const categoryDoc = await getDoc(doc(categoriesCollectionRef, categoryId));
-        const group1Doc = await getDoc(doc(groupsCollectionRef, group1Id));
-        const group2Doc = await getDoc(doc(groupsCollectionRef, group2Id));
-
-        if (!team1Doc.exists() || !team2Doc.exists() || !categoryDoc.exists() || !group1Doc.exists() || !group2Doc.exists()) {
-            await showMessage('Chyba', 'Nepodarilo sa načítať informácie o tímoch, kategórii alebo skupinách.');
-            return;
-        }
-
-        const team1Data = team1Doc.data();
-        const team2Data = team2Doc.data();
-        const categoryData = categoryDoc.data();
-
-        // Check for duplicate match at same time and place
-        const qOverlap = query(matchesCollectionRef, 
-            where('dateTime', '==', dateTime),
-            where('placeId', '==', placeId)
-        );
-        const overlapSnapshot = await getDocs(qOverlap);
-
-        if (!overlapSnapshot.empty && overlapSnapshot.docs[0].id !== id) {
-            await showMessage('Chyba', 'Na tomto mieste a čase už existuje iný zápas!');
-            return;
-        }
-
-        const matchData = {
-            categoryId: categoryId,
-            categoryName: categoryData.name, // Denormalized name
-            group1Id: group1Id,
-            group2Id: group2Id,
-            team1Id: team1Id,
-            team1BaseName: team1Data.clubBaseName, // Denormalized name
-            team2Id: team2Id,
-            team2BaseName: team2Data.clubBaseName, // Denormalized name
-            dateTime: dateTime,
-            placeId: placeId,
-            status: 'scheduled' // Default status
-        };
-
-        if (id) {
-            await setDoc(doc(matchesCollectionRef, id), matchData, { merge: true });
-            await showMessage('Úspech', 'Zápas úspešne upravený!');
-        } else {
-            await addDoc(matchesCollectionRef, { ...matchData, createdAt: new Date() });
-            await showMessage('Úspech', 'Zápas úspešne pridaný!');
-        }
-        closeModal(matchModal);
-        await displayMatchesAsSchedule();
-    } catch (error) {
-        console.error("Chyba pri ukladaní zápasu:", error);
-        await showMessage('Chyba', `Chyba pri ukladaní zápasu. Detail: ${error.message}`);
-    }
-});
-
-// Delete Match Function
 async function deleteMatch(matchId) {
-    const confirmation = await showConfirmation('Potvrdenie', 'Naozaj chcete vymazať tento zápas?');
-    if (!confirmation) return;
-
-    try {
-        await deleteDoc(doc(matchesCollectionRef, matchId));
-        await showMessage('Úspech', 'Zápas úspešne vymazaný!');
-        await displayMatchesAsSchedule(); // Refresh schedule
-    } catch (error) {
-        console.error("Chyba pri mazaní zápasu:", error);
-        await showMessage('Chyba', `Chyba pri mazaní zápasu. Detail: ${error.message}`);
+    const confirmed = await showConfirmation('Potvrdenie vymazania', 'Naozaj chcete vymazať tento zápas?');
+    if (confirmed) {
+        try {
+            await deleteDoc(doc(matchesCollectionRef, matchId));
+            await showMessage('Úspech', 'Zápas vymazaný!');
+            closeModal(document.getElementById('matchModal'));
+            displayMatchesAsSchedule();
+        }
+        catch (error) {
+            console.error("Chyba pri mazaní zápasu:", error);
+            await showMessage('Chyba', `Chyba pri mazaní zápasu. Detail: ${error.message}`);
+        }
     }
 }
 
-
-// Add/Edit Accommodation Assignment Form
-accommodationForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const assignmentClubId = accommodationIdInput.value; // This will hold the club ID
-    const selectedAccommodationPlaceId = accommodationSelect.value;
-    const isUnassignedTeamSelected = unassignedTeamRadio.checked;
-
-    let clubIdToAssign;
-    if (isUnassignedTeamSelected) {
-        clubIdToAssign = unassignedTeamSelect.value;
-    } else {
-        clubIdToAssign = assignedTeamSelect.value;
-    }
-    
-    if (!clubIdToAssign || !selectedAccommodationPlaceId) {
-        await showMessage('Chyba', 'Prosím, vyberte tím a ubytovňu.');
-        return;
-    }
-
-    try {
-        const clubRef = doc(clubsCollectionRef, clubIdToAssign);
-        const clubDoc = await getDoc(clubRef);
-
-        if (!clubDoc.exists()) {
-            await showMessage('Chyba', 'Vybraný tím neexistuje.');
-            return;
-        }
-
-        const clubData = clubDoc.data();
-        
-        // Check if the team is already assigned to this accommodation place
-        if (clubData.accommodationPlaceId === selectedAccommodationPlaceId && clubIdToAssign === assignmentClubId) {
-            await showMessage('Informácia', 'Tím je už priradený k tejto ubytovni.');
-            closeModal(accommodationModal);
-            return;
-        }
-
-        // Update the club document directly
-        await setDoc(clubRef, { accommodationPlaceId: selectedAccommodationPlaceId }, { merge: true });
-
-        await showMessage('Úspech', 'Priradenie ubytovania úspešne uložené!');
-        closeModal(accommodationModal);
-        await displayAccommodationAssignments(); // Refresh display
-    } catch (error) {
-        console.error("Chyba pri ukladaní priradenia ubytovania:", error);
-        await showMessage('Chyba', `Chyba pri ukladaní priradenia ubytovania. Detail: ${error.message}`);
-    }
-});
-
-// Delete Accommodation Assignment Button (inside modal)
-deleteAssignmentButtonModal.addEventListener('click', async () => {
-    const clubIdToDeleteAssignment = accommodationIdInput.value; // This is the club ID
-    if (!clubIdToDeleteAssignment) return;
-
-    const confirmation = await showConfirmation('Potvrdenie', 'Naozaj chcete vymazať priradenie ubytovania pre tento tím?');
-    if (!confirmation) return;
-
-    try {
-        const clubRef = doc(clubsCollectionRef, clubIdToDeleteAssignment);
-        await setDoc(clubRef, { accommodationPlaceId: "" }, { merge: true }); // Set accommodation to empty string
-        await showMessage('Úspech', 'Priradenie ubytovania úspešne vymazané!');
-        closeModal(accommodationModal);
-        await displayAccommodationAssignments(); // Refresh display
-    } catch (error) {
-        console.error("Chyba pri mazaní priradenia ubytovania:", error);
-        await showMessage('Chyba', `Chyba pri mazaní priradenia ubytovania. Detail: ${error.message}`);
-    }
-});
-
-// Radio button change listeners for accommodation modal
-unassignedTeamRadio.addEventListener('change', async () => {
-    if (unassignedTeamRadio.checked) {
-        accommodationTeamContainer.style.display = 'block';
-        assignedTeamSelect.style.display = 'none';
-        await populateUnassignedTeamsSelect(unassignedTeamSelect);
-    }
-});
-
-assignedTeamRadio.addEventListener('change', async () => {
-    if (assignedTeamRadio.checked) {
-        accommodationTeamContainer.style.display = 'none';
-        assignedTeamSelect.style.display = 'block';
-        await populateAssignedTeamsSelect(assignedTeamSelect);
-    }
-});
-
-
-// Initial Load
 document.addEventListener('DOMContentLoaded', async () => {
     const loggedInUsername = localStorage.getItem('username');
     if (!loggedInUsername || loggedInUsername !== 'admin') {
@@ -1413,129 +970,465 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
-    // Load initial data and display schedules
-    await displayMatchesAsSchedule();
-    await displayAccommodationAssignments();
-
-    // Toggle add options dropdown
+    const categoriesContentSection = document.getElementById('categoriesContentSection');
     const addButton = document.getElementById('addButton');
     const addOptions = document.getElementById('addOptions');
-    if (addButton) {
-        addButton.addEventListener('click', () => {
-            addOptions.style.display = addOptions.style.display === 'block' ? 'none' : 'block';
-        });
-    }
-
-    // Add Playing Day Button
     const addPlayingDayButton = document.getElementById('addPlayingDayButton');
-    if (addPlayingDayButton) {
-        addPlayingDayButton.addEventListener('click', () => {
-            openPlayingDayModal();
-            addOptions.style.display = 'none';
-        });
-    }
-
-    // Add Place Button
     const addPlaceButton = document.getElementById('addPlaceButton');
-    if (addPlaceButton) {
-        addPlaceButton.addEventListener('click', () => {
-            openPlaceModal();
-            addOptions.style.display = 'none';
-        });
-    }
-
-    // Add Match Button
     const addMatchButton = document.getElementById('addMatchButton');
-    if (addMatchButton) {
-        addMatchButton.addEventListener('click', () => {
-            openMatchModal();
-            addOptions.style.display = 'none';
-        });
-    }
 
-    // Add Accommodation Assignment Button
-    const addAccommodationAssignmentButton = document.getElementById('addAccommodationAssignmentButton');
-    if (addAccommodationAssignmentButton) {
-        addAccommodationAssignmentButton.addEventListener('click', () => {
-            openAccommodationModal();
-            addOptions.style.display = 'none';
-        });
-    }
+    const matchModal = document.getElementById('matchModal');
+    const closeMatchModalButton = document.getElementById('closeMatchModal');
+    const matchForm = document.getElementById('matchForm');
+    const matchIdInput = document.getElementById('matchId');
+    const matchDateSelect = document.getElementById('matchDateSelect');
+    const matchLocationSelect = document.getElementById('matchLocationSelect');
+    const matchStartTimeInput = document.getElementById('matchStartTime');
+    const matchDurationInput = document.getElementById('matchDuration');
+    const matchBufferTimeInput = document.getElementById('matchBufferTime');
+    const matchCategorySelect = document.getElementById('matchCategory');
+    const matchGroupSelect = document.getElementById('matchGroup');
+    const matchModalTitle = document.getElementById('matchModalTitle');
+    const matchesContainer = document.getElementById('matchesContainer');
+    const team1NumberInput = document.getElementById('team1NumberInput');
+    const team2NumberInput = document.getElementById('team2NumberInput');
+    const deleteMatchButtonModal = document.getElementById('deleteMatchButtonModal');
 
-    // Event listener for opening playing day modal from schedule (edit button)
-    const editPlayingDaysButton = document.getElementById('editPlayingDaysButton');
-    if (editPlayingDaysButton) { // Added null check
-        editPlayingDaysButton.addEventListener('click', async () => {
-            const scheduleContainer = document.getElementById('scheduleContainer');
-            scheduleContainer.innerHTML = '<h2>Hracie dni</h2><p>Načítavam hracie dni...</p>';
-            try {
-                const playingDaysSnapshot = await getDocs(query(playingDaysCollectionRef, orderBy("date", "asc")));
-                let html = `<table class="data-table"><thead><tr><th>Dátum</th><th></th></tr></thead><tbody>`;
-                if (playingDaysSnapshot.empty) {
-                    html += `<tr><td colspan="2">Žiadne hracie dni.</td></tr>`;
-                } else {
-                    playingDaysSnapshot.forEach(doc => {
-                        const day = doc.data();
-                        const dateObj = new Date(day.date);
-                        const formattedDate = `${String(dateObj.getDate()).padStart(2, '0')}. ${String(dateObj.getMonth() + 1).padStart(2, '0')}. ${dateObj.getFullYear()}`;
-                        html += `<tr><td>${formattedDate}</td><td><button class="action-button edit-item-button" data-id="${doc.id}" data-type="playingDay">&#9998;</button></td></tr>`;
-                    });
-                }
-                html += `</tbody></table>`;
-                scheduleContainer.innerHTML = html;
+    const playingDayModal = document.getElementById('playingDayModal');
+    const closePlayingDayModalButton = document.getElementById('closePlayingDayModal');
+    const playingDayForm = document.getElementById('playingDayForm');
+    const playingDayIdInput = document.getElementById('playingDayId');
+    const playingDayDateInput = document.getElementById('playingDayDate');
+    const playingDayModalTitle = document.getElementById('playingDayModalTitle');
+    const deletePlayingDayButtonModal = document.getElementById('deletePlayingDayButtonModal');
 
-                document.querySelectorAll('.edit-item-button[data-type="playingDay"]').forEach(button => {
-                    button.addEventListener('click', (event) => openPlayingDayModal(event.target.dataset.id));
-                });
+    const placeModal = document.getElementById('placeModal');
+    const closePlaceModalButton = document.getElementById('closePlaceModal');
+    const placeForm = document.getElementById('placeForm');
+    const placeIdInput = document.getElementById('placeId');
+    const placeTypeSelect = document.getElementById('placeTypeSelect');
+    const placeNameInput = document.getElementById('placeName');
+    const placeAddressInput = document.getElementById('placeAddress');
+    const placeGoogleMapsUrlInput = document.getElementById('placeGoogleMapsUrl');
+    const deletePlaceButtonModal = document.getElementById('deletePlaceButtonModal');
 
-            } catch (error) {
-                console.error("Chyba pri načítavaní hracích dní na úpravu:", error);
-                scheduleContainer.innerHTML = '<p>Chyba pri načítavaní hracích dní.</p>';
+    if (categoriesContentSection) {
+        categoriesContentSection.style.display = 'block';
+        const otherSections = document.querySelectorAll('main > section, main > div');
+        otherSections.forEach(section => {
+            if (section.id !== 'categoriesContentSection') {
+                section.style.display = 'none';
             }
         });
     }
 
-    // Event listener for opening places modal from schedule (edit button)
-    const editPlacesButton = document.getElementById('editPlacesButton');
-    if (editPlacesButton) { // Added null check
-        editPlacesButton.addEventListener('click', async () => {
-            const scheduleContainer = document.getElementById('scheduleContainer');
-            scheduleContainer.innerHTML = '<h2>Miesta</h2><p>Načítavam miesta...</p>';
-            try {
-                const placesSnapshot = await getDocs(query(placesCollectionRef, orderBy("name", "asc")));
-                let html = `<table class="data-table"><thead><tr><th>Názov</th><th>Ubytovňa</th><th></th></tr></thead><tbody>`;
-                if (placesSnapshot.empty) {
-                    html += `<tr><td colspan="3">Žiadne miesta.</td></tr>`;
-                } else {
-                    placesSnapshot.forEach(doc => {
-                        const place = doc.data();
-                        const isAccommodationText = place.isAccommodation ? 'Áno' : 'Nie';
-                        html += `<tr><td>${place.name}</td><td>${isAccommodationText}</td><td><button class="action-button edit-item-button" data-id="${doc.id}" data-type="place">&#9998;</button></td></tr>`;
-                    });
-                }
-                html += `</tbody></table>`;
-                scheduleContainer.innerHTML = html;
+    // Initial display of the schedule when the page loads
+    await displayMatchesAsSchedule();
 
-                document.querySelectorAll('.edit-item-button[data-type="place"]').forEach(button => {
-                    button.addEventListener('click', (event) => openPlaceModal(event.target.dataset.id));
-                });
+    // Event listeners for the "Add" button and its options
+    addButton.addEventListener('click', (event) => {
+        event.stopPropagation(); // Prevent document click from closing options immediately
+        addOptions.classList.toggle('show');
+    });
 
-            } catch (error) {
-                console.error("Chyba pri načítavaní miest na úpravu:", error);
-                scheduleContainer.innerHTML = '<p>Chyba pri načítavaní miest.</p>';
+    document.addEventListener('click', (event) => {
+        if (!addButton.contains(event.target) && !addOptions.contains(event.target)) {
+            addOptions.classList.remove('show');
+        }
+    });
+
+    addPlayingDayButton.addEventListener('click', () => {
+        playingDayForm.reset();
+        playingDayIdInput.value = '';
+        playingDayModalTitle.textContent = 'Pridať hrací deň';
+        deletePlayingDayButtonModal.style.display = 'none';
+        openModal(playingDayModal);
+        addOptions.classList.remove('show');
+    });
+
+    addPlaceButton.addEventListener('click', () => {
+        placeForm.reset();
+        placeIdInput.value = '';
+        placeTypeSelect.value = '';
+        placeNameInput.value = '';
+        placeAddressInput.value = '';
+        placeGoogleMapsUrlInput.value = '';
+        deletePlaceButtonModal.style.display = 'none';
+        openModal(placeModal);
+        addOptions.classList.remove('show');
+    });
+
+    addMatchButton.addEventListener('click', async () => {
+        matchForm.reset();
+        matchIdInput.value = '';
+        matchModalTitle.textContent = 'Pridať nový zápas';
+        await populateCategorySelect(matchCategorySelect);
+        await populatePlayingDaysSelect(matchDateSelect);
+        await populateSportHallSelects(matchLocationSelect);
+        if (matchGroupSelect) {
+            matchGroupSelect.innerHTML = '<option value="">-- Vyberte skupinu --</option>';
+            matchGroupSelect.disabled = true;
+        }
+        team1NumberInput.value = '';
+        team2NumberInput.value = '';
+        matchDurationInput.value = '';
+        matchBufferTimeInput.value = '';
+        deleteMatchButtonModal.style.display = 'none';
+        openModal(matchModal);
+        addOptions.classList.remove('show');
+        // Update match duration and buffer based on initial category selection or default
+        if (matchCategorySelect.value) {
+            await updateMatchDurationAndBuffer();
+        } else {
+            await findFirstAvailableTime(); // Find time even without category selected (uses default duration/buffer)
+        }
+    });
+
+    // Close modal event listeners
+    closePlayingDayModalButton.addEventListener('click', () => {
+        closeModal(playingDayModal);
+        displayMatchesAsSchedule(); // Refresh schedule after closing
+    });
+
+    closePlaceModalButton.addEventListener('click', () => {
+        closeModal(placeModal);
+        displayMatchesAsSchedule(); // Refresh schedule after closing
+    });
+
+    closeMatchModalButton.addEventListener('click', () => {
+        closeModal(matchModal);
+        displayMatchesAsSchedule(); // Refresh schedule after closing
+    });
+
+    // Event listeners for dynamic updates in match form
+    matchCategorySelect.addEventListener('change', async () => {
+        const selectedCategoryId = matchCategorySelect.value;
+        if (selectedCategoryId) {
+            await populateGroupSelect(selectedCategoryId, matchGroupSelect);
+            if (matchGroupSelect) {
+                matchGroupSelect.disabled = false;
             }
-        });
-    }
+            await updateMatchDurationAndBuffer();
+        } else {
+            if (matchGroupSelect) {
+                matchGroupSelect.innerHTML = '<option value="">-- Vyberte skupinu --</option>';
+                matchGroupSelect.disabled = true;
+            }
+            team1NumberInput.value = '';
+            team2NumberInput.value = '';
+            matchDurationInput.value = 60; // Reset to default if no category
+            matchBufferTimeInput.value = 5; // Reset to default if no category
+            await findFirstAvailableTime();
+        }
+    });
 
-    // Event listener for showing all matches
-    const showAllMatchesButton = document.getElementById('showAllMatchesButton');
-    if (showAllMatchesButton) { // Added null check
-        showAllMatchesButton.addEventListener('click', displayMatchesAsSchedule);
-    }
+    matchDateSelect.addEventListener('change', findFirstAvailableTime);
+    matchLocationSelect.addEventListener('change', findFirstAvailableTime);
+    matchDurationInput.addEventListener('change', findFirstAvailableTime);
+    matchBufferTimeInput.addEventListener('change', findFirstAvailableTime);
 
-    // Event listener for showing accommodation assignments
-    const showAccommodationButton = document.getElementById('showAccommodationButton');
-    if (showAccommodationButton) { // Added null check
-        showAccommodationButton.addEventListener('click', displayAccommodationAssignments);
-    }
+    /**
+     * Handles the submission of the match form.
+     */
+    matchForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const matchCategory = matchCategorySelect.value;
+        const matchGroup = matchGroupSelect.value;
+        const team1Number = parseInt(team1NumberInput.value);
+        const team2Number = parseInt(team2NumberInput.value);
+        const matchDate = matchDateSelect.value;
+        const matchLocationName = matchLocationSelect.value;
+        const matchStartTime = matchStartTimeInput.value;
+        const matchDuration = parseInt(matchDurationInput.value);
+        const matchBufferTime = parseInt(matchBufferTimeInput.value);
+        const currentMatchId = matchIdInput.value;
+
+        // Basic validation for required fields
+        if (!matchCategory || !matchGroup || isNaN(team1Number) || isNaN(team2Number) || !matchDate || !matchLocationName || !matchStartTime || isNaN(matchDuration) || isNaN(matchBufferTime)) {
+            await showMessage('Chyba', 'Prosím, vyplňte všetky povinné polia (Kategória, Skupina, Poradové číslo tímu 1 a 2, Dátum, Miesto, Čas začiatku, Trvanie, Prestávka po zápase).');
+            return;
+        }
+
+        // Validate that teams are different
+        if (team1Number === team2Number) {
+            await showMessage('Chyba', 'Tím nemôže hrať sám proti sebe. Prosím, zadajte rôzne poradové čísla tímov.');
+            return;
+        }
+
+        // Fetch categories and groups once at the beginning of the submit handler for display names
+        const categoriesSnapshot = await getDocs(categoriesCollectionRef);
+        const categoriesMap = new Map();
+        categoriesSnapshot.forEach(doc => categoriesMap.set(doc.id, doc.data().name || doc.id));
+
+        const groupsSnapshot = await getDocs(groupsCollectionRef);
+        const groupsMap = new Map();
+        groupsSnapshot.forEach(doc => groupsMap.set(doc.id, doc.data().name || doc.id));
+
+        let team1Result = null;
+        let team2Result = null;
+        try {
+            team1Result = await getTeamName(matchCategory, matchGroup, team1Number, categoriesMap, groupsMap);
+            team2Result = await getTeamName(matchCategory, matchGroup, team2Number, categoriesMap, groupsMap);
+        } catch (error) {
+            console.error("Chyba pri získavaní názvov tímov:", error);
+            await showMessage('Chyba', "Vyskytla sa chyba pri získavaní názvov tímov. Skúste to znova.");
+            return;
+        }
+
+        // Validate if teams were found
+        if (!team1Result || !team1Result.fullDisplayName || !team2Result || !team2Result.fullDisplayName) {
+            await showMessage('Chyba', 'Jeden alebo oba tímy sa nenašli. Skontrolujte poradové čísla v danej kategórii a skupine.');
+            return;
+        }
+
+        // Check if teams have already played against each other in the same category and group
+        try {
+            const existingMatchesQuery = query(
+                matchesCollectionRef,
+                where("categoryId", "==", matchCategory),
+                where("groupId", "==", matchGroup)
+            );
+            const existingMatchesSnapshot = await getDocs(existingMatchesQuery);
+
+            let alreadyPlayed = false;
+            let overlappingExistingMatchDetails = null; // Variable to store details of the overlapping match
+
+            existingMatchesSnapshot.docs.forEach(doc => {
+                const existingMatch = doc.data();
+                const existingMatchId = doc.id;
+
+                // If editing an existing match, exclude it from the duplicate check
+                if (currentMatchId && existingMatchId === currentMatchId) {
+                    return;
+                }
+
+                const existingTeam1Number = existingMatch.team1Number;
+                const existingTeam2Number = existingMatch.team2Number;
+
+                // Check both possible combinations (Team1 vs Team2 or Team2 vs Team1)
+                const condition1 = (existingTeam1Number === team1Number && existingTeam2Number === team2Number);
+                const condition2 = (existingTeam1Number === team2Number && existingTeam2Number === team1Number);
+
+                if (condition1 || condition2) {
+                    alreadyPlayed = true;
+                    overlappingExistingMatchDetails = existingMatch; // Store the existing match details
+                    return; // Found a duplicate match, can exit the loop
+                }
+            });
+
+            if (alreadyPlayed) {
+                const dateObj = new Date(overlappingExistingMatchDetails.date);
+                const formattedDate = `${String(dateObj.getDate()).padStart(2, '0')}. ${String(dateObj.getMonth() + 1).padStart(2, '0')}. ${dateObj.getFullYear()}`;
+                await showMessage('Chyba', `Tímy ${team1Result.fullDisplayName} a ${team2Result.fullDisplayName} už proti sebe hrali v kategórii ${categoriesMap.get(matchCategory)} a v skupine ${groupsMap.get(matchGroup)} dňa ${formattedDate} o ${overlappingExistingMatchDetails.startTime}. Prosím, zadajte iné tímy.`);
+                return;
+            }
+        } catch (error) {
+            console.error("Chyba pri kontrole existujúcich zápasov:", error);
+            await showMessage('Chyba', "Vyskytla sa chyba pri kontrole, či tímy už hrali proti sebe. Skúste to znova.");
+            return;
+        }
+
+        // Check for time overlap in the same location and date
+        const [newStartHour, newStartMinute] = matchStartTime.split(':').map(Number);
+        const newMatchStartInMinutes = newStartHour * 60 + newStartMinute;
+        const newMatchEndInMinutesWithBuffer = newMatchStartInMinutes + matchDuration + matchBufferTime;
+
+        try {
+            const existingMatchesQuery = query(
+                matchesCollectionRef,
+                where("date", "==", matchDate),
+                where("location", "==", matchLocationName)
+            );
+            const existingMatchesSnapshot = await getDocs(existingMatchesQuery);
+
+            let overlapFound = false;
+            let overlappingMatchDetails = null;
+
+            existingMatchesSnapshot.docs.forEach(doc => {
+                const existingMatch = doc.data();
+                const existingMatchId = doc.id;
+
+                if (currentMatchId && existingMatchId === currentMatchId) {
+                    return;
+                }
+
+                const [existingStartHour, existingStartMinute] = existingMatch.startTime.split(':').map(Number);
+                const existingMatchStartInMinutes = existingStartHour * 60 + existingStartMinute;
+                const existingMatchEndInMinutesWithBuffer = existingMatchStartInMinutes + (existingMatch.duration || 0) + (existingMatch.bufferTime || 0);
+
+                if (newMatchStartInMinutes < existingMatchEndInMinutesWithBuffer && newMatchEndInMinutesWithBuffer > existingMatchStartInMinutes) {
+                    overlapFound = true;
+                    overlappingMatchDetails = existingMatch;
+                    return;
+                }
+            });
+
+            if (overlapFound) {
+                const [existingStartHour, existingStartMinute] = overlappingMatchDetails.startTime.split(':').map(Number);
+                const existingMatchEndTimeObj = new Date();
+                existingMatchEndTimeObj.setHours(existingStartHour, existingStartMinute + (overlappingMatchDetails.duration || 0), 0, 0);
+                const formattedExistingEndTime = existingMatchEndTimeObj.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit'});
+
+                await showMessage('Chyba', `Zápas sa prekrýva s existujúcim zápasom v mieste "${matchLocationName}" dňa ${matchDate}:\n\n` +
+                      `Existujúci zápas: ${overlappingMatchDetails.startTime} - ${formattedExistingEndTime}\n` +
+                      `Tímy: ${overlappingMatchDetails.team1DisplayName} vs ${overlappingMatchDetails.team2DisplayName}\n\n` +
+                      `Prosím, upravte čas začiatku alebo trvanie nového zápasu, alebo prestávku po zápase.`);
+                return;
+            }
+        } catch (error) {
+            console.error("Chyba pri kontrole prekrývania zápasov:", error);
+            await showMessage('Chyba', "Vyskytla sa chyba pri kontrole prekrývania zápasov. Skúste to znova.");
+            return;
+        }
+
+        // Determine location type
+        const allPlacesSnapshot = await getDocs(placesCollectionRef);
+        const allPlaces = allPlacesSnapshot.docs.map(doc => doc.data());
+        const selectedPlaceData = allPlaces.find(p => p.name === matchLocationName && p.type === 'Športová hala');
+        const matchLocationType = selectedPlaceData ? selectedPlaceData.type : 'Športová hala'; // Default to 'Športová hala' if not found
+
+        const matchData = {
+            date: matchDate,
+            startTime: matchStartTime,
+            duration: matchDuration,
+            bufferTime: matchBufferTime,
+            location: matchLocationName,
+            locationType: matchLocationType,
+            categoryId: matchCategory,
+            categoryName: categoriesMap.get(matchCategory) || matchCategory, // Use actual name from map
+            groupId: matchGroup || null,
+            groupName: matchGroup ? groupsMap.get(matchGroup).replace(/skupina /gi, '').trim() : null, // Use actual name from map
+            team1Category: matchCategory,
+            team1Group: matchGroup,
+            team1Number: team1Number,
+            team1DisplayName: team1Result.fullDisplayName,
+            team1ClubName: team1Result.clubName,
+            team1ClubId: team1Result.clubId,
+            team2Category: matchCategory,
+            team2Group: matchGroup,
+            team2Number: team2Number,
+            team2DisplayName: team2Result.fullDisplayName,
+            team2ClubName: team2Result.clubName,
+            team2ClubId: team2Result.clubId,
+            createdAt: new Date()
+        };
+
+        try {
+            if (currentMatchId) {
+                await setDoc(doc(matchesCollectionRef, currentMatchId), matchData, { merge: true });
+                await showMessage('Úspech', 'Zápas úspešne upravený!');
+            } else {
+                await addDoc(matchesCollectionRef, matchData);
+                await showMessage('Úspech', 'Zápas úspešne pridaný!');
+            }
+            closeModal(matchModal);
+            await displayMatchesAsSchedule();
+        } catch (error) {
+            console.error("Chyba pri ukladaní zápasu:", error);
+            await showMessage('Chyba', `Chyba pri ukladaní zápasu. Detail: ${error.message}`);
+        }
+    });
+
+    /**
+     * Handles the submission of the place form.
+     */
+    placeForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('placeId').value;
+        const type = document.getElementById('placeTypeSelect').value.trim();
+        const name = document.getElementById('placeName').value.trim();
+        const address = document.getElementById('placeAddress').value.trim();
+        const googleMapsUrl = document.getElementById('placeGoogleMapsUrl').value.trim();
+
+        // Basic validation
+        if (!type || !name || !address || !googleMapsUrl) {
+            await showMessage('Chyba', 'Prosím, vyplňte všetky polia (Typ miesta, Názov miesta, Adresa, Odkaz na Google Maps).');
+            return;
+        }
+        // Removed type check for Accommodation as it's no longer supported
+        if (type === 'Ubytovanie') {
+            await showMessage('Chyba', 'Typ miesta "Ubytovanie" nie je podporovaný. Vyberte "Športová hala" alebo "Stravovacie zariadenie".');
+            return;
+        }
+
+        try {
+            new URL(googleMapsUrl); // Validate URL format
+        } catch (_) {
+            await showMessage('Chyba', 'Odkaz na Google Maps musí byť platná URL adresa.');
+            return;
+        }
+
+        try {
+            const q = query(placesCollectionRef, where("name", "==", name), where("type", "==", type));
+            const querySnapshot = await getDocs(q);
+
+            // Check for duplicate place (name and type combination)
+            if (!querySnapshot.empty && querySnapshot.docs[0].id !== id) {
+                await showMessage('Chyba', `Miesto s názvom "${name}" a typom "${type}" už existuje!`);
+                return;
+            }
+
+            const placeData = {
+                type: type,
+                name: name,
+                address: address,
+                googleMapsUrl: googleMapsUrl,
+                createdAt: new Date()
+            };
+
+            if (id) {
+                await setDoc(doc(placesCollectionRef, id), placeData, { merge: true });
+                await showMessage('Úspech', 'Miesto úspešne upravené!');
+            } else {
+                await addDoc(placesCollectionRef, placeData);
+                await showMessage('Úspech', 'Miesto úspešne pridané!');
+            }
+            closeModal(placeModal);
+            await displayMatchesAsSchedule();
+        } catch (error) {
+            console.error("Chyba pri ukladaní miesta:", error);
+            await showMessage('Chyba', `Chyba pri ukladaní miesta. Detail: ${error.message}`);
+        }
+    });
+
+    /**
+     * Handles the submission of the playing day form.
+     */
+    playingDayForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('playingDayId').value;
+        const date = document.getElementById('playingDayDate').value;
+
+        // Basic validation
+        if (!date) {
+            await showMessage('Chyba', 'Prosím, zadajte dátum hracieho dňa.');
+            return;
+        }
+
+        try {
+            const q = query(playingDaysCollectionRef, where("date", "==", date));
+            const querySnapshot = await getDocs(q);
+
+            // Check for duplicate playing day date
+            if (!querySnapshot.empty && querySnapshot.docs[0].id !== id) {
+                await showMessage('Chyba', 'Hrací deň s týmto dátumom už existuje!');
+                return;
+            }
+
+            const playingDayData = { date: date };
+
+            if (id) {
+                await setDoc(doc(playingDaysCollectionRef, id), playingDayData, { merge: true });
+                await showMessage('Úspech', 'Hrací deň úspešne upravený!');
+            } else {
+                await addDoc(playingDaysCollectionRef, { ...playingDayData, createdAt: new Date() });
+                await showMessage('Úspech', 'Hrací deň úspešne pridaný!');
+            }
+            closeModal(playingDayModal);
+            await displayMatchesAsSchedule();
+        } catch (error) {
+            console.error("Chyba pri ukladaní hracieho dňa:", error);
+            await showMessage('Chyba', `Chyba pri ukladaní hracieho dňa. Detail: ${error.message}`);
+        }
+    });
 });
