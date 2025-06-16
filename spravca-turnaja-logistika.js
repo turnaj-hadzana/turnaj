@@ -948,8 +948,8 @@ async function displayMatchesAsSchedule() {
                         scheduleHtml += `<th>Čas</th>`;
                         scheduleHtml += `<th>Domáci</th>`;
                         scheduleHtml += `<th>Hostia</th>`;
-                        <th>ID Domáci</th>`;
-                        <th>ID Hostia</th>`;
+                        scheduleHtml += `<th>ID Domáci</th>`;
+                        scheduleHtml += `<th>ID Hostia</th>`;
                         scheduleHtml += `</tr></thead><tbody>`;
 
                         const isFirstPlayingDayForDate = allPlayingDayDates.length > 0 && date === allPlayingDayDates[0];
