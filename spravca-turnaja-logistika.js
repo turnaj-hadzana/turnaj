@@ -405,7 +405,7 @@ async function displayMatchesAsSchedule() {
                 scheduleHtml += `<table class="data-table match-list-table" style="width: 100%; border-collapse: collapse;">`;
                 scheduleHtml += `<thead><tr>`;
                 scheduleHtml += `<th>Začiatok</th>`;
-                scheduleHtml += `<th>koniec</th>`;
+                scheduleHtml += `<th>Koniec</th>`;
                 scheduleHtml += `<th>Domáci</th>`;
                 scheduleHtml += `<th>Hostia</th>`;
                 scheduleHtml += `<th></th>`;
