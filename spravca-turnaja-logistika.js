@@ -702,6 +702,8 @@ async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation
         console.log('moveAndRescheduleMatch: Batch commit úspešný. Volám displayMatchesAsSchedule()...');
         await displayMatchesAsSchedule();
         await showMessage('Úspech', 'Zápas úspešne presunutý a rozvrh prepočítaný!');
+        // EXPLICITNE zatvorte modálne okno po úspešnom zobrazení správy
+        closeModal(document.getElementById('messageModal'));
 
     } catch (error) {
         console.error("moveAndRescheduleMatch: Chyba pri presúvaní a prepočítavaní rozvrhu:", error);
@@ -886,8 +888,8 @@ async function displayMatchesAsSchedule() {
                         scheduleHtml += `<table class="data-table match-list-table compact-table" style="width: 100%; border-collapse: collapse;">`;
                         scheduleHtml += `<thead><tr>`;
                         scheduleHtml += `<th>Čas</th>`;
-                        scheduleHtml += `<th>Domáci</th>`;
-                        scheduleHtml += `<th>Hostia</th>`;
+                        scheduleHtml += `<th>Domáci klub</th>`;
+                        scheduleHtml += `<th>Hostia klub</th>`;
                         scheduleHtml += `<th>ID Domáci</th>`;
                         scheduleHtml += `<th>ID Hostia</th>`;
                         scheduleHtml += `</tr></thead><tbody>`;
