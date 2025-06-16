@@ -1615,7 +1615,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const matchDurationInput = document.getElementById('matchDuration');
     const matchBufferTimeInput = document.getElementById('matchBufferTime');
     const matchCategorySelect = document.getElementById('matchCategory');
-    const matchGroupSelect = document = document.getElementById('matchGroup');
+    const matchGroupSelect = document.getElementById('matchGroup');
     const team1NumberInput = document.getElementById('team1NumberInput');
     const team2NumberInput = document.getElementById('team2NumberInput');
     const deleteMatchButtonModal = document.getElementById('deleteMatchButtonModal');
