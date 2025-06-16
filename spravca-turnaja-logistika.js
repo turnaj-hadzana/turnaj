@@ -1,5 +1,8 @@
 import { db, categoriesCollectionRef, groupsCollectionRef, clubsCollectionRef, matchesCollectionRef, playingDaysCollectionRef, placesCollectionRef, openModal, closeModal, populateCategorySelect, populateGroupSelect, getDocs, doc, setDoc, addDoc, getDoc, query, where, orderBy, deleteDoc, writeBatch, settingsCollectionRef, showMessage, showConfirmation } from './spravca-turnaja-common.js';
 const SETTINGS_DOC_ID = 'matchTimeSettings';
+// Nová referencia na kolekciu pre zablokované sloty
+export const blockedSlotsCollectionRef = collection(db, 'tournamentData', 'mainTournamentData', 'blockedSlots');
+
 
 /**
  * Naplní element select hracími dňami z Firestore.
@@ -237,17 +240,59 @@ async function findFirstAvailableTime() {
         });
         console.log("Existing Matches for selected Location and Date (sorted by start time):", matchesForLocationAndDate);
 
+        // Fetch blocked slots for the selected date and location
+        const blockedSlotsQuery = query(
+            blockedSlotsCollectionRef,
+            where("date", "==", selectedDate),
+            where("location", "==", selectedLocationName),
+            orderBy("startTime", "asc")
+        );
+        const blockedSlotsSnapshot = await getDocs(blockedSlotsQuery);
+        const blockedSlotsForLocationAndDate = blockedSlotsSnapshot.docs.map(doc => {
+            const data = doc.data();
+            const [startH, startM] = data.startTime.split(':').map(Number);
+            const startInMinutes = startH * 60 + startM;
+            const [endH, endM] = data.endTime.split(':').map(Number);
+            const endInMinutes = endH * 60 + endM;
+            return { start: startInMinutes, end: endInMinutes, id: doc.id, ...data };
+        });
+        console.log("Blocked Slots for selected Location and Date:", blockedSlotsForLocationAndDate);
+
+
         let exactMatchDurationFound = false;
         let bestCandidateStartTimeInMinutes = -1;
+
+        // Function to check if a time slot overlaps with any existing match or blocked slot
+        const isSlotAvailable = (candidateStart, candidateEnd) => {
+            // Check against existing matches
+            for (const match of matchesForLocationAndDate) {
+                if (candidateStart < match.end && candidateEnd > match.start) {
+                    console.log(`Slot ${candidateStart}-${candidateEnd} overlaps with existing match ${match.start}-${match.end}`);
+                    return false; // Overlaps with an existing match
+                }
+            }
+            // Check against blocked slots
+            for (const blockedSlot of blockedSlotsForLocationAndDate) {
+                if (candidateStart < blockedSlot.end && candidateEnd > blockedSlot.start) {
+                    console.log(`Slot ${candidateStart}-${candidateEnd} overlaps with blocked slot ${blockedSlot.start}-${blockedSlot.end}`);
+                    return false; // Overlaps with a blocked slot
+                }
+            }
+            return true;
+        };
 
         // --- Krok 1: Uprednostnite presné prispôsobenie pre 'requiredMatchDuration' (samotný zápas) ---
         // Skontrolujte medzeru pred prvým zápasom (ak existuje) alebo ak nie sú žiadne zápasy
         if (matchesForLocationAndDate.length === 0) {
             // Ak nie sú žiadne existujúce zápasy, počiatočný čas dňa je prvý dostupný.
-            // Toto sa považuje za "presné prispôsobenie" pre trvanie zápasu.
-            bestCandidateStartTimeInMinutes = initialPointerMinutes;
-            exactMatchDurationFound = true; 
-            console.log("Žiadne existujúce zápasy. Nastavujem čas začiatku na počiatočný čas dňa ako kandidáta na presné prispôsobenie.");
+            // Skontrolujte, či je tento slot dostupný (nie je zablokovaný)
+            if (isSlotAvailable(initialPointerMinutes, initialPointerMinutes + newMatchFullFootprint)) {
+                bestCandidateStartTimeInMinutes = initialPointerMinutes;
+                exactMatchDurationFound = true; 
+                console.log("Žiadne existujúce zápasy. Nastavujem čas začiatku na počiatočný čas dňa ako kandidáta na presné prispôsobenie (dostupný).");
+            } else {
+                console.log("Žiadne existujúce zápasy, ale počiatočný slot je zablokovaný.");
+            }
         } else {
             const firstMatch = matchesForLocationAndDate[0];
             const gapBeforeFirstMatchDuration = firstMatch.start - initialPointerMinutes;
@@ -255,9 +300,11 @@ async function findFirstAvailableTime() {
 
             // Skontrolujte, či táto medzera dokáže presne prispôsobiť požadované trvanie zápasu
             if (gapBeforeFirstMatchDuration >= requiredMatchDuration) {
-                // A uistite sa, že sa rezerva tiež zmestí pred prvý skutočný zápas
-                if (initialPointerMinutes + requiredMatchDuration + requiredBufferTime <= firstMatch.start) {
-                    bestCandidateStartTimeInMinutes = initialPointerMinutes;
+                // A uistite sa, že sa rezerva tiež zmestí pred prvý skutočný zápas a nie je zablokovaný
+                const candidateStartTime = initialPointerMinutes;
+                const candidateEndTime = candidateStartTime + newMatchFullFootprint;
+                if (candidateEndTime <= firstMatch.start && isSlotAvailable(candidateStartTime, candidateEndTime)) {
+                    bestCandidateStartTimeInMinutes = candidateStartTime;
                     exactMatchDurationFound = true;
                     console.log("Našiel som presné prispôsobenie pre trvanie zápasu pred prvým zápasom:", bestCandidateStartTimeInMinutes);
                 }
@@ -277,9 +324,11 @@ async function findFirstAvailableTime() {
 
                 // Skontrolujte, či táto medzera dokáže presne prispôsobiť požadované trvanie zápasu
                 if (gapDuration >= requiredMatchDuration) {
-                    // A uistite sa, že sa rezerva tiež zmestí pred ďalší skutočný zápas
-                    if (gapStartInMinutes + requiredMatchDuration + requiredBufferTime <= nextMatch.start) {
-                        bestCandidateStartTimeInMinutes = gapStartInMinutes;
+                    // A uistite sa, že sa rezerva tiež zmestí pred ďalší skutočný zápas a nie je zablokovaný
+                    const candidateStartTime = gapStartInMinutes;
+                    const candidateEndTime = candidateStartTime + newMatchFullFootprint;
+                    if (candidateEndTime <= nextMatch.start && isSlotAvailable(candidateStartTime, candidateEndTime)) {
+                        bestCandidateStartTimeInMinutes = candidateStartTime;
                         exactMatchDurationFound = true;
                         console.log("Našiel som presné prispôsobenie pre trvanie zápasu medzi zápasmi:", bestCandidateStartTimeInMinutes);
                         break; // Našiel sa prvý presný prispôsobenie, ukončite cyklus
@@ -295,14 +344,52 @@ async function findFirstAvailableTime() {
             console.log("Nastavený čas začiatku zápasu na presné prispôsobenie (Priorita 1):", matchStartTimeInput.value);
         } else {
             // --- Krok 2: Náhradné umiestnenie po poslednom zápase, ak sa nenájde presné prispôsobenie ---
-            let nextAvailableTime = initialStartTimeForDay; 
+            let nextAvailableTimeInMinutes = initialPointerMinutes; // Default to initial day start time
             if (matchesForLocationAndDate.length > 0) {
                 const lastMatch = matchesForLocationAndDate[matchesForLocationAndDate.length - 1];
                 console.log("Fallback: Posledný existujúci zápas:", lastMatch);
-                nextAvailableTime = calculateNextAvailableTime(lastMatch.startTime, lastMatch.duration, lastMatch.bufferTime);
+                // Calculate time after the last match, and convert to minutes for checks
+                const lastMatchEndTimeInMinutes = lastMatch.end; // This already includes its duration + bufferTime
+
+                // Find the first available time *after* the last match, skipping any blocked slots
+                let potentialStartTime = lastMatchEndTimeInMinutes;
+                let foundNextAvailable = false;
+                // Loop up to 24:00 (1440 minutes) to find the next available slot
+                while (potentialStartTime < 1440) { 
+                    const candidateEndTime = potentialStartTime + newMatchFullFootprint;
+                    if (isSlotAvailable(potentialStartTime, candidateEndTime)) {
+                        nextAvailableTimeInMinutes = potentialStartTime;
+                        foundNextAvailable = true;
+                        break;
+                    }
+                    // Move to the next minute if current slot is blocked or occupied
+                    potentialStartTime++; 
+                }
+
+                if (!foundNextAvailable) {
+                    // If no available slot is found until end of day, revert to initial day start for the field
+                    // (though this means the user might need to pick a different day/location)
+                    nextAvailableTimeInMinutes = initialPointerMinutes; 
+                    console.log("No available time after last match, reverting to initial day start.");
+                }
+
+            } else { // No existing matches, just check if initial time is available
+                if (!isSlotAvailable(initialPointerMinutes, initialPointerMinutes + newMatchFullFootprint)) {
+                    // If initial slot is blocked and no matches, no automatic time can be set
+                    nextAvailableTimeInMinutes = -1; // Indicate no available time
+                    console.log("No existing matches, and initial day start slot is blocked.");
+                }
             }
-            matchStartTimeInput.value = nextAvailableTime;
-            console.log("Nenašlo sa presné prispôsobenie. Nastavujem čas začiatku zápasu na náhradný (po poslednom zápase alebo začiatku dňa):", matchStartTimeInput.value);
+
+            if (nextAvailableTimeInMinutes === -1) {
+                matchStartTimeInput.value = '';
+                await showMessage('Informácia', 'Na vybranom mieste a dátume nie sú k dispozícii žiadne voľné sloty na vloženie zápasu, dokonca ani po poslednom zápase alebo od začiatku dňa.');
+            } else {
+                const formattedHour = String(Math.floor(nextAvailableTimeInMinutes / 60)).padStart(2, '0');
+                const formattedMinute = String(nextAvailableTimeInMinutes % 60).padStart(2, '0');
+                matchStartTimeInput.value = `${formattedHour}:${formattedMinute}`;
+                console.log("Nenašlo sa presné prispôsobenie. Nastavujem čas začiatku zápasu na náhradný (po poslednom zápase alebo začiatku dňa):", matchStartTimeInput.value);
+            }
         }
 
     } catch (error) {
@@ -597,6 +684,11 @@ async function displayMatchesAsSchedule() {
             globalOtherDaysStartTime = data.otherDaysStartTime || '08:00';
         }
 
+        // Načítajte zablokované sloty pre všetky zobrazené dátumy a miesta
+        const blockedSlotsSnapshot = await getDocs(query(blockedSlotsCollectionRef));
+        const allBlockedSlots = blockedSlotsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        console.log("displayMatchesAsSchedule: Načítané zablokované sloty:", allBlockedSlots);
+
 
         // Zoskupte zápasy najprv podľa miesta, potom podľa dátumu
         const groupedMatchesByLocation = new Map(); // Kľúč: "miesto", Hodnota: Mapa (Kľúč: "dátum", Hodnota: Pole zápasov)
@@ -692,19 +784,56 @@ async function displayMatchesAsSchedule() {
                         let [pointerH, pointerM] = currentTimePointer.split(':').map(Number);
                         let currentTimePointerInMinutes = pointerH * 60 + pointerM;
 
-                        // Skontrolujte, či je pred aktuálnym zápasom prázdny slot
-                        if (currentMatchStartInMinutes > currentTimePointerInMinutes) {
-                            const emptySlotDuration = currentMatchStartInMinutes - currentTimePointerInMinutes;
-                            const emptySlotEndHour = Math.floor((currentTimePointerInMinutes + emptySlotDuration) / 60); 
-                            const emptySlotEndMinute = (currentTimePointerInMinutes + emptySlotDuration) % 60;
-                            const formattedEmptySlotEndTime = `${String(emptySlotEndHour).padStart(2, '0')}:${String(emptySlotEndMinute).padStart(2, '0')}`;
+                        // Iterujte cez časové sloty medzi currentTimePointer a začiatkom aktuálneho zápasu
+                        // Ak je pred aktuálnym zápasom prázdny slot, skontrolujte, či nejaká jeho časť nie je zablokovaná
+                        while (currentTimePointerInMinutes < currentMatchStartInMinutes) {
+                            const availableBlockedSlots = allBlockedSlots.filter(bs => 
+                                bs.date === date && bs.location === location &&
+                                // Check if blocked slot overlaps with the potential empty slot
+                                (currentTimePointerInMinutes < bs.endTime && (currentTimePointerInMinutes + 1) > bs.startTime)
+                            );
 
-                            scheduleHtml += `
-                                <tr class="empty-slot-row" data-date="${date}" data-location="${location}" data-start-time="${currentTimePointer}">
-                                    <td>${currentTimePointer} - ${formattedEmptySlotEndTime}</td>
-                                    <td colspan="4" style="text-align: center; color: #888; font-style: italic;">Voľný slot</td>
-                                </tr>
-                            `;
+                            if (availableBlockedSlots.length > 0) {
+                                // Ak je aktuálna minúta prekrytá zablokovaným slotom, zobrazte zablokovaný slot
+                                const blockedSlot = availableBlockedSlots[0]; // Vezmite prvý pre zjednodušenie zobrazenia
+                                const blockedSlotStartHour = String(Math.floor(blockedSlot.startTime / 60)).padStart(2, '0');
+                                const blockedSlotStartMinute = String(blockedSlot.startTime % 60).padStart(2, '0');
+                                const blockedSlotEndHour = String(Math.floor(blockedSlot.endTime / 60)).padStart(2, '0');
+                                const blockedSlotEndMinute = String(blockedSlot.endTime % 60).padStart(2, '0');
+
+                                scheduleHtml += `
+                                    <tr class="blocked-slot-row" data-id="${blockedSlot.id}" data-date="${date}" data-location="${location}" data-start-time="${blockedSlotStartHour}:${blockedSlotStartMinute}" data-end-time="${blockedSlotEndHour}:${blockedSlotEndMinute}">
+                                        <td>${blockedSlotStartHour}:${blockedSlotStartMinute} - ${blockedSlotEndHour}:${blockedSlotEndMinute}</td>
+                                        <td colspan="4" style="text-align: center; color: white; background-color: #dc3545; font-style: italic;">Zablokovaný slot</td>
+                                    </tr>
+                                `;
+                                currentTimePointerInMinutes = blockedSlot.end; // Posuňte ukazovateľ za zablokovaný slot
+                                currentTimePointer = `${String(Math.floor(currentTimePointerInMinutes / 60)).padStart(2, '0')}:${String(currentTimePointerInMinutes % 60).padStart(2, '0')}`;
+                            } else {
+                                // Ak nie je zablokovaný, zobrazte prázdny slot až do ďalšieho zápasu/zablokovaného slotu
+                                let nextOccupiedOrBlockedTime = currentMatchStartInMinutes;
+                                const nextBlockedSlot = allBlockedSlots.find(bs => 
+                                    bs.date === date && bs.location === location && bs.startTime >= currentTimePointerInMinutes
+                                );
+                                if (nextBlockedSlot) {
+                                    nextOccupiedOrBlockedTime = Math.min(nextOccupiedOrBlockedTime, nextBlockedSlot.startTime);
+                                }
+
+                                const emptySlotStart = currentTimePointerInMinutes;
+                                const emptySlotEnd = nextOccupiedOrBlockedTime;
+                                if (emptySlotEnd > emptySlotStart) {
+                                    const formattedEmptySlotStartTime = `${String(Math.floor(emptySlotStart / 60)).padStart(2, '0')}:${String(emptySlotStart % 60).padStart(2, '0')}`;
+                                    const formattedEmptySlotEndTime = `${String(Math.floor(emptySlotEnd / 60)).padStart(2, '0')}:${String(emptySlotEnd % 60).padStart(2, '0')}`;
+                                    scheduleHtml += `
+                                        <tr class="empty-slot-row" data-date="${date}" data-location="${location}" data-start-time="${formattedEmptySlotStartTime}" data-end-time="${formattedEmptySlotEndTime}">
+                                            <td>${formattedEmptySlotStartTime} - ${formattedEmptySlotEndTime}</td>
+                                            <td colspan="4" style="text-align: center; color: #888; font-style: italic;">Voľný slot</td>
+                                        </tr>
+                                    `;
+                                }
+                                currentTimePointerInMinutes = nextOccupiedOrBlockedTime; // Posuňte ukazovateľ
+                                currentTimePointer = `${String(Math.floor(currentTimePointerInMinutes / 60)).padStart(2, '0')}:${String(currentTimePointerInMinutes % 60).padStart(2, '0')}`;
+                            }
                         }
 
                         const matchEndTime = new Date();
@@ -737,6 +866,56 @@ async function displayMatchesAsSchedule() {
                         currentTimePointer = calculateNextAvailableTime(match.startTime, match.duration, match.bufferTime);
                     }
 
+                    // Po poslednom zápase, pridajte zostávajúce prázdne/zablokované sloty do konca dňa (24:00)
+                    let [finalPointerH, finalPointerM] = currentTimePointer.split(':').map(Number);
+                    let finalPointerMinutes = finalPointerH * 60 + finalPointerM;
+                    const endOfDayMinutes = 24 * 60; // 24:00
+
+                    while (finalPointerMinutes < endOfDayMinutes) {
+                        const availableBlockedSlots = allBlockedSlots.filter(bs => 
+                            bs.date === date && bs.location === location &&
+                            (finalPointerMinutes < bs.endTime && (finalPointerMinutes + 1) > bs.startTime)
+                        );
+
+                        if (availableBlockedSlots.length > 0) {
+                            const blockedSlot = availableBlockedSlots[0];
+                            const blockedSlotStartHour = String(Math.floor(blockedSlot.startTime / 60)).padStart(2, '0');
+                            const blockedSlotStartMinute = String(blockedSlot.startTime % 60).padStart(2, '0');
+                            const blockedSlotEndHour = String(Math.floor(blockedSlot.endTime / 60)).padStart(2, '0');
+                            const blockedSlotEndMinute = String(blockedSlot.endTime % 60).padStart(2, '0');
+
+                            scheduleHtml += `
+                                <tr class="blocked-slot-row" data-id="${blockedSlot.id}" data-date="${date}" data-location="${location}" data-start-time="${blockedSlotStartHour}:${blockedSlotStartMinute}" data-end-time="${blockedSlotEndHour}:${blockedSlotEndMinute}">
+                                    <td>${blockedSlotStartHour}:${blockedSlotStartMinute} - ${blockedSlotEndHour}:${blockedSlotEndMinute}</td>
+                                    <td colspan="4" style="text-align: center; color: white; background-color: #dc3545; font-style: italic;">Zablokovaný slot</td>
+                                </tr>
+                            `;
+                            finalPointerMinutes = blockedSlot.end;
+                        } else {
+                            let nextEventTime = endOfDayMinutes; // Predpokladajme koniec dňa
+                            const nextBlockedSlot = allBlockedSlots.find(bs => 
+                                bs.date === date && bs.location === location && bs.startTime >= finalPointerMinutes
+                            );
+                            if (nextBlockedSlot) {
+                                nextEventTime = Math.min(nextEventTime, nextBlockedSlot.startTime);
+                            }
+
+                            const emptySlotStart = finalPointerMinutes;
+                            const emptySlotEnd = nextEventTime;
+                            if (emptySlotEnd > emptySlotStart) {
+                                const formattedEmptySlotStartTime = `${String(Math.floor(emptySlotStart / 60)).padStart(2, '0')}:${String(emptySlotStart % 60).padStart(2, '0')}`;
+                                const formattedEmptySlotEndTime = `${String(Math.floor(emptySlotEnd / 60)).padStart(2, '0')}:${String(emptySlotEnd % 60).padStart(2, '0')}`;
+                                scheduleHtml += `
+                                    <tr class="empty-slot-row" data-date="${date}" data-location="${location}" data-start-time="${formattedEmptySlotStartTime}" data-end-time="${formattedEmptySlotEndTime}">
+                                        <td>${formattedEmptySlotStartTime} - ${formattedEmptySlotEndTime}</td>
+                                        <td colspan="4" style="text-align: center; color: #888; font-style: italic;">Voľný slot</td>
+                                    </tr>
+                                `;
+                            }
+                            finalPointerMinutes = nextEventTime;
+                        }
+                    }
+
                     scheduleHtml += `</tbody></table></div>`; // Zavrieť tabuľku a div skupiny dátumov
                 }
                 scheduleHtml += `</div>`; // Zavrieť div skupiny miest
@@ -767,13 +946,25 @@ async function displayMatchesAsSchedule() {
         });
 
         // Pridajte poslucháčov udalostí pre prázdne riadky slotov pre kliknutie
-        // Toto zostáva pre možnosť KLIKNUTIA na slot pre vytvorenie nového zápasu
         matchesContainer.querySelectorAll('.empty-slot-row').forEach(row => {
             row.addEventListener('click', (event) => {
                 const date = event.currentTarget.dataset.date;
                 const location = event.currentTarget.dataset.location;
                 const startTime = event.currentTarget.dataset.startTime;
-                openMatchModal(null, date, location, startTime); // Zavolajte openMatchModal pre nový zápas
+                const endTime = event.currentTarget.dataset.endTime; // Získať endTime
+                openFreeSlotModal(date, location, startTime, endTime); // Otvoriť nový modál
+            });
+        });
+
+        // Pridajte poslucháčov udalostí pre zablokované riadky slotov pre kliknutie
+        matchesContainer.querySelectorAll('.blocked-slot-row').forEach(row => {
+            row.addEventListener('click', (event) => {
+                const blockedSlotId = event.currentTarget.dataset.id;
+                const date = event.currentTarget.dataset.date;
+                const location = event.currentTarget.dataset.location;
+                const startTime = event.currentTarget.dataset.startTime;
+                const endTime = event.currentTarget.dataset.endTime;
+                openFreeSlotModal(date, location, startTime, endTime, blockedSlotId); // Otvoriť modál na úpravu zablokovaného slotu
             });
         });
 
@@ -925,6 +1116,14 @@ async function deletePlayingDay(dateToDelete) {
                 batch.delete(doc(matchesCollectionRef, matchDoc.id));
             });
 
+            // Zmažte súvisiace zablokované sloty
+            const blockedSlotsQuery = query(blockedSlotsCollectionRef, where("date", "==", dateToDelete));
+            const blockedSlotsSnapshot = await getDocs(blockedSlotsQuery);
+            blockedSlotsSnapshot.docs.forEach(blockedSlotDoc => {
+                batch.delete(doc(blockedSlotsCollectionRef, blockedSlotDoc.id));
+            });
+
+
             await batch.commit();
             await showMessage('Úspech', `Hrací deň ${dateToDelete} a všetky súvisiace zápasy boli vymazané!`);
             closeModal(document.getElementById('playingDayModal'));
@@ -966,6 +1165,14 @@ async function deletePlace(placeNameToDelete, placeTypeToDelete) {
             matchesSnapshot.docs.forEach(matchDoc => {
                 batch.delete(doc(matchesCollectionRef, matchDoc.id));
             });
+
+            // Zmažte súvisiace zablokované sloty
+            const blockedSlotsQuery = query(blockedSlotsCollectionRef, where("location", "==", placeNameToDelete));
+            const blockedSlotsSnapshot = await getDocs(blockedSlotsQuery);
+            blockedSlotsSnapshot.docs.forEach(blockedSlotDoc => {
+                batch.delete(doc(blockedSlotsCollectionRef, blockedSlotDoc.id));
+            });
+
 
             await batch.commit();
             await showMessage('Úspech', `Miesto ${placeNameToDelete} (${placeTypeToDelete}) a všetky súvisiace zápasy boli vymazané!`);
@@ -1170,6 +1377,140 @@ async function openMatchModal(matchId = null, prefillDate = '', prefillLocation 
 }
 
 /**
+ * Otvorí modálne okno na správu voľného/zablokovaného slotu.
+ * @param {string} date Dátum slotu.
+ * @param {string} location Miesto slotu.
+ * @param {string} startTime Čas začiatku slotu (HH:MM).
+ * @param {string} endTime Čas konca slotu (HH:MM).
+ * @param {string|null} blockedSlotId ID zablokovaného slotu, ak existuje (pre úpravu).
+ */
+async function openFreeSlotModal(date, location, startTime, endTime, blockedSlotId = null) {
+    const freeSlotModal = document.getElementById('freeSlotModal');
+    const freeSlotModalTitle = document.getElementById('freeSlotModalTitle');
+    const freeSlotDateDisplay = document.getElementById('freeSlotDateDisplay');
+    const freeSlotLocationDisplay = document.getElementById('freeSlotLocationDisplay');
+    const freeSlotTimeRangeDisplay = document.getElementById('freeSlotTimeRangeDisplay');
+    const blockSlotCheckbox = document.getElementById('blockSlotCheckbox');
+    const freeSlotIdInput = document.getElementById('freeSlotId');
+    const freeSlotSaveButton = document.getElementById('freeSlotSaveButton');
+    const deleteFreeSlotButton = document.getElementById('deleteFreeSlotButton');
+
+    freeSlotIdInput.value = blockedSlotId || '';
+    freeSlotDateDisplay.textContent = date;
+    freeSlotLocationDisplay.textContent = location;
+    freeSlotTimeRangeDisplay.textContent = `${startTime} - ${endTime}`;
+
+    if (blockedSlotId) {
+        freeSlotModalTitle.textContent = 'Upraviť zablokovaný slot';
+        blockSlotCheckbox.checked = true; // Ak existuje ID, je zablokovaný
+        deleteFreeSlotButton.style.display = 'inline-block';
+        deleteFreeSlotButton.onclick = async () => {
+            const confirmed = await showConfirmation('Potvrdenie vymazania', 'Naozaj chcete odblokovať tento slot?');
+            if (confirmed) {
+                await deleteDoc(doc(blockedSlotsCollectionRef, blockedSlotId));
+                await showMessage('Úspech', 'Slot bol odblokovaný!');
+                closeModal(freeSlotModal);
+                displayMatchesAsSchedule();
+            }
+        };
+    } else {
+        freeSlotModalTitle.textContent = 'Spravovať voľný slot';
+        blockSlotCheckbox.checked = false; // Predvolene odblokované pre nový voľný slot
+        deleteFreeSlotButton.style.display = 'none'; // Skryť tlačidlo vymazať pre nový slot
+    }
+
+    // Odstráňte starý poslucháč pred pridaním nového, aby sa predišlo viacnásobným spusteniam
+    freeSlotSaveButton.removeEventListener('click', handleFreeSlotSave);
+    freeSlotSaveButton.addEventListener('click', () => handleFreeSlotSave(date, location, startTime, endTime));
+
+    openModal(freeSlotModal);
+}
+
+/**
+ * Handler pre uloženie stavu voľného/zablokovaného slotu.
+ * @param {string} date Dátum slotu.
+ * @param {string} location Miesto slotu.
+ * @param {string} startTime Čas začiatku slotu (HH:MM).
+ * @param {string} endTime Čas konca slotu (HH:MM).
+ */
+async function handleFreeSlotSave(date, location, startTime, endTime) {
+    const freeSlotIdInput = document.getElementById('freeSlotId');
+    const blockSlotCheckbox = document.getElementById('blockSlotCheckbox');
+    const freeSlotModal = document.getElementById('freeSlotModal');
+
+    const slotData = {
+        date: date,
+        location: location,
+        startTime: startTime,
+        endTime: endTime,
+        startInMinutes: (parseInt(startTime.split(':')[0]) * 60) + parseInt(startTime.split(':')[1]),
+        endInMinutes: (parseInt(endTime.split(':')[0]) * 60) + parseInt(endTime.split(':')[1]),
+        createdAt: new Date()
+    };
+
+    try {
+        if (blockSlotCheckbox.checked) {
+            // Skontrolujte, či slot už nie je zablokovaný
+            const q = query(
+                blockedSlotsCollectionRef,
+                where("date", "==", slotData.date),
+                where("location", "==", slotData.location),
+                where("startTime", "==", slotData.startTime),
+                where("endTime", "==", slotData.endTime)
+            );
+            const snapshot = await getDocs(q);
+
+            if (snapshot.empty) { // Ak už nie je zablokovaný (alebo sa mení existujúci, ktorý mal rovnaké údaje)
+                if (freeSlotIdInput.value) {
+                    await setDoc(doc(blockedSlotsCollectionRef, freeSlotIdInput.value), slotData, { merge: true });
+                } else {
+                    await addDoc(blockedSlotsCollectionRef, slotData);
+                }
+                await showMessage('Úspech', 'Slot bol úspešne zablokovaný!');
+            } else if (freeSlotIdInput.value && snapshot.docs[0].id !== freeSlotIdInput.value) {
+                 // Ak sa pokúšame uložiť existujúci slot, ale s novým ID (nemalo by sa stať priamo, ale pre istotu)
+                 await showMessage('Upozornenie', 'Tento slot je už zablokovaný pod iným ID.');
+            } else if (!freeSlotIdInput.value && !snapshot.empty) {
+                // Pokúšame sa zablokovať už existujúci blokovaný slot, ale bez ID (nový)
+                await showMessage('Upozornenie', 'Tento slot je už zablokovaný.');
+            } else {
+                // Ak ID existuje a je to ten istý dokument, len aktualizujeme (merge true)
+                await setDoc(doc(blockedSlotsCollectionRef, freeSlotIdInput.value), slotData, { merge: true });
+                await showMessage('Úspech', 'Zmeny v zablokovanom slote boli uložené.');
+            }
+        } else {
+            // Odblokovať slot (vymazať dokument)
+            if (freeSlotIdInput.value) {
+                await deleteDoc(doc(blockedSlotsCollectionRef, freeSlotIdInput.value));
+                await showMessage('Úspech', 'Slot bol odblokovaný!');
+            } else {
+                // Ak nie je ID, skúste nájsť a vymazať podľa časového rozsahu
+                const q = query(
+                    blockedSlotsCollectionRef,
+                    where("date", "==", slotData.date),
+                    where("location", "==", slotData.location),
+                    where("startTime", "==", slotData.startTime),
+                    where("endTime", "==", slotData.endTime)
+                );
+                const snapshot = await getDocs(q);
+                if (!snapshot.empty) {
+                    await deleteDoc(doc(blockedSlotsCollectionRef, snapshot.docs[0].id));
+                    await showMessage('Úspech', 'Slot bol odblokovaný!');
+                } else {
+                    await showMessage('Informácia', 'Tento slot nie je zablokovaný.');
+                }
+            }
+        }
+        closeModal(freeSlotModal);
+        displayMatchesAsSchedule(); // Obnoviť rozvrh po zmene
+    } catch (error) {
+        console.error("Chyba pri ukladaní stavu voľného slotu:", error);
+        await showMessage('Chyba', `Chyba pri ukladaní stavu slotu: ${error.message}`);
+    }
+}
+
+
+/**
  * Zmaže zápas z Firestore.
  * @param {string} matchId ID zápasu na zmazanie.
  */
@@ -1238,6 +1579,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const placeGoogleMapsUrlInput = document.getElementById('placeGoogleMapsUrl');
     const deletePlaceButtonModal = document.getElementById('deletePlaceButtonModal');
 
+    const freeSlotModal = document.getElementById('freeSlotModal');
+    const closeFreeSlotModalButton = document.getElementById('closeFreeSlotModal');
+    const freeSlotSaveButton = document.getElementById('freeSlotSaveButton');
+
     if (categoriesContentSection) {
         categoriesContentSection.style.display = 'block';
         const otherSections = document.querySelectorAll('main > section, main > div');
@@ -1302,6 +1647,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     closeMatchModalButton.addEventListener('click', () => {
         closeModal(matchModal);
+        displayMatchesAsSchedule(); // Obnovte rozvrh po zatvorení
+    });
+
+    closeFreeSlotModalButton.addEventListener('click', () => {
+        closeModal(freeSlotModal);
         displayMatchesAsSchedule(); // Obnovte rozvrh po zatvorení
     });
 
@@ -1487,16 +1837,50 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             });
 
+            // Kontrola prekrývania so zablokovanými slotmi
+            const blockedSlotsQuery = query(
+                blockedSlotsCollectionRef,
+                where("date", "==", matchDate),
+                where("location", "==", matchLocationName)
+            );
+            const blockedSlotsSnapshot = await getDocs(blockedSlotsQuery);
+            blockedSlotsSnapshot.docs.forEach(doc => {
+                const blockedSlot = doc.data();
+                const [blockedStartHour, blockedStartMinute] = blockedSlot.startTime.split(':').map(Number);
+                const blockedSlotStartInMinutes = blockedStartHour * 60 + blockedStartMinute;
+                const [blockedEndHour, blockedEndMinute] = blockedSlot.endTime.split(':').map(Number);
+                const blockedSlotEndInMinutes = blockedEndHour * 60 + blockedEndMinute;
+
+                if (newMatchStartInMinutes < blockedSlotEndInMinutes && newMatchEndInMinutesWithBuffer > blockedSlotStartInMinutes) {
+                    overlapFound = true;
+                    overlappingMatchDetails = { ...blockedSlot, type: 'blocked_slot' }; // Označte ako zablokovaný slot
+                    return;
+                }
+            });
+
+
             if (overlapFound) {
+                let errorMessage = `Zápas sa prekrýva s existujúcim zápasom `;
+                if (overlappingMatchDetails.type === 'blocked_slot') {
+                    errorMessage += `alebo zablokovaným slotom `;
+                }
+                
                 const [existingStartHour, existingStartMinute] = overlappingMatchDetails.startTime.split(':').map(Number);
                 const existingMatchEndTimeObj = new Date();
-                existingMatchEndTimeObj.setHours(existingStartHour, existingStartMinute + (overlappingMatchDetails.duration || 0), 0, 0);
+                // If it's a blocked slot, use its endTime, otherwise calculate from duration
+                const durationOrEndTime = overlappingMatchDetails.type === 'blocked_slot' ? (overlappingMatchDetails.endInMinutes - existingMatchStartInMinutes) : (overlappingMatchDetails.duration || 0);
+                existingMatchEndTimeObj.setHours(existingStartHour, existingStartMinute + durationOrEndTime, 0, 0);
                 const formattedExistingEndTime = existingMatchEndTimeObj.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit'});
 
-                await showMessage('Chyba', `Zápas sa prekrýva s existujúcim zápasom v mieste "${matchLocationName}" dňa ${matchDate}:\n\n` +
-                      `Existujúci zápas: ${overlappingMatchDetails.startTime} - ${formattedExistingEndTime}\n` +
-                      `Tímy: ${overlappingMatchDetails.team1DisplayName} vs ${overlappingMatchDetails.team2DisplayName}\n\n` +
-                      `Prosím, upravte čas začiatku alebo trvanie nového zápasu, alebo prestávku po zápase.`);
+                errorMessage += `v mieste "${matchLocationName}" dňa ${matchDate}:\n\n` +
+                      `Existujúci časový rozsah: ${overlappingMatchDetails.startTime} - ${formattedExistingEndTime}\n`;
+                if (overlappingMatchDetails.type !== 'blocked_slot') {
+                    errorMessage += `Tímy: ${overlappingMatchDetails.team1DisplayName} vs ${overlappingMatchDetails.team2DisplayName}\n\n`;
+                } else {
+                    errorMessage += `(Zablokovaný slot)\n\n`;
+                }
+                errorMessage += `Prosím, upravte čas začiatku alebo trvanie nového zápasu, alebo prestávku po zápase.`;
+                await showMessage('Chyba', errorMessage);
                 return;
             }
         } catch (error) {
