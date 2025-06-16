@@ -540,6 +540,28 @@ async function displayMatchesAsSchedule() {
                 // Sort dates within each location
                 const sortedDatesForLocation = Array.from(matchesByDateForLocation.keys()).sort((a, b) => a.localeCompare(b));
 
+                // Determine unique groups for alignment logic for the entire location
+                const uniqueGroupIdsInLocation = new Set();
+                sortedDatesForLocation.forEach(date => {
+                    matchesByDateForLocation.get(date).forEach(match => {
+                        if (match.groupId) {
+                            uniqueGroupIdsInLocation.add(match.groupId);
+                        }
+                    });
+                });
+                const groupIdsArrayInLocation = Array.from(uniqueGroupIdsInLocation).sort();
+                let groupAlignmentMapForLocation = new Map();
+
+                if (groupIdsArrayInLocation.length === 2) {
+                    groupAlignmentMapForLocation.set(groupIdsArrayInLocation[0], 'left');
+                    groupAlignmentMapForLocation.set(groupIdsArrayInLocation[1], 'right');
+                } else if (groupIdsArrayInLocation.length === 3) {
+                    groupAlignmentMapForLocation.set(groupIdsArrayInLocation[0], 'left');
+                    groupAlignmentMapForLocation.set(groupIdsArrayInLocation[1], 'right');
+                    groupAlignmentMapForLocation.set(groupIdsArrayInLocation[2], 'center');
+                }
+
+
                 // Flex item for each location group
                 scheduleHtml += `<div class="location-group" style="flex: 1 1 45%; min-width: 300px; margin-bottom: 0; border: 1px solid #ccc; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">`;
                 scheduleHtml += `<h2 style="background-color: #007bff; color: white; padding: 18px; margin: 0; text-align: center;">${location}</h2>`;
@@ -565,34 +587,14 @@ async function displayMatchesAsSchedule() {
                     scheduleHtml += `<th>Čas</th>`;
                     scheduleHtml += `<th>Domáci</th>`;
                     scheduleHtml += `<th>Hostia</th>`;
-                    scheduleHtml += `<th></th>`;
-                    scheduleHtml += `<th></th>`;
+                    scheduleHtml += `<th>ID Domáci</th>`;
+                    scheduleHtml += `<th>ID Hostia</th>`;
                     scheduleHtml += `</tr></thead><tbody>`;
 
                     // Determine the initial start time for this specific date
                     const isFirstPlayingDayForDate = existingPlayingDays.length > 0 && date === existingPlayingDays[0];
                     let currentTimePointer = isFirstPlayingDayForDate ? globalFirstDayStartTime : globalOtherDaysStartTime;
-
-                    // Determine unique groups for alignment logic
-                    const uniqueGroupIds = new Set();
-                    matchesForDateAndLocation.forEach(match => {
-                        if (match.groupId) { // Ensure groupId exists
-                            uniqueGroupIds.add(match.groupId);
-                        }
-                    });
-                    const groupIdsArray = Array.from(uniqueGroupIds).sort(); // Sort to ensure consistent assignment
-                    let groupAlignmentMap = new Map();
-
-                    if (groupIdsArray.length === 2) {
-                        groupAlignmentMap.set(groupIdsArray[0], 'left');
-                        groupAlignmentMap.set(groupIdsArray[1], 'right');
-                    } else if (groupIdsArray.length === 3) {
-                        groupAlignmentMap.set(groupIdsArray[0], 'left');
-                        groupAlignmentMap.set(groupIdsArray[1], 'right');
-                        groupAlignmentMap.set(groupIdsArray[2], 'center');
-                    }
-
-
+                    
                     for (let i = 0; i < matchesForDateAndLocation.length; i++) {
                         const match = matchesForDateAndLocation[i];
                         const [matchStartH, matchStartM] = match.startTime.split(':').map(Number);
@@ -624,10 +626,10 @@ async function displayMatchesAsSchedule() {
                         const categoryColor = categoryColorsMap.get(match.categoryId) || 'transparent'; // Default to transparent if no color
 
                         let textAlignStyle = '';
-                        if (groupIdsArray.length >= 2 && groupIdsArray.length <= 3 && match.groupId && groupAlignmentMap.has(match.groupId)) {
-                            textAlignStyle = `text-align: ${groupAlignmentMap.get(match.groupId)};`;
-                        } else if (groupIdsArray.length > 3) { // For more than 3 groups
-                            textAlignStyle = `text-align: center;`;
+                        if (match.groupId && groupAlignmentMapForLocation.has(match.groupId)) {
+                            textAlignStyle = `text-align: ${groupAlignmentMapForLocation.get(match.groupId)};`;
+                        } else if (groupIdsArrayInLocation.length > 3) {
+                             textAlignStyle = `text-align: center;`;
                         }
                         // If 1 group, textAlignStyle remains empty, defaulting to browser's left align.
 
