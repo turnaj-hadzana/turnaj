@@ -974,8 +974,29 @@ td:last-child {
     transform: scale(0.98); /* Mierne zmenšenie pre pocit "zdvihnutia" */
 }
 
-.add-button.drag-over-add-button {
-    background-color: #28a745; /* Tmavšia zelená na hover */
-    box-shadow: 0 0 15px rgba(40, 167, 69, 0.6); /* Výraznejší tieň */
-    transform: scale(1.05); /* Mierne zväčšenie */
+
+
+/* Pre všetky bunky v tabuľkách na stránke logistiky */
+.data-table td,
+.data-table th {
+    word-wrap: break-word; /* Zalamuje dlhé slová, ktoré prečnievajú */
+    overflow-wrap: break-word; /* Novšia alternatíva k word-wrap */
+    white-space: normal; /* Zabezpečí, že text sa normálne zalamuje a neostáva na jednom riadku */
+}
+
+/* Prípadne pre konkrétne tabuľky, ak nechceš ovplyvniť všetky .data-table */
+/* Napríklad pre tabuľku s rozpisom zápasov */
+#scheduleTable td,
+#scheduleTable th {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    white-space: normal;
+}
+
+/* Ak sú v bunkách aj nejaké vnorené divy alebo span elementy, ktoré môžu držať text na jednom riadku */
+.data-table td > div,
+.data-table td > span {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    white-space: normal;
 }
