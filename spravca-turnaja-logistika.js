@@ -1064,6 +1064,16 @@ async function openMatchModal(matchId = null, prefillDate = '', prefillLocation 
             matchGroupSelect.innerHTML = '<option value="">-- Vyberte skupinu --</option>';
             matchGroupSelect.disabled = true;
         }
+
+        // Ak je skupina vybratá, odblokujte polia tímov, inak ich zablokujte
+        if (matchGroupSelect.value) {
+            team1NumberInput.disabled = false;
+            team2NumberInput.disabled = false;
+        } else {
+            team1NumberInput.disabled = true;
+            team2NumberInput.disabled = true;
+        }
+
         team1NumberInput.value = matchData.team1Number || '';
         team2NumberInput.value = matchData.team2Number || '';
 
@@ -1086,8 +1096,13 @@ async function openMatchModal(matchId = null, prefillDate = '', prefillLocation 
             matchGroupSelect.innerHTML = '<option value="">-- Vyberte skupinu --</option>';
             matchGroupSelect.disabled = true;
         }
+        
+        // Zablokujte a vymažte polia tímov pre nový zápas
         team1NumberInput.value = '';
+        team1NumberInput.disabled = true;
         team2NumberInput.value = '';
+        team2NumberInput.disabled = true;
+
         matchDurationInput.value = ''; // Vymazať pre nový zápas, nastaví sa výberom kategórie
         matchBufferTimeInput.value = ''; // Vymazať pre nový zápas, nastaví sa výberom kategórie
 
@@ -1248,20 +1263,37 @@ document.addEventListener('DOMContentLoaded', async () => {
         const selectedCategoryId = matchCategorySelect.value;
         if (selectedCategoryId) {
             await populateGroupSelect(selectedCategoryId, matchGroupSelect);
-            if (matchGroupSelect) {
-                matchGroupSelect.disabled = false;
-            }
+            matchGroupSelect.disabled = false;
+            // Resetuj a zablokuj poradové čísla tímov, pretože sa zmenila kategória (a tým aj skupiny)
+            team1NumberInput.value = '';
+            team1NumberInput.disabled = true;
+            team2NumberInput.value = '';
+            team2NumberInput.disabled = true;
             await updateMatchDurationAndBuffer(); // Aktualizuje trvanie a rezervu, ale nie čas začiatku
         } else {
-            if (matchGroupSelect) {
-                matchGroupSelect.innerHTML = '<option value="">-- Vyberte skupinu --</option>';
-                matchGroupSelect.disabled = true;
-            }
+            matchGroupSelect.innerHTML = '<option value="">-- Vyberte skupinu --</option>';
+            matchGroupSelect.disabled = true;
             team1NumberInput.value = '';
+            team1NumberInput.disabled = true;
             team2NumberInput.value = '';
+            team2NumberInput.disabled = true;
             matchDurationInput.value = 60; // Reset na predvolené, ak nie je kategória
             matchBufferTimeInput.value = 5; // Reset na predvolené, ak nie je kategória
-            // Odstránené priame volanie findFirstAvailableTime() tu
+        }
+    });
+
+    matchGroupSelect.addEventListener('change', () => {
+        if (matchGroupSelect.value) {
+            team1NumberInput.disabled = false;
+            team2NumberInput.disabled = false;
+            // Voliteľné: Vymažte hodnoty, ak sa zmenila skupina, aby sa predišlo chybnému predvyplneniu
+            team1NumberInput.value = ''; 
+            team2NumberInput.value = '';
+        } else {
+            team1NumberInput.value = '';
+            team1NumberInput.disabled = true;
+            team2NumberInput.value = '';
+            team2NumberInput.disabled = true;
         }
     });
 
