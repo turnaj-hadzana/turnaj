@@ -1539,67 +1539,79 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Event listener for opening playing day modal from schedule (edit button)
-    document.getElementById('editPlayingDaysButton').addEventListener('click', async () => {
-        const scheduleContainer = document.getElementById('scheduleContainer');
-        scheduleContainer.innerHTML = '<h2>Hracie dni</h2><p>Načítavam hracie dni...</p>';
-        try {
-            const playingDaysSnapshot = await getDocs(query(playingDaysCollectionRef, orderBy("date", "asc")));
-            let html = `<table class="data-table"><thead><tr><th>Dátum</th><th></th></tr></thead><tbody>`;
-            if (playingDaysSnapshot.empty) {
-                html += `<tr><td colspan="2">Žiadne hracie dni.</td></tr>`;
-            } else {
-                playingDaysSnapshot.forEach(doc => {
-                    const day = doc.data();
-                    const dateObj = new Date(day.date);
-                    const formattedDate = `${String(dateObj.getDate()).padStart(2, '0')}. ${String(dateObj.getMonth() + 1).padStart(2, '0')}. ${dateObj.getFullYear()}`;
-                    html += `<tr><td>${formattedDate}</td><td><button class="action-button edit-item-button" data-id="${doc.id}" data-type="playingDay">&#9998;</button></td></tr>`;
+    const editPlayingDaysButton = document.getElementById('editPlayingDaysButton');
+    if (editPlayingDaysButton) { // Added null check
+        editPlayingDaysButton.addEventListener('click', async () => {
+            const scheduleContainer = document.getElementById('scheduleContainer');
+            scheduleContainer.innerHTML = '<h2>Hracie dni</h2><p>Načítavam hracie dni...</p>';
+            try {
+                const playingDaysSnapshot = await getDocs(query(playingDaysCollectionRef, orderBy("date", "asc")));
+                let html = `<table class="data-table"><thead><tr><th>Dátum</th><th></th></tr></thead><tbody>`;
+                if (playingDaysSnapshot.empty) {
+                    html += `<tr><td colspan="2">Žiadne hracie dni.</td></tr>`;
+                } else {
+                    playingDaysSnapshot.forEach(doc => {
+                        const day = doc.data();
+                        const dateObj = new Date(day.date);
+                        const formattedDate = `${String(dateObj.getDate()).padStart(2, '0')}. ${String(dateObj.getMonth() + 1).padStart(2, '0')}. ${dateObj.getFullYear()}`;
+                        html += `<tr><td>${formattedDate}</td><td><button class="action-button edit-item-button" data-id="${doc.id}" data-type="playingDay">&#9998;</button></td></tr>`;
+                    });
+                }
+                html += `</tbody></table>`;
+                scheduleContainer.innerHTML = html;
+
+                document.querySelectorAll('.edit-item-button[data-type="playingDay"]').forEach(button => {
+                    button.addEventListener('click', (event) => openPlayingDayModal(event.target.dataset.id));
                 });
+
+            } catch (error) {
+                console.error("Chyba pri načítavaní hracích dní na úpravu:", error);
+                scheduleContainer.innerHTML = '<p>Chyba pri načítavaní hracích dní.</p>';
             }
-            html += `</tbody></table>`;
-            scheduleContainer.innerHTML = html;
-
-            document.querySelectorAll('.edit-item-button[data-type="playingDay"]').forEach(button => {
-                button.addEventListener('click', (event) => openPlayingDayModal(event.target.dataset.id));
-            });
-
-        } catch (error) {
-            console.error("Chyba pri načítavaní hracích dní na úpravu:", error);
-            scheduleContainer.innerHTML = '<p>Chyba pri načítavaní hracích dní.</p>';
-        }
-    });
+        });
+    }
 
     // Event listener for opening places modal from schedule (edit button)
-    document.getElementById('editPlacesButton').addEventListener('click', async () => {
-        const scheduleContainer = document.getElementById('scheduleContainer');
-        scheduleContainer.innerHTML = '<h2>Miesta</h2><p>Načítavam miesta...</p>';
-        try {
-            const placesSnapshot = await getDocs(query(placesCollectionRef, orderBy("name", "asc")));
-            let html = `<table class="data-table"><thead><tr><th>Názov</th><th>Ubytovňa</th><th></th></tr></thead><tbody>`;
-            if (placesSnapshot.empty) {
-                html += `<tr><td colspan="3">Žiadne miesta.</td></tr>`;
-            } else {
-                placesSnapshot.forEach(doc => {
-                    const place = doc.data();
-                    const isAccommodationText = place.isAccommodation ? 'Áno' : 'Nie';
-                    html += `<tr><td>${place.name}</td><td>${isAccommodationText}</td><td><button class="action-button edit-item-button" data-id="${doc.id}" data-type="place">&#9998;</button></td></tr>`;
+    const editPlacesButton = document.getElementById('editPlacesButton');
+    if (editPlacesButton) { // Added null check
+        editPlacesButton.addEventListener('click', async () => {
+            const scheduleContainer = document.getElementById('scheduleContainer');
+            scheduleContainer.innerHTML = '<h2>Miesta</h2><p>Načítavam miesta...</p>';
+            try {
+                const placesSnapshot = await getDocs(query(placesCollectionRef, orderBy("name", "asc")));
+                let html = `<table class="data-table"><thead><tr><th>Názov</th><th>Ubytovňa</th><th></th></tr></thead><tbody>`;
+                if (placesSnapshot.empty) {
+                    html += `<tr><td colspan="3">Žiadne miesta.</td></tr>`;
+                } else {
+                    placesSnapshot.forEach(doc => {
+                        const place = doc.data();
+                        const isAccommodationText = place.isAccommodation ? 'Áno' : 'Nie';
+                        html += `<tr><td>${place.name}</td><td>${isAccommodationText}</td><td><button class="action-button edit-item-button" data-id="${doc.id}" data-type="place">&#9998;</button></td></tr>`;
+                    });
+                }
+                html += `</tbody></table>`;
+                scheduleContainer.innerHTML = html;
+
+                document.querySelectorAll('.edit-item-button[data-type="place"]').forEach(button => {
+                    button.addEventListener('click', (event) => openPlaceModal(event.target.dataset.id));
                 });
+
+            } catch (error) {
+                console.error("Chyba pri načítavaní miest na úpravu:", error);
+                scheduleContainer.innerHTML = '<p>Chyba pri načítavaní miest.</p>';
             }
-            html += `</tbody></table>`;
-            scheduleContainer.innerHTML = html;
-
-            document.querySelectorAll('.edit-item-button[data-type="place"]').forEach(button => {
-                button.addEventListener('click', (event) => openPlaceModal(event.target.dataset.id));
-            });
-
-        } catch (error) {
-            console.error("Chyba pri načítavaní miest na úpravu:", error);
-            scheduleContainer.innerHTML = '<p>Chyba pri načítavaní miest.</p>';
-        }
-    });
+        });
+    }
 
     // Event listener for showing all matches
-    document.getElementById('showAllMatchesButton').addEventListener('click', displayMatchesAsSchedule);
+    const showAllMatchesButton = document.getElementById('showAllMatchesButton');
+    if (showAllMatchesButton) { // Added null check
+        showAllMatchesButton.addEventListener('click', displayMatchesAsSchedule);
+    }
 
     // Event listener for showing accommodation assignments
-    document.getElementById('showAccommodationButton').addEventListener('click', displayAccommodationAssignments);
+    const showAccommodationButton = document.getElementById('showAccommodationButton');
+    if (showAccommodationButton) { // Added null check
+        showAccommodationButton.addEventListener('click', displayAccommodationAssignments);
+    }
 });
