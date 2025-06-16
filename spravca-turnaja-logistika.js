@@ -494,7 +494,7 @@ function calculateNextAvailableTime(prevStartTime, duration, bufferTime) {
  * pričom rešpektuje zablokované sloty a zachováva relatívne poradie presunutých zápasov.
  * @param {string} draggedMatchId ID presunutého zápasu.
  * @param {string} targetDate Dátum cieľového miesta.
- * @param {string} targetLocation Miesto cieľového miesta.
+ * @param {string} targetLocation Miesto cieľového miesta (názov).
  * @param {string|null} droppedProposedStartTime HH:MM string pre navrhovaný čas začiatku presunutého zápasu, alebo null pre pripojenie na koniec.
  */
 async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation, droppedProposedStartTime = null) {
@@ -505,6 +505,7 @@ async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation
             await showMessage('Chyba', 'Presúvaný zápas nebol nájdený.');
             return;
         }
+        // Vytvoríme kopiu dát, aby sme mohli upraviť interné vlastnosti bez ovplyvnenia pôvodného dokumentu
         const movedMatchData = { id: draggedMatchDoc.id, type: 'match', ...draggedMatchDoc.data() };
 
         const originalDate = movedMatchData.date;
@@ -513,17 +514,17 @@ async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation
 
         const batch = writeBatch(db);
 
-        // 1. If moving across dates/locations, delete the original match document.
+        // Ak sa presúva naprieč dátumami/miestami, vymažte pôvodný dokument zápasu.
         if (!isMovingWithinSameSchedule) {
             batch.delete(draggedMatchDocRef);
         }
 
-        // 2. Get category settings for the moved match to ensure correct duration/buffer.
+        // Získajte nastavenia kategórie pre presunutý zápas, aby ste zabezpečili správne trvanie/rezervu.
         const categorySettings = await getCategoryMatchSettings(movedMatchData.categoryId);
         movedMatchData.duration = categorySettings.duration;
         movedMatchData.bufferTime = categorySettings.bufferTime;
         
-        // 3. Fetch all matches (excluding the dragged one if in the same schedule) and all blocked slots for the target date and location.
+        // Načítajte všetky zápasy (okrem presunutého, ak je v rovnakom rozvrhu) a všetky zablokované sloty pre cieľový dátum a miesto.
         const targetMatchesQuery = query(
             matchesCollectionRef,
             where("date", "==", targetDate),
@@ -532,7 +533,7 @@ async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation
         const targetMatchesSnapshot = await getDocs(targetMatchesQuery);
         let targetMatches = targetMatchesSnapshot.docs
             .map(doc => ({ id: doc.id, type: 'match', ...doc.data() }))
-            .filter(match => match.id !== draggedMatchId); // Exclude the dragged match itself
+            .filter(match => match.id !== draggedMatchId); // Vylúčte samotný presunutý zápas
 
         const targetBlockedSlotsQuery = query(
             blockedSlotsCollectionRef,
@@ -549,7 +550,7 @@ async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation
                 endInMinutes: (parseInt(doc.data().endTime.split(':')[0]) * 60) + parseInt(doc.data().endTime.split(':')[1])
             }));
 
-        // 4. Determine the initial start time for the target day based on global settings.
+        // Určite počiatočný čas začiatku pre cieľový deň na základe globálnych nastavení.
         const settingsDoc = await getDoc(doc(settingsCollectionRef, SETTINGS_DOC_ID));
         let firstDayStartTime = '08:00';
         let otherDaysStartTime = '08:00';
@@ -563,16 +564,16 @@ async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation
         const isFirstPlayingDay = sortedPlayingDays.length > 0 && targetDate === sortedPlayingDays[0];
         const initialScheduleStartMinutes = (isFirstPlayingDay ? firstDayStartTime : otherDaysStartTime).split(':').map(Number).reduce((h, m) => h * 60 + m);
 
-        // 5. Determine the *proposed* start time for the dragged match in minutes.
+        // Určite navrhovaný čas začiatku pre presunutý zápas v minútach.
         let movedMatchProposedStartMinutes;
         if (droppedProposedStartTime) {
             movedMatchProposedStartMinutes = (parseInt(droppedProposedStartTime.split(':')[0]) * 60) + parseInt(droppedProposedStartTime.split(':')[1]);
         } else {
-            // If droppedProposedStartTime is null, it means append to the end.
-            // Find the end time of the last event in the current target schedule.
+            // Ak je droppedProposedStartTime null, znamená to pripojenie na koniec.
+            // Nájdite čas konca poslednej udalosti v aktuálnom cieľovom rozvrhu.
             let lastEventEndMinutes = initialScheduleStartMinutes;
             if (targetMatches.length > 0 || targetBlockedSlots.length > 0) {
-                // Combine and sort temporarily to find the true last event
+                // Skombinujte a dočasne zoraďte, aby ste našli skutočnú poslednú udalosť
                 const tempCombined = [...targetMatches, ...targetBlockedSlots].sort((a, b) => {
                     const aStart = a.type === 'match' ? (parseInt(a.startTime.split(':')[0]) * 60 + parseInt(a.startTime.split(':')[1])) : a.startInMinutes;
                     const bStart = b.type === 'match' ? (parseInt(b.startTime.split(':')[0]) * 60 + parseInt(b.startTime.split(':')[1])) : b.startInMinutes;
@@ -589,94 +590,83 @@ async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation
             movedMatchProposedStartMinutes = lastEventEndMinutes;
         }
         
-        // 6. Create a combined list of all events for rescheduling, including the moved match.
+        // Vytvorte kombinovaný zoznam všetkých udalostí pre preplánovanie, vrátane presunutého zápasu.
         let eventsToReschedule = [];
         
-        // Add existing matches, calculate their startInMinutes for sorting
+        // Pridajte existujúce zápasy, vypočítajte ich startInMinutes pre zoradenie
         targetMatches.forEach(match => {
             const [h,m] = match.startTime.split(':').map(Number);
             eventsToReschedule.push({ ...match, startInMinutes: (h * 60 + m) });
         });
 
-        // Add blocked slots (they already have startInMinutes/endInMinutes)
+        // Pridajte zablokované sloty (už majú startInMinutes/endInMinutes)
         targetBlockedSlots.forEach(slot => {
             eventsToReschedule.push({ ...slot });
         });
 
-        // Add the moved match, assign its proposed start time in minutes
+        // Pridajte presunutý zápas, priraďte mu navrhovaný čas začiatku v minútach
         movedMatchData.startInMinutes = movedMatchProposedStartMinutes;
         eventsToReschedule.push({ ...movedMatchData });
 
-        // Sort all events by their startInMinutes. This ensures the dragged match
-        // is conceptually placed at its dropped location relative to others.
+        // Zoraďte všetky udalosti podľa ich startInMinutes. Toto zabezpečí, že presunutý zápas
+        // je koncepčne umiestnený na svojom cieľovom mieste vzhľadom na ostatné.
         eventsToReschedule.sort((a, b) => a.startInMinutes - b.startInMinutes);
 
 
-        // 7. Iterate through the sorted events and re-calculate actual start times for matches.
-        let currentSchedulePointer = initialScheduleStartMinutes; // Start from the beginning of the day
+        // Iterujte cez zoradené udalosti a prepočítajte skutočné časy začiatku pre zápasy.
+        let currentSchedulePointer = initialScheduleStartMinutes; // Začnite od začiatku dňa
 
         for (let i = 0; i < eventsToReschedule.length; i++) {
             const event = eventsToReschedule[i];
 
             if (event.type === 'blocked_slot') {
-                // Blocked slots keep their original fixed times.
-                // Just ensure our pointer moves past them if they are in the way.
+                // Zablokované sloty si zachovávajú svoje pôvodné pevné časy.
+                // Len sa uistite, že náš ukazovateľ sa posunie za ne, ak sú v ceste.
                 currentSchedulePointer = Math.max(currentSchedulePointer, event.endInMinutes);
             } else if (event.type === 'match') {
                 const matchRef = doc(matchesCollectionRef, event.id);
 
-                // The match's actual start time will be at least the current schedule pointer.
-                // It also needs to be at least its own proposed start time if it's the dragged match
-                // or if it was an existing match that needs to maintain its relative order.
+                // Skutočný čas začiatku zápasu bude minimálne aktuálny ukazovateľ rozvrhu.
+                // Musí byť tiež minimálne vlastný navrhovaný čas začiatku, ak ide o presunutý zápas
+                // alebo ak to bol existujúci zápas, ktorý si potrebuje zachovať relatívne poradie.
                 let newMatchStartTimeInMinutes = Math.max(currentSchedulePointer, event.startInMinutes);
 
-                // Ensure no overlap with the immediately preceding event (if it's a blocked slot)
+                // Zabezpečte, aby nedošlo k prekrývaniu s bezprostredne predchádzajúcou udalosťou (ak ide o zablokovaný slot)
                 if (i > 0) {
                     const prevEvent = eventsToReschedule[i-1];
                     if (prevEvent.type === 'blocked_slot') {
                         newMatchStartTimeInMinutes = Math.max(newMatchStartTimeInMinutes, prevEvent.endInMinutes);
                     } else if (prevEvent.type === 'match') {
-                        // Calculate end time of previous match to ensure no overlap
+                        // Vypočítajte čas konca predchádzajúceho zápasu, aby ste zabezpečili, že nedôjde k prekrývaniu
                         const prevMatchEndMinutes = prevEvent.startInMinutes + (prevEvent.duration || 0) + (prevEvent.bufferTime || 0);
                         newMatchStartTimeInMinutes = Math.max(newMatchStartTimeInMinutes, prevMatchEndMinutes);
                     }
                 }
                 
-                // If this is the dragged match, its proposed start time (from the drop) takes precedence
-                // only if it's later than the calculated current pointer.
+                // Ak ide o presunutý zápas, jeho navrhovaný čas začiatku (z presunu) má prednosť
+                // len vtedy, ak je neskorší ako vypočítaný aktuálny ukazovateľ.
                 if (event.id === draggedMatchId) {
                     newMatchStartTimeInMinutes = Math.max(newMatchStartTimeInMinutes, movedMatchProposedStartMinutes);
                 }
 
 
-                // Convert new start time back to HH:MM string
+                // Preveďte nový čas začiatku späť na reťazec HH:MM
                 const newStartTimeStr = `${String(Math.floor(newMatchStartTimeInMinutes / 60)).padStart(2, '0')}:${String(newMatchStartTimeInMinutes % 60).padStart(2, '0')}`;
 
+                // Vytvorte objekt dát na aktualizáciu. Rozšírte všetky pôvodné vlastnosti zápasu,
+                // a prepíšte len tie, ktoré sa zmenili (dátum, miesto, čas začiatku).
                 const matchDataToUpdate = {
-                    date: targetDate,
-                    location: targetLocation,
-                    startTime: newStartTimeStr,
-                    duration: event.duration,
-                    bufferTime: event.bufferTime,
-                    // Keep other match data
-                    categoryId: event.categoryId,
-                    categoryName: event.categoryName,
-                    groupId: event.groupId,
-                    groupName: event.groupName,
-                    team1Category: event.team1Category,
-                    team1Group: event.team1Group,
-                    team1Number: event.team1Number,
-                    team1DisplayName: event.team1DisplayName,
-                    team1ClubName: event.team1ClubName,
-                    team1ClubId: event.team1ClubId,
-                    team2Category: event.team2Category,
-                    team2Group: event.team2Group,
-                    team2Number: event.team2Number,
-                    team2DisplayName: event.team2DisplayName,
-                    team2ClubName: event.team2ClubName,
-                    team2ClubId: event.team2ClubId,
-                    createdAt: event.createdAt // Preserve original creation time
+                    ...event, // Zachová všetky pôvodné vlastnosti dokumentu zápasu
+                    date: targetDate, // Prepisuje dátum
+                    location: targetLocation, // Prepisuje názov miesta
+                    startTime: newStartTimeStr // Prepisuje čas začiatku
                 };
+
+                // Odstráňte interné vlastnosti, ktoré by nemali byť uložené vo Firestore dokumente
+                delete matchDataToUpdate.type;
+                delete matchDataToUpdate.startInMinutes;
+                delete matchDataToUpdate.endInMinutes;
+                delete matchDataToUpdate.id; // ID je už v referencii dokumentu
 
                 batch.set(matchRef, matchDataToUpdate, { merge: true });
                 currentSchedulePointer = newMatchStartTimeInMinutes + event.duration + event.bufferTime;
@@ -1046,17 +1036,17 @@ async function displayMatchesAsSchedule() {
                 const draggedMatchId = event.dataTransfer.getData('text/plain');
                 const newDate = dateGroupDiv.dataset.date;
                 const newLocation = dateGroupDiv.dataset.location;
-                let droppedProposedStartTime = null; // This will hold the HH:MM string for the dropped match
+                let droppedProposedStartTime = null; // Toto bude obsahovať reťazec HH:MM pre navrhovaný čas začiatku presunutého zápasu
 
                 if (draggedMatchId) {
                     const droppedOnElement = event.target.closest('tr');
                     if (droppedOnElement) {
-                        // If dropped on any row (match, empty slot, blocked slot), use its start time
+                        // Ak sa presunie na akýkoľvek riadok (zápas, prázdny slot, zablokovaný slot), použite jeho čas začiatku
                         droppedProposedStartTime = droppedOnElement.dataset.startTime;
                     } else {
-                        // If dropped directly on the date-group div background (implies append to the end)
-                        // In this case, droppedProposedStartTime remains null. The moveAndRescheduleMatch
-                        // function will calculate the time after the last existing event in that date/location.
+                        // Ak sa presunie priamo na pozadie divu skupiny dátumov (znamená pripojenie na koniec)
+                        // V tomto prípade droppedProposedStartTime zostáva null. Funkcia moveAndRescheduleMatch
+                        // vypočíta čas po poslednej existujúcej udalosti v danom dátume/mieste.
                     }
                     
                     await moveAndRescheduleMatch(draggedMatchId, newDate, newLocation, droppedProposedStartTime);
@@ -1141,7 +1131,7 @@ async function deletePlayingDay(dateToDelete) {
 
 
             await batch.commit();
-            await showMessage('Úspech', `Hrací deň ${dateToDelete} a všetky súvisiace zápasy boli vymazané!`);
+            await showMessage('Úspech', `Hrací deň ${dateToDelete} a všetky súvisiace zápasy/sloty boli vymazané!`);
             closeModal(document.getElementById('playingDayModal'));
             await displayMatchesAsSchedule();
         } catch (error) {
@@ -1289,7 +1279,7 @@ async function openMatchModal(matchId = null, prefillDate = '', prefillLocation 
     const matchIdInput = document.getElementById('matchId');
     const matchModalTitle = document.getElementById('matchModalTitle');
     const matchDateSelect = document.getElementById('matchDateSelect');
-    const matchLocationSelect = document.getElementById('matchLocationSelect');
+    const matchLocationSelect = document.getElementById('matchLocationSelect'); 
     const matchStartTimeInput = document.getElementById('matchStartTime');
     const matchDurationInput = document.getElementById('matchDuration');
     const matchBufferTimeInput = document.getElementById('matchBufferTime');
