@@ -409,7 +409,7 @@ async function displayMatchesAsSchedule() {
 
                     scheduleHtml += `<div class="date-group" style="margin: 20px; border: 1px solid #eee; border-radius: 8px; overflow: hidden;">`;
                     scheduleHtml += `<h3 style="background-color: #f7f7f7; padding: 15px; margin: 0; border-bottom: 1px solid #ddd;">Dátum: ${formattedDisplayDate}</h3>`;
-                    scheduleHtml += `<table class="data-table match-list-table" style="width: 100%; border-collapse: collapse;">`;
+                    scheduleHtml += `<table class="data-table match-list-table compact-table" style="width: 100%; border-collapse: collapse;">`; // Added compact-table class
                     scheduleHtml += `<thead><tr>`;
                     scheduleHtml += `<th>Čas</th>`;
                     scheduleHtml += `<th>Domáci klub</th>`;
