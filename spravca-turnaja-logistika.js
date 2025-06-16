@@ -450,6 +450,13 @@ async function displayMatchesAsSchedule() {
         categoriesSnapshot.forEach(doc => categoriesMap.set(doc.id, doc.data().name || doc.id));
         console.log("displayMatchesAsSchedule: Načítané kategórie:", Array.from(categoriesMap.entries()));
 
+        // Log category colors
+        console.log("Farby pre Kategórie:");
+        categoriesSnapshot.docs.forEach(doc => {
+            const categoryData = doc.data();
+            console.log(`ID kategórie: ${doc.id}, Názov: ${categoryData.name}, Farba: ${categoryData.color || 'N/A'}`);
+        });
+
         const groupsSnapshot = await getDocs(groupsCollectionRef);
         const groupsMap = new Map();
         groupsSnapshot.forEach(doc => groupsMap.set(doc.id, doc.data().name || doc.id));
@@ -711,7 +718,7 @@ async function displayMatchesAsSchedule() {
 }
 
 /**
- * Deletes a playing day and all associated matches. Bus routes and accommodation assignments removed.
+ * Deletes a playing day and all associated matches. Bus routes and accommodation removed.
  * @param {string} dateToDelete The date of the playing day to delete.
  */
 async function deletePlayingDay(dateToDelete) {
@@ -927,7 +934,7 @@ async function editMatch(matchId, newDate = '', newLocation = '') {
             openModal(matchModal);
 
             // After opening the modal and setting date/location, find the first available time
-            // This will recalculate the start time based on the new date/location
+            // This will suggest the first available time in the new spot
             // Only find first available if newDate/newLocation are provided (from drag/drop)
             // If just editing existing match, keep its time.
             if (newDate || newLocation) {
