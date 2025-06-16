@@ -509,7 +509,9 @@ async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation
         }
         // Vytvoríme kopiu dát, aby sme mohli upraviť interné vlastnosti bez ovplyvnenia pôvodného dokumentu
         const movedMatchData = { id: draggedMatchDoc.id, type: 'match', ...draggedMatchDoc.data() };
-        console.log('moveAndRescheduleMatch: Dáta presunutého zápasu:', JSON.stringify(movedMatchData));
+        const originalStartTimeStr = movedMatchData.startTime; // Zachyťte pôvodný čas začiatku
+        console.log('moveAndRescheduleMatch: Dáta presunutého zápasu (originál):', JSON.stringify(movedMatchData));
+        console.log(`moveAndRescheduleMatch: Pôvodný čas začiatku presúvaného zápasu: ${originalStartTimeStr}`);
 
         const originalDate = movedMatchData.date;
         const originalLocation = movedMatchData.location;
@@ -648,7 +650,7 @@ async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation
                     // Presunutý zápas sa pokúša začať v čase, kde bol pustený (movedMatchProposedStartMinutes),
                     // ale nie skôr ako aktuálny ukazovateľ rozvrhu (currentSchedulePointer).
                     newMatchStartTimeInMinutes = Math.max(currentSchedulePointer, movedMatchProposedStartMinutes);
-                    console.log(`moveAndRescheduleMatch: Presúvaný zápas ${event.id}, navrhovaný čas: ${movedMatchProposedStartMinutes}, nový vypočítaný čas: ${newMatchStartTimeInMinutes}`);
+                    console.log(`moveAndRescheduleMatch: Presúvaný zápas ${event.id}, navrhovaný čas: ${movedMatchProposedStartMinutes}, nový vypočítaný čas: ${newMatchStartTimeInMinutes} (Pôvodný čas: ${originalStartTimeStr})`); // Enhanced log
                 } else {
                     // Pre ostatné existujúce zápasy v cieľovom rozvrhu:
                     // Mali by sa pokúsiť zachovať svoje relatívne poradie (event.startInMinutes),
@@ -664,6 +666,7 @@ async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation
 
                 // Preveďte nový čas začiatku späť na reťazec HH:MM
                 const newStartTimeStr = `${String(Math.floor(newMatchStartTimeInMinutes / 60)).padStart(2, '0')}:${String(newMatchStartTimeInMinutes % 60).padStart(2, '0')}`;
+                console.log(`moveAndRescheduleMatch: Aktuálne nastavený čas pre zápas ${event.id}: ${newStartTimeStr}`); // Added this log
 
                 // Vytvorte objekt dát na aktualizáciu. Rozšírte všetky pôvodné vlastnosti zápasu,
                 // a prepíšte len tie, ktoré sa zmenili (dátum, miesto, čas začiatku).
@@ -931,7 +934,7 @@ async function displayMatchesAsSchedule() {
                                 console.log(`displayMatchesAsSchedule: Renderujem zápas: ID ${match.id}, Čas: ${match.startTime}-${formattedEndTime}, Miesto: ${match.location}, Dátum: ${match.date}`);
 
                                 scheduleHtml += `
-                                    <tr draggable="true" data-id="${match.id}" class="match-row">
+                                    <tr draggable="true" data-id="${match.id}" class="match-row" data-start-time="${match.startTime}">
                                         <td>${match.startTime} - ${formattedEndTime}</td>
                                         <td style="${textAlignStyle}">${match.team1ClubName || 'N/A'}</td>
                                         <td style="${textAlignStyle}">${match.team2ClubName || 'N/A'}</td>
@@ -1113,6 +1116,15 @@ async function displayMatchesAsSchedule() {
 
                 if (draggedMatchId) {
                     const droppedOnElement = event.target.closest('tr');
+                    
+                    // Log pre lepšie ladenie
+                    console.log(`Drop event: Presúvané ID: ${draggedMatchId}`);
+                    if (droppedOnElement) {
+                        console.log(`Pustené NA element s ID: ${droppedOnElement.dataset.id}, Trieda: ${droppedOnElement.classList.value}, Čas začiatku: ${droppedOnElement.dataset.startTime}`);
+                    } else {
+                        console.log(`Pustené na pozadie dateGroupDiv.`);
+                    }
+
                     // Ak sa presunie na zablokovaný slot, zamedzte presunu
                     if (droppedOnElement && droppedOnElement.classList.contains('blocked-slot-row')) {
                         console.log(`Pokus o presun zápasu ${draggedMatchId} na zablokovaný slot. Presun ZAMITNUTÝ.`);
