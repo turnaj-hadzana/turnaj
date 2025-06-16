@@ -516,7 +516,7 @@ async function displayMatchesAsSchedule() {
 
                 // Flex item for each location group
                 scheduleHtml += `<div class="location-group" style="flex: 1 1 45%; min-width: 300px; margin-bottom: 0; border: 1px solid #ccc; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">`; // Removed margin-bottom and added flex properties and shadow
-                scheduleHtml += `<h2 style="background-color: #007bff; color: white; padding: 18px; margin: 0; text-align: center;">Miesto: ${location}</h2>`;
+                scheduleHtml += `<h2 style="background-color: #007bff; color: white; padding: 18px; margin: 0; text-align: center;">${location}</h2>`;
 
                 sortedDatesForLocation.forEach(date => {
                     const matchesForDateAndLocation = matchesByDateForLocation.get(date);
