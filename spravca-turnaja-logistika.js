@@ -308,8 +308,9 @@ const getTeamName = async (categoryId, groupId, teamNumber, categoriesMap, group
 
 /**
  * Vypočíta ďalší dostupný čas začiatku pre zápas na základe času konca predchádzajúceho zápasu a rezervy.
- * @param {string} prevEndTime Reťazec HH:MM času konca predchádzajúceho zápasu.
- * @param {number} prevBufferTime Časová rezerva v minútach po predchádzajúcom zápase.
+ * @param {string} prevStartTime Reťazec HH:MM času konca predchádzajúceho zápasu.
+ * @param {number} duration Trvanie predchádzajúceho zápasu v minútach.
+ * @param {number} bufferTime Časová rezerva v minútach po predchádzajúcom zápase.
  * @returns {string} Reťazec HH:MM ďalšieho dostupného času začiatku.
  */
 function calculateNextAvailableTime(prevStartTime, duration, bufferTime) {
@@ -376,36 +377,37 @@ async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation
         const initialStartTimeForDay = isFirstPlayingDay ? firstDayStartTime : otherDaysStartTime;
 
         // 3. Určite bod vloženia a nový čas začiatku pre presunutý zápas
-        let newStartTimeForMovedMatch;
         let insertionIndex = matchesForReschedule.length; // Predvolene na pripojenie na koniec
+        let newStartTimeForMovedMatch = null;
 
         if (droppedBeforeMatchId) {
             const targetMatchIndex = matchesForReschedule.findIndex(m => m.id === droppedBeforeMatchId);
             if (targetMatchIndex !== -1) {
                 insertionIndex = targetMatchIndex;
-                newStartTimeForMovedMatch = matchesForReschedule[targetMatchIndex].originalStartTime; // Vloží na pôvodný čas cieľa
+                newStartTimeForMovedMatch = matchesForReschedule[targetMatchIndex].startTime; // Zápas sa vloží pred existujúci zápas, prevezme jeho čas
             } else {
-                // Cieľový zápas nebol nájdený (napr. zmazaný), nájdite najskorší dostupný slot na konci
+                // Cieľový zápas nebol nájdený, pridajte na koniec
                 const lastMatch = matchesForReschedule[matchesForReschedule.length - 1];
                 newStartTimeForMovedMatch = lastMatch ? calculateNextAvailableTime(lastMatch.startTime, lastMatch.duration, lastMatch.bufferTime) : initialStartTimeForDay;
+                insertionIndex = matchesForReschedule.length;
             }
-        } else { // Umiestnené na koniec skupiny dátumov alebo do prázdnej
+        } else {
+            // Umiestnené na koniec skupiny dátumov alebo do prázdnej oblasti
             const lastMatch = matchesForReschedule[matchesForReschedule.length - 1];
             newStartTimeForMovedMatch = lastMatch ? calculateNextAvailableTime(lastMatch.startTime, lastMatch.duration, lastMatch.bufferTime) : initialStartTimeForDay;
         }
-
+        
         // Pripravte aktualizované údaje presunutého zápasu na vloženie
         const movedMatchUpdatedData = {
             ...movedMatchData,
             date: targetDate,
             location: targetLocation,
-            startTime: newStartTimeForMovedMatch,
-            // Uistite sa, že trvanie a rezerva sú z nastavení kategórie presunutého zápasu
+            // startTime bude nastavený v prepočítavacom cykle pre správne "zbalenie"
             duration: (await getCategoryMatchSettings(movedMatchData.categoryId)).duration,
             bufferTime: (await getCategoryMatchSettings(movedMatchData.categoryId)).bufferTime
         };
 
-        // Vložte presunutý zápas do dočasného zoznamu rozvrhu
+        // Vložte presunutý zápas do dočasného zoznamu rozvrhu na správnu logickú pozíciu
         matchesForReschedule.splice(insertionIndex, 0, movedMatchUpdatedData);
 
         // 4. Ak sa presúva z iného rozvrhu, zmažte pôvodný dokument
@@ -413,56 +415,35 @@ async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation
             batch.delete(draggedMatchDocRef);
         }
 
-        // 5. Prejdite aktualizovaným zoznamom a aplikujte časy, pričom zachovajte medzery, ak je to možné
-        let currentTimePointer = initialStartTimeForDay; // Začnite od začiatku dňa
+        // 5. Prejdite aktualizovaným zoznamom a aplikujte nové časy, čím zabezpečíte tesné "zbalenie"
+        let currentPackTimePointer = initialStartTimeForDay;
 
         for (let i = 0; i < matchesForReschedule.length; i++) {
             const match = matchesForReschedule[i];
             const matchRef = doc(matchesCollectionRef, match.id);
 
-            // Získajte trvanie a rezervu pre tento konkrétny zápas (dôležité, ak majú kategórie rôzne nastavenia)
+            // Získajte trvanie a rezervu pre tento konkrétny zápas
             const categorySettings = await getCategoryMatchSettings(match.categoryId);
             const duration = categorySettings.duration;
             const bufferTime = categorySettings.bufferTime;
 
-            let assignedStartTime;
+            // Priraďte aktuálny časový ukazovateľ ako nový čas začiatku
+            match.startTime = currentPackTimePointer;
+            match.duration = duration; 
+            match.bufferTime = bufferTime; 
 
-            if (i === 0) { // Prvý zápas v rozvrhu
-                assignedStartTime = currentTimePointer;
-            } else {
-                const [currentPointerH, currentPointerM] = currentTimePointer.split(':').map(Number);
-                const currentPointerMinutes = currentPointerH * 60 + currentPointerM;
-
-                const [originalH, originalM] = (match.originalStartTime || "00:00").split(':').map(Number);
-                const originalMatchMinutes = originalH * 60 + originalM;
-
-                // Ak bola pôvodná pozícia zápasu neskôr ako aktuálny ukazovateľ, zachovajte medzeru,
-                // POKUD sa nejedná o samotný presunutý zápas, v takom prípade použite jeho nový vypočítaný čas.
-                // Alebo ak je originalStartTime pred currentPointer, jednoducho ho zabalte.
-                if (match.id === movedMatchData.id) {
-                    assignedStartTime = newStartTimeForMovedMatch;
-                } else if (originalMatchMinutes > currentPointerMinutes) {
-                    assignedStartTime = match.originalStartTime; // Zachovať existujúcu medzeru
-                } else {
-                    assignedStartTime = currentTimePointer; // Tesne zabaliť
-                }
-            }
-
-            // Aktualizujte dokument zápasu s novým dátumom, miestom a časom začiatku
+            // Aktualizujte dokument zápasu v dávke
             batch.set(matchRef, {
-                ...match, // Zachovať všetky ostatné vlastnosti
-                date: targetDate, // Uistite sa, že dátum a miesto sú aktualizované, ak ide o presun medzi rozvrhmi
-                location: targetLocation, // Uistite sa, že dátum a miesto sú aktualizované, ak ide o presun medzi rozvrhmi
-                startTime: assignedStartTime,
-                duration: duration, // Uistite sa, že sú aktuálne
-                bufferTime: bufferTime // Uistite sa, že sú aktuálne
-            });
+                ...match, 
+                date: targetDate, 
+                location: targetLocation,
+            }, { merge: true });
 
-            // Aktualizujte aktuálny ukazovateľ času pre ďalší zápas
-            currentTimePointer = calculateNextAvailableTime(assignedStartTime, duration, bufferTime);
+            // Vypočítajte čas začiatku pre ďalší zápas
+            currentPackTimePointer = calculateNextAvailableTime(match.startTime, duration, bufferTime);
 
             // Základná kontrola, aby sa predišlo príliš dlhým rozvrhom
-            if (parseInt(currentTimePointer.split(':')[0]) >= 24) {
+            if (parseInt(currentPackTimePointer.split(':')[0]) >= 24) {
                 console.warn(`Rozvrh pre ${targetDate} v ${targetLocation} presiahol 24:00.`);
             }
         }
@@ -655,7 +636,7 @@ async function displayMatchesAsSchedule() {
                         // Skontrolujte, či je pred aktuálnym zápasom prázdny slot
                         if (currentMatchStartInMinutes > currentTimePointerInMinutes) {
                             const emptySlotDuration = currentMatchStartInMinutes - currentTimePointerInMinutes;
-                            const emptySlotEndHour = Math.floor((currentTimePointerInMinutes + emptySlotDuration) / 60); // Opravená chyba
+                            const emptySlotEndHour = Math.floor((currentTimePointerInMinutes + emptySlotDuration) / 60); 
                             const emptySlotEndMinute = (currentTimePointerInMinutes + emptySlotDuration) % 60;
                             const formattedEmptySlotEndTime = `${String(emptySlotEndHour).padStart(2, '0')}:${String(emptySlotEndMinute).padStart(2, '0')}`;
 
@@ -1341,7 +1322,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         let team2Result = null;
         try {
             team1Result = await getTeamName(matchCategory, matchGroup, team1Number, categoriesMap, groupsMap);
-            team2Result = await getTeamName(matchCategory, matchGroup, team2Number, categoriesMap, groupsMap);
+            team2Result = await await getTeamName(matchCategory, matchGroup, team2Number, categoriesMap, groupsMap);
         } catch (error) {
             console.error("Chyba pri získavaní názvov tímov:", error);
             await showMessage('Chyba', "Vyskytla sa chyba pri získavaní názvov tímov. Skúste to znova.");
