@@ -523,30 +523,33 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, drag
         if (draggedMatchId) {
             const draggedMatchDocRef = doc(matchesCollectionRef, draggedMatchId);
             const draggedMatchDoc = await getDoc(draggedMatchDocRef);
-            if (draggedMatchDoc.exists()) {
-                const draggedMatchData = { id: draggedMatchDoc.id, type: 'match', ...draggedMatchDoc.data() };
-                const categorySettings = await getCategoryMatchSettings(draggedMatchData.categoryId);
-                draggedMatchData.duration = categorySettings.duration;
-                draggedMatchData.bufferTime = categorySettings.bufferTime;
-
-                // Set its proposed start time in minutes based on dropped location or end of schedule
-                if (droppedProposedStartTime) {
-                    draggedMatchData.startInMinutes = (parseInt(droppedProposedStartTime.split(':')[0]) * 60) + parseInt(droppedProposedStartTime.split(':')[1]);
-                } else {
-                     // If no specific drop time, find the logical end of current schedule
-                    let lastEventEndMinutes = 
-                        currentMatches.concat(currentBlockedSlots).reduce((maxEnd, event) => {
-                            const eventStart = event.type === 'match' ? (parseInt(event.startTime.split(':')[0]) * 60 + parseInt(event.startTime.split(':')[1])) : event.startInMinutes;
-                            const eventEnd = event.type === 'match' ? (eventStart + (event.duration || 0) + (event.bufferTime || 0)) : event.endInMinutes;
-                            return Math.max(maxEnd, eventEnd);
-                        }, (await getInitialScheduleStartMinutes(date))); // Use initial start if no events
-                    draggedMatchData.startInMinutes = lastEventEndMinutes;
-                }
-
-                eventsToProcess.push(draggedMatchData);
-                // Filter out the dragged match from currentMatches if it's already there (moving within same day/location)
-                currentMatches = currentMatches.filter(m => m.id !== draggedMatchId);
+            if (!draggedMatchDoc.exists()) {
+                await showMessage('Chyba', 'Presúvaný zápas nebol nájdený.');
+                console.error('recalculateAndSaveScheduleForDateAndLocation: Presúvaný zápas nenájdený!', draggedMatchId);
+                return;
             }
+            const draggedMatchData = { id: draggedMatchDoc.id, type: 'match', ...draggedMatchDoc.data() };
+            const categorySettings = await getCategoryMatchSettings(draggedMatchData.categoryId);
+            draggedMatchData.duration = categorySettings.duration;
+            draggedMatchData.bufferTime = categorySettings.bufferTime;
+
+            // Set its proposed start time in minutes based on dropped location or end of schedule
+            if (droppedProposedStartTime) {
+                draggedMatchData.startInMinutes = (parseInt(droppedProposedStartTime.split(':')[0]) * 60) + parseInt(droppedProposedStartTime.split(':')[1]);
+            } else {
+                 // If no specific drop time, find the logical end of current schedule
+                let lastEventEndMinutes = 
+                    currentMatches.concat(currentBlockedSlots).reduce((maxEnd, event) => {
+                        const eventStart = event.type === 'match' ? (parseInt(event.startTime.split(':')[0]) * 60 + parseInt(event.startTime.split(':')[1])) : event.startInMinutes;
+                        const eventEnd = event.type === 'match' ? (eventStart + (event.duration || 0) + (event.bufferTime || 0)) : event.endInMinutes;
+                        return Math.max(maxEnd, eventEnd);
+                    }, (await getInitialScheduleStartMinutes(date))); // Use initial start if no events
+                draggedMatchData.startInMinutes = lastEventEndMinutes;
+            }
+
+            eventsToProcess.push(draggedMatchData);
+            // Filter out the dragged match from currentMatches if it's already there (moving within same day/location)
+            currentMatches = currentMatches.filter(m => m.id !== draggedMatchId);
         }
 
         // Pridajte všetky existujúce zápasy a zablokované sloty
@@ -1479,10 +1482,9 @@ async function openFreeSlotModal(date, location, startTime, endTime, blockedSlot
     const freeSlotDateDisplay = document.getElementById('freeSlotDateDisplay');
     const freeSlotLocationDisplay = document.getElementById('freeSlotLocationDisplay');
     const freeSlotTimeRangeDisplay = document.getElementById('freeSlotTimeRangeDisplay');
-    // Removed: const blockSlotCheckbox = document.getElementById('blockSlotCheckbox');
     const freeSlotIdInput = document.getElementById('freeSlotId');
-    const blockFreeSlotButton = document.getElementById('blockFreeSlotButton'); // New
-    const unblockFreeSlotButton = document.getElementById('unblockFreeSlotButton'); // New
+    const blockFreeSlotButton = document.getElementById('blockFreeSlotButton');
+    const unblockFreeSlotButton = document.getElementById('unblockFreeSlotButton');
 
     freeSlotIdInput.value = blockedSlotId || '';
     freeSlotDateDisplay.textContent = date;
@@ -1498,12 +1500,14 @@ async function openFreeSlotModal(date, location, startTime, endTime, blockedSlot
         blockFreeSlotButton.style.display = 'none'; // Hide block button
         unblockFreeSlotButton.style.display = 'inline-block'; // Show unblock button
         unblockFreeSlotButton.textContent = 'Odblokovať'; // Ensure correct label
+        // Pridaj poslucháča pre tlačidlo Odblokovať
         unblockFreeSlotButton.addEventListener('click', () => unblockSlotAndRecalculate(blockedSlotId, date, location));
     } else {
         freeSlotModalTitle.textContent = 'Spravovať voľný slot';
         blockFreeSlotButton.style.display = 'inline-block'; // Show block button
         unblockFreeSlotButton.style.display = 'none'; // Hide unblock button
         blockFreeSlotButton.textContent = 'Zablokovať'; // Ensure correct label
+        // Pridaj poslucháča pre tlačidlo Zablokovať
         blockFreeSlotButton.addEventListener('click', () => blockSlotAndRecalculate(date, location, startTime, endTime));
     }
 
@@ -1679,9 +1683,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const categoriesContentSection = document.getElementById('categoriesContentSection');
     const addButton = document.getElementById('addButton');
     const addOptions = document.getElementById('addOptions');
-    const addPlayingDayButton = document.getElementById('addPlayingDayButton'); // Corrected assignment
+    const addPlayingDayButton = document.getElementById('addPlayingDayButton');
     const addPlaceButton = document.getElementById('addPlaceButton');
-    const addMatchButton = document.getElementById('addMatchButton'); // Corrected assignment
+    const addMatchButton = document.getElementById('addMatchButton');
 
     const matchModal = document.getElementById('matchModal');
     const closeMatchModalButton = document.getElementById('closeMatchModal');
@@ -1708,7 +1712,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const placeModal = document.getElementById('placeModal');
     const closePlaceModalButton = document.getElementById('closePlaceModal');
-    const placeForm = document.getElementById('placeForm'); // Corrected assignment
+    const placeForm = document.getElementById('placeForm');
     const placeIdInput = document.getElementById('placeId');
     const placeTypeSelect = document.getElementById('placeTypeSelect');
     const placeNameInput = document.getElementById('placeName');
@@ -1718,9 +1722,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const freeSlotModal = document.getElementById('freeSlotModal');
     const closeFreeSlotModalButton = document.getElementById('closeFreeSlotModal');
-    // Removed: const freeSlotSaveButton = document.getElementById('freeSlotSaveButton');
-    const blockFreeSlotButton = document.getElementById('blockFreeSlotButton'); // New
-    const unblockFreeSlotButton = document.getElementById('unblockFreeSlotButton'); // New
+    const blockFreeSlotButton = document.getElementById('blockFreeSlotButton');
+    const unblockFreeSlotButton = document.getElementById('unblockFreeSlotButton');
 
 
     if (categoriesContentSection) {
