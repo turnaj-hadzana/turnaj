@@ -1492,38 +1492,44 @@ async function openFreeSlotModal(date, location, startTime, endTime, blockedSlot
     freeSlotTimeRangeDisplay.textContent = `${startTime} - ${endTime}`;
 
     // Clear previous event listeners to prevent multiple calls
-    blockFreeSlotButton.removeEventListener('click', blockSlotAndRecalculate);
-    unblockFreeSlotButton.removeEventListener('click', unblockSlotAndRecalculate);
+    // Odstrániť starých poslucháčov, aby sa predišlo viacnásobným spusteniam
+    blockFreeSlotButton.removeEventListener('click', createBlockedSlotAndRecalculate);
+    unblockFreeSlotButton.removeEventListener('click', deleteSlotAndRecalculate);
+
 
     if (blockedSlotId) {
         freeSlotModalTitle.textContent = 'Upraviť zablokovaný slot';
-        blockFreeSlotButton.style.display = 'none'; // Hide block button
-        unblockFreeSlotButton.style.display = 'inline-block'; // Show unblock button
-        unblockFreeSlotButton.textContent = 'Odblokovať'; // Ensure correct label
-        // Pridaj poslucháča pre tlačidlo Odblokovať
-        unblockFreeSlotButton.addEventListener('click', () => unblockSlotAndRecalculate(blockedSlotId, date, location));
+        blockFreeSlotButton.style.display = 'none'; // Skryť tlačidlo Zablokovať
+        unblockFreeSlotButton.style.display = 'inline-block'; // Zobraziť tlačidlo Odblokovať
+        unblockFreeSlotButton.textContent = 'Odblokovať'; // Zabezpečiť správny text
+        // Pridaj poslucháča pre tlačidlo Odblokovať (ktoré teraz volá deleteSlotAndRecalculate)
+        unblockFreeSlotButton.addEventListener('click', () => deleteSlotAndRecalculate(blockedSlotId, date, location));
     } else {
         freeSlotModalTitle.textContent = 'Spravovať voľný slot';
-        blockFreeSlotButton.style.display = 'inline-block'; // Show block button
-        unblockFreeSlotButton.style.display = 'none'; // Hide unblock button
-        blockFreeSlotButton.textContent = 'Zablokovať'; // Ensure correct label
-        // Pridaj poslucháča pre tlačidlo Zablokovať
-        blockFreeSlotButton.addEventListener('click', () => blockSlotAndRecalculate(date, location, startTime, endTime));
+        blockFreeSlotButton.style.display = 'inline-block'; // Zobraziť tlačidlo Zablokovať
+        unblockFreeSlotButton.style.display = 'inline-block'; // Zobraziť tlačidlo Vymazať
+        blockFreeSlotButton.textContent = 'Zablokovať'; // Zabezpečiť správny text
+        unblockFreeSlotButton.textContent = 'Vymazať'; // Zmeniť text tlačidla na "Vymazať"
+        unblockFreeSlotButton.classList.add('delete-button'); // Pridať triedu pre červenú farbu
+        // Pridaj poslucháča pre tlačidlo Zablokovať (ktoré teraz volá createBlockedSlotAndRecalculate)
+        blockFreeSlotButton.addEventListener('click', () => createBlockedSlotAndRecalculate(date, location, startTime, endTime));
+        // Pridaj poslucháča pre tlačidlo Vymazať (ktoré teraz volá deleteSlotAndRecalculate)
+        unblockFreeSlotButton.addEventListener('click', () => deleteSlotAndRecalculate(blockedSlotId, date, location));
     }
 
     openModal(freeSlotModal);
 }
 
 /**
- * Blokuje voľný slot a prepočíta rozvrh.
+ * Vytvorí nový zablokovaný slot a prepočíta rozvrh.
  * @param {string} date Dátum slotu.
  * @param {string} location Miesto slotu.
  * @param {string} startTime Čas začiatku slotu (HH:MM).
  * @param {string} endTime Čas konca slotu (HH:MM).
  */
-async function blockSlotAndRecalculate(date, location, startTime, endTime) {
+async function createBlockedSlotAndRecalculate(date, location, startTime, endTime) {
     const freeSlotModal = document.getElementById('freeSlotModal');
-    const freeSlotIdInput = document.getElementById('freeSlotId'); // This might be empty for a new block
+    const freeSlotIdInput = document.getElementById('freeSlotId'); 
 
     const slotData = {
         date: date,
@@ -1613,14 +1619,8 @@ async function blockSlotAndRecalculate(date, location, startTime, endTime) {
             return; // Zastaviť operáciu uloženia
         }
 
-        // Ak nedošlo k prekrývaniu, pokračujte s ukladaním/aktualizáciou
-        if (freeSlotIdInput.value) { // This means we are editing an existing blocked slot
-            await setDoc(doc(blockedSlotsCollectionRef, freeSlotIdInput.value), slotData, { merge: true });
-            await showMessage('Úspech', 'Zmeny v zablokovanom slote boli uložené!');
-        } else { // This means we are blocking a new slot
-            await addDoc(blockedSlotsCollectionRef, slotData);
-            await showMessage('Úspech', 'Slot bol úspešne zablokovaný!');
-        }
+        await addDoc(blockedSlotsCollectionRef, slotData);
+        await showMessage('Úspech', 'Slot bol úspešne zablokovaný!');
         
         closeModal(freeSlotModal);
         await recalculateAndSaveScheduleForDateAndLocation(date, location); // Recalculate after blocking
@@ -1631,23 +1631,27 @@ async function blockSlotAndRecalculate(date, location, startTime, endTime) {
 }
 
 /**
- * Odblokuje (vymaže) slot a prepočíta rozvrh.
- * @param {string} blockedSlotId ID zablokovaného slotu na vymazanie.
+ * Odstráni (vymaže) slot a prepočíta rozvrh. Používa sa pre "Vymazať" (voľný slot) aj "Odblokovať" (zablokovaný slot).
+ * @param {string|null} slotId ID slotu na vymazanie. Ak je null (pre voľný slot), nič sa nevymaže z DB, len sa prepočíta.
  * @param {string} date Dátum slotu.
  * @param {string} location Miesto slotu.
  */
-async function unblockSlotAndRecalculate(blockedSlotId, date, location) {
+async function deleteSlotAndRecalculate(slotId, date, location) {
     const freeSlotModal = document.getElementById('freeSlotModal');
-    const confirmed = await showConfirmation('Potvrdenie vymazania', 'Naozaj chcete odblokovať tento slot?');
+    const confirmed = await showConfirmation('Potvrdenie', 'Naozaj chcete vymazať/odblokovať tento slot?');
     if (confirmed) {
         try {
-            await deleteDoc(doc(blockedSlotsCollectionRef, blockedSlotId));
-            await showMessage('Úspech', 'Slot bol odblokovaný!');
+            if (slotId) { // Ak existuje ID (je to zablokovaný slot)
+                await deleteDoc(doc(blockedSlotsCollectionRef, slotId));
+                await showMessage('Úspech', 'Slot bol odblokovaný!');
+            } else { // Ak ID neexistuje (je to voľný slot, ktorý chceme odstrániť z rozvrhu)
+                await showMessage('Úspech', 'Voľný slot bol odstránený z rozvrhu!');
+            }
             closeModal(freeSlotModal);
-            await recalculateAndSaveScheduleForDateAndLocation(date, location); // Recalculate after unblocking
+            await recalculateAndSaveScheduleForDateAndLocation(date, location); // Recalculate after deleting/unblocking
         } catch (error) {
-            console.error("Chyba pri odblokovaní slotu:", error);
-            await showMessage('Chyba', `Chyba pri odblokovaní slotu: ${error.message}`);
+            console.error("Chyba pri odstraňovaní slotu:", error);
+            await showMessage('Chyba', `Chyba pri odstraňovaní slotu: ${error.message}`);
         }
     }
 }
