@@ -629,7 +629,7 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, drag
         trailingBlockedSlotsSnapshot.docs.forEach(docToDelete => {
             const blockedSlotData = docToDelete.data();
             const [bsStartH, bsStartM] = blockedSlotData.startTime.split(':').map(Number);
-            const bsStartInMinutes = bsStartH * 60 + bsStartM;
+            const bsStartInMinutes = bsStartH * 60 + bsM; // Use bsM here
 
             // Vymazať, ak sa zablokovaný slot začína na alebo po našom konečnom vypočítanom konci rozvrhu.
             if (bsStartInMinutes >= currentTimePointer) {
