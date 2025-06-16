@@ -1029,7 +1029,7 @@ async function displayMatchesAsSchedule() {
                                 if (isPhantomSlot) {
                                     rowClass = 'empty-slot-row'; // Visually like an empty slot
                                     cellStyle = 'text-align: center; color: #888; font-style: italic;';
-                                    displayText = 'Voľný slot dostupný (presunutý)'; // More descriptive
+                                    displayText = 'Voľný slot dostupný'; // More descriptive
                                     dataAttributes = `data-is-phantom="true"`;
                                 } else if (isUserBlocked) {
                                     rowClass = 'blocked-slot-row'; // Visually blocked
