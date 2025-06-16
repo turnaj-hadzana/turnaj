@@ -157,7 +157,7 @@ async function updateMatchDurationAndBuffer() {
 
 /**
  * Nájde prvý dostupný časový slot pre zápas na základe dátumu, miesta, trvania a časovej rezervy.
- * Prioritou je nájsť voľný slot, ktorý má presne takú dĺžku, akú vyžaduje zápas (trvanie).
+ * Prioritou je nájsť voľný zápas, ktorý má presne takú dĺžku, akú vyžaduje zápas (trvanie).
  * Ak taký slot neexistuje, čas sa nastaví hneď po poslednom existujúcom zápase v daný deň a na danom mieste,
  * alebo na počiatočný čas dňa, ak nie sú žiadne zápasy.
  */
@@ -194,10 +194,11 @@ async function findFirstAvailableTime() {
 
         const initialStartTimeForDay = isFirstPlayingDay ? firstDayStartTime : otherDaysStartTime;
         let [initialH, initialM] = initialStartTimeForDay.split(':').map(Number);
-        let currentPointerMinutes = initialH * 60 + initialM; // Pointer to the current time being considered
+        let initialPointerMinutes = initialH * 60 + initialM; 
 
         const requiredMatchDuration = parseInt(matchDurationInput.value) || 0;
-        const requiredBufferTime = parseInt(matchBufferTimeInput.value) || 0; // This is the buffer *after* the new match
+        const requiredBufferTime = parseInt(matchBufferTimeInput.value) || 0;
+        const newMatchFullFootprint = requiredMatchDuration + requiredBufferTime;
 
         const existingMatchesQuery = query(
             matchesCollectionRef,
@@ -212,62 +213,65 @@ async function findFirstAvailableTime() {
             const startInMinutes = startH * 60 + startM;
             // The end time of an existing match includes its duration AND its buffer time
             const endInMinutes = startInMinutes + (data.duration || 0) + (data.bufferTime || 0); 
-            return { start: startInMinutes, end: endInMinutes, id: doc.id, duration: data.duration, bufferTime: data.bufferTime };
+            return { start: startInMinutes, end: endInMinutes, id: doc.id };
         });
 
-        let foundExactFit = false;
-        let exactFitStartTime = '';
+        // 1. Generate available gaps
+        let availableGaps = [];
+        let currentGapStart = initialPointerMinutes;
 
-        // Check the gap before the first match (if any) or if there are no matches at all
-        if (matchesForLocationAndDate.length === 0) {
-            // No matches, so the initial time is the first available slot. This is an "exact fit" by definition.
-            exactFitStartTime = initialStartTimeForDay;
-            foundExactFit = true;
-        } else {
-            const firstMatch = matchesForLocationAndDate[0];
-            // Gap before first match: from initial start of day to the start of the first match
-            const gapBeforeFirstMatch = firstMatch.start - currentPointerMinutes;
-            
-            // We are looking for a gap exactly the size of the required match duration (excluding its own buffer)
-            if (gapBeforeFirstMatch >= requiredMatchDuration && (gapBeforeFirstMatch - requiredMatchDuration) >= requiredBufferTime) {
-                exactFitStartTime = `${String(Math.floor(currentPointerMinutes / 60)).padStart(2, '0')}:${String(currentPointerMinutes % 60).padStart(2, '0')}`;
-                foundExactFit = true;
+        for (let i = 0; i < matchesForLocationAndDate.length; i++) {
+            const match = matchesForLocationAndDate[i];
+            const gapDuration = match.start - currentGapStart;
+            if (gapDuration > 0) {
+                availableGaps.push({ 
+                    start: currentGapStart, 
+                    duration: gapDuration,
+                    nextEventStart: match.start // The start of the next event
+                });
             }
+            currentGapStart = match.end; // Update pointer for next gap
         }
 
-        // If no exact fit found initially, search between matches
-        if (!foundExactFit) { 
-            for (let i = 0; i < matchesForLocationAndDate.length - 1; i++) {
-                const currentMatch = matchesForLocationAndDate[i];
-                const nextMatch = matchesForLocationAndDate[i + 1];
+        // Add the gap after the last match (or the only gap if no matches)
+        // This gap has no 'nextEventStart' as it goes to the end of the day or indefinitely.
+        availableGaps.push({ 
+            start: currentGapStart, 
+            duration: Infinity, // Represents an open-ended slot
+            nextEventStart: Infinity // No next event in this slot
+        });
 
-                // The start of the potential gap is the end of the current match (which already includes its buffer)
-                const gapStartTime = currentMatch.end; 
-                // The duration of the gap is from the end of the current match to the start of the next match
-                const gapDuration = nextMatch.start - gapStartTime;
+        // 2. Search for Priority 1: Exact fit for requiredMatchDuration (the match itself)
+        for (const gap of availableGaps) {
+            // A potential match start time for this gap
+            const potentialMatchStartTimeInMinutes = gap.start;
+            // The time when the new match, including its buffer, would finish
+            const potentialFullEventEndTimeInMinutes = potentialMatchStartTimeInMinutes + newMatchFullFootprint;
 
-                // Check if the gap is large enough for the new match's duration PLUS its own buffer
-                // And if the remaining space is exactly for the new match's buffer
-                if (gapDuration >= requiredMatchDuration && (gapDuration - requiredMatchDuration) >= requiredBufferTime) {
-                    exactFitStartTime = `${String(Math.floor(gapStartTime / 60)).padStart(2, '0')}:${String(gapStartTime % 60).padStart(2, '0')}`;
-                    foundExactFit = true;
-                    break;
+            // Check if the gap can *at least* accommodate the match duration
+            if (gap.duration >= requiredMatchDuration) {
+                // Now check the exact fit condition: is the available space exactly equal to requiredMatchDuration
+                // AND does it allow for the buffer without overlap?
+                if (gap.duration === requiredMatchDuration) {
+                    // If the gap is EXACTLY the match duration, then we need to ensure the buffer
+                    // doesn't cause an overlap with the *next* event.
+                    if (potentialFullEventEndTimeInMinutes <= gap.nextEventStart) {
+                        const formattedHour = String(Math.floor(potentialMatchStartTimeInMinutes / 60)).padStart(2, '0');
+                        const formattedMinute = String(potentialMatchStartTimeInMinutes % 60).padStart(2, '0');
+                        matchStartTimeInput.value = `${formattedHour}:${formattedMinute}`;
+                        return; // Found and set Priority 1 slot
+                    }
                 }
             }
         }
 
-        if (foundExactFit) {
-            matchStartTimeInput.value = exactFitStartTime;
-        } else {
-            // Fallback: If no exact fit, set time after the last match
-            let nextAvailableTime = initialStartTimeForDay; // Default if no matches or no exact fit
-            if (matchesForLocationAndDate.length > 0) {
-                const lastMatch = matchesForLocationAndDate[matchesForLocationAndDate.length - 1];
-                // Calculate time after the last match including its duration and buffer
-                nextAvailableTime = calculateNextAvailableTime(lastMatch.startTime, lastMatch.duration, lastMatch.bufferTime);
-            }
-            matchStartTimeInput.value = nextAvailableTime;
+        // 3. Fallback to Priority 2: After the last match
+        let nextAvailableTime = initialStartTimeForDay;
+        if (matchesForLocationAndDate.length > 0) {
+            const lastMatch = matchesForLocationAndDate[matchesForLocationAndDate.length - 1];
+            nextAvailableTime = calculateNextAvailableTime(lastMatch.startTime, lastMatch.duration, lastMatch.bufferTime);
         }
+        matchStartTimeInput.value = nextAvailableTime;
 
     } catch (error) {
         console.error("Chyba pri hľadaní prvého dostupného času:", error);
@@ -445,7 +449,7 @@ async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation
             // Získajte trvanie a rezervu pre tento konkrétny zápas
             const categorySettings = await getCategoryMatchSettings(match.categoryId);
             const duration = categorySettings.duration;
-            const bufferTime = categorySettings.bufferTime; // Opravené z categorySettings.design.bufferTime;
+            const bufferTime = categorySettings.bufferTime; 
 
             // Priraďte aktuálny časový ukazovateľ ako nový čas začiatku
             match.startTime = currentPackTimePointer;
@@ -663,7 +667,7 @@ async function displayMatchesAsSchedule() {
                             scheduleHtml += `
                                 <tr class="empty-slot-row" data-date="${date}" data-location="${location}" data-start-time="${currentTimePointer}">
                                     <td>${currentTimePointer} - ${formattedEmptySlotEndTime}</td>
-                                    <td colspan="4" style="text-align: center; color: #888; font-style: italic;">Voľný slot</td>
+                                    <td colspan="4" style="text-align: center; color: #888; font-style: italic;">Voľný zápas</td>
                                 </tr>
                             `;
                         }
@@ -1149,7 +1153,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const matchForm = document.getElementById('matchForm');
     const matchIdInput = document.getElementById('matchId');
     const matchDateSelect = document.getElementById('matchDateSelect');
-    const matchLocationSelect = document.getElementById('matchLocationSelect');
+    const matchLocationSelect = document.getElementById('matchLocationSelect'); // Opravené preklepy v referencii
     const matchStartTimeInput = document.getElementById('matchStartTime');
     const matchDurationInput = document.getElementById('matchDuration');
     const matchBufferTimeInput = document.getElementById('matchBufferTime');
@@ -1257,7 +1261,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             team1NumberInput.disabled = true;
             team2NumberInput.value = '';
             team2NumberInput.disabled = true;
-            await updateMatchDurationAndBuffer(); // Aktualizuje trvanie a rezervu, ale nie čas začiatku
+            await updateMatchDurationAndBuffer(); // Aktualizuje trvanie a rezervu
+            await findFirstAvailableTime(); // A teraz nájdite čas začiatku na základe nových hodnôt
         } else {
             matchGroupSelect.innerHTML = '<option value="">-- Vyberte skupinu --</option>';
             matchGroupSelect.disabled = true;
@@ -1267,6 +1272,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             team2NumberInput.disabled = true;
             matchDurationInput.value = 60; // Reset na predvolené, ak nie je kategória
             matchBufferTimeInput.value = 5; // Reset na predvolené, ak nie je kategória
+            matchStartTimeInput.value = ''; // Vymažte čas začiatku, ak nie je vybraná kategória
         }
     });
 
