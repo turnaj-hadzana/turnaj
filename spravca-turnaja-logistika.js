@@ -576,7 +576,7 @@ async function openPlaceModal(placeId = null) {
         deletePlaceButtonModal.onclick = () => handleDeletePlace(placeId);
     } else {
         placeModalTitle.textContent = 'Pridať miesto';
-        deletePlaceButtonButton.style.display = 'none';
+        deletePlaceButtonModal.style.display = 'none'; // Corrected from deletePlaceButtonButton
         document.getElementById('placeId').value = ''; // Clear ID for adding
     }
     openModal(placeModal);
@@ -1047,6 +1047,9 @@ window.openAccommodationModalWrapper = (id, data) => openAccommodationModal(id, 
 
 // Drag and Drop functionality
 let draggedMatch = null;
+// Global variable to store info about a recently ghosted match for display purposes
+// NOTE: The duplicate declaration of 'ghostedMatchInfo' was removed from here.
+
 
 function addDragAndDropListeners() {
     const draggables = document.querySelectorAll('.match-row.draggable');
