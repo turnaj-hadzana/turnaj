@@ -359,76 +359,84 @@ async function displayMatchesAsSchedule() {
         const existingPlacesData = placesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         console.log("displayMatchesAsSchedule: Načítané miesta:", existingPlacesData);
 
-        // Group matches by Date and Location (Sport Hall)
-        const groupedMatches = new Map(); // Key: "date:::location", Value: Array of matches
+        // Group matches first by Location, then by Date
+        const groupedMatchesByLocation = new Map(); // Key: "location", Value: Map (Key: "date", Value: Array of matches)
         allMatches.forEach(match => {
             if (match.locationType === 'Športová hala') { // Only show matches in sport halls
-                const key = `${match.date}:::${match.location}`;
-                if (!groupedMatches.has(key)) {
-                    groupedMatches.set(key, []);
+                const location = match.location;
+                const date = match.date;
+
+                if (!groupedMatchesByLocation.has(location)) {
+                    groupedMatchesByLocation.set(location, new Map());
                 }
-                groupedMatches.get(key).push(match);
+                const matchesByDate = groupedMatchesByLocation.get(location);
+                if (!matchesByDate.has(date)) {
+                    matchesByDate.set(date, []);
+                }
+                matchesByDate.get(date).push(match);
             }
         });
 
         let scheduleHtml = '';
 
-        // Sort the groups by date and then by location name
-        const sortedGroupKeys = Array.from(groupedMatches.keys()).sort((a, b) => {
-            const [dateA, locA] = a.split(':::');
-            const [dateB, locB] = b.split(':::');
-            if (dateA !== dateB) {
-                return dateA.localeCompare(dateB);
-            }
-            return locA.localeCompare(locB);
-        });
+        // Sort locations alphabetically
+        const sortedLocations = Array.from(groupedMatchesByLocation.keys()).sort((a, b) => a.localeCompare(b));
 
-        if (sortedGroupKeys.length === 0) {
+        if (sortedLocations.length === 0) {
             scheduleHtml += '<p>Žiadne zápasy na zobrazenie. Pridajte nové zápasy pomocou tlačidla "+".</p>';
         } else {
-            sortedGroupKeys.forEach(key => {
-                const [date, location] = key.split(':::');
-                const matchesForGroup = groupedMatches.get(key);
+            sortedLocations.forEach(location => {
+                const matchesByDateForLocation = groupedMatchesByLocation.get(location);
+                // Sort dates within each location
+                const sortedDatesForLocation = Array.from(matchesByDateForLocation.keys()).sort((a, b) => a.localeCompare(b));
 
-                // Sort matches by start time
-                matchesForGroup.sort((a, b) => {
-                    const [aH, aM] = a.startTime.split(':').map(Number);
-                    const [bH, bM] = b.startTime.split(':').map(Number);
-                    return (aH * 60 + aM) - (bH * 60 + bM);
+                scheduleHtml += `<div class="location-group" style="margin-bottom: 40px; border: 1px solid #ccc; border-radius: 10px; overflow: hidden;">`;
+                scheduleHtml += `<h2 style="background-color: #007bff; color: white; padding: 18px; margin: 0; text-align: center;">Miesto: ${location}</h2>`;
+
+                sortedDatesForLocation.forEach(date => {
+                    const matchesForDateAndLocation = matchesByDateForLocation.get(date);
+
+                    // Sort matches by start time
+                    matchesForDateAndLocation.sort((a, b) => {
+                        const [aH, aM] = a.startTime.split(':').map(Number);
+                        const [bH, bM] = b.startTime.split(':').map(Number);
+                        return (aH * 60 + aM) - (bH * 60 + bM);
+                    });
+
+                    const displayDateObj = new Date(date);
+                    const formattedDisplayDate = `${String(displayDateObj.getDate()).padStart(2, '0')}. ${String(displayDateObj.getMonth() + 1).padStart(2, '0')}. ${displayDateObj.getFullYear()}`;
+
+                    scheduleHtml += `<div class="date-group" style="margin: 20px; border: 1px solid #eee; border-radius: 8px; overflow: hidden;">`;
+                    scheduleHtml += `<h3 style="background-color: #f7f7f7; padding: 15px; margin: 0; border-bottom: 1px solid #ddd;">Dátum: ${formattedDisplayDate}</h3>`;
+                    scheduleHtml += `<table class="data-table match-list-table" style="width: 100%; border-collapse: collapse;">`;
+                    scheduleHtml += `<thead><tr>`;
+                    scheduleHtml += `<th>Čas</th>`;
+                    scheduleHtml += `<th>Domáci klub</th>`;
+                    scheduleHtml += `<th>Hostia klub</th>`;
+                    scheduleHtml += `<th>ID Domáci</th>`;
+                    scheduleHtml += `<th>ID Hostia</th>`;
+                    scheduleHtml += `</tr></thead><tbody>`;
+
+                    matchesForDateAndLocation.forEach(match => {
+                        const [startH, startM] = match.startTime.split(':').map(Number);
+                        const matchEndTime = new Date();
+                        matchEndTime.setHours(startH, startM + match.duration, 0, 0);
+                        const formattedEndTime = matchEndTime.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' });
+
+                        scheduleHtml += `
+                            <tr data-id="${match.id}" class="match-row">
+                                <td>${match.startTime} - ${formattedEndTime}</td>
+                                <td>${match.team1ClubName || 'N/A'}</td>
+                                <td>${match.team2ClubName || 'N/A'}</td>
+                                <td>${match.team1DisplayName || 'N/A'}</td>
+                                <td>${match.team2DisplayName || 'N/A'}</td>
+                            </tr>
+                        `;
+                    });
+
+                    scheduleHtml += `</tbody></table></div>`; // Close date-group table and div
                 });
-
-                const displayDateObj = new Date(date);
-                const formattedDisplayDate = `${String(displayDateObj.getDate()).padStart(2, '0')}. ${String(displayDateObj.getMonth() + 1).padStart(2, '0')}. ${displayDateObj.getFullYear()}`;
-
-                scheduleHtml += `<div class="match-table-group" style="margin-bottom: 30px; border: 1px solid #ddd; border-radius: 8px; overflow: hidden;">`;
-                scheduleHtml += `<h3 style="background-color: #f0f0f0; padding: 15px; margin: 0; border-bottom: 1px solid #ddd;">Dátum: ${formattedDisplayDate}, Miesto: ${location}</h3>`;
-                scheduleHtml += `<table class="data-table match-list-table" style="width: 100%; border-collapse: collapse;">`;
-                scheduleHtml += `<thead><tr>`;
-                scheduleHtml += `<th>Čas</th>`; // Changed from 'Čas začiatku' and 'Čas konca'
-                scheduleHtml += `<th>Domáci klub</th>`;
-                scheduleHtml += `<th>Hostia klub</th>`;
-                scheduleHtml += `<th>ID Domáci</th>`;
-                scheduleHtml += `<th>ID Hostia</th>`;
-                scheduleHtml += `</tr></thead><tbody>`;
-
-                matchesForGroup.forEach(match => {
-                    const [startH, startM] = match.startTime.split(':').map(Number);
-                    const matchEndTime = new Date();
-                    matchEndTime.setHours(startH, startM + match.duration, 0, 0);
-                    const formattedEndTime = matchEndTime.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' });
-
-                    scheduleHtml += `
-                        <tr data-id="${match.id}" class="match-row">
-                            <td>${match.startTime} - ${formattedEndTime}</td> <!-- Combined time display -->
-                            <td>${match.team1ClubName || 'N/A'}</td>
-                            <td>${match.team2ClubName || 'N/A'}</td>
-                            <td>${match.team1DisplayName || 'N/A'}</td>
-                            <td>${match.team2DisplayName || 'N/A'}</td>
-                        </tr>
-                    `;
-                });
-
-                scheduleHtml += `</tbody></table></div>`;
+                scheduleHtml += `</div>`; // Close location-group div
             });
         }
 
@@ -442,8 +450,10 @@ async function displayMatchesAsSchedule() {
             });
         });
 
-        // The following event listeners for date and location headers can remain,
-        // as they allow editing the playing day or place itself, which is separate from individual matches.
+        // The following event listeners for date and location headers should still work conceptually,
+        // but their click targets might need adjustment if the HTML structure for headers changes significantly.
+        // For now, I'll keep them as is assuming there are still clickable elements representing these.
+        // If they become redundant or problematic with the new layout, they can be removed or refined.
         matchesContainer.querySelectorAll('.date-header-clickable').forEach(header => {
             header.addEventListener('click', (event) => {
                 if (event.target.tagName === 'A' || event.target.closest('.hall-address')) {
