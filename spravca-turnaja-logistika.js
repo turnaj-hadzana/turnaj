@@ -110,8 +110,6 @@ async function populateAllPlaceSelects(selectElement, selectedPlaceCombined = ''
     }
 }
 
-// Removed: populateClubSelect, populateSpecificTeamSelect, populateAccommodationSelect as they are related to accommodation
-
 /**
  * Retrieves match duration and buffer time settings for a given category.
  * @param {string} categoryId The ID of the category.
@@ -307,6 +305,7 @@ const getTeamName = async (categoryId, groupId, teamNumber, categoriesMap, group
 
 /**
  * Displays the full match schedule. Buses and accommodation removed.
+ * Changed to table display (one row per match).
  */
 async function displayMatchesAsSchedule() {
     const matchesContainer = document.getElementById('matchesContainer');
@@ -314,11 +313,6 @@ async function displayMatchesAsSchedule() {
 
     matchesContainer.innerHTML = '';
     matchesContainer.insertAdjacentHTML('afterbegin', '<p>Načítavam logistiku turnaja...</p>');
-
-    const CELL_WIDTH_PX = 350;
-    const MINUTES_PER_HOUR = 60;
-    const PIXELS_PER_MINUTE = CELL_WIDTH_PX / MINUTES_PER_HOUR;
-    const ITEM_HEIGHT_PX = 140; // This height is based on match height, remains relevant
 
     try {
         // Fetch all data required for the schedule
@@ -357,8 +351,6 @@ async function displayMatchesAsSchedule() {
 
         allMatches = await Promise.all(updatedMatchesPromises);
 
-        // Removed: Fetching allBuses and allAccommodations
-
         const playingDaysSnapshot = await getDocs(query(playingDaysCollectionRef, orderBy("date", "asc")));
         const existingPlayingDays = playingDaysSnapshot.docs.map(doc => doc.data().date);
         console.log("displayMatchesAsSchedule: Načítané hracie dni (len dátumy):", existingPlayingDays);
@@ -367,246 +359,105 @@ async function displayMatchesAsSchedule() {
         const existingPlacesData = placesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         console.log("displayMatchesAsSchedule: Načítané miesta:", existingPlacesData);
 
-        const uniquePlacesForRows = [];
-        const addedPlaceKeys = new Set();
-        existingPlacesData.forEach(place => {
-            const placeKey = `${place.name}:::${place.type}`;
-            if (!addedPlaceKeys.has(placeKey)) {
-                uniquePlacesForRows.push(place);
-                addedPlaceKeys.add(placeKey);
-            }
-        });
-
-        uniquePlacesForRows.sort((a, b) => {
-            if (a.type < b.type) return -1;
-            if (a.type > b.type) return 1;
-            if (a.name < b.name) return -1;
-            if (a.name > b.name) return 1;
-            return 0;
-        });
-
-        // uniqueLocations set is not strictly needed if only iterating uniquePlacesForRows
-        // const uniqueLocations = new Set();
-        // uniquePlacesForRows.forEach(place => uniqueLocations.add(`${place.name}:::${place.type}`));
-
-        const sortedDates = Array.from(new Set(existingPlayingDays)).sort();
-
-        // Only matches are considered for time range calculation now
-        const eventsForTimeRangeCalculation = [...allMatches];
-        const dailyTimeRanges = new Map();
-
-        eventsForTimeRangeCalculation.forEach(event => {
-            const date = event.date;
-            let startTimeInMinutes, endTimeInMinutes;
-
-            // Only match type is handled here
-            if (event.type === 'match') {
-                const [startH, startM] = event.startTime.split(':').map(Number);
-                const durationWithBuffer = (event.duration || 0) + (event.bufferTime || 0);
-                startTimeInMinutes = startH * 60 + startM;
-                endTimeInMinutes = startTimeInMinutes + durationWithBuffer;
-            }
-
-            let actualEndHour = Math.ceil(endTimeInMinutes / 60);
-
-            if (!dailyTimeRanges.has(date)) {
-                dailyTimeRanges.set(date, { minHour: Math.floor(startTimeInMinutes / 60), maxHour: actualEndHour });
-            } else {
-                const range = dailyTimeRanges.get(date);
-                range.minHour = Math.min(range.minHour, Math.floor(startTimeInMinutes / 60));
-                range.maxHour = Math.max(range.maxHour, actualEndHour);
-            }
-        });
-
-        sortedDates.forEach(date => {
-            if (!dailyTimeRanges.has(date)) {
-                dailyTimeRanges.set(date, { minHour: 8, maxHour: 18 }); // Default range if no events on that day
-            }
-        });
-
-        matchesContainer.innerHTML = '';
-        let scheduleHtml = '<div class="schedule-table-container" style="position: relative; overflow: auto;">';
-        scheduleHtml += '<table class="match-schedule-table"><thead><tr>';
-        scheduleHtml += `<th class="fixed-column" style="position: sticky; top: 0; left: 0; z-index: 101; background-color: #d0d0d0;">Miesto ⁄ Čas</th>`;
-
-        sortedDates.forEach(date => {
-            const range = dailyTimeRanges.get(date);
-            let hoursForDate = [];
-            if (range) {
-                for (let h = range.minHour; h < range.maxHour; h++) {
-                    hoursForDate.push(h);
+        // Group matches by Date and Location (Sport Hall)
+        const groupedMatches = new Map(); // Key: "date:::location", Value: Array of matches
+        allMatches.forEach(match => {
+            if (match.locationType === 'Športová hala') { // Only show matches in sport halls
+                const key = `${match.date}:::${match.location}`;
+                if (!groupedMatches.has(key)) {
+                    groupedMatches.set(key, []);
                 }
+                groupedMatches.get(key).push(match);
             }
-
-            const displayDateObj = new Date(date);
-            const displayDay = String(displayDateObj.getDate()).padStart(2, '0');
-            const displayMonth = String(displayDateObj.getMonth() + 1).padStart(2, '0');
-            const displayYear = displayDateObj.getFullYear();
-            const formattedDisplayDate = `${displayDay}. ${displayMonth}. ${displayYear}`;
-
-            const colspan = hoursForDate.length > 0 ? hoursForDate.length : 1;
-            scheduleHtml += `<th colspan="${colspan}" class="date-header-clickable" data-date="${date}" title="Kliknutím upravíte hrací deň ${formattedDisplayDate}" style="position: sticky; top: 0; z-index: 100; background-color: #d0d0d0;">`;
-            scheduleHtml += `<div class="schedule-date-header-content">${formattedDisplayDate}</div>`;
-            scheduleHtml += '<div class="schedule-times-row">';
-            if (hoursForDate.length > 0) {
-                hoursForDate.forEach(hour => {
-                    scheduleHtml += `<span>${String(hour % 24).padStart(2, '0')}:00</span>`;
-                });
-            } else {
-                scheduleHtml += `<span></span>`;
-            }
-            scheduleHtml += '</div>';
-            scheduleHtml += '</th>';
         });
-        scheduleHtml += '</tr></thead><tbody>';
 
-        uniquePlacesForRows.forEach(placeData => {
-            const locationName = placeData.name;
-            const placeAddress = placeData.address;
-            const placeGoogleMapsUrl = placeData.googleMapsUrl;
-            const placeType = placeData.type;
+        let scheduleHtml = '';
 
-            // Only render rows for 'Športová hala' and 'Stravovacie zariadenie' as bus and accommodation functionality is removed
-            if (placeType !== 'Športová hala' && placeType !== 'Stravovacie zariadenie') {
-                return; // Skip rendering this row if it's accommodation or other types not managed here
+        // Sort the groups by date and then by location name
+        const sortedGroupKeys = Array.from(groupedMatches.keys()).sort((a, b) => {
+            const [dateA, locA] = a.split(':::');
+            const [dateB, locB] = b.split(':::');
+            if (dateA !== dateB) {
+                return dateA.localeCompare(dateB);
             }
+            return locA.localeCompare(locB);
+        });
 
-            let typeClass = '';
-            let specificBackgroundColor = '';
-            switch (placeType) {
-                case 'Športová hala':
-                    typeClass = 'place-type-sport-hall';
-                    specificBackgroundColor = 'background-color: #007bff;';
-                    break;
-                case 'Stravovacie zariadenie':
-                    typeClass = 'place-type-catering';
-                    specificBackgroundColor = 'background-color: #ffc107;';
-                    break;
-                // case 'Ubytovanie': // Removed
-                //     typeClass = 'place-type-accommodation';
-                //     specificBackgroundColor = 'background-color: #4CAF50;';
-                //     break;
-                default:
-                    typeClass = '';
-            }
+        if (sortedGroupKeys.length === 0) {
+            scheduleHtml += '<p>Žiadne zápasy na zobrazenie. Pridajte nové zápasy pomocou tlačidla "+".</p>';
+        } else {
+            sortedGroupKeys.forEach(key => {
+                const [date, location] = key.split(':::');
+                const matchesForGroup = groupedMatches.get(key);
 
-            const stickyColumnStyles = `position: sticky; left: 0; z-index: 100; background-color: #e0e0e0;`;
-            const finalColumnStyle = `${stickyColumnStyles} ${specificBackgroundColor}`;
-
-            scheduleHtml += '<tr>';
-            scheduleHtml += `<th class="fixed-column schedule-location-header delete-location-header ${typeClass}" data-location="${locationName}" data-type="${placeType}" title="Kliknutím upravíte miesto ${locationName} (${placeType})" style="${finalColumnStyle}">
-                <div class="hall-name">${locationName} (${placeType})</div> <div class="hall-address">
-                    <a href="${placeGoogleMapsUrl}" target="_blank" rel="noopener noreferrer">${placeAddress}</a>
-                </div>
-            </th>`;
-
-            sortedDates.forEach(date => {
-                const range = dailyTimeRanges.get(date);
-                const hoursForDateCount = range ? (range.maxHour - range.minHour) : 0;
-                const colspan = hoursForDateCount > 0 ? hoursForDateCount : 1;
-                scheduleHtml += `<td colspan="${colspan}" style="position: relative; background-color: #f7f7f7;">`;
-
-                const matchesInCell = allMatches.filter(event => {
-                    return event.date === date && placeType === 'Športová hala' && event.location === locationName;
-                });
-
-                // Removed: accommodationsInCell filter logic
-
-                matchesInCell.sort((a, b) => {
+                // Sort matches by start time
+                matchesForGroup.sort((a, b) => {
                     const [aH, aM] = a.startTime.split(':').map(Number);
                     const [bH, bM] = b.startTime.split(':').map(Number);
                     return (aH * 60 + aM) - (bH * 60 + bM);
                 });
 
-                matchesInCell.forEach(event => {
-                    const [startH, startM] = event.startTime.split(':').map(Number);
-                    const absoluteStartMin = startH * 60 + startM;
-                    const relativeStartMinInCell = absoluteStartMin - (range.minHour * 60);
-                    const matchBlockLeftPx = relativeStartMinInCell * PIXELS_PER_MINUTE;
-                    const matchBlockWidthPx = event.duration * PIXELS_PER_MINUTE;
-                    const bufferBlockLeftPx = matchBlockLeftPx + matchBlockWidthPx;
-                    const bufferBlockWidthPx = event.bufferTime * PIXELS_PER_MINUTE;
+                const displayDateObj = new Date(date);
+                const formattedDisplayDate = `${String(displayDateObj.getDate()).padStart(2, '0')}. ${String(displayDateObj.getMonth() + 1).padStart(2, '0')}. ${displayDateObj.getFullYear()}`;
 
+                scheduleHtml += `<div class="match-table-group" style="margin-bottom: 30px; border: 1px solid #ddd; border-radius: 8px; overflow: hidden;">`;
+                scheduleHtml += `<h3 style="background-color: #f0f0f0; padding: 15px; margin: 0; border-bottom: 1px solid #ddd;">Dátum: ${formattedDisplayDate}, Miesto: ${location}</h3>`;
+                scheduleHtml += `<table class="data-table match-list-table" style="width: 100%; border-collapse: collapse;">`;
+                scheduleHtml += `<thead><tr>`;
+                scheduleHtml += `<th>Čas začiatku</th>`;
+                scheduleHtml += `<th>Čas konca</th>`;
+                scheduleHtml += `<th>Domáci klub</th>`;
+                scheduleHtml += `<th>Hostia klub</th>`;
+                scheduleHtml += `<th>ID Domáci</th>`;
+                scheduleHtml += `<th>ID Hostia</th>`;
+                scheduleHtml += `<th>Akcie</th>`;
+                scheduleHtml += `</tr></thead><tbody>`;
+
+                matchesForGroup.forEach(match => {
+                    const [startH, startM] = match.startTime.split(':').map(Number);
                     const matchEndTime = new Date();
-                    matchEndTime.setHours(startH, startM + event.duration, 0, 0);
+                    matchEndTime.setHours(startH, startM + match.duration, 0, 0);
                     const formattedEndTime = matchEndTime.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' });
 
-                    let team1ClubNameDisplay = event.team1ClubName ? `${event.team1ClubName}` : '';
-                    let team2ClubNameDisplay = event.team2ClubName ? `${event.team2ClubName}` : '';
-
-                    let clubNamesHtml = '';
-                    if (team1ClubNameDisplay) {
-                        clubNamesHtml += `${team1ClubNameDisplay}`;
-                    }
-                    if (team2ClubNameDisplay) {
-                        if (clubNamesHtml) clubNamesHtml += `<br>`;
-                        clubNamesHtml += `${team2ClubNameDisplay}`;
-                    }
-                    const finalClubNamesHtml = clubNamesHtml ? `<span style="font-weight: normal;">${clubNamesHtml}</span>` : '';
-
-                    // Get updated category and group names from the maps
-                    const currentCategoryName = categoriesMap.get(event.categoryId) || event.categoryId;
-                    const currentGroupName = groupsMap.get(event.groupId) || event.groupId;
-
                     scheduleHtml += `
-                        <div class="schedule-cell-match"
-                            data-id="${event.id}" data-type="${event.type}"
-                            style="left: ${matchBlockLeftPx}px; width: ${matchBlockWidthPx}px; top: 0;">
-                            <div class="schedule-cell-content">
-                                <p class="schedule-cell-time">${event.startTime} - ${formattedEndTime}</p>
-                                <p class="schedule-cell-category">${currentCategoryName || 'N/A'}${currentGroupName ? ` ${currentGroupName}` : ''}</p>
-                                <p class="schedule-cell-teams">
-                                    ${event.team1DisplayName}<br>
-                                    ${event.team2DisplayName}<br>
-                                    ${finalClubNamesHtml}
-                                </p>
-                            </div>
-                        </div>
+                        <tr data-id="${match.id}" class="match-row">
+                            <td>${match.startTime}</td>
+                            <td>${formattedEndTime}</td>
+                            <td>${match.team1ClubName || 'N/A'}</td>
+                            <td>${match.team2ClubName || 'N/A'}</td>
+                            <td>${match.team1DisplayName || 'N/A'}</td>
+                            <td>${match.team2DisplayName || 'N/A'}</td>
+                            <td>
+                                <button class="action-button edit-match-button" data-id="${match.id}">Upraviť</button>
+                                <button class="action-button delete-match-button" data-id="${match.id}">Vymazať</button>
+                            </td>
+                        </tr>
                     `;
-                    if (event.bufferTime > 0) {
-                        scheduleHtml += `
-                            <div class="schedule-cell-buffer"
-                                style="left: ${bufferBlockLeftPx}px; width: ${bufferBlockWidthPx}px; top: 0;">
-                            </div>
-                        `;
-                    }
                 });
 
-                // Removed: Accommodation rendering logic
-                scheduleHtml += '</td>';
+                scheduleHtml += `</tbody></table></div>`;
             });
-            scheduleHtml += '</tr>';
-        });
-
-        scheduleHtml += '</tbody></table>';
-        scheduleHtml += '</div>';
-
-        matchesContainer.insertAdjacentHTML('beforeend', scheduleHtml);
-
-        const scheduleTableContainer = matchesContainer.querySelector('.schedule-table-container');
-        const scheduleTable = matchesContainer.querySelector('.match-schedule-table');
-        
-        if (!scheduleTableContainer || !scheduleTable) {
-            matchesContainer.innerHTML = '<p>Chyba pri zobrazení rozvrhu. Chýbajú komponenty tabuľky.</p>';
-            return;
         }
 
-        // Removed: Bus overlay container creation and rendering
-        // const busOverlayContainer = document.createElement('div');
-        // busOverlayContainer.id = 'busOverlayContainer';
-        // ... (removed bus rendering and related logic)
+        matchesContainer.innerHTML = scheduleHtml;
 
-        matchesContainer.querySelectorAll('.schedule-cell-match').forEach(element => {
-            element.addEventListener('click', (event) => {
-                const id = event.currentTarget.dataset.id;
-                editMatch(id);
+        // Add event listeners for edit and delete buttons on matches
+        matchesContainer.querySelectorAll('.edit-match-button').forEach(button => {
+            button.addEventListener('click', (event) => {
+                const matchId = event.target.dataset.id;
+                editMatch(matchId);
             });
         });
 
-        // Removed: Event listeners for bus and accommodation cells
-        // busOverlayContainer.querySelectorAll('.bus-svg').forEach(element => { ... });
-        // matchesContainer.querySelectorAll('.schedule-cell-accommodation').forEach(element => { ... });
+        matchesContainer.querySelectorAll('.delete-match-button').forEach(button => {
+            button.addEventListener('click', (event) => {
+                const matchId = event.target.dataset.id;
+                deleteMatch(matchId);
+            });
+        });
 
+        // Event listeners for date and location headers (for editing playing day and place)
+        // These can still exist as they operate on the higher level data
         matchesContainer.querySelectorAll('.date-header-clickable').forEach(header => {
             header.addEventListener('click', (event) => {
                 if (event.target.tagName === 'A' || event.target.closest('.hall-address')) {
@@ -684,9 +535,6 @@ async function deletePlayingDay(dateToDelete) {
                 batch.delete(doc(matchesCollectionRef, matchDoc.id));
             });
 
-            // Removed: Delete associated bus routes
-            // Removed: Delete associated accommodation assignments
-
             await batch.commit();
             await showMessage('Úspech', `Hrací deň ${dateToDelete} a všetky súvisiace zápasy boli vymazané!`);
             closeModal(document.getElementById('playingDayModal'));
@@ -728,9 +576,6 @@ async function deletePlace(placeNameToDelete, placeTypeToDelete) {
             matchesSnapshot.docs.forEach(matchDoc => {
                 batch.delete(doc(matchesCollectionRef, matchDoc.id));
             });
-
-            // Removed: Delete associated bus routes
-            // Removed: If it's an accommodation, delete associated team accommodations
 
             await batch.commit();
             await showMessage('Úspech', `Miesto ${placeNameToDelete} (${placeTypeToDelete}) a všetky súvisiace zápasy boli vymazané!`);
@@ -897,8 +742,6 @@ async function deleteMatch(matchId) {
     }
 }
 
-// Removed: editBus, deleteBus, editAccommodationAssignment, deleteAccommodationAssignment functions
-
 document.addEventListener('DOMContentLoaded', async () => {
     const loggedInUsername = localStorage.getItem('username');
     if (!loggedInUsername || loggedInUsername !== 'admin') {
@@ -912,7 +755,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const addPlayingDayButton = document.getElementById('addPlayingDayButton');
     const addPlaceButton = document.getElementById('addPlaceButton');
     const addMatchButton = document.getElementById('addMatchButton');
-    // Removed: addBusButton, assignAccommodationButton
 
     const matchModal = document.getElementById('matchModal');
     const closeMatchModalButton = document.getElementById('closeMatchModal');
@@ -948,9 +790,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const placeAddressInput = document.getElementById('placeAddress');
     const placeGoogleMapsUrlInput = document.getElementById('placeGoogleMapsUrl');
     const deletePlaceButtonModal = document.getElementById('deletePlaceButtonModal');
-
-    // Removed: busModal, busForm and all its elements
-    // Removed: assignAccommodationModal and all its elements
 
     if (categoriesContentSection) {
         categoriesContentSection.style.display = 'block';
@@ -1024,9 +863,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // Removed: addBusButton.addEventListener
-    // Removed: assignAccommodationButton.addEventListener
-
     // Close modal event listeners
     closePlayingDayModalButton.addEventListener('click', () => {
         closeModal(playingDayModal);
@@ -1042,9 +878,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         closeModal(matchModal);
         displayMatchesAsSchedule(); // Refresh schedule after closing
     });
-
-    // Removed: closeBusModalButton.addEventListener
-    // Removed: closeAssignAccommodationModalButton.addEventListener
 
     // Event listeners for dynamic updates in match form
     matchCategorySelect.addEventListener('change', async () => {
@@ -1072,8 +905,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     matchLocationSelect.addEventListener('change', findFirstAvailableTime);
     matchDurationInput.addEventListener('change', findFirstAvailableTime);
     matchBufferTimeInput.addEventListener('change', findFirstAvailableTime);
-
-    // Removed: Event listeners for dynamic updates in accommodation assignment form (clubSelect, assignmentDateFromSelect, assignmentDateToSelect)
 
     /**
      * Handles the submission of the match form.
@@ -1276,9 +1107,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             await showMessage('Chyba', `Chyba pri ukladaní zápasu. Detail: ${error.message}`);
         }
     });
-
-    // Removed: busForm.addEventListener (submission handler for buses)
-    // Removed: assignAccommodationForm.addEventListener (submission handler for accommodation)
 
     /**
      * Handles the submission of the place form.
