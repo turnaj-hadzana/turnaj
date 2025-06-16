@@ -407,7 +407,7 @@ async function displayMatchesAsSchedule() {
                     const displayDateObj = new Date(date);
                     const formattedDisplayDate = `${String(displayDateObj.getDate()).padStart(2, '0')}. ${String(displayDateObj.getMonth() + 1).padStart(2, '0')}. ${displayDateObj.getFullYear()}`;
 
-                    scheduleHtml += `<div class="date-group" style="margin: 20px; border: 1px solid #eee; border-radius: 8px; overflow: hidden;">`;
+                    scheduleHtml += `<div class="date-group" data-date="${date}" data-location="${location}" style="margin: 20px; border: 1px solid #eee; border-radius: 8px; overflow: hidden;">`; // Added data-date and data-location
                     scheduleHtml += `<h3 style="background-color: #f7f7f7; padding: 15px; margin: 0; border-bottom: 1px solid #ddd;">Dátum: ${formattedDisplayDate}</h3>`;
                     scheduleHtml += `<table class="data-table match-list-table compact-table" style="width: 100%; border-collapse: collapse;">`; // Added compact-table class
                     scheduleHtml += `<thead><tr>`;
@@ -464,30 +464,30 @@ async function displayMatchesAsSchedule() {
             });
         });
 
-        // Add dragover and drop listeners to the matchesContainer to allow dropping anywhere
-        matchesContainer.addEventListener('dragover', (event) => {
-            event.preventDefault(); // Crucial to allow a drop
-            event.dataTransfer.dropEffect = 'move';
-            matchesContainer.classList.add('drop-target-active'); // Optional: visual feedback
-        });
+        // Add dragover and drop listeners to the date-group divs
+        matchesContainer.querySelectorAll('.date-group').forEach(dateGroupDiv => {
+            dateGroupDiv.addEventListener('dragover', (event) => {
+                event.preventDefault(); // Crucial to allow a drop
+                event.dataTransfer.dropEffect = 'move';
+                dateGroupDiv.classList.add('drop-target-active'); // Optional: visual feedback
+            });
 
-        matchesContainer.addEventListener('dragleave', () => {
-            matchesContainer.classList.remove('drop-target-active'); // Optional: visual feedback
-        });
+            dateGroupDiv.addEventListener('dragleave', () => {
+                dateGroupDiv.classList.remove('drop-target-active'); // Optional: visual feedback
+            });
 
-        matchesContainer.addEventListener('drop', (event) => {
-            event.preventDefault();
-            matchesContainer.classList.remove('drop-target-active'); // Optional: visual feedback
+            dateGroupDiv.addEventListener('drop', (event) => {
+                event.preventDefault();
+                dateGroupDiv.classList.remove('drop-target-active'); // Optional: visual feedback
 
-            const matchId = event.dataTransfer.getData('text/plain');
-            if (matchId) {
-                // Open the edit modal for the dragged match
-                editMatch(matchId);
-                // Optionally, if dropped on a specific date/location block,
-                // you could pass that info to editMatch to pre-fill.
-                // This requires more complex logic to identify the drop target's data.
-                // For simplicity now, just open the modal.
-            }
+                const matchId = event.dataTransfer.getData('text/plain');
+                const newDate = dateGroupDiv.dataset.date;
+                const newLocation = dateGroupDiv.dataset.location;
+
+                if (matchId && newDate && newLocation) {
+                    editMatch(matchId, newDate, newLocation); // Pass new date and location
+                }
+            });
         });
 
 
@@ -704,8 +704,10 @@ async function editPlace(placeName, placeType) {
 /**
  * Opens the modal to edit an existing match.
  * @param {string} matchId The ID of the match to edit.
+ * @param {string} [newDate=''] Optional: New date to pre-fill the modal with.
+ * @param {string} [newLocation=''] Optional: New location to pre-fill the modal with.
  */
-async function editMatch(matchId) {
+async function editMatch(matchId, newDate = '', newLocation = '') {
     try {
         const matchModal = document.getElementById('matchModal');
         const matchIdInput = document.getElementById('matchId');
@@ -729,12 +731,16 @@ async function editMatch(matchId) {
             matchIdInput.value = matchId;
             matchModalTitle.textContent = 'Upraviť zápas';
 
-            await populatePlayingDaysSelect(matchDateSelect, matchData.date);
-            await populateSportHallSelects(matchLocationSelect, matchData.location);
+            // Pre-fill date and location from drag & drop, otherwise use existing match data
+            await populatePlayingDaysSelect(matchDateSelect, newDate || matchData.date);
+            await populateSportHallSelects(matchLocationSelect, newLocation || matchData.location);
+            
+            // Set start time, duration, and buffer time from existing match data
             matchStartTimeInput.value = matchData.startTime || '';
             matchDurationInput.value = matchData.duration || '';
             matchBufferTimeInput.value = matchData.bufferTime || '';
 
+            // Populate category and group, and update duration/buffer if category changes
             await populateCategorySelect(matchCategorySelect, matchData.categoryId);
             if (matchData.categoryId) {
                 await populateGroupSelect(matchData.categoryId, matchGroupSelect, matchData.groupId);
@@ -751,6 +757,11 @@ async function editMatch(matchId) {
             deleteMatchButtonModal.onclick = () => deleteMatch(matchId);
 
             openModal(matchModal);
+
+            // After opening the modal and setting date/location, find the first available time
+            // This will recalculate the start time based on the new date/location
+            await findFirstAvailableTime();
+
         } else {
             await showMessage('Informácia', "Zápas sa nenašiel.");
         }
