@@ -2033,6 +2033,88 @@ async function deleteMatch(matchId) {
     }
 }
 
+/**
+ * Vyčistí (vymaže) všetky voľné sloty (fantómové a odblokované placeholder sloty)
+ * na konci každého dňa a miesta pri načítaní stránky.
+ */
+async function cleanupTrailingBlockedSlotsOnLoad() {
+    console.log("cleanupTrailingBlockedSlotsOnLoad: Spustená funkcia pre čistenie koncových slotov.");
+    try {
+        const allPlayingDayDatesSnapshot = await getDocs(query(playingDaysCollectionRef, orderBy("date", "asc")));
+        const allPlayingDayDates = allPlayingDayDatesSnapshot.docs.map(doc => doc.data().date);
+
+        const allSportHallsSnapshot = await getDocs(query(placesCollectionRef, where("type", "==", "Športová hala"), orderBy("name", "asc")));
+        const allSportHalls = allSportHallsSnapshot.docs.map(doc => doc.data().name);
+
+        const cleanupBatch = writeBatch(db);
+        let cleanedCount = 0;
+
+        for (const date of allPlayingDayDates) {
+            for (const location of allSportHalls) {
+                console(`cleanupTrailingBlockedSlotsOnLoad: Kontrolujem dátum: ${date}, miesto: ${location}`);
+
+                // 1. Získajte všetky zápasy pre aktuálny dátum a miesto
+                const matchesQuery = query(matchesCollectionRef, where("date", "==", date), where("location", "==", location), orderBy("startTime", "asc"));
+                const matchesSnapshot = await getDocs(matchesQuery);
+                const matchesForLocationAndDate = matchesSnapshot.docs.map(doc => {
+                    const data = doc.data();
+                    const [startH, startM] = data.startTime.split(':').map(Number);
+                    const startInMinutes = startH * 60 + startM;
+                    const duration = Number(data.duration) || 0;
+                    const bufferTime = Number(data.bufferTime) || 0;
+                    const endInMinutes = startInMinutes + duration + bufferTime;
+                    return { start: startInMinutes, end: endInMinutes, id: doc.id, type: 'match' };
+                });
+
+                // 2. Získajte všetky zablokované sloty (vrátane fantómov a odblokovaných)
+                const blockedSlotsQuery = query(blockedSlotsCollectionRef, where("date", "==", date), where("location", "==", location), orderBy("startTime", "asc"));
+                const blockedSlotsSnapshot = await getDocs(blockedSlotsQuery);
+                const allBlockedSlotsForLocationAndDate = blockedSlotsSnapshot.docs.map(doc => {
+                    const data = doc.data();
+                    const [startH, startM] = data.startTime.split(':').map(Number);
+                    const startInMinutes = startH * 60 + startM;
+                    const [endH, endM] = data.endTime.split(':').map(Number);
+                    const endInMinutes = endH * 60 + endM;
+                    return { start: startInMinutes, end: endInMinutes, id: doc.id, type: 'blocked_slot', isPhantom: data.isPhantom === true, isBlocked: data.isBlocked === true };
+                });
+
+                // Spojte zápasy a *aktívne* zablokované sloty pre určenie poslednej udalosti
+                const activeEvents = [
+                    ...matchesForLocationAndDate,
+                    ...allBlockedSlotsForLocationAndDate.filter(s => s.isBlocked === true || s.isPhantom === true)
+                ];
+                activeEvents.sort((a, b) => a.start - b.start);
+
+                let lastEventEndMinutes = await getInitialScheduleStartMinutes(date); // Default to start of day
+
+                if (activeEvents.length > 0) {
+                    lastEventEndMinutes = activeEvents.reduce((maxEnd, event) => Math.max(maxEnd, event.end), lastEventEndMinutes);
+                }
+                console.log(`cleanupTrailingBlockedSlotsOnLoad: Posledný koniec udalosti pre ${date}, ${location}: ${lastEventEndMinutes} minút`);
+
+                // Vymažte fantómové alebo odblokované sloty, ktoré začínajú na alebo po `lastEventEndMinutes`
+                allBlockedSlotsForLocationAndDate.forEach(slot => {
+                    if (slot.start >= lastEventEndMinutes && (slot.isPhantom === true || slot.isBlocked === false)) {
+                        console.log(`cleanupTrailingBlockedSlotsOnLoad: Označený na vymazanie: ID ${slot.id}, typ: ${slot.type}, začiatok: ${slot.startTime}, isPhantom: ${slot.isPhantom}, isBlocked: ${slot.isBlocked}`);
+                        cleanupBatch.delete(doc(blockedSlotsCollectionRef, slot.id));
+                        cleanedCount++;
+                    }
+                });
+            }
+        }
+        if (cleanedCount > 0) {
+            await cleanupBatch.commit();
+            console.log(`cleanupTrailingBlockedSlotsOnLoad: Úspešne vymazaných ${cleanedCount} koncových voľných slotov.`);
+        } else {
+            console.log("cleanupTrailingBlockedSlotsOnLoad: Žiadne koncové voľné sloty na vymazanie.");
+        }
+
+    } catch (error) {
+        console.error("cleanupTrailingBlockedSlotsOnLoad: Chyba pri čistení koncových voľných slotov:", error);
+    }
+}
+
+
 document.addEventListener('DOMContentLoaded', async () => {
     const loggedInUsername = localStorage.getItem('username');
     if (!loggedInUsername || loggedInUsername !== 'admin') {
@@ -2098,6 +2180,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
+    // NOVINKA: Vyčistite koncové voľné sloty pri načítaní stránky
+    await cleanupTrailingBlockedSlotsOnLoad();
     // Počiatočné zobrazenie rozvrhu po načítaní stránky
     await displayMatchesAsSchedule();
 
