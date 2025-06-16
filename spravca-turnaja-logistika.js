@@ -503,11 +503,11 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, drag
         const batch = writeBatch(db);
 
         // Získajte všetky zápasy a zablokované sloty pre daný dátum a miesto
-        const matchesQuery = query(matchesCollectionRef, where("date", "==", date), where("location", "==", location));
+        const matchesQuery = query(matchesCollectionRef, where("date", "==", date), where("location", "==", location), orderBy("startTime", "asc"));
         const matchesSnapshot = await getDocs(matchesQuery);
         let currentMatches = matchesSnapshot.docs.map(doc => ({ id: doc.id, type: 'match', ...doc.data() }));
 
-        const blockedSlotsQuery = query(blockedSlotsCollectionRef, where("date", "==", date), where("location", "==", location));
+        const blockedSlotsQuery = query(blockedSlotsCollectionRef, where("date", "==", date), where("location", "==", location), orderBy("startTime", "asc"));
         const blockedSlotsSnapshot = await getDocs(blockedSlotsQuery);
         let currentBlockedSlots = blockedSlotsSnapshot.docs.map(doc => ({
             id: doc.id,
@@ -568,23 +568,30 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, drag
         let currentTimePointer = initialScheduleStartMinutes;
         console.log(`recalculateAndSaveScheduleForDateAndLocation: Počiatočný ukazovateľ času rozvrhu: ${currentTimePointer}`);
 
+        // Iterujte cez udalosti a aktualizujte časy zápasov
         for (const event of eventsToProcess) {
             if (event.type === 'blocked_slot') {
-                // Zablokované sloty posúvajú ukazovateľ, ale ich čas začiatku sa nemení
-                currentTimePointer = Math.max(currentTimePointer, event.endInMinutes);
+                // Ak sa zablokovaný slot nachádza pred aktuálnym ukazovateľom času, posuňte ukazovateľ zaň
+                if (event.startInMinutes >= currentTimePointer) {
+                     currentTimePointer = Math.max(currentTimePointer, event.endInMinutes);
+                } else if (event.endInMinutes > currentTimePointer) {
+                     // Ak sa prekrýva a koniec je za ukazovateľom
+                    currentTimePointer = event.endInMinutes;
+                }
                 console.log(`recalculateAndSaveScheduleForDateAndLocation: Zablokovaný slot ${event.id}, ukazovateľ posunutý na ${currentTimePointer}`);
             } else if (event.type === 'match') {
                 const matchRef = doc(matchesCollectionRef, event.id);
+                // Nový čas začiatku zápasu je buď aktuálny ukazovateľ času, alebo pôvodný čas zápasu,
+                // ak je pôvodný čas po ukazovateli (t.j. zápas sa posunul dopredu).
                 let newMatchStartTimeInMinutes = Math.max(currentTimePointer, event.startInMinutes);
                 
                 // Preveďte na HH:MM
                 const newStartTimeStr = `${String(Math.floor(newMatchStartTimeInMinutes / 60)).padStart(2, '0')}:${String(newMatchStartTimeInMinutes % 60).padStart(2, '0')}`;
 
                 // Ak sa zmenil dátum alebo miesto, aktualizujte aj to.
-                // Toto by malo byť už ošetrené predvolením v moveAndRescheduleMatch, ale pre istotu
                 const updateData = {
                     startTime: newStartTimeStr,
-                    date: date, // Ensure date and location are set to the target ones
+                    date: date, 
                     location: location
                 };
                 console.log(`recalculateAndSaveScheduleForDateAndLocation: Aktualizujem zápas ${event.id} s novým časom: ${newStartTimeStr}, Dátum: ${date}, Miesto: ${location}`);
@@ -930,7 +937,7 @@ async function displayMatchesAsSchedule() {
                                 const blockedSlotStartHour = String(Math.floor(blockedSlot.startInMinutes / 60)).padStart(2, '0');
                                 const blockedSlotStartMinute = String(blockedSlot.startInMinutes % 60).padStart(2, '0');
                                 const blockedSlotEndHour = String(Math.floor(blockedSlot.endInMinutes / 60)).padStart(2, '0');
-                                const blockedSlotEndMinute = String(Math.floor(blockedSlot.endInMinutes % 60)).padStart(2, '0'); // Opravený riadok 593
+                                const blockedSlotEndMinute = String(Math.floor(blockedSlot.endInMinutes % 60)).padStart(2, '0');
                                 console.log(`displayMatchesAsSchedule: Renderujem zablokovaný slot: ID ${blockedSlot.id}, Čas: ${blockedSlotStartHour}:${blockedSlotStartMinute}-${blockedSlotEndHour}:${blockedSlotEndMinute}, Miesto: ${blockedSlot.location}, Dátum: ${blockedSlot.date}`);
 
                                 scheduleHtml += `
