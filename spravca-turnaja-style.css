@@ -949,3 +949,27 @@ td:last-child {
     padding: 5px 8px; /* Zmenšite padding pre menšiu výšku riadku */
     font-size: 0.9em; /* Voliteľné: Zmenšite písmo pre lepšie prispôsobenie */
 }
+
+
+
+/* Styling for when a draggable item is hovered over a target row (for insertion) */
+.match-row.drop-over-row {
+    border-top: 2px solid #007bff; /* Modrá linka na vrchu pre vizuálne rozdelenie */
+    box-shadow: 0 0 10px rgba(0, 123, 255, 0.5); /* Jemný modrý tieň */
+    transition: all 0.1s ease-in-out; /* Hladký prechod */
+    background-color: #e0f0ff; /* Svetlomodré pozadie pre cieľový riadok */
+}
+
+/* Styling for when a draggable item is hovered over a target date-group (for appending) */
+.date-group.drop-target-active {
+    border: 2px dashed #28a745; /* Zelený prerušovaný okraj pre cieľovú skupinu */
+    background-color: #e6ffe6; /* Svetlozelené pozadie */
+    box-shadow: 0 0 15px rgba(40, 167, 69, 0.6); /* Výraznejší zelený tieň */
+    transition: all 0.2s ease-in-out; /* Hladký prechod */
+}
+
+/* Optional: Styling for the dragged item itself */
+.match-row.dragging {
+    opacity: 0.5; /* Zníženie priehľadnosti presúvaného riadku */
+    transform: scale(0.98); /* Mierne zmenšenie pre pocit "zdvihnutia" */
+}
