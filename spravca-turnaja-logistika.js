@@ -659,7 +659,8 @@ async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation
                     ...event, // Zachová všetky pôvodné vlastnosti dokumentu zápasu
                     date: targetDate, // Prepisuje dátum
                     location: targetLocation, // Prepisuje názov miesta
-                    startTime: newStartTimeStr // Prepisuje čas začiatku
+                    startTime: newStartTimeStr, // Prepisuje čas začiatku
+                    locationType: 'Športová hala' // Explicitne nastavte pre istotu
                 };
 
                 // Odstráňte interné vlastnosti, ktoré by nemali byť uložené vo Firestore dokumente
@@ -919,7 +920,7 @@ async function displayMatchesAsSchedule() {
                                 const blockedSlotStartHour = String(Math.floor(blockedSlot.startInMinutes / 60)).padStart(2, '0');
                                 const blockedSlotStartMinute = String(blockedSlot.startInMinutes % 60).padStart(2, '0');
                                 const blockedSlotEndHour = String(Math.floor(blockedSlot.endInMinutes / 60)).padStart(2, '0');
-                                const blockedSlotEndMinute = String(blockedSlot.endInMinutes % 60).padStart(2, '0');
+                                const blockedSlotEndMinute = String(Math.floor(blockedSlot.endInMinutes % 60)).padStart(2, '0');
 
                                 scheduleHtml += `
                                     <tr class="blocked-slot-row" data-id="${blockedSlot.id}" data-date="${date}" data-location="${location}" data-start-time="${blockedSlotStartHour}:${blockedSlotStartMinute}" data-end-time="${blockedSlotEndHour}:${blockedSlotEndMinute}">
@@ -1396,7 +1397,7 @@ async function openMatchModal(matchId = null, prefillDate = '', prefillLocation 
  * @param {string} date Dátum slotu.
  * @param {string} location Miesto slotu.
  * @param {string} startTime Čas začiatku slotu (HH:MM).
- * @param {string} endTime Čas konca slotu (HH:MM).
+ * @param {string} string endTime Čas konca slotu (HH:MM).
  * @param {string|null} blockedSlotId ID zablokovaného slotu, ak existuje (pre úpravu).
  */
 async function openFreeSlotModal(date, location, startTime, endTime, blockedSlotId = null) {
@@ -1614,7 +1615,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const addOptions = document.getElementById('addOptions');
     const addPlayingDayButton = document.getElementById('addPlayingDayButton');
     const addPlaceButton = document.getElementById('addPlaceButton');
-    const addMatchButton = document.getElementById('addMatchButton');
+    const addMatchButton = document = document.getElementById('addMatchButton');
 
     const matchModal = document.getElementById('matchModal');
     const closeMatchModalButton = document.getElementById('closeMatchModal');
