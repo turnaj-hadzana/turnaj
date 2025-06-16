@@ -566,22 +566,24 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, drag
         // Určite počiatočný čas rozvrhu pre daný deň
         const initialScheduleStartMinutes = await getInitialScheduleStartMinutes(date);
         let currentTimePointer = initialScheduleStartMinutes;
-        console.log(`recalculateAndSaveScheduleForDateAndLocation: Počiatočný ukazovateľ času rozvrhu: ${currentTimePointer}`);
+        console.log(`recalculateAndSaveScheduleForDateAndLocation: Počiatočný ukazovateľ času rozvrhu: ${currentTimePointer} minút (${String(Math.floor(currentTimePointer / 60)).padStart(2, '0')}:${String(currentTimePointer % 60).padStart(2, '0')}).`);
 
         // Iterujte cez udalosti a aktualizujte časy zápasov
         for (const event of eventsToProcess) {
+            console.log(`recalculateAndSaveScheduleForDateAndLocation: Spracovávam udalosť: ID ${event.id}, Typ: ${event.type}, Pôvodný štart v minútach: ${event.startInMinutes}, Aktuálny currentTimePointer: ${currentTimePointer}`);
+
             if (event.type === 'blocked_slot') {
-                // Ak sa zablokovaný slot nachádza pred aktuálnym ukazovateľom času, posuňte ukazovateľ zaň
+                // Ak sa zablokovaný slot začína po aktuálnom ukazovateli času, posuňte ukazovateľ zaň
                 if (event.startInMinutes >= currentTimePointer) {
                      currentTimePointer = Math.max(currentTimePointer, event.endInMinutes);
                 } else if (event.endInMinutes > currentTimePointer) {
-                     // Ak sa prekrýva a koniec je za ukazovateľom
+                     // Ak sa prekrýva a koniec je za ukazovateľom (slot začal pred ukazovateľom)
                     currentTimePointer = event.endInMinutes;
                 }
-                console.log(`recalculateAndSaveScheduleForDateAndLocation: Zablokovaný slot ${event.id}, ukazovateľ posunutý na ${currentTimePointer}`);
+                console.log(`recalculateAndSaveScheduleForDateAndLocation: Zablokovaný slot ${event.id}, ukazovateľ posunutý na ${currentTimePointer} minút.`);
             } else if (event.type === 'match') {
                 const matchRef = doc(matchesCollectionRef, event.id);
-                // NOVINKA: Čas začiatku zápasu je vždy currentTimePointer
+                // Čas začiatku zápasu je vždy currentTimePointer
                 let newMatchStartTimeInMinutes = currentTimePointer;
                 
                 // Preveďte na HH:MM
@@ -597,7 +599,7 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, drag
                 batch.set(matchRef, updateData, { merge: true });
 
                 currentTimePointer = newMatchStartTimeInMinutes + (event.duration || 0) + (event.bufferTime || 0);
-                console.log(`recalculateAndSaveScheduleForDateAndLocation: Zápas ${event.id} preplánovaný na ${newStartTimeStr}, ukazovateľ posunutý na ${currentTimePointer}`);
+                console.log(`recalculateAndSaveScheduleForDateAndLocation: Zápas ${event.id} preplánovaný na ${newStartTimeStr}, ukazovateľ posunutý na ${currentTimePointer} minút.`);
             }
         }
         
