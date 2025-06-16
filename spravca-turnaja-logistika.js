@@ -337,7 +337,7 @@ async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation
             await showMessage('Chyba', 'Presúvaný zápas nebol nájdený.');
             return;
         }
-        const movedMatchData = { id: draggedMatchDoc.id, ...draggedMatchDoc.data() };
+        const movedMatchData = { id: draggedMatchDoc.id, ...movedMatchData.data() };
 
         // Fetch all matches for the target date and location, excluding the dragged match if it was already there
         const existingMatchesQuery = query(
@@ -553,10 +553,10 @@ async function displayMatchesAsSchedule() {
                     scheduleHtml += `<table class="data-table match-list-table compact-table" style="width: 100%; border-collapse: collapse;">`; // Added compact-table class
                     scheduleHtml += `<thead><tr>`;
                     scheduleHtml += `<th>Čas</th>`;
-                    scheduleHtml += `<th>Domáci</th>`;
-                    scheduleHtml += `<th>Hostia</th>`;
-                    scheduleHtml += `<th></th>`;
-                    scheduleHtml += `<th></th>`;
+                    scheduleHtml += `<th>Domáci klub</th>`;
+                    scheduleHtml += `<th>Hostia klub</th>`;
+                    scheduleHtml += `<th>ID Domáci</th>`;
+                    scheduleHtml += `<th>ID Hostia</th>`;
                     scheduleHtml += `</tr></thead><tbody>`;
 
                     matchesForDateAndLocation.forEach(match => {
@@ -1336,10 +1336,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             if (currentMatchId) {
                 await setDoc(doc(matchesCollectionRef, currentMatchId), matchData, { merge: true });
-                await showMessage('Úspech', 'Zápas úspešne upravený!');
+                // No success message for editing
             } else {
                 await addDoc(matchesCollectionRef, matchData);
-                await showMessage('Úspech', 'Zápas úspešne pridaný!');
+                // No success message for adding
             }
             closeModal(matchModal);
             await displayMatchesAsSchedule();
