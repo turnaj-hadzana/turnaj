@@ -1092,7 +1092,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const matchesContainer = document.getElementById('matchesContainer');
     const team1NumberInput = document.getElementById('team1NumberInput');
     const team2NumberInput = document.getElementById('team2NumberInput');
-    const deleteMatchButtonModal = document = document.getElementById('deleteMatchButtonModal');
+    const deleteMatchButtonModal = document.getElementById('deleteMatchButtonModal');
 
     const playingDayModal = document.getElementById('playingDayModal');
     const closePlayingDayModalButton = document.getElementById('closePlayingDayModal');
