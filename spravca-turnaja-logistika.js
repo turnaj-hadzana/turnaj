@@ -229,57 +229,60 @@ async function findFirstAvailableTime() {
             const data = doc.data();
             const [startH, startM] = data.startTime.split(':').map(Number);
             const startInMinutes = startH * 60 + startM;
-            const endInMinutes = startInMinutes + (data.duration || 0) + (data.bufferTime || 0); 
-            return { start: startInMinutes, end: endInMinutes, id: doc.id, duration: data.duration, bufferTime: data.bufferTime };
+            // Explicitne zabezpečte, že duration a bufferTime sú čísla
+            const duration = Number(data.duration) || 0;
+            const bufferTime = Number(data.bufferTime) || 0;
+            const endInMinutes = startInMinutes + duration + bufferTime; 
+            return { start: startInMinutes, end: endInMinutes, id: doc.id, duration: duration, bufferTime: bufferTime };
         });
         console.log("Existing Matches for selected Location and Date (sorted by start time):", matchesForLocationAndDate);
 
         let exactMatchDurationFound = false;
         let bestCandidateStartTimeInMinutes = -1;
 
-        // --- Step 1: Prioritize exact fit for 'requiredMatchDuration' (match itself) ---
-        // Check the gap before the first match (if any) or if there are no matches at all
+        // --- Krok 1: Uprednostnite presné prispôsobenie pre 'requiredMatchDuration' (samotný zápas) ---
+        // Skontrolujte medzeru pred prvým zápasom (ak existuje) alebo ak nie sú žiadne zápasy
         if (matchesForLocationAndDate.length === 0) {
-            // If no existing matches, the initial day start time is the first available.
-            // This is considered an "exact fit" for the match duration.
+            // Ak nie sú žiadne existujúce zápasy, počiatočný čas dňa je prvý dostupný.
+            // Toto sa považuje za "presné prispôsobenie" pre trvanie zápasu.
             bestCandidateStartTimeInMinutes = initialPointerMinutes;
             exactMatchDurationFound = true; 
-            console.log("No existing matches. Setting start time to initial day start as exact fit candidate.");
+            console.log("Žiadne existujúce zápasy. Nastavujem čas začiatku na počiatočný čas dňa ako kandidáta na presné prispôsobenie.");
         } else {
             const firstMatch = matchesForLocationAndDate[0];
             const gapBeforeFirstMatchDuration = firstMatch.start - initialPointerMinutes;
-            console.log("Gap before first match: Duration =", gapBeforeFirstMatchDuration, "minutes.");
+            console.log("Medzera pred prvým zápasom: Trvanie =", gapBeforeFirstMatchDuration, "minút.");
 
-            // Check if this gap can accommodate the required match duration exactly
-            if (gapBeforeFirstMatchDuration === requiredMatchDuration) {
-                // And ensure the buffer time also fits before the first actual match
+            // Skontrolujte, či táto medzera dokáže presne prispôsobiť požadované trvanie zápasu
+            if (gapBeforeFirstMatchDuration >= requiredMatchDuration) { // Zmenené z '===' na '>='
+                // A uistite sa, že sa rezerva tiež zmestí pred prvý skutočný zápas
                 if (initialPointerMinutes + requiredMatchDuration + requiredBufferTime <= firstMatch.start) {
                     bestCandidateStartTimeInMinutes = initialPointerMinutes;
                     exactMatchDurationFound = true;
-                    console.log("Found exact fit for match duration before first match:", bestCandidateStartTimeInMinutes);
+                    console.log("Našiel som presné prispôsobenie pre trvanie zápasu pred prvým zápasom:", bestCandidateStartTimeInMinutes);
                 }
             }
         }
         
-        // Search for exact fit in gaps between existing matches
+        // Hľadajte presné prispôsobenie v medzerách medzi existujúcimi zápasmi
         if (!exactMatchDurationFound) { 
-            console.log("Searching for exact fit for match duration between existing matches.");
+            console.log("Hľadám presné prispôsobenie pre trvanie zápasu medzi existujúcimi zápasmi.");
             for (let i = 0; i < matchesForLocationAndDate.length - 1; i++) {
                 const currentMatch = matchesForLocationAndDate[i];
                 const nextMatch = matchesForLocationAndDate[i + 1];
 
-                const gapStartInMinutes = currentMatch.end; // End of current match (includes its buffer)
-                const gapDuration = nextMatch.start - gapStartInMinutes; // Duration of the gap itself
-                console.log(`Checking gap between match ${currentMatch.id} (ends ${currentMatch.end}) and ${nextMatch.id} (starts ${nextMatch.start}): Duration = ${gapDuration}`);
+                const gapStartInMinutes = currentMatch.end; // Koniec aktuálneho zápasu (vrátane jeho rezervy)
+                const gapDuration = nextMatch.start - gapStartInMinutes; // Trvanie samotnej medzery
+                console.log(`Kontrola medzery medzi zápasom ${currentMatch.id} (končí ${currentMatch.end}) a ${nextMatch.id} (začína ${nextMatch.start}): Trvanie = ${gapDuration}`);
 
-                // Check if this gap can accommodate the required match duration exactly
-                if (gapDuration === requiredMatchDuration) { 
-                    // And ensure the buffer time also fits before the next actual match
+                // Skontrolujte, či táto medzera dokáže presne prispôsobiť požadované trvanie zápasu
+                if (gapDuration >= requiredMatchDuration) { // Zmenené z '===' na '>='
+                    // A uistite sa, že sa rezerva tiež zmestí pred ďalší skutočný zápas
                     if (gapStartInMinutes + requiredMatchDuration + requiredBufferTime <= nextMatch.start) {
                         bestCandidateStartTimeInMinutes = gapStartInMinutes;
                         exactMatchDurationFound = true;
-                        console.log("Found exact fit for match duration between matches:", bestCandidateStartTimeInMinutes);
-                        break; // Found the first exact fit, break loop
+                        console.log("Našiel som presné prispôsobenie pre trvanie zápasu medzi zápasmi:", bestCandidateStartTimeInMinutes);
+                        break; // Našiel sa prvý presný prispôsobenie, ukončite cyklus
                     }
                 }
             }
@@ -289,16 +292,16 @@ async function findFirstAvailableTime() {
             const formattedHour = String(Math.floor(bestCandidateStartTimeInMinutes / 60)).padStart(2, '0');
             const formattedMinute = String(bestCandidateStartTimeInMinutes % 60).padStart(2, '0');
             matchStartTimeInput.value = `${formattedHour}:${formattedMinute}`;
-            console.log("Set match start time to exact fit (Priority 1):", matchStartTimeInput.value);
+            console.log("Nastavený čas začiatku zápasu na presné prispôsobenie (Priorita 1):", matchStartTimeInput.value);
         } else {
-            // --- Step 2: Fallback to placing after the last match if no exact fit found ---
+            // --- Krok 2: Náhradné umiestnenie po poslednom zápase, ak sa nenájde presné prispôsobenie ---
             let nextAvailableTime = initialStartTimeForDay; 
             if (matchesForLocationAndDate.length > 0) {
                 const lastMatch = matchesForLocationAndDate[matchesForLocationAndDate.length - 1];
                 nextAvailableTime = calculateNextAvailableTime(lastMatch.startTime, lastMatch.duration, lastMatch.bufferTime);
             }
             matchStartTimeInput.value = nextAvailableTime;
-            console.log("No exact fit found. Setting match start time to fallback (after last match or day start):", matchStartTimeInput.value);
+            console.log("Nenašlo sa presné prispôsobenie. Nastavujem čas začiatku zápasu na náhradný (po poslednom zápase alebo začiatku dňa):", matchStartTimeInput.value);
         }
 
     } catch (error) {
@@ -403,7 +406,7 @@ function calculateNextAvailableTime(prevStartTime, duration, bufferTime) {
 async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation, droppedBeforeMatchId = null) {
     try {
         const draggedMatchDocRef = doc(matchesCollectionRef, draggedMatchId);
-        const draggedMatchDoc = await getDoc(draggedMatchDocRef);
+        const draggedMatchDoc = await getDoc(draggedMatchRef);
         if (!draggedMatchDoc.exists()) {
             await showMessage('Chyba', 'Presúvaný zápas nebol nájdený.');
             return;
