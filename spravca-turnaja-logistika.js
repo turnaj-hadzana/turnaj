@@ -401,7 +401,7 @@ async function displayMatchesAsSchedule() {
                 const formattedDisplayDate = `${String(displayDateObj.getDate()).padStart(2, '0')}. ${String(displayDateObj.getMonth() + 1).padStart(2, '0')}. ${displayDateObj.getFullYear()}`;
 
                 scheduleHtml += `<div class="match-table-group" style="margin-bottom: 30px; border: 1px solid #ddd; border-radius: 8px; overflow: hidden;">`;
-                scheduleHtml += `<h3 style="background-color: #f0f0f0; padding: 15px; margin: 0; border-bottom: 1px solid #ddd;">Dátum: ${formattedDisplayDate}, Miesto: ${location}</h3>`;
+                scheduleHtml += `<h3 style="background-color: #f0f0f0; padding: 15px; margin: 0; border-bottom: 1px solid #ddd;">${formattedDisplayDate} ${location}</h3>`;
                 scheduleHtml += `<table class="data-table match-list-table" style="width: 100%; border-collapse: collapse;">`;
                 scheduleHtml += `<thead><tr>`;
                 scheduleHtml += `<th>Čas začiatku</th>`;
