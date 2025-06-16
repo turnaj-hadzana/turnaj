@@ -696,8 +696,7 @@ async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation
 
 
 /**
- * Zobrazí kompletný rozvrh zápasov. Autobusové trasy a ubytovanie odstránené.
- * Zmenené na zobrazenie tabuľky (jeden riadok na zápas).
+ * Zobrazí kompletný rozvrh zápasov.
  */
 async function displayMatchesAsSchedule() {
     const matchesContainer = document.getElementById('matchesContainer');
@@ -758,12 +757,13 @@ async function displayMatchesAsSchedule() {
         allMatches = await Promise.all(updatedMatchesPromises);
 
         const playingDaysSnapshot = await getDocs(query(playingDaysCollectionRef, orderBy("date", "asc")));
-        const existingPlayingDays = playingDaysSnapshot.docs.map(doc => doc.data().date);
-        console.log("displayMatchesAsSchedule: Načítané hracie dni (len dátumy):", existingPlayingDays);
+        const allPlayingDayDates = playingDaysSnapshot.docs.map(doc => doc.data().date);
+        allPlayingDayDates.sort(); // Zoraďte dátumy chronologicky pre správne poradie zobrazenia
+        console.log("displayMatchesAsSchedule: Načítané hracie dni (len dátumy):", allPlayingDayDates);
 
-        const placesSnapshot = await getDocs(query(placesCollectionRef, orderBy("name", "asc")));
-        const existingPlacesData = placesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        console.log("displayMatchesAsSchedule: Načítané miesta:", existingPlacesData);
+        const sportHallsSnapshot = await getDocs(query(placesCollectionRef, where("type", "==", "Športová hala"), orderBy("name", "asc")));
+        const allSportHalls = sportHallsSnapshot.docs.map(doc => doc.data().name);
+        console.log("displayMatchesAsSchedule: Načítané športové haly:", allSportHalls);
 
         const settingsDocRef = doc(settingsCollectionRef, SETTINGS_DOC_ID);
         const settingsDoc = await getDoc(settingsDocRef);
@@ -775,51 +775,47 @@ async function displayMatchesAsSchedule() {
             globalOtherDaysStartTime = data.otherDaysStartTime || '08:00';
         }
 
-        // Načítajte zablokované sloty pre všetky zobrazené dátumy a miesta
         const blockedSlotsSnapshot = await getDocs(query(blockedSlotsCollectionRef));
-        const allBlockedSlots = blockedSlotsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const allBlockedSlots = blockedSlotsSnapshot.docs.map(doc => ({ 
+            id: doc.id, 
+            type: 'blocked_slot',
+            ...doc.data(),
+            startInMinutes: (parseInt(doc.data().startTime.split(':')[0]) * 60) + parseInt(doc.data().startTime.split(':')[1]),
+            endInMinutes: (parseInt(doc.data().endTime.split(':')[0]) * 60) + parseInt(doc.data().endTime.split(':')[1])
+        }));
         console.log("displayMatchesAsSchedule: Načítané zablokované sloty:", allBlockedSlots);
 
 
-        // Zoskupte zápasy najprv podľa miesta, potom podľa dátumu
-        const groupedMatchesByLocation = new Map(); // Kľúč: "miesto", Hodnota: Mapa (Kľúč: "dátum", Hodnota: Pole zápasov)
+        // Zoskupte zápasy: {location -> {date -> [matches]}}
+        const groupedMatches = new Map();
         allMatches.forEach(match => {
-            if (match.locationType === 'Športová hala') { // Zobrazovať iba zápasy v športových halách
-                const location = match.location;
-                const date = match.date;
-
-                if (!groupedMatchesByLocation.has(location)) {
-                    groupedMatchesByLocation.set(location, new Map());
+            if (match.locationType === 'Športová hala') {
+                if (!groupedMatches.has(match.location)) {
+                    groupedMatches.set(match.location, new Map());
                 }
-                const matchesByDate = groupedMatchesByLocation.get(location);
-                if (!matchesByDate.has(date)) {
-                    matchesByDate.set(date, []);
+                const dateMap = groupedMatches.get(match.location);
+                if (!dateMap.has(match.date)) {
+                    dateMap.set(match.date, []);
                 }
-                matchesByDate.get(date).push(match);
+                dateMap.get(match.date).push(match);
             }
         });
 
         let scheduleHtml = '<div style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: flex-start;">'; // Hlavný flex kontajner
 
-        // Zoraďte miesta abecedne
-        const sortedLocations = Array.from(groupedMatchesByLocation.keys()).sort((a, b) => a.localeCompare(b));
-
-        if (sortedLocations.length === 0) {
-            scheduleHtml += '<p>Žiadne zápasy na zobrazenie. Pridajte nové zápasy pomocou tlačidla "+".</p>';
+        if (allSportHalls.length === 0) {
+            scheduleHtml += '<p>Žiadne športové haly na zobrazenie. Pridajte nové miesta typu "Športová hala" pomocou tlačidla "+".</p>';
         } else {
-            // Kontrola nepárneho počtu hál
-            const isOddNumberOfLocations = sortedLocations.length % 2 !== 0;
+            const isOddNumberOfLocations = allSportHalls.length % 2 !== 0;
 
-            for (let i = 0; i < sortedLocations.length; i++) {
-                const location = sortedLocations[i]; // Použite index i
-                const matchesByDateForLocation = groupedMatchesByLocation.get(location);
-                // Zoraďte dátumy v rámci každého miesta
-                const sortedDatesForLocation = Array.from(matchesByDateForLocation.keys()).sort((a, b) => a.localeCompare(b));
+            for (let i = 0; i < allSportHalls.length; i++) {
+                const location = allSportHalls[i];
+                const matchesByDateForLocation = groupedMatches.get(location) || new Map(); // Get matches for this location, or empty map if none
 
-                // Určite jedinečné skupiny pre logiku zarovnania pre celé miesto
+                // Určite jedinečné skupiny pre logiku zarovnania pre celé miesto (pre skupiny v zápasoch, ktoré existujú v tejto hale)
                 const uniqueGroupIdsInLocation = new Set();
-                sortedDatesForLocation.forEach(date => {
-                    matchesByDateForLocation.get(date).forEach(match => {
+                matchesByDateForLocation.forEach(dateMap => {
+                    dateMap.forEach(match => {
                         if (match.groupId) {
                             uniqueGroupIdsInLocation.add(match.groupId);
                         }
@@ -837,65 +833,97 @@ async function displayMatchesAsSchedule() {
                     groupAlignmentMapForLocation.set(groupIdsArrayInLocation[2], 'center');
                 }
 
+
                 let locationGroupStyle = "flex: 1 1 45%; min-width: 300px; margin-bottom: 0; border: 1px solid #ccc; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 8px rgba(0,0,0,0.1);";
                 // Ak je nepárny počet hál a toto je posledná hala, pridajte margin-right: auto
-                if (isOddNumberOfLocations && i === sortedLocations.length - 1) {
+                if (isOddNumberOfLocations && i === allSportHalls.length - 1) {
                     locationGroupStyle += " margin-right: auto;";
                 }
 
-                // Flex položka pre každú skupinu miest
                 scheduleHtml += `<div class="location-group" style="${locationGroupStyle}">`;
                 scheduleHtml += `<h2 style="background-color: #007bff; color: white; padding: 18px; margin: 0; text-align: center;">${location}</h2>`;
 
-                for (const date of sortedDatesForLocation) { // Použite for...of pre asynchrónne vnútorné slučky
-                    const matchesForDateAndLocation = matchesByDateForLocation.get(date);
+                if (allPlayingDayDates.length === 0) {
+                    scheduleHtml += `<p style="margin: 20px; text-align: center; color: #888;">Žiadne hracie dni boli definované.</p>`;
+                } else {
+                    for (const date of allPlayingDayDates) { // Iterate through ALL playing days
+                        const matchesForDateAndLocation = matchesByDateForLocation.get(date) || [];
+                        
+                        // Získajte zablokované sloty pre aktuálny dátum a miesto
+                        const blockedSlotsForDateAndLocation = allBlockedSlots.filter(bs => bs.date === date && bs.location === location);
 
-                    // Zoraďte zápasy podľa času začiatku
-                    matchesForDateAndLocation.sort((a, b) => {
-                        const [aH, aM] = a.startTime.split(':').map(Number);
-                        const [bH, bM] = b.startTime.split(':').map(Number);
-                        return (aH * 60 + aM) - (bH * 60 + bM);
-                    });
+                        const displayDateObj = new Date(date);
+                        const formattedDisplayDate = `${String(displayDateObj.getDate()).padStart(2, '0')}. ${String(displayDateObj.getMonth() + 1).padStart(2, '0')}. ${displayDateObj.getFullYear()}`;
+                        const dayName = displayDateObj.toLocaleDateString('sk-SK', { weekday: 'long' });
 
-                    const displayDateObj = new Date(date);
-                    const formattedDisplayDate = `${String(displayDateObj.getDate()).padStart(2, '0')}. ${String(displayDateObj.getMonth() + 1).padStart(2, '0')}. ${displayDateObj.getFullYear()}`;
-                    const dayName = displayDateObj.toLocaleDateString('sk-SK', { weekday: 'long' });
+                        scheduleHtml += `<div class="date-group" data-date="${date}" data-location="${location}" style="margin: 20px; border: 1px solid #eee; border-radius: 8px; overflow: hidden;">`;
+                        scheduleHtml += `<h3 style="background-color: #f7f7f7; padding: 15px; margin: 0; border-bottom: 1px solid #ddd;">${dayName}, ${formattedDisplayDate}</h3>`;
 
-                    scheduleHtml += `<div class="date-group" data-date="${date}" data-location="${location}" style="margin: 20px; border: 1px solid #eee; border-radius: 8px; overflow: hidden;">`;
-                    scheduleHtml += `<h3 style="background-color: #f7f7f7; padding: 15px; margin: 0; border-bottom: 1px solid #ddd;">${dayName}, ${formattedDisplayDate}</h3>`;
-                    scheduleHtml += `<table class="data-table match-list-table compact-table" style="width: 100%; border-collapse: collapse;">`;
-                    scheduleHtml += `<thead><tr>`;
-                    scheduleHtml += `<th>Čas</th>`;
-                    scheduleHtml += `<th>Domáci klub</th>`;
-                    scheduleHtml += `<th>Hostia klub</th>`;
-                    scheduleHtml += `<th>ID Domáci</th>`;
-                    scheduleHtml += `<th>ID Hostia</th>`;
-                    scheduleHtml += `</tr></thead><tbody>`;
+                        scheduleHtml += `<table class="data-table match-list-table compact-table" style="width: 100%; border-collapse: collapse;">`;
+                        scheduleHtml += `<thead><tr>`;
+                        scheduleHtml += `<th>Čas</th>`;
+                        scheduleHtml += `<th>Domáci klub</th>`;
+                        scheduleHtml += `<th>Hostia klub</th>`;
+                        scheduleHtml += `<th>ID Domáci</th>`;
+                        scheduleHtml += `<th>ID Hostia</th>`;
+                        scheduleHtml += `</tr></thead><tbody>`;
 
-                    // Určite počiatočný čas pre tento konkrétny dátum
-                    const isFirstPlayingDayForDate = existingPlayingDays.length > 0 && date === existingPlayingDays[0];
-                    let currentTimePointer = isFirstPlayingDayForDate ? globalFirstDayStartTime : globalOtherDaysStartTime;
-                    
-                    for (let i = 0; i < matchesForDateAndLocation.length; i++) {
-                        const match = matchesForDateAndLocation[i];
-                        const [matchStartH, matchStartM] = match.startTime.split(':').map(Number);
-                        const currentMatchStartInMinutes = matchStartH * 60 + matchStartM;
+                        const isFirstPlayingDayForDate = allPlayingDayDates.length > 0 && date === allPlayingDayDates[0];
+                        const initialScheduleStartMinutes = (isFirstPlayingDayForDate ? globalFirstDayStartTime : globalOtherDaysStartTime).split(':').map(Number).reduce((h, m) => h * 60 + m);
+                        let currentTimePointerInMinutes = initialScheduleStartMinutes;
+                        let contentAddedForThisDate = false;
 
-                        let [pointerH, pointerM] = currentTimePointer.split(':').map(Number);
-                        let currentTimePointerInMinutes = pointerH * 60 + pointerM;
+                        // Kombinujte zápasy a zablokované sloty pre aktuálny dátum a miesto
+                        const currentEventsForDateLocation = [
+                            ...matchesForDateAndLocation.map(m => ({
+                                ...m,
+                                type: 'match',
+                                startInMinutes: (parseInt(m.startTime.split(':')[0]) * 60 + parseInt(m.startTime.split(':')[1])),
+                                endInMinutes: (parseInt(m.startTime.split(':')[0]) * 60 + parseInt(m.startTime.split(':')[1])) + (m.duration || 0) + (m.bufferTime || 0)
+                            })),
+                            ...blockedSlotsForDateAndLocation
+                        ];
+                        currentEventsForDateLocation.sort((a, b) => a.startInMinutes - b.startInMinutes);
 
-                        // Iterujte cez časové sloty medzi currentTimePointer a začiatkom aktuálneho zápasu
-                        // Ak je pred aktuálnym zápasom prázdny slot, skontrolujte, či nejaká jeho časť nie je zablokovaná
-                        while (currentTimePointerInMinutes < currentMatchStartInMinutes) {
-                            const availableBlockedSlots = allBlockedSlots.filter(bs => 
-                                bs.date === date && bs.location === location &&
-                                // Check if blocked slot overlaps with the potential empty slot
-                                (currentTimePointerInMinutes < bs.endInMinutes && (currentTimePointerInMinutes + 1) > bs.startInMinutes)
-                            );
+                        for (const event of currentEventsForDateLocation) {
+                            // Prázdne sloty pred udalosťou
+                            if (currentTimePointerInMinutes < event.startInMinutes) {
+                                const formattedEmptySlotStartTime = `${String(Math.floor(currentTimePointerInMinutes / 60)).padStart(2, '0')}:${String(currentTimePointerInMinutes % 60).padStart(2, '0')}`;
+                                const formattedEmptySlotEndTime = `${String(Math.floor(event.startInMinutes / 60)).padStart(2, '0')}:${String(event.startInMinutes % 60).padStart(2, '0')}`;
+                                scheduleHtml += `
+                                    <tr class="empty-slot-row" data-date="${date}" data-location="${location}" data-start-time="${formattedEmptySlotStartTime}" data-end-time="${formattedEmptySlotEndTime}">
+                                        <td>${formattedEmptySlotStartTime} - ${formattedEmptySlotEndTime}</td>
+                                        <td colspan="4" style="text-align: center; color: #888; font-style: italic;">Voľný slot dostupný</td>
+                                    </tr>
+                                `;
+                                contentAddedForThisDate = true;
+                            }
 
-                            if (availableBlockedSlots.length > 0) {
-                                // Ak je aktuálna minúta prekrytá zablokovaným slotom, zobrazte zablokovaný slot
-                                const blockedSlot = availableBlockedSlots[0]; // Vezmite prvý pre zjednodušenie zobrazenia
+                            // Aktuálna udalosť
+                            if (event.type === 'match') {
+                                const match = event;
+                                const matchEndTime = new Date();
+                                matchEndTime.setHours(parseInt(match.startTime.split(':')[0]), parseInt(match.startTime.split(':')[1]) + match.duration, 0, 0);
+                                const formattedEndTime = matchEndTime.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' });
+                                const categoryColor = categoryColorsMap.get(match.categoryId) || 'transparent';
+                                let textAlignStyle = '';
+                                if (match.groupId && groupAlignmentMapForLocation.has(match.groupId)) {
+                                    textAlignStyle = `text-align: ${groupAlignmentMapForLocation.get(match.groupId)};`;
+                                } else if (groupIdsArrayInLocation.length > 3) {
+                                     textAlignStyle = `text-align: center;`;
+                                }
+
+                                scheduleHtml += `
+                                    <tr draggable="true" data-id="${match.id}" class="match-row">
+                                        <td>${match.startTime} - ${formattedEndTime}</td>
+                                        <td style="${textAlignStyle}">${match.team1ClubName || 'N/A'}</td>
+                                        <td style="${textAlignStyle}">${match.team2ClubName || 'N/A'}</td>
+                                        <td style="background-color: ${categoryColor}; ${textAlignStyle}">${match.team1ShortDisplayName || 'N/A'}</td>
+                                        <td style="background-color: ${categoryColor}; ${textAlignStyle}">${match.team2ShortDisplayName || 'N/A'}</td>
+                                    </tr>
+                                `;
+                            } else if (event.type === 'blocked_slot') {
+                                const blockedSlot = event;
                                 const blockedSlotStartHour = String(Math.floor(blockedSlot.startInMinutes / 60)).padStart(2, '0');
                                 const blockedSlotStartMinute = String(blockedSlot.startInMinutes % 60).padStart(2, '0');
                                 const blockedSlotEndHour = String(Math.floor(blockedSlot.endInMinutes / 60)).padStart(2, '0');
@@ -907,117 +935,31 @@ async function displayMatchesAsSchedule() {
                                         <td colspan="4" style="text-align: center; color: white; background-color: #dc3545; font-style: italic;">Zablokovaný slot</td>
                                     </tr>
                                 `;
-                                currentTimePointerInMinutes = blockedSlot.endInMinutes; // Posuňte ukazovateľ za zablokovaný slot
-                                currentTimePointer = `${String(Math.floor(currentTimePointerInMinutes / 60)).padStart(2, '0')}:${String(currentTimePointerInMinutes % 60).padStart(2, '0')}`;
-                            } else {
-                                // Ak nie je zablokovaný, zobrazte prázdny slot až do ďalšieho zápasu/zablokovaného slotu
-                                let nextOccupiedOrBlockedTime = currentMatchStartInMinutes;
-                                const nextBlockedSlot = allBlockedSlots.find(bs => 
-                                    bs.date === date && bs.location === location && bs.startInMinutes >= currentTimePointerInMinutes
-                                );
-                                if (nextBlockedSlot) {
-                                    nextOccupiedOrBlockedTime = Math.min(nextOccupiedOrBlockedTime, nextBlockedSlot.startInMinutes);
-                                }
-
-                                const emptySlotStart = currentTimePointerInMinutes;
-                                const emptySlotEnd = nextOccupiedOrBlockedTime;
-                                if (emptySlotEnd > emptySlotStart) {
-                                    const formattedEmptySlotStartTime = `${String(Math.floor(emptySlotStart / 60)).padStart(2, '0')}:${String(emptySlotStart % 60).padStart(2, '0')}`;
-                                    const formattedEmptySlotEndTime = `${String(Math.floor(emptySlotEnd / 60)).padStart(2, '0')}:${String(emptySlotEnd % 60).padStart(2, '0')}`;
-                                    scheduleHtml += `
-                                        <tr class="empty-slot-row" data-date="${date}" data-location="${location}" data-start-time="${formattedEmptySlotStartTime}" data-end-time="${formattedEmptySlotEndTime}">
-                                            <td>${formattedEmptySlotStartTime} - ${formattedEmptySlotEndTime}</td>
-                                            <td colspan="4" style="text-align: center; color: #888; font-style: italic;">Voľný slot dostupný</td>
-                                        </tr>
-                                    `;
-                                }
-                                currentTimePointerInMinutes = nextOccupiedOrBlockedTime; // Posuňte ukazovateľ
-                                currentTimePointer = `${String(Math.floor(currentTimePointerInMinutes / 60)).padStart(2, '0')}:${String(currentTimePointerInMinutes % 60).padStart(2, '0')}`;
                             }
+                            contentAddedForThisDate = true;
+                            currentTimePointerInMinutes = Math.max(currentTimePointerInMinutes, event.endInMinutes);
                         }
 
-                        const matchEndTime = new Date();
-                        matchEndTime.setHours(matchStartH, matchStartM + match.duration, 0, 0);
-                        const formattedEndTime = matchEndTime.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' });
-
-                        // Získajte farbu pre kategóriu
-                        const categoryColor = categoryColorsMap.get(match.categoryId) || 'transparent'; // Predvolene na transparentnú, ak nie je farba
-
-                        let textAlignStyle = '';
-                        if (match.groupId && groupAlignmentMapForLocation.has(match.groupId)) {
-                            textAlignStyle = `text-align: ${groupAlignmentMapForLocation.get(match.groupId)};`;
-                        } else if (groupIdsArrayInLocation.length > 3) {
-                             textAlignStyle = `text-align: center;`;
-                        }
-                        // Ak je 1 skupina, textAlignStyle zostáva prázdny, predvolene na zarovnanie vľavo.
-
-
-                        scheduleHtml += `
-                            <tr draggable="true" data-id="${match.id}" class="match-row">
-                                <td>${match.startTime} - ${formattedEndTime}</td>
-                                <td style="${textAlignStyle}">${match.team1ClubName || 'N/A'}</td>
-                                <td style="${textAlignStyle}">${match.team2ClubName || 'N/A'}</td>
-                                <td style="background-color: ${categoryColor}; ${textAlignStyle}">${match.team1ShortDisplayName || 'N/A'}</td>
-                                <td style="background-color: ${categoryColor}; ${textAlignStyle}">${match.team2ShortDisplayName || 'N/A'}</td>
-                            </tr>
-                        `;
-
-                        // Aktualizujte ukazovateľ aktuálneho času pre ďalšiu iteráciu
-                        currentTimePointer = calculateNextAvailableTime(match.startTime, match.duration, match.bufferTime);
-                    }
-
-                    // Po poslednom zápase, pridajte zostávajúce prázdne/zablokované sloty do konca dňa (24:00)
-                    let [finalPointerH, finalPointerM] = currentTimePointer.split(':').map(Number);
-                    let finalPointerMinutes = finalPointerH * 60 + finalPointerM;
-                    const endOfDayMinutes = 24 * 60; // 24:00
-
-                    while (finalPointerMinutes < endOfDayMinutes) {
-                        const availableBlockedSlots = allBlockedSlots.filter(bs => 
-                            bs.date === date && bs.location === location &&
-                            (finalPointerMinutes < bs.endInMinutes && (finalPointerMinutes + 1) > bs.startInMinutes)
-                        );
-
-                        if (availableBlockedSlots.length > 0) {
-                            const blockedSlot = availableBlockedSlots[0];
-                            const blockedSlotStartHour = String(Math.floor(blockedSlot.startInMinutes / 60)).padStart(2, '0');
-                            const blockedSlotStartMinute = String(blockedSlot.startInMinutes % 60).padStart(2, '0');
-                            const blockedSlotEndHour = String(Math.floor(blockedSlot.endInMinutes / 60)).padStart(2, '0');
-                            const blockedSlotEndMinute = String(blockedSlot.endInMinutes % 60).padStart(2, '0');
-
+                        // Zostávajúce voľné sloty do konca dňa (24:00)
+                        const endOfDayMinutes = 24 * 60; // 24:00
+                        if (currentTimePointerInMinutes < endOfDayMinutes) {
+                            const formattedEmptySlotStartTime = `${String(Math.floor(currentTimePointerInMinutes / 60)).padStart(2, '0')}:${String(currentTimePointerInMinutes % 60).padStart(2, '0')}`;
+                            const formattedEmptySlotEndTime = `${String(Math.floor(endOfDayMinutes / 60)).padStart(2, '0')}:${String(endOfDayMinutes % 60).padStart(2, '0')}`;
                             scheduleHtml += `
-                                <tr class="blocked-slot-row" data-id="${blockedSlot.id}" data-date="${date}" data-location="${location}" data-start-time="${blockedSlotStartHour}:${blockedSlotStartMinute}" data-end-time="${blockedSlotEndHour}:${blockedSlotEndMinute}">
-                                    <td>${blockedSlotStartHour}:${blockedSlotStartMinute} - ${blockedSlotEndHour}:${blockedSlotEndMinute}</td>
-                                    <td colspan="4" style="text-align: center; color: white; background-color: #dc3545; font-style: italic;">Zablokovaný slot</td>
-                                    </tr>
+                                <tr class="empty-slot-row" data-date="${date}" data-location="${location}" data-start-time="${formattedEmptySlotStartTime}" data-end-time="${formattedEmptySlotEndTime}">
+                                    <td>${formattedEmptySlotStartTime} - ${formattedEmptySlotEndTime}</td>
+                                    <td colspan="4" style="text-align: center; color: #888; font-style: italic;">Voľný slot dostupný</td>
+                                </tr>
                             `;
-                            finalPointerMinutes = blockedSlot.endInMinutes;
-                        } else {
-                            let nextEventTime = endOfDayMinutes; // Predpokladajme koniec dňa
-                            const nextBlockedSlot = allBlockedSlots.find(bs => 
-                                bs.date === date && bs.location === location && bs.startInMinutes >= finalPointerMinutes
-                            );
-                            if (nextBlockedSlot) {
-                                nextEventTime = Math.min(nextEventTime, nextBlockedSlot.startInMinutes);
-                            }
-
-                            const emptySlotStart = finalPointerMinutes;
-                            const emptySlotEnd = nextEventTime;
-                            // Zobraziť prázdny slot len ak nekončí presne o 24:00
-                            if (emptySlotEnd > emptySlotStart && emptySlotEnd !== endOfDayMinutes) { 
-                                const formattedEmptySlotStartTime = `${String(Math.floor(emptySlotStart / 60)).padStart(2, '0')}:${String(emptySlotStart % 60).padStart(2, '0')}`;
-                                const formattedEmptySlotEndTime = `${String(Math.floor(emptySlotEnd / 60)).padStart(2, '0')}:${String(emptySlotEnd % 60).padStart(2, '0')}`;
-                                scheduleHtml += `
-                                    <tr class="empty-slot-row" data-date="${date}" data-location="${location}" data-start-time="${formattedEmptySlotStartTime}" data-end-time="${formattedEmptySlotEndTime}">
-                                        <td>${formattedEmptySlotStartTime} - ${formattedEmptySlotEndTime}</td>
-                                        <td colspan="4" style="text-align: center; color: #888; font-style: italic;">Voľný slot dostupný</td>
-                                    </tr>
-                                `;
-                            }
-                            finalPointerMinutes = nextEventTime;
+                            contentAddedForThisDate = true;
                         }
-                    }
 
-                    scheduleHtml += `</tbody></table></div>`; // Zavrieť tabuľku a div skupiny dátumov
+                        if (!contentAddedForThisDate) {
+                            scheduleHtml += `<tr><td colspan="5" style="text-align: center; color: #888; font-style: italic; padding: 15px;">Žiadne zápasy ani zablokované sloty pre tento deň.</td></tr>`;
+                        }
+
+                        scheduleHtml += `</tbody></table></div>`; // Zavrieť tabuľku a div skupiny dátumov
+                    }
                 }
                 scheduleHtml += `</div>`; // Zavrieť div skupiny miest
             }
