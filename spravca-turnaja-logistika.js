@@ -2228,8 +2228,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // NOVINKA: Vyčistite koncové voľné sloty pri načítaní stránky
-    await cleanupTrailingBlockedSlotsOnLoad();
     // Počiatočné zobrazenie rozvrhu po načítaní stránky
     await displayMatchesAsSchedule();
 
