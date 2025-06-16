@@ -401,16 +401,16 @@ async function displayMatchesAsSchedule() {
                 const formattedDisplayDate = `${String(displayDateObj.getDate()).padStart(2, '0')}. ${String(displayDateObj.getMonth() + 1).padStart(2, '0')}. ${displayDateObj.getFullYear()}`;
 
                 scheduleHtml += `<div class="match-table-group" style="margin-bottom: 30px; border: 1px solid #ddd; border-radius: 8px; overflow: hidden;">`;
-                scheduleHtml += `<h3 style="background-color: #f0f0f0; padding: 15px; margin: 0; border-bottom: 1px solid #ddd;">${formattedDisplayDate} ${location}</h3>`;
+                scheduleHtml += `<h3 style="background-color: #f0f0f0; padding: 15px; margin: 0; border-bottom: 1px solid #ddd;">Dátum: ${formattedDisplayDate}, Miesto: ${location}</h3>`;
                 scheduleHtml += `<table class="data-table match-list-table" style="width: 100%; border-collapse: collapse;">`;
                 scheduleHtml += `<thead><tr>`;
-                scheduleHtml += `<th>Začiatok</th>`;
-                scheduleHtml += `<th>Koniec</th>`;
-                scheduleHtml += `<th>Domáci</th>`;
-                scheduleHtml += `<th>Hostia</th>`;
-                scheduleHtml += `<th></th>`;
-                scheduleHtml += `<th></th>`;
-                scheduleHtml += `<th></th>`;
+                scheduleHtml += `<th>Čas začiatku</th>`;
+                scheduleHtml += `<th>Čas konca</th>`;
+                scheduleHtml += `<th>Domáci klub</th>`;
+                scheduleHtml += `<th>Hostia klub</th>`;
+                scheduleHtml += `<th>ID Domáci</th>`;
+                scheduleHtml += `<th>ID Hostia</th>`;
+                // Removed 'Akcie' column
                 scheduleHtml += `</tr></thead><tbody>`;
 
                 matchesForGroup.forEach(match => {
@@ -427,10 +427,6 @@ async function displayMatchesAsSchedule() {
                             <td>${match.team2ClubName || 'N/A'}</td>
                             <td>${match.team1DisplayName || 'N/A'}</td>
                             <td>${match.team2DisplayName || 'N/A'}</td>
-                            <td>
-                                <button class="action-button edit-match-button" data-id="${match.id}">Upraviť</button>
-                                <button class="action-button delete-match-button" data-id="${match.id}">Vymazať</button>
-                            </td>
                         </tr>
                     `;
                 });
@@ -441,23 +437,16 @@ async function displayMatchesAsSchedule() {
 
         matchesContainer.innerHTML = scheduleHtml;
 
-        // Add event listeners for edit and delete buttons on matches
-        matchesContainer.querySelectorAll('.edit-match-button').forEach(button => {
-            button.addEventListener('click', (event) => {
-                const matchId = event.target.dataset.id;
+        // Add event listeners to each match row
+        matchesContainer.querySelectorAll('.match-row').forEach(row => {
+            row.addEventListener('click', (event) => {
+                const matchId = event.currentTarget.dataset.id;
                 editMatch(matchId);
             });
         });
 
-        matchesContainer.querySelectorAll('.delete-match-button').forEach(button => {
-            button.addEventListener('click', (event) => {
-                const matchId = event.target.dataset.id;
-                deleteMatch(matchId);
-            });
-        });
-
-        // Event listeners for date and location headers (for editing playing day and place)
-        // These can still exist as they operate on the higher level data
+        // The following event listeners for date and location headers can remain,
+        // as they allow editing the playing day or place itself, which is separate from individual matches.
         matchesContainer.querySelectorAll('.date-header-clickable').forEach(header => {
             header.addEventListener('click', (event) => {
                 if (event.target.tagName === 'A' || event.target.closest('.hall-address')) {
