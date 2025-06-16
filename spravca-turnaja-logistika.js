@@ -1413,7 +1413,9 @@ async function editPlayingDay(dateToEdit) {
             playingDayDateInput.value = playingDayData.date || '';
             playingDayModalTitle.textContent = 'Upraviť hrací deň';
             deletePlayingDayButtonModal.style.display = 'inline-block';
-            deletePlayingDayButtonModal.onclick = () => deletePlayingDay(playingDayData.date);
+            // Odstráňte starý poslucháč pred pridaním nového
+            deletePlayingDayButtonModal.removeEventListener('click', deletePlayingDay); 
+            deletePlayingDayButtonModal.addEventListener('click', () => deletePlayingDay(playingDayData.date));
             openModal(playingDayModal);
         } else {
             await showMessage('Informácia', "Hrací deň sa nenašiel.");
@@ -1454,7 +1456,9 @@ async function editPlace(placeName, placeType) {
             placeGoogleMapsUrlInput.value = placeData.googleMapsUrl || '';
 
             deletePlaceButtonModal.style.display = 'inline-block';
-            deletePlaceButtonModal.onclick = () => deletePlace(placeData.name, placeData.type);
+            // Odstráňte starý poslucháč pred pridaním nového
+            deletePlaceButtonModal.removeEventListener('click', deletePlace);
+            deletePlaceButtonModal.addEventListener('click', () => deletePlace(placeData.name, placeData.type));
             openModal(placeModal);
         } else {
             await showMessage('Informácia', "Miesto sa nenašlo.");
@@ -1487,15 +1491,22 @@ async function openMatchModal(matchId = null, prefillDate = '', prefillLocation 
     const team2NumberInput = document.getElementById('team2NumberInput');
     const deleteMatchButtonModal = document.getElementById('deleteMatchButtonModal');
 
+    // Odstránenie predošlého poslucháča, aby sa predišlo viacnásobným priradeniam
+    if (deleteMatchButtonModal._currentHandler) {
+        deleteMatchButtonModal.removeEventListener('click', deleteMatchButtonModal._currentHandler);
+    }
+
     matchForm.reset(); // Vždy resetujte formulár
     matchIdInput.value = matchId || ''; // Nastavte ID, ak sa upravuje, vymažte, ak sa pridáva
     deleteMatchButtonModal.style.display = matchId ? 'inline-block' : 'none'; // Zobrazte/skryte tlačidlo zmazať
     
     // Pridanie event listeneru pre tlačidlo deleteMatchButtonModal
     if (matchId) {
-        deleteMatchButtonModal.onclick = () => deleteMatch(matchId);
+        const handler = () => deleteMatch(matchId);
+        deleteMatchButtonModal.addEventListener('click', handler);
+        deleteMatchButtonModal._currentHandler = handler; // Uložte referenciu na handler
     } else {
-        deleteMatchButtonModal.onclick = null; // Zmazať listener, ak je to nový zápas
+        deleteMatchButtonModal._currentHandler = null; // Vymažte referenciu
     }
 
 
@@ -1615,11 +1626,26 @@ async function openFreeSlotModal(date, location, startTime, endTime, blockedSlot
     freeSlotTimeRangeDisplay.textContent = `${startTime} - ${endTime}`;
 
     // Odstráni staré poslucháče udalostí, aby sa predišlo viacnásobným spusteniam
-    blockFreeSlotButton.removeEventListener('click', createBlockedSlotAndRecalculate);
-    blockFreeSlotButton.removeEventListener('click', convertToRegularBlockedSlot);
-    blockFreeSlotButton.removeEventListener('click', reblockUnblockedSlot); // NEW
-    unblockFreeSlotButton.removeEventListener('click', deleteSlotAndRecalculate);
-    unblockFreeSlotButton.removeEventListener('click', unblockBlockedSlot); // NEW
+    if (blockFreeSlotButton._currentCreateHandler) {
+        blockFreeSlotButton.removeEventListener('click', blockFreeSlotButton._currentCreateHandler);
+        delete blockFreeSlotButton._currentCreateHandler;
+    }
+    if (blockFreeSlotButton._currentConvertHandler) {
+        blockFreeSlotButton.removeEventListener('click', blockFreeSlotButton._currentConvertHandler);
+        delete blockFreeSlotButton._currentConvertHandler;
+    }
+    if (blockFreeSlotButton._currentReblockHandler) {
+        blockFreeSlotButton.removeEventListener('click', blockFreeSlotButton._currentReblockHandler);
+        delete blockFreeSlotButton._currentReblockHandler;
+    }
+    if (unblockFreeSlotButton._currentDeleteHandler) {
+        unblockFreeSlotButton.removeEventListener('click', unblockFreeSlotButton._currentDeleteHandler);
+        delete unblockFreeSlotButton._currentDeleteHandler;
+    }
+    if (unblockFreeSlotButton._currentUnblockHandler) {
+        unblockFreeSlotButton.removeEventListener('click', unblockFreeSlotButton._currentUnblockHandler);
+        delete unblockFreeSlotButton._currentUnblockHandler;
+    }
 
 
     // Reset štýlov a zobrazenia tlačidiel
@@ -1647,24 +1673,35 @@ async function openFreeSlotModal(date, location, startTime, endTime, blockedSlot
         
         blockFreeSlotButton.style.display = 'inline-block';
         blockFreeSlotButton.textContent = 'Zablokovať';
-        blockFreeSlotButton.addEventListener('click', () => createBlockedSlotAndRecalculate(date, location, startTime, endTime));
+        const createHandler = () => createBlockedSlotAndRecalculate(date, location, startTime, endTime);
+        blockFreeSlotButton.addEventListener('click', createHandler);
+        blockFreeSlotButton._currentCreateHandler = createHandler; // Store reference
 
         unblockFreeSlotButton.style.display = 'inline-block';
         unblockFreeSlotButton.textContent = 'Vymazať'; // Vizuálne odstránenie slotu z modalu
         unblockFreeSlotButton.classList.add('delete-button');
-        unblockFreeSlotButton.addEventListener('click', () => deleteSlotAndRecalculate(null, date, location)); // Zrušenie akcie, nie reálne vymazanie z DB
+        // This is a bit of a misnomer for a purely "empty" slot. It just closes the modal and recalculates.
+        const deleteNullHandler = () => deleteSlotAndRecalculate(null, date, location); 
+        unblockFreeSlotButton.addEventListener('click', deleteNullHandler);
+        unblockFreeSlotButton._currentDeleteHandler = deleteNullHandler; // Store reference
+
     } else if (isPhantom) {
         // Fantómový slot (zápas bol presunutý z tohto miesta)
         freeSlotModalTitle.textContent = 'Spravovať fantómový slot';
         
         blockFreeSlotButton.style.display = 'inline-block';
         blockFreeSlotButton.textContent = 'Zablokovať'; // Konvertuje fantóm na riadny zablokovaný
-        blockFreeSlotButton.addEventListener('click', () => convertToRegularBlockedSlot(blockedSlotId, date, location));
+        const convertHandler = () => convertToRegularBlockedSlot(blockedSlotId, date, location);
+        blockFreeSlotButton.addEventListener('click', convertHandler);
+        blockFreeSlotButton._currentConvertHandler = convertHandler; // Store reference
 
         unblockFreeSlotButton.style.display = 'inline-block';
         unblockFreeSlotButton.textContent = 'Vymazať slot'; // Úplné vymazanie fantómu
         unblockFreeSlotButton.classList.add('delete-button');
-        unblockFreeSlotButton.addEventListener('click', () => deleteSlotAndRecalculate(blockedSlotId, date, location));
+        const deletePhantomHandler = () => deleteSlotAndRecalculate(blockedSlotId, date, location);
+        unblockFreeSlotButton.addEventListener('click', deletePhantomHandler);
+        unblockFreeSlotButton._currentDeleteHandler = deletePhantomHandler; // Store reference
+
     } else if (isUserBlockedFromDB) {
         // Normálny zablokovaný slot (blokovaný používateľom)
         freeSlotModalTitle.textContent = 'Upraviť zablokovaný slot';
@@ -1675,44 +1712,25 @@ async function openFreeSlotModal(date, location, startTime, endTime, blockedSlot
         unblockFreeSlotButton.style.display = 'inline-block';
         unblockFreeSlotButton.textContent = 'Odblokovať'; // Zmení isBlocked na false
         unblockFreeSlotButton.classList.remove('delete-button'); // Odstráni červený štýl
-        unblockFreeSlotButton.addEventListener('click', () => unblockBlockedSlot(blockedSlotId, date, location));
-
-        // Pridajte aj tlačidlo na úplné vymazanie, ak používateľ nechce len odblokovať
-        const deleteButtonForExistingBlockedSlot = document.getElementById('deleteFreeSlotButton'); // Using the same element, re-purpose it for delete
-        if(deleteButtonForExistingBlockedSlot !== unblockFreeSlotButton) { // Ensure it's not the same button if IDs clash
-             // If this scenario means a new button, we'd create one. For now, rely on `unblockFreeSlotButton`
-             // If we want two distinct buttons in the modal for "Unblock" and "Delete", we need to adjust HTML.
-             // Given current HTML, we need to choose one action for the second button.
-             // Let's make the unblockFreeSlotButton serve dual purpose:
-             // 1. "Odblokovať" (if isBlocked: true)
-             // 2. "Vymazať slot" (if isBlocked: false)
-             // This needs to be done carefully.
-
-             // Let's define the delete functionality here directly, it's safer.
-             // Instead of adding more buttons, let's make it a separate action visible in the modal.
-             // The user explicitly asked for "odblokujem slot, nemá sa vymazať, má ostať tam, kde je, iba má byť odblokovaný"
-             // So "Odblokovať" button should do just that. A separate delete action might be available too.
-
-             // For now, let's assume the unblockFreeSlotButton is the "Odblokovať" button
-             // and the delete functionality should be handled by a specific confirmation prompt or
-             // a hidden button that toggles.
-
-             // Let's simplify: "Odblokovať" just sets isBlocked to false. If the user wants to DELETE,
-             // they will click "Odblokovať" first, then click on the resulting "Voľný slot (odblokovaný)"
-             // again, and then click "Vymazať slot". This is a two-step process, but works with current UI.
-        }
+        const unblockHandler = () => unblockBlockedSlot(blockedSlotId, date, location);
+        unblockFreeSlotButton.addEventListener('click', unblockHandler);
+        unblockFreeSlotButton._currentUnblockHandler = unblockHandler; // Store reference
 
     } else { // Odblokovaný placeholder slot (bol zablokovaný, teraz je isBlocked: false a nie je fantóm)
         freeSlotModalTitle.textContent = 'Spravovať odblokovaný slot';
         
         blockFreeSlotButton.style.display = 'inline-block';
         blockFreeSlotButton.textContent = 'Zablokovať'; // Zmení isBlocked na true
-        blockFreeSlotButton.addEventListener('click', () => reblockUnblockedSlot(blockedSlotId, date, location));
+        const reblockHandler = () => reblockUnblockedSlot(blockedSlotId, date, location);
+        blockFreeSlotButton.addEventListener('click', reblockHandler);
+        blockFreeSlotButton._currentReblockHandler = reblockHandler; // Store reference
 
         unblockFreeSlotButton.style.display = 'inline-block';
         unblockFreeSlotButton.textContent = 'Vymazať slot'; // Úplné vymazanie odblokovaného slotu
         unblockFreeSlotButton.classList.add('delete-button');
-        unblockFreeSlotButton.addEventListener('click', () => deleteSlotAndRecalculate(blockedSlotId, date, location));
+        const deleteUnblockedHandler = () => deleteSlotAndRecalculate(blockedSlotId, date, location);
+        unblockFreeSlotButton.addEventListener('click', deleteUnblockedHandler);
+        unblockFreeSlotButton._currentDeleteHandler = deleteUnblockedHandler; // Store reference
     }
 
     openModal(freeSlotModal); // Otvorí modálne okno
@@ -2031,7 +2049,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const matchGroupSelect = document.getElementById('matchGroup');
     const team1NumberInput = document.getElementById('team1NumberInput');
     const team2NumberInput = document.getElementById('team2NumberInput');
-    const deleteMatchButtonModal = document.getElementById('deleteMatchButtonModal');
+    const deleteMatchButtonModal = document.getElementById('deleteMatchButtonModal'); // Získať referenciu tu
+
 
     const playingDayModal = document.getElementById('playingDayModal');
     const closePlayingDayModalButton = document.getElementById('closePlayingDayModal');
@@ -2039,7 +2058,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const playingDayIdInput = document.getElementById('playingDayId');
     const playingDayDateInput = document.getElementById('playingDayDate');
     const playingDayModalTitle = document.getElementById('playingDayModalTitle');
-    const deletePlayingDayButtonModal = document.getElementById('deletePlayingDayButtonModal');
+    const deletePlayingDayButtonModal = document.getElementById('deletePlayingDayButtonModal'); // Získať referenciu tu
 
     const placeModal = document.getElementById('placeModal');
     const closePlaceModalButton = document.getElementById('closePlaceModal');
@@ -2049,7 +2068,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const placeNameInput = document.getElementById('placeName');
     const placeAddressInput = document.getElementById('placeAddress');
     const placeGoogleMapsUrlInput = document.getElementById('placeGoogleMapsUrl');
-    const deletePlaceButtonModal = document.getElementById('deletePlaceButtonModal');
+    const deletePlaceButtonModal = document.getElementById('deletePlaceButtonModal'); // Získať referenciu tu
 
     const freeSlotModal = document.getElementById('freeSlotModal');
     const closeFreeSlotModalButton = document.getElementById('closeFreeSlotModal');
@@ -2087,6 +2106,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         playingDayIdInput.value = '';
         playingDayModalTitle.textContent = 'Pridať hrací deň';
         deletePlayingDayButtonModal.style.display = 'none';
+        // Ensure no old handler is present before opening for add
+        deletePlayingDayButtonModal.removeEventListener('click', deletePlayingDay);
         openModal(playingDayModal);
         addOptions.classList.remove('show');
     });
@@ -2099,6 +2120,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         placeAddressInput.value = '';
         placeGoogleMapsUrlInput.value = '';
         deletePlaceButtonModal.style.display = 'none';
+        // Ensure no old handler is present before opening for add
+        deletePlaceButtonModal.removeEventListener('click', deletePlace);
         openModal(placeModal);
         addOptions.classList.remove('show');
     });
