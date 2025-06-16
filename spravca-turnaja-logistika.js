@@ -563,10 +563,10 @@ async function displayMatchesAsSchedule() {
                     scheduleHtml += `<table class="data-table match-list-table compact-table" style="width: 100%; border-collapse: collapse;">`;
                     scheduleHtml += `<thead><tr>`;
                     scheduleHtml += `<th>Čas</th>`;
-                    scheduleHtml += `<th>Domáci klub</th>`;
-                    scheduleHtml += `<th>Hostia klub</th>`;
-                    scheduleHtml += `<th>ID Domáci</th>`;
-                    scheduleHtml += `<th>ID Hostia</th>`;
+                    scheduleHtml += `<th>Domáci</th>`;
+                    scheduleHtml += `<th>Hostia</th>`;
+                    scheduleHtml += `<th></th>`;
+                    scheduleHtml += `<th></th>`;
                     scheduleHtml += `</tr></thead><tbody>`;
 
                     // Determine the initial start time for this specific date
