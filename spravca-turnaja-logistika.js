@@ -1,4 +1,5 @@
 import { db, categoriesCollectionRef, groupsCollectionRef, clubsCollectionRef, matchesCollectionRef, playingDaysCollectionRef, placesCollectionRef, openModal, closeModal, populateCategorySelect, populateGroupSelect, getDocs, doc, setDoc, addDoc, getDoc, query, where, orderBy, deleteDoc, writeBatch, settingsCollectionRef, showMessage, showConfirmation } from './spravca-turnaja-common.js';
+import { collection } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js'; // Import 'collection' directly
 const SETTINGS_DOC_ID = 'matchTimeSettings';
 
 /**
@@ -332,7 +333,7 @@ if (playingDayForm) {
 
 /**
  * Deletes a playing day.
- * @param {string} id The ID of the playing day to delete.
+ * @param {string} id The ID of the playing day to delete..
  */
 async function deletePlayingDay(id) {
     const confirmation = await showConfirmation('Potvrdenie', 'Naozaj chcete vymazať tento hrací deň? Vymažú sa aj všetky súvisiace zápasy!');
@@ -1072,7 +1073,7 @@ async function displayMatchesAsSchedule() {
         ]);
 
         const categoriesMap = new Map();
-        categoriesSnapshot.forEach(doc => categoriesMap.set(doc.id, doc.data().name));
+        categoriesSnapshot.forEach(doc => categoriesMap.set(doc.id, doc.data())); // Store full category data
         const groupsMap = new Map();
         groupsSnapshot.forEach(doc => groupsMap.set(doc.id, doc.data().name));
         const clubsMap = new Map();
@@ -1205,7 +1206,7 @@ async function displayMatchesAsSchedule() {
                     const matchDuration = categorySettings.duration || 20; // Default 20 mins
                     const bufferTime = categorySettings.bufferTime || 5; // Default 5 mins
                     // Retrieve category color, default to empty string if not defined
-                    const categoryColor = categorySettings.color || '';
+                    const categoryColor = categoriesMap.get(match.categoryId)?.color || ''; // Get color from the full category data
 
                     let startTime = match.time;
                     if (lastMatchEndTime) {
