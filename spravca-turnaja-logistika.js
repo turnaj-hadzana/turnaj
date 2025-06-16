@@ -563,10 +563,10 @@ async function displayMatchesAsSchedule() {
                     scheduleHtml += `<table class="data-table match-list-table compact-table" style="width: 100%; border-collapse: collapse;">`;
                     scheduleHtml += `<thead><tr>`;
                     scheduleHtml += `<th>Čas</th>`;
-                    scheduleHtml += `<th>Domáci</th>`;
-                    scheduleHtml += `<th>Hostia</th>`;
-                    scheduleHtml += `<th></th>`;
-                    scheduleHtml += `<th></th>`;
+                    scheduleHtml += `<th>Domáci klub</th>`;
+                    scheduleHtml += `<th>Hostia klub</th>`;
+                    scheduleHtml += `<th>ID Domáci</th>`;
+                    scheduleHtml += `<th>ID Hostia</th>`;
                     scheduleHtml += `</tr></thead><tbody>`;
 
                     // Determine the initial start time for this specific date
@@ -575,8 +575,13 @@ async function displayMatchesAsSchedule() {
 
                     // Determine unique groups for alignment logic
                     const uniqueGroupIds = new Set(matchesForDateAndLocation.map(match => match.groupId));
-                    const uniqueGroupCount = uniqueGroupIds.size;
-                    let currentTextAlign = 'left'; // For alternating alignment
+                    const groupIdsArray = Array.from(uniqueGroupIds);
+                    let groupAlignmentMap = new Map();
+
+                    if (groupIdsArray.length === 2) {
+                        groupAlignmentMap.set(groupIdsArray[0], 'left');
+                        groupAlignmentMap.set(groupIdsArray[1], 'right');
+                    }
 
 
                     for (let i = 0; i < matchesForDateAndLocation.length; i++) {
@@ -610,9 +615,12 @@ async function displayMatchesAsSchedule() {
                         const categoryColor = categoryColorsMap.get(match.categoryId) || 'transparent'; // Default to transparent if no color
 
                         let textAlignStyle = '';
-                        if (uniqueGroupCount === 2) {
-                            textAlignStyle = `text-align: ${currentTextAlign};`;
-                        } else if (uniqueGroupCount >= 3) {
+                        if (groupIdsArray.length === 2) {
+                            const alignmentForGroup = groupAlignmentMap.get(match.groupId);
+                            if (alignmentForGroup) {
+                                textAlignStyle = `text-align: ${alignmentForGroup};`;
+                            }
+                        } else if (groupIdsArray.length >= 3) {
                             textAlignStyle = `text-align: center;`;
                         }
                         // For uniqueGroupCount === 1, no specific text-align is added, defaulting to left.
@@ -621,16 +629,12 @@ async function displayMatchesAsSchedule() {
                         scheduleHtml += `
                             <tr draggable="true" data-id="${match.id}" class="match-row">
                                 <td>${match.startTime} - ${formattedEndTime}</td>
-                                <td>${match.team1ClubName || 'N/A'}</td>
-                                <td>${match.team2ClubName || 'N/A'}</td>
+                                <td style="${textAlignStyle}">${match.team1ClubName || 'N/A'}</td>
+                                <td style="${textAlignStyle}">${match.team2ClubName || 'N/A'}</td>
                                 <td style="background-color: ${categoryColor}; ${textAlignStyle}">${match.team1ShortDisplayName || 'N/A'}</td>
                                 <td style="background-color: ${categoryColor}; ${textAlignStyle}">${match.team2ShortDisplayName || 'N/A'}</td>
                             </tr>
                         `;
-
-                        if (uniqueGroupCount === 2) {
-                            currentTextAlign = (currentTextAlign === 'left' ? 'right' : 'left'); // Toggle alignment
-                        }
 
                         // Update currentTimePointer for the next iteration
                         currentTimePointer = calculateNextAvailableTime(match.startTime, match.duration, match.bufferTime);
@@ -1092,7 +1096,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const matchesContainer = document.getElementById('matchesContainer');
     const team1NumberInput = document.getElementById('team1NumberInput');
     const team2NumberInput = document.getElementById('team2NumberInput');
-    const deleteMatchButtonModal = document.getElementById('deleteMatchButtonModal');
+    const deleteMatchButtonModal = document = document.getElementById('deleteMatchButtonModal');
 
     const playingDayModal = document.getElementById('playingDayModal');
     const closePlayingDayModalButton = document.getElementById('closePlayingDayModal');
