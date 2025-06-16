@@ -1387,8 +1387,8 @@ async function deletePlace(placeNameToDelete, placeTypeToDelete) {
             closeModal(document.getElementById('placeModal'));
             await displayMatchesAsSchedule();
         } catch (error) {
-            console.error("Chyba pri mazaní miesta:", error);
-            await showMessage('Chyba', `Chyba pri mazaní miesta ${placeNameToDelete} (${placeTypeToDelete}). Detail: ${error.message}`);
+                console.error("Chyba pri mazaní miesta:", error);
+                await showMessage('Chyba', `Chyba pri mazaní miesta ${placeNameToDelete} (${placeTypeToDelete}). Detail: ${error.message}`);
         }
     }
 }
@@ -1659,9 +1659,11 @@ async function openFreeSlotModal(date, location, startTime, endTime, blockedSlot
     freeSlotTimeRangeDisplay.textContent = `${startTime} - ${endTime}`;
 
     // Reset štýlov a zobrazenia tlačidiel
-    blockButton.style.display = 'none';
-    deleteUnblockButton.style.display = 'none';
-    deleteUnblockButton.classList.remove('delete-button'); // Vždy odstráni červený štýl pre istotu
+    if (blockButton) blockButton.style.display = 'none';
+    if (deleteUnblockButton) {
+        deleteUnblockButton.style.display = 'none';
+        deleteUnblockButton.classList.remove('delete-button'); // Vždy odstráni červený štýl pre istotu
+    }
 
     let isPhantom = false;
     let isUserBlockedFromDB = false;
@@ -1681,69 +1683,83 @@ async function openFreeSlotModal(date, location, startTime, endTime, blockedSlot
         // Skutočne prázdny slot (žiadne ID z datasetu, iba vizuálna medzera)
         freeSlotModalTitle.textContent = 'Spravovať voľný slot';
         
-        blockButton.style.display = 'inline-block';
-        blockButton.textContent = 'Zablokovať';
-        const blockHandler = () => createBlockedSlotAndRecalculate(date, location, startTime, endTime);
-        blockButton.addEventListener('click', blockHandler);
-        blockButton._currentHandler = blockHandler;
+        if (blockButton) {
+            blockButton.style.display = 'inline-block';
+            blockButton.textContent = 'Zablokovať';
+            const blockHandler = () => createBlockedSlotAndRecalculate(date, location, startTime, endTime);
+            blockButton.addEventListener('click', blockHandler);
+            blockButton._currentHandler = blockHandler;
+        }
 
-        deleteUnblockButton.style.display = 'inline-block';
-        deleteUnblockButton.textContent = 'Vymazať'; // Vizuálne odstránenie slotu z modalu
-        deleteUnblockButton.classList.add('delete-button');
-        // Pre "čisto prázdny" slot (ktorý nie je v DB), "vymazať" znamená len zatvoriť modál a prepočítať rozvrh.
-        const deleteHandler = () => { 
-            closeModal(freeSlotModal);
-            recalculateAndSaveScheduleForDateAndLocation(date, location);
-        };
-        deleteUnblockButton.addEventListener('click', deleteHandler);
-        deleteUnblockButton._currentHandler = deleteHandler;
+        if (deleteUnblockButton) {
+            deleteUnblockButton.style.display = 'inline-block';
+            deleteUnblockButton.textContent = 'Vymazať'; // Vizuálne odstránenie slotu z modalu
+            deleteUnblockButton.classList.add('delete-button');
+            // Pre "čisto prázdny" slot (ktorý nie je v DB), "vymazať" znamená len zatvoriť modál a prepočítať rozvrh.
+            const deleteHandler = () => { 
+                closeModal(freeSlotModal);
+                recalculateAndSaveScheduleForDateAndLocation(date, location);
+            };
+            deleteUnblockButton.addEventListener('click', deleteHandler);
+            deleteUnblockButton._currentHandler = deleteHandler;
+        }
 
     } else if (isPhantom) {
         // Fantómový slot (zápas bol presunutý z tohto miesta)
         freeSlotModalTitle.textContent = 'Spravovať fantómový slot';
         
-        blockButton.style.display = 'inline-block';
-        blockButton.textContent = 'Zablokovať'; // Konvertuje fantóm na riadny zablokovaný
-        const blockHandler = () => convertToRegularBlockedSlot(blockedSlotId, date, location);
-        blockButton.addEventListener('click', blockHandler);
-        blockButton._currentHandler = blockHandler;
+        if (blockButton) {
+            blockButton.style.display = 'inline-block';
+            blockButton.textContent = 'Zablokovať'; // Konvertuje fantóm na riadny zablokovaný
+            const blockHandler = () => convertToRegularBlockedSlot(blockedSlotId, date, location);
+            blockButton.addEventListener('click', blockHandler);
+            blockButton._currentHandler = blockHandler;
+        }
 
-        deleteUnblockButton.style.display = 'inline-block';
-        deleteUnblockButton.textContent = 'Vymazať slot'; // Úplné vymazanie fantómu
-        deleteUnblockButton.classList.add('delete-button');
-        const deleteHandler = () => deleteSlotAndRecalculate(blockedSlotId, date, location);
-        deleteUnblockButton.addEventListener('click', deleteHandler);
-        deleteUnblockButton._currentHandler = deleteHandler;
+        if (deleteUnblockButton) {
+            deleteUnblockButton.style.display = 'inline-block';
+            deleteUnblockButton.textContent = 'Vymazať slot'; // Úplné vymazanie fantómu
+            deleteUnblockButton.classList.add('delete-button');
+            const deleteHandler = () => deleteSlotAndRecalculate(blockedSlotId, date, location);
+            deleteUnblockButton.addEventListener('click', deleteHandler);
+            deleteUnblockButton._currentHandler = deleteHandler;
+        }
 
     } else if (isUserBlockedFromDB) {
         // Normálny zablokovaný slot (blokovaný používateľom)
         freeSlotModalTitle.textContent = 'Upraviť zablokovaný slot';
         
         // Tlačidlo "Zablokovať" je skryté, pretože je už zablokovaný
-        blockButton.style.display = 'none'; 
+        if (blockButton) blockButton.style.display = 'none'; 
 
-        deleteUnblockButton.style.display = 'inline-block';
-        deleteUnblockButton.textContent = 'Odblokovať'; // Zmení isBlocked na false
-        deleteUnblockButton.classList.remove('delete-button'); // Odstráni červený štýl
-        const unblockHandler = () => unblockBlockedSlot(blockedSlotId, date, location);
-        deleteUnblockButton.addEventListener('click', unblockHandler);
-        deleteUnblockButton._currentHandler = unblockHandler;
+        if (deleteUnblockButton) {
+            deleteUnblockButton.style.display = 'inline-block';
+            deleteUnblockButton.textContent = 'Odblokovať'; // Zmení isBlocked na false
+            deleteUnblockButton.classList.remove('delete-button'); // Odstráni červený štýl
+            const unblockHandler = () => unblockBlockedSlot(blockedSlotId, date, location);
+            deleteUnblockButton.addEventListener('click', unblockHandler);
+            deleteUnblockButton._currentHandler = unblockHandler;
+        }
 
     } else { // Odblokovaný placeholder slot (bol zablokovaný, teraz je isBlocked: false a nie je fantóm)
         freeSlotModalTitle.textContent = 'Spravovať odblokovaný slot';
         
-        blockButton.style.display = 'inline-block';
-        blockButton.textContent = 'Zablokovať'; // Zmení isBlocked na true
-        const reblockHandler = () => reblockUnblockedSlot(blockedSlotId, date, location);
-        blockButton.addEventListener('click', reblockHandler);
-        blockButton._currentHandler = reblockHandler;
+        if (blockButton) {
+            blockButton.style.display = 'inline-block';
+            blockButton.textContent = 'Zablokovať'; // Zmení isBlocked na true
+            const reblockHandler = () => reblockUnblockedSlot(blockedSlotId, date, location);
+            blockButton.addEventListener('click', reblockHandler);
+            blockButton._currentHandler = reblockHandler;
+        }
 
-        deleteUnblockButton.style.display = 'inline-block';
-        deleteUnblockButton.textContent = 'Vymazať slot'; // Úplné vymazanie odblokovaného slotu
-        deleteUnblockButton.classList.add('delete-button');
-        const deleteHandler = () => deleteSlotAndRecalculate(blockedSlotId, date, location);
-        deleteUnblockButton.addEventListener('click', deleteHandler);
-        deleteUnblockButton._currentHandler = deleteHandler;
+        if (deleteUnblockButton) {
+            deleteUnblockButton.style.display = 'inline-block';
+            deleteUnblockButton.textContent = 'Vymazať slot'; // Úplné vymazanie odblokovaného slotu
+            deleteUnblockButton.classList.add('delete-button');
+            const deleteHandler = () => deleteSlotAndRecalculate(blockedSlotId, date, location);
+            deleteUnblockButton.addEventListener('click', deleteHandler);
+            deleteUnblockButton._currentHandler = deleteHandler;
+        }
     }
 
     openModal(freeSlotModal); // Otvorí modálne okno
