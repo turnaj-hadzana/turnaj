@@ -146,9 +146,11 @@ async function getCategoryMatchSettings(categoryId) {
  * Táto funkcia už neaktualizuje čas začiatku zápasu.
  */
 async function updateMatchDurationAndBuffer() {
-    const selectedCategoryId = document.getElementById('matchCategory').value;
     const matchDurationInput = document.getElementById('matchDuration');
     const matchBufferTimeInput = document.getElementById('matchBufferTime');
+    const matchCategorySelect = document.getElementById('matchCategory'); // Get it here
+
+    const selectedCategoryId = matchCategorySelect.value;
 
     if (selectedCategoryId) {
         const settings = await getCategoryMatchSettings(selectedCategoryId);
@@ -505,11 +507,11 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, drag
         // Získajte všetky zápasy a zablokované sloty pre daný dátum a miesto
         const matchesQuery = query(matchesCollectionRef, where("date", "==", date), where("location", "==", location), orderBy("startTime", "asc"));
         const matchesSnapshot = await getDocs(matchesQuery);
-        let currentMatches = matchesSnapshot.docs.map(doc => ({ id: doc.id, type: 'match', ...doc.data() }));
+        let allMatches = matchesSnapshot.docs.map(doc => ({ id: doc.id, type: 'match', ...doc.data() }));
 
         const blockedSlotsQuery = query(blockedSlotsCollectionRef, where("date", "==", date), where("location", "==", location), orderBy("startTime", "asc"));
         const blockedSlotsSnapshot = await getDocs(blockedSlotsQuery);
-        let currentBlockedSlots = blockedSlotsSnapshot.docs.map(doc => ({
+        let allBlockedSlots = blockedSlotsSnapshot.docs.map(doc => ({
             id: doc.id,
             type: 'blocked_slot',
             isPhantom: doc.data().isPhantom === true, // Ensure isPhantom is explicitly boolean
@@ -541,7 +543,7 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, drag
             } else {
                  // If no specific drop time, find the logical end of current schedule
                 let lastEventEndMinutes = 
-                    currentMatches.concat(currentBlockedSlots.filter(s => s.isBlocked === true || s.isPhantom === true)).reduce((maxEnd, event) => { // Only consider active blocked slots for calculating the end
+                    allMatches.concat(allBlockedSlots.filter(s => s.isBlocked === true || s.isPhantom === true)).reduce((maxEnd, event) => { // Only consider active blocked slots for calculating the end
                         const eventStart = event.type === 'match' ? (parseInt(event.startTime.split(':')[0]) * 60 + parseInt(event.startTime.split(':')[1])) : event.startInMinutes;
                         const eventEnd = event.type === 'match' ? (eventStart + (event.duration || 0) + (event.bufferTime || 0)) : event.endInMinutes;
                         return Math.max(maxEnd, eventEnd);
@@ -550,16 +552,16 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, drag
             }
 
             eventsToProcess.push(draggedMatchData);
-            // Filter out the dragged match from currentMatches if it's already there (moving within same day/location)
-            currentMatches = currentMatches.filter(m => m.id !== draggedMatchId);
+            // Filter out the dragged match from allMatches if it's already there (moving within same day/location)
+            allMatches = allMatches.filter(m => m.id !== draggedMatchId);
         }
 
         // Pridajte všetky existujúce zápasy a VŠETKY zablokované sloty (aktívne, fantóm, odblokované)
-        currentMatches.forEach(m => {
+        allMatches.forEach(m => {
             const [h, mVal] = m.startTime.split(':').map(Number);
             eventsToProcess.push({ ...m, startInMinutes: (h * 60 + mVal) });
         });
-        currentBlockedSlots.forEach(s => eventsToProcess.push(s)); // Add ALL blocked slots (active, phantom, unblocked)
+        allBlockedSlots.forEach(s => eventsToProcess.push(s)); // Add ALL blocked slots (active, phantom, unblocked)
 
         // Zoraďte všetky udalosti podľa ich času začiatku
         eventsToProcess.sort((a, b) => a.startInMinutes - b.startInMinutes);
@@ -1394,13 +1396,14 @@ async function deletePlace(placeNameToDelete, placeTypeToDelete) {
  * @param {string} dateToEdit Dátum hracieho dňa na úpravu.
  */
 async function editPlayingDay(dateToEdit) {
-    try {
-        const playingDayModal = document.getElementById('playingDayModal');
-        const playingDayIdInput = document.getElementById('playingDayId');
-        const playingDayDateInput = document.getElementById('playingDayDate');
-        const playingDayModalTitle = document.getElementById('playingDayModalTitle');
-        const deletePlayingDayButtonModal = document.getElementById('deletePlayingDayButtonModal');
+    // Get references to elements inside the function to ensure they are available
+    const playingDayModal = document.getElementById('playingDayModal');
+    const playingDayIdInput = document.getElementById('playingDayId');
+    const playingDayDateInput = document.getElementById('playingDayDate');
+    const playingDayModalTitle = document.getElementById('playingDayModalTitle');
+    const deletePlayingDayButtonModal = document.getElementById('deletePlayingDayButtonModal');
 
+    try {
         const q = query(playingDaysCollectionRef, where("date", "==", dateToEdit));
         const querySnapshot = await getDocs(q);
 
@@ -1414,8 +1417,12 @@ async function editPlayingDay(dateToEdit) {
             playingDayModalTitle.textContent = 'Upraviť hrací deň';
             deletePlayingDayButtonModal.style.display = 'inline-block';
             // Odstráňte starý poslucháč pred pridaním nového
-            deletePlayingDayButtonModal.removeEventListener('click', deletePlayingDay); 
-            deletePlayingDayButtonModal.addEventListener('click', () => deletePlayingDay(playingDayData.date));
+            if (deletePlayingDayButtonModal._currentHandler) {
+                deletePlayingDayButtonModal.removeEventListener('click', deletePlayingDayButtonModal._currentHandler); 
+            }
+            const handler = () => deletePlayingDay(playingDayData.date);
+            deletePlayingDayButtonModal.addEventListener('click', handler);
+            deletePlayingDayButtonModal._currentHandler = handler; // Store reference
             openModal(playingDayModal);
         } else {
             await showMessage('Informácia', "Hrací deň sa nenašiel.");
@@ -1432,15 +1439,16 @@ async function editPlayingDay(dateToEdit) {
  * @param {string} placeType Typ miesta na úpravu.
  */
 async function editPlace(placeName, placeType) {
-    try {
-        const placeModal = document.getElementById('placeModal');
-        const placeIdInput = document.getElementById('placeId');
-        const placeTypeSelect = document.getElementById('placeTypeSelect');
-        const placeNameInput = document.getElementById('placeName');
-        const placeAddressInput = document.getElementById('placeAddress');
-        const placeGoogleMapsUrlInput = document.getElementById('placeGoogleMapsUrl');
-        const deletePlaceButtonModal = document.getElementById('deletePlaceButtonModal');
+    // Get references to elements inside the function to ensure they are available
+    const placeModal = document.getElementById('placeModal');
+    const placeIdInput = document.getElementById('placeId');
+    const placeTypeSelect = document.getElementById('placeTypeSelect');
+    const placeNameInput = document.getElementById('placeName');
+    const placeAddressInput = document.getElementById('placeAddress');
+    const placeGoogleMapsUrlInput = document.getElementById('placeGoogleMapsUrl');
+    const deletePlaceButtonModal = document.getElementById('deletePlaceButtonModal');
 
+    try {
         const q = query(placesCollectionRef, where("name", "==", placeName), where("type", "==", placeType));
         const querySnapshot = await getDocs(q);
 
@@ -1457,8 +1465,12 @@ async function editPlace(placeName, placeType) {
 
             deletePlaceButtonModal.style.display = 'inline-block';
             // Odstráňte starý poslucháč pred pridaním nového
-            deletePlaceButtonModal.removeEventListener('click', deletePlace);
-            deletePlaceButtonModal.addEventListener('click', () => deletePlace(placeData.name, placeData.type));
+            if (deletePlaceButtonModal._currentHandler) {
+                deletePlaceButtonModal.removeEventListener('click', deletePlaceButtonModal._currentHandler);
+            }
+            const handler = () => deletePlace(placeData.name, placeData.type);
+            deletePlaceButtonModal.addEventListener('click', handler);
+            deletePlaceButtonModal._currentHandler = handler; // Store reference
             openModal(placeModal);
         } else {
             await showMessage('Informácia', "Miesto sa nenašlo.");
@@ -1477,6 +1489,7 @@ async function editPlace(placeName, placeType) {
  * @param {string} [prefillStartTime=''] Voliteľné: Čas začiatku na predvyplnenie modálneho okna.
  */
 async function openMatchModal(matchId = null, prefillDate = '', prefillLocation = '', prefillStartTime = '') {
+    // Get references to elements inside the function to ensure they are available
     const matchModal = document.getElementById('matchModal');
     const matchIdInput = document.getElementById('matchId');
     const matchModalTitle = document.getElementById('matchModalTitle');
@@ -1490,10 +1503,12 @@ async function openMatchModal(matchId = null, prefillDate = '', prefillLocation 
     const team1NumberInput = document.getElementById('team1NumberInput');
     const team2NumberInput = document.getElementById('team2NumberInput');
     const deleteMatchButtonModal = document.getElementById('deleteMatchButtonModal');
+    const matchForm = document.getElementById('matchForm'); // Ensure matchForm is accessible
 
     // Odstránenie predošlého poslucháča, aby sa predišlo viacnásobným priradeniam
-    if (deleteMatchButtonModal._currentHandler) {
+    if (deleteMatchButtonModal && deleteMatchButtonModal._currentHandler) { // Check if element exists before accessing _currentHandler
         deleteMatchButtonModal.removeEventListener('click', deleteMatchButtonModal._currentHandler);
+        delete deleteMatchButtonModal._currentHandler; // Clean up reference
     }
 
     matchForm.reset(); // Vždy resetujte formulár
@@ -1506,7 +1521,8 @@ async function openMatchModal(matchId = null, prefillDate = '', prefillLocation 
         deleteMatchButtonModal.addEventListener('click', handler);
         deleteMatchButtonModal._currentHandler = handler; // Uložte referenciu na handler
     } else {
-        deleteMatchButtonModal._currentHandler = null; // Vymažte referenciu
+        // If not editing, ensure no handler is mistakenly left
+        deleteMatchButtonModal._currentHandler = null; 
     }
 
 
@@ -1609,14 +1625,15 @@ async function openMatchModal(matchId = null, prefillDate = '', prefillLocation 
  * @param {string|null} blockedSlotId ID zablokovaného slotu, ak existuje (pre úpravu).
  */
 async function openFreeSlotModal(date, location, startTime, endTime, blockedSlotId = null) {
+    // Get references to elements inside the function to ensure they are available
     const freeSlotModal = document.getElementById('freeSlotModal');
     const freeSlotModalTitle = document.getElementById('freeSlotModalTitle');
     const freeSlotDateDisplay = document.getElementById('freeSlotDateDisplay');
     const freeSlotLocationDisplay = document.getElementById('freeSlotLocationDisplay');
     const freeSlotTimeRangeDisplay = document.getElementById('freeSlotTimeRangeDisplay');
     const freeSlotIdInput = document.getElementById('freeSlotId');
-    const blockFreeSlotButton = document.getElementById('blockSlotButton'); // This is freeSlotSaveButton
-    const unblockFreeSlotButton = document.getElementById('deleteFreeSlotButton'); // This is deleteFreeSlotButton
+    const blockFreeSlotButton = document.getElementById('blockSlotButton');
+    const unblockFreeSlotButton = document.getElementById('deleteFreeSlotButton');
 
     // Nastaví ID slotu vo skrytom poli formulára
     freeSlotIdInput.value = blockedSlotId || '';
@@ -1626,23 +1643,23 @@ async function openFreeSlotModal(date, location, startTime, endTime, blockedSlot
     freeSlotTimeRangeDisplay.textContent = `${startTime} - ${endTime}`;
 
     // Odstráni staré poslucháče udalostí, aby sa predišlo viacnásobným spusteniam
-    if (blockFreeSlotButton._currentCreateHandler) {
+    if (blockFreeSlotButton && blockFreeSlotButton._currentCreateHandler) {
         blockFreeSlotButton.removeEventListener('click', blockFreeSlotButton._currentCreateHandler);
         delete blockFreeSlotButton._currentCreateHandler;
     }
-    if (blockFreeSlotButton._currentConvertHandler) {
+    if (blockFreeSlotButton && blockFreeSlotButton._currentConvertHandler) {
         blockFreeSlotButton.removeEventListener('click', blockFreeSlotButton._currentConvertHandler);
         delete blockFreeSlotButton._currentConvertHandler;
     }
-    if (blockFreeSlotButton._currentReblockHandler) {
+    if (blockFreeSlotButton && blockFreeSlotButton._currentReblockHandler) {
         blockFreeSlotButton.removeEventListener('click', blockFreeSlotButton._currentReblockHandler);
         delete blockFreeSlotButton._currentReblockHandler;
     }
-    if (unblockFreeSlotButton._currentDeleteHandler) {
+    if (unblockFreeSlotButton && unblockFreeSlotButton._currentDeleteHandler) {
         unblockFreeSlotButton.removeEventListener('click', unblockFreeSlotButton._currentDeleteHandler);
         delete unblockFreeSlotButton._currentDeleteHandler;
     }
-    if (unblockFreeSlotButton._currentUnblockHandler) {
+    if (unblockFreeSlotButton && unblockFreeSlotButton._currentUnblockHandler) {
         unblockFreeSlotButton.removeEventListener('click', unblockFreeSlotButton._currentUnblockHandler);
         delete unblockFreeSlotButton._currentUnblockHandler;
     }
@@ -1744,7 +1761,7 @@ async function openFreeSlotModal(date, location, startTime, endTime, blockedSlot
  * @param {string} location Miesto slotu.
  */
 async function convertToRegularBlockedSlot(blockedSlotId, date, location) {
-    const freeSlotModal = document.getElementById('freeSlotModal');
+    const freeSlotModal = document.getElementById('freeSlotModal'); // Get reference here
     const confirmed = await showConfirmation('Potvrdenie', 'Naozaj chcete tento fantómový slot zablokovať?');
 
     if (confirmed) {
@@ -1769,7 +1786,7 @@ async function convertToRegularBlockedSlot(blockedSlotId, date, location) {
  * @param {string} endTime Čas konca slotu (HH:MM).
  */
 async function createBlockedSlotAndRecalculate(date, location, startTime, endTime) {
-    const freeSlotModal = document.getElementById('freeSlotModal');
+    const freeSlotModal = document.getElementById('freeSlotModal'); // Get reference here
     const freeSlotIdInput = document.getElementById('freeSlotId'); 
 
     const slotData = {
@@ -1880,7 +1897,7 @@ async function createBlockedSlotAndRecalculate(date, location, startTime, endTim
  * @param {string} location Miesto slotu.
  */
 async function unblockBlockedSlot(slotId, date, location) {
-    const freeSlotModal = document.getElementById('freeSlotModal');
+    const freeSlotModal = document.getElementById('freeSlotModal'); // Get reference here
     const confirmed = await showConfirmation('Potvrdenie', 'Naozaj chcete odblokovať tento slot? Zápasy sa môžu teraz naplánovať do tohto času.');
     if (confirmed) {
         try {
@@ -1903,7 +1920,7 @@ async function unblockBlockedSlot(slotId, date, location) {
  * @param {string} location Miesto slotu.
  */
 async function reblockUnblockedSlot(slotId, date, location) {
-    const freeSlotModal = document.getElementById('freeSlotModal');
+    const freeSlotModal = document.getElementById('freeSlotModal'); // Get reference here
     const confirmed = await showConfirmation('Potvrdenie', 'Naozaj chcete tento slot opäť zablokovať?');
     if (confirmed) {
         try {
@@ -1964,7 +1981,7 @@ async function reblockUnblockedSlot(slotId, date, location) {
  * @param {string} location Miesto slotu.
  */
 async function deleteSlotAndRecalculate(slotId, date, location) {
-    const freeSlotModal = document.getElementById('freeSlotModal');
+    const freeSlotModal = document.getElementById('freeSlotModal'); // Get reference here
     const confirmed = await showConfirmation('Potvrdenie', 'Naozaj chcete vymazať tento slot z databázy?');
     if (confirmed) {
         try {
@@ -2029,6 +2046,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
+    // Get all DOM element references INSIDE the DOMContentLoaded listener
     const categoriesContentSection = document.getElementById('categoriesContentSection');
     const addButton = document.getElementById('addButton');
     const addOptions = document.getElementById('addOptions');
@@ -2049,7 +2067,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const matchGroupSelect = document.getElementById('matchGroup');
     const team1NumberInput = document.getElementById('team1NumberInput');
     const team2NumberInput = document.getElementById('team2NumberInput');
-    const deleteMatchButtonModal = document.getElementById('deleteMatchButtonModal'); // Získať referenciu tu
+    const deleteMatchButtonModal = document.getElementById('deleteMatchButtonModal');
 
 
     const playingDayModal = document.getElementById('playingDayModal');
@@ -2058,7 +2076,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const playingDayIdInput = document.getElementById('playingDayId');
     const playingDayDateInput = document.getElementById('playingDayDate');
     const playingDayModalTitle = document.getElementById('playingDayModalTitle');
-    const deletePlayingDayButtonModal = document.getElementById('deletePlayingDayButtonModal'); // Získať referenciu tu
+    const deletePlayingDayButtonModal = document.getElementById('deletePlayingDayButtonModal');
 
     const placeModal = document.getElementById('placeModal');
     const closePlaceModalButton = document.getElementById('closePlaceModal');
@@ -2068,12 +2086,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     const placeNameInput = document.getElementById('placeName');
     const placeAddressInput = document.getElementById('placeAddress');
     const placeGoogleMapsUrlInput = document.getElementById('placeGoogleMapsUrl');
-    const deletePlaceButtonModal = document.getElementById('deletePlaceButtonModal'); // Získať referenciu tu
+    const deletePlaceButtonModal = document.getElementById('deletePlaceButtonModal');
 
     const freeSlotModal = document.getElementById('freeSlotModal');
     const closeFreeSlotModalButton = document.getElementById('closeFreeSlotModal');
-    const blockFreeSlotButton = document.getElementById('blockSlotButton'); // Zmenené z freeSlotSaveButton
-    const unblockFreeSlotButton = document.getElementById('deleteFreeSlotButton'); // Zmenené z deleteFreeSlotButton
+    const blockFreeSlotButton = document.getElementById('blockSlotButton');
+    const unblockFreeSlotButton = document.getElementById('deleteFreeSlotButton');
 
 
     if (categoriesContentSection) {
@@ -2107,7 +2125,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         playingDayModalTitle.textContent = 'Pridať hrací deň';
         deletePlayingDayButtonModal.style.display = 'none';
         // Ensure no old handler is present before opening for add
-        deletePlayingDayButtonModal.removeEventListener('click', deletePlayingDay);
+        if (deletePlayingDayButtonModal._currentHandler) { // Check if handler exists before removing
+            deletePlayingDayButtonModal.removeEventListener('click', deletePlayingDayButtonModal._currentHandler);
+            delete deletePlayingDayButtonModal._currentHandler;
+        }
         openModal(playingDayModal);
         addOptions.classList.remove('show');
     });
@@ -2121,7 +2142,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         placeGoogleMapsUrlInput.value = '';
         deletePlaceButtonModal.style.display = 'none';
         // Ensure no old handler is present before opening for add
-        deletePlaceButtonModal.removeEventListener('click', deletePlace);
+        if (deletePlaceButtonModal._currentHandler) { // Check if handler exists before removing
+            deletePlaceButtonModal.removeEventListener('click', deletePlaceButtonModal._currentHandler);
+            delete deletePlaceButtonModal._currentHandler;
+        }
         openModal(placeModal);
         addOptions.classList.remove('show');
     });
