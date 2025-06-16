@@ -581,9 +581,8 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, drag
                 console.log(`recalculateAndSaveScheduleForDateAndLocation: Zablokovaný slot ${event.id}, ukazovateľ posunutý na ${currentTimePointer}`);
             } else if (event.type === 'match') {
                 const matchRef = doc(matchesCollectionRef, event.id);
-                // Nový čas začiatku zápasu je buď aktuálny ukazovateľ času, alebo pôvodný čas zápasu,
-                // ak je pôvodný čas po ukazovateli (t.j. zápas sa posunul dopredu).
-                let newMatchStartTimeInMinutes = Math.max(currentTimePointer, event.startInMinutes);
+                // NOVINKA: Čas začiatku zápasu je vždy currentTimePointer
+                let newMatchStartTimeInMinutes = currentTimePointer;
                 
                 // Preveďte na HH:MM
                 const newStartTimeStr = `${String(Math.floor(newMatchStartTimeInMinutes / 60)).padStart(2, '0')}:${String(newMatchStartTimeInMinutes % 60).padStart(2, '0')}`;
@@ -1258,7 +1257,7 @@ async function deletePlace(placeNameToDelete, placeTypeToDelete) {
 
             // Zmažte súvisiace zablokované sloty
             const blockedSlotsQuery = query(blockedSlotsCollectionRef, where("location", "==", placeNameToDelete));
-            const blockedSlotsSnapshot = await getDocs(blockedSlotsQuery);
+            const blockedSlotsSnapshot = await getDocs(blockedSlotsCollectionRef);
             blockedSlotsSnapshot.docs.forEach(blockedSlotDoc => {
                 batch.delete(doc(blockedSlotsCollectionRef, blockedSlotDoc.id));
             });
