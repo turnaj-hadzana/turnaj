@@ -943,3 +943,9 @@ td:last-child {
     font-size: 0.9em;
     line-height: 1.2;
 }
+
+.compact-table th,
+.compact-table td {
+    padding: 5px 8px; /* Zmenšite padding pre menšiu výšku riadku */
+    font-size: 0.9em; /* Voliteľné: Zmenšite písmo pre lepšie prispôsobenie */
+}
