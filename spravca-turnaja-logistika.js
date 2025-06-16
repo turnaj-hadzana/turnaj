@@ -1908,6 +1908,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         // Skontrolujte, či už tímy hrali proti sebe v rovnakej kategórii a skupine
+        let existingDuplicateMatchId = null; // Store ID of the duplicate match
+        let existingDuplicateMatchDetails = null; // Store details of the duplicate match
+
         try {
             const existingMatchesQuery = query(
                 matchesCollectionRef,
@@ -1915,9 +1918,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 where("groupId", "==", matchGroup)
             );
             const existingMatchesSnapshot = await getDocs(existingMatchesQuery);
-
-            let alreadyPlayed = false;
-            let overlappingExistingMatchDetails = null; // Premenná na uloženie detailov prekrývajúceho sa zápasu
 
             existingMatchesSnapshot.docs.forEach(doc => {
                 const existingMatch = doc.data();
@@ -1936,21 +1936,31 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const condition2 = (existingTeam1Number === team2Number && existingTeam2Number === team1Number);
 
                 if (condition1 || condition2) {
-                    alreadyPlayed = true;
-                    overlappingExistingMatchDetails = existingMatch; // Uložte detaily existujúceho zápasu
+                    existingDuplicateMatchId = existingMatchId;
+                    existingDuplicateMatchDetails = existingMatch; // Uložte detaily pre potvrdzovaciu správu
                     return; // Nájdená duplicita zápasu, možno ukončiť cyklus
                 }
             });
 
-            if (alreadyPlayed) {
-                const dateObj = new Date(overlappingExistingMatchDetails.date);
+            if (existingDuplicateMatchId) {
+                const dateObj = new Date(existingDuplicateMatchDetails.date);
                 const formattedDate = `${String(dateObj.getDate()).padStart(2, '0')}. ${String(dateObj.getMonth() + 1).padStart(2, '0')}. ${dateObj.getFullYear()}`;
-                await showMessage('Chyba', `Tímy ${team1Result.fullDisplayName} a ${team2Result.fullDisplayName} už proti sebe hrali v kategórii ${categoriesMap.get(matchCategory)} a v skupine ${groupsMap.get(matchGroup)} dňa ${formattedDate} o ${overlappingExistingMatchDetails.startTime}. Prosím, zadajte iné tímy.`);
-                return;
+                const message = `Tímy ${team1Result.fullDisplayName} a ${team2Result.fullDisplayName} už proti sebe hrali v kategórii ${categoriesMap.get(matchCategory)} a v skupine ${groupsMap.get(matchGroup)} dňa ${formattedDate} o ${existingDuplicateMatchDetails.startTime}. Želáte si tento zápas vymazať a nahradiť ho novými údajmi?`;
+
+                const confirmedReplace = await showConfirmation('Duplicita zápasu!', message);
+
+                if (!confirmedReplace) {
+                    return; // Používateľ sa rozhodol nenahradiť, nechať modálne okno otvorené
+                } else {
+                    // Používateľ potvrdil, vymazať starý zápas
+                    await deleteDoc(doc(matchesCollectionRef, existingDuplicateMatchId));
+                    await showMessage('Potvrdenie', `Pôvodný zápas bol vymazaný. Nový zápas bude uložený.`);
+                    // Pokračovať v ukladaní nového zápasu nižšie
+                }
             }
         } catch (error) {
-            console.error("Chyba pri kontrole existujúcich zápasov:", error);
-            await showMessage('Chyba', "Vyskytla sa chyba pri kontrole, či tímy už hrali proti sebe. Skúste to znova.");
+            console.error("Chyba pri kontrole existujúcich zápasov a spracovaní duplicity:", error);
+            await showMessage('Chyba', "Vyskytla sa chyba pri kontrole, či tímy už hrali proti sebe, alebo pri spracovaní duplicity. Skúste to znova.");
             return;
         }
 
@@ -2074,12 +2084,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
 
         try {
-            if (currentMatchId) {
+            if (currentMatchId && !existingDuplicateMatchId) { // Len aktualizujte, ak ide o úpravu A nebola to náhrada duplikátu
                 await setDoc(doc(matchesCollectionRef, currentMatchId), matchData, { merge: true });
-                // Žiadna správa o úspechu pre úpravu
-            } else {
+                await showMessage('Úspech', 'Zápas úspešne upravený!'); 
+            } else { // Toto zahŕňa nové zápasy A prípady, keď bol starý zápas nahradený
                 await addDoc(matchesCollectionRef, matchData);
-                // Žiadna správa o úspechu pre pridanie
+                await showMessage('Úspech', 'Zápas úspešne pridaný!'); 
             }
             closeModal(matchModal);
             await displayMatchesAsSchedule();
