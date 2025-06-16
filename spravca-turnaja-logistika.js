@@ -1374,6 +1374,14 @@ async function openMatchModal(matchId = null, prefillDate = '', prefillLocation 
     matchForm.reset(); // Vždy resetujte formulár
     matchIdInput.value = matchId || ''; // Nastavte ID, ak sa upravuje, vymažte, ak sa pridáva
     deleteMatchButtonModal.style.display = matchId ? 'inline-block' : 'none'; // Zobrazte/skryte tlačidlo zmazať
+    
+    // Pridanie event listeneru pre tlačidlo deleteMatchButtonModal
+    if (matchId) {
+        deleteMatchButtonModal.onclick = () => deleteMatch(matchId);
+    } else {
+        deleteMatchButtonModal.onclick = null; // Zmazať listener, ak je to nový zápas
+    }
+
 
     if (matchId) { // Úprava existujúceho zápasu
         matchModalTitle.textContent = 'Upraviť zápas';
