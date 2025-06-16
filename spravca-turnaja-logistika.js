@@ -1716,7 +1716,7 @@ async function openFreeSlotModal(date, location, startTime, endTime, blockedSlot
 
     } else if (isPhantom) {
         // Fantómový slot (zápas bol presunutý z tohto miesta)
-        freeSlotModalTitle.textContent = 'Spravovať fantómový slot';
+        freeSlotModalTitle.textContent = 'Upraviť voľný slot';
         
         if (blockButton) {
             blockButton.style.display = 'inline-block';
