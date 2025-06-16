@@ -447,7 +447,12 @@ async function displayMatchesAsSchedule() {
 
         const categoriesSnapshot = await getDocs(categoriesCollectionRef);
         const categoriesMap = new Map();
-        categoriesSnapshot.forEach(doc => categoriesMap.set(doc.id, doc.data().name || doc.id));
+        const categoryColorsMap = new Map(); // New map for colors
+        categoriesSnapshot.forEach(doc => {
+            const categoryData = doc.data();
+            categoriesMap.set(doc.id, categoryData.name || doc.id);
+            categoryColorsMap.set(doc.id, categoryData.color || null); // Store color, default to null
+        });
         console.log("displayMatchesAsSchedule: Načítané kategórie:", Array.from(categoriesMap.entries()));
 
         // Log category colors
@@ -544,10 +549,10 @@ async function displayMatchesAsSchedule() {
                     scheduleHtml += `<table class="data-table match-list-table compact-table" style="width: 100%; border-collapse: collapse;">`; // Added compact-table class
                     scheduleHtml += `<thead><tr>`;
                     scheduleHtml += `<th>Čas</th>`;
-                    scheduleHtml += `<th>Domáci</th>`;
-                    scheduleHtml += `<th>Hostia</th>`;
-                    scheduleHtml += `<th></th>`;
-                    scheduleHtml += `<th></th>`;
+                    scheduleHtml += `<th>Domáci klub</th>`;
+                    scheduleHtml += `<th>Hostia klub</th>`;
+                    scheduleHtml += `<th>ID Domáci</th>`;
+                    scheduleHtml += `<th>ID Hostia</th>`;
                     scheduleHtml += `</tr></thead><tbody>`;
 
                     matchesForDateAndLocation.forEach(match => {
@@ -556,13 +561,16 @@ async function displayMatchesAsSchedule() {
                         matchEndTime.setHours(startH, startM + match.duration, 0, 0);
                         const formattedEndTime = matchEndTime.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' });
 
+                        // Get the color for the category
+                        const categoryColor = categoryColorsMap.get(match.categoryId) || 'transparent'; // Default to transparent if no color
+
                         scheduleHtml += `
                             <tr draggable="true" data-id="${match.id}" class="match-row">
                                 <td>${match.startTime} - ${formattedEndTime}</td>
                                 <td>${match.team1ClubName || 'N/A'}</td>
                                 <td>${match.team2ClubName || 'N/A'}</td>
-                                <td>${match.team1DisplayName || 'N/A'}</td>
-                                <td>${match.team2DisplayName || 'N/A'}</td>
+                                <td style="background-color: ${categoryColor};">${match.team1DisplayName || 'N/A'}</td>
+                                <td style="background-color: ${categoryColor};">${match.team2DisplayName || 'N/A'}</td>
                             </tr>
                         `;
                     });
