@@ -710,7 +710,7 @@ async function displayMatchesAsSchedule() {
 }
 
 /**
- * Deletes a playing day and all associated matches. Bus routes and accommodation removed.
+ * Deletes a playing day and all associated matches. Bus routes and accommodation assignments removed.
  * @param {string} dateToDelete The date of the playing day to delete.
  */
 async function deletePlayingDay(dateToDelete) {
@@ -869,93 +869,78 @@ async function editPlace(placeName, placeType) {
 }
 
 /**
- * Opens the modal to edit an existing match or add a new one with prefilled data.
- * @param {string|null} matchId The ID of the match to edit, or null to add a new one.
- * @param {object|null} prefillData Optional: An object containing data to prefill the form (used for drag-and-drop duplication).
+ * Opens the modal to edit an existing match.
+ * @param {string} matchId The ID of the match to edit.
+ * @param {string} [newDate=''] Optional: New date to pre-fill the modal with.
+ * @param {string} [newLocation=''] Optional: New location to pre-fill the modal with.
  */
-async function openMatchModal(matchId = null, prefillData = null) {
-    resetMatchModal(); // Always start with a clean form
+async function editMatch(matchId, newDate = '', newLocation = '') {
+    try {
+        const matchModal = document.getElementById('matchModal');
+        const matchIdInput = document.getElementById('matchId');
+        const matchModalTitle = document.getElementById('matchModalTitle');
+        const matchDateSelect = document.getElementById('matchDateSelect');
+        const matchLocationSelect = document.getElementById('matchLocationSelect');
+        const matchStartTimeInput = document.getElementById('matchStartTime');
+        const matchDurationInput = document.getElementById('matchDuration');
+        const matchBufferTimeInput = document.getElementById('matchBufferTime');
+        const matchCategorySelect = document.getElementById('matchCategory');
+        const matchGroupSelect = document.getElementById('matchGroup');
+        const team1NumberInput = document.getElementById('team1NumberInput');
+        const team2NumberInput = document.getElementById('team2NumberInput');
+        const deleteMatchButtonModal = document.getElementById('deleteMatchButtonModal');
 
-    let matchData = null;
+        const matchDocRef = doc(matchesCollectionRef, matchId);
+        const matchDoc = await getDoc(matchDocRef);
 
-    // Get references to input elements within the match modal
-    const matchIdInput = document.getElementById('matchId');
-    const matchModalTitle = document.getElementById('matchModalTitle');
-    const matchDateSelect = document.getElementById('matchDateSelect');
-    const matchLocationSelect = document.getElementById('matchLocationSelect');
-    const matchStartTimeInput = document.getElementById('matchStartTime');
-    const matchDurationInput = document.getElementById('matchDuration');
-    const matchBufferTimeInput = document.getElementById('matchBufferTime');
-    const matchCategorySelect = document.getElementById('matchCategory');
-    const matchGroupSelect = document.getElementById('matchGroup');
-    const team1NumberInput = document.getElementById('team1NumberInput');
-    const team2NumberInput = document.getElementById('team2NumberInput');
-    const deleteMatchButtonModal = document.getElementById('deleteMatchButtonModal');
-
-    if (matchId) {
-        // Scenario 1: Editing existing match
-        const docRef = doc(matchesCollectionRef, matchId);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-            matchData = docSnap.data();
+        if (matchDoc.exists()) {
+            const matchData = matchDoc.data();
             matchIdInput.value = matchId;
             matchModalTitle.textContent = 'Upraviť zápas';
+
+            // Pre-fill date and location from drag & drop, otherwise use existing match data
+            await populatePlayingDaysSelect(matchDateSelect, newDate || matchData.date);
+            await populateSportHallSelects(matchLocationSelect, newLocation || matchData.location);
+            
+            // Set start time, duration, and buffer time from existing match data
+            matchStartTimeInput.value = matchData.startTime || '';
+            matchDurationInput.value = matchData.duration || '';
+            matchBufferTimeInput.value = matchData.bufferTime || '';
+
+            // Populate category and group, and update duration/buffer if category changes
+            await populateCategorySelect(matchCategorySelect, matchData.categoryId);
+            if (matchData.categoryId) {
+                await populateGroupSelect(matchData.categoryId, matchGroupSelect, matchData.groupId);
+                matchGroupSelect.disabled = false;
+            } else {
+                matchGroupSelect.innerHTML = '<option value="">-- Vyberte skupinu --</option>';
+                matchGroupSelect.disabled = true;
+            }
+
+            team1NumberInput.value = matchData.team1Number || '';
+            team2NumberInput.value = matchData.team2Number || '';
+
             deleteMatchButtonModal.style.display = 'inline-block';
+            deleteMatchButtonModal.onclick = () => deleteMatch(matchId);
+
+            openModal(matchModal);
+
+            // After opening the modal and setting date/location, find the first available time
+            // This will recalculate the start time based on the new date/location
+            // Only find first available if newDate/newLocation are provided (from drag/drop)
+            // If just editing existing match, keep its time.
+            if (newDate || newLocation) {
+                 await findFirstAvailableTime(); // This will suggest the first available time in the new spot
+            }
+
+
         } else {
-            await showMessage('Informácia', "Zápas sa nenašiel pre úpravu.");
-            return;
+            await showMessage('Informácia', "Zápas sa nenašiel.");
         }
-    } else if (prefillData) {
-        // Scenario 2: Adding new match from drag-and-drop (prefillData provided)
-        matchData = prefillData;
-        matchModalTitle.textContent = 'Pridať nový zápas (presunutím)';
-        deleteMatchButtonModal.style.display = 'none'; // Ensure delete button is hidden for new matches
-    } else {
-        // Scenario 3: Adding a completely new match from '+' button
-        matchModalTitle.textContent = 'Pridať nový zápas';
-        deleteMatchButtonModal.style.display = 'none';
+    } catch (error) {
+        console.error("Chyba pri načítavaní dát zápasu:", error);
+        await showMessage('Chyba', "Vyskytla sa chyba pri načítavaní dát zápasu. Skúste to znova.");
     }
-
-    // Populate common fields if matchData exists
-    if (matchData) {
-        await populateCategorySelect(matchCategorySelect, matchData.categoryId);
-        if (matchData.categoryId) {
-            await populateGroupSelect(matchData.categoryId, matchGroupSelect, matchData.groupId);
-            matchGroupSelect.disabled = false;
-        } else {
-            matchGroupSelect.innerHTML = '<option value="">-- Vyberte skupinu --</option>';
-            matchGroupSelect.disabled = true;
-        }
-        team1NumberInput.value = matchData.team1Number || '';
-        team2NumberInput.value = matchData.team2Number || '';
-        matchDurationInput.value = matchData.duration || 60; // Use default if not present
-        matchBufferTimeInput.value = matchData.bufferTime || 5; // Use default if not present
-
-        // Set date and location
-        await populatePlayingDaysSelect(matchDateSelect, matchData.date);
-        await populateSportHallSelects(matchLocationSelect, matchData.location);
-    } else {
-        // For a completely fresh modal, ensure default duration/buffer and populate initial selects
-        matchDurationInput.value = 60;
-        matchBufferTimeInput.value = 5;
-        matchGroupSelect.innerHTML = '<option value="">-- Vyberte skupinu --</option>';
-        matchGroupSelect.disabled = true;
-        // Populate initial dropdowns for a new, empty match form
-        await populatePlayingDaysSelect(matchDateSelect);
-        await populateSportHallSelects(matchLocationSelect);
-    }
-
-    // Always call findFirstAvailableTime for new matches, or when location/date changed for existing
-    // If it's an existing match being edited, and its date/location are used, findFirstAvailableTime
-    // will just confirm its own time. If a drag-and-drop initiated the edit, newDate/newLocation are from target
-    if (!matchId || prefillData) { // If it's a new match or a "drag-to-create" operation
-        await findFirstAvailableTime(); // This will set the optimal startTime
-    } else {
-        // For editing an existing match, set its actual start time
-        matchStartTimeInput.value = matchData.startTime || '';
-    }
-
-    openModal(matchModal);
 }
 
 /**
@@ -1052,43 +1037,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // Handle drop on Add Button
-    if (addButton) {
-        addButton.addEventListener('dragover', (e) => {
-            e.preventDefault(); // Allow drop
-            e.dataTransfer.dropEffect = 'copy'; // Indicate copy action
-            addButton.classList.add('drag-over-add-button'); // Visual feedback
-        });
-
-        addButton.addEventListener('dragleave', () => {
-            addButton.classList.remove('drag-over-add-button');
-        });
-
-        addButton.addEventListener('drop', async (e) => {
-            e.preventDefault();
-            addButton.classList.remove('drag-over-add-button');
-
-            const draggedMatchId = e.dataTransfer.getData('text/plain');
-            if (draggedMatchId) {
-                try {
-                    const draggedMatchDoc = await getDoc(doc(matchesCollectionRef, draggedMatchId));
-                    if (draggedMatchDoc.exists()) {
-                        const draggedMatchData = draggedMatchDoc.data();
-                        // Open the modal for a new match, pre-filling with dragged data
-                        // and letting findFirstAvailableTime calculate the new optimal time.
-                        await openMatchModal(null, draggedMatchData);
-                    } else {
-                        await showMessage('Chyba', 'Presúvaný zápas sa nenašiel.');
-                    }
-                } catch (error) {
-                    console.error("Chyba pri spracovaní dropu na '+' tlačidlo:", error);
-                    await showMessage('Chyba', `Chyba pri pridávaní zápasu presunutím: ${error.message}`);
-                }
-            }
-        });
-    }
-
-
     addPlayingDayButton.addEventListener('click', () => {
         playingDayForm.reset();
         playingDayIdInput.value = '';
@@ -1111,9 +1059,29 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     addMatchButton.addEventListener('click', async () => {
-        // Calling openMatchModal with no arguments for a fresh new match
-        await openMatchModal();
+        matchForm.reset();
+        matchIdInput.value = '';
+        matchModalTitle.textContent = 'Pridať nový zápas';
+        await populateCategorySelect(matchCategorySelect);
+        await populatePlayingDaysSelect(matchDateSelect);
+        await populateSportHallSelects(matchLocationSelect);
+        if (matchGroupSelect) {
+            matchGroupSelect.innerHTML = '<option value="">-- Vyberte skupinu --</option>';
+            matchGroupSelect.disabled = true;
+        }
+        team1NumberInput.value = '';
+        team2NumberInput.value = '';
+        matchDurationInput.value = '';
+        matchBufferTimeInput.value = '';
+        deleteMatchButtonModal.style.display = 'none';
+        openModal(matchModal);
         addOptions.classList.remove('show');
+        // Update match duration and buffer based on initial category selection or default
+        if (matchCategorySelect.value) {
+            await updateMatchDurationAndBuffer();
+        } else {
+            await findFirstAvailableTime(); // Find time even without category selected (uses default duration/buffer)
+        }
     });
 
     // Close modal event listeners
