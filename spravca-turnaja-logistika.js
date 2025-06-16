@@ -563,10 +563,10 @@ async function displayMatchesAsSchedule() {
                     scheduleHtml += `<table class="data-table match-list-table compact-table" style="width: 100%; border-collapse: collapse;">`;
                     scheduleHtml += `<thead><tr>`;
                     scheduleHtml += `<th>Čas</th>`;
-                    scheduleHtml += `<th>Domáci</th>`;
-                    scheduleHtml += `<th>Hostia</th>`;
-                    scheduleHtml += `<th></th>`;
-                    scheduleHtml += `<th></th>`;
+                    scheduleHtml += `<th>Domáci klub</th>`;
+                    scheduleHtml += `<th>Hostia klub</th>`;
+                    scheduleHtml += `<th>ID Domáci</th>`;
+                    scheduleHtml += `<th>ID Hostia</th>`;
                     scheduleHtml += `</tr></thead><tbody>`;
 
                     // Determine the initial start time for this specific date
@@ -574,13 +574,22 @@ async function displayMatchesAsSchedule() {
                     let currentTimePointer = isFirstPlayingDayForDate ? globalFirstDayStartTime : globalOtherDaysStartTime;
 
                     // Determine unique groups for alignment logic
-                    const uniqueGroupIds = new Set(matchesForDateAndLocation.map(match => match.groupId));
-                    const groupIdsArray = Array.from(uniqueGroupIds);
+                    const uniqueGroupIds = new Set();
+                    matchesForDateAndLocation.forEach(match => {
+                        if (match.groupId) { // Ensure groupId exists
+                            uniqueGroupIds.add(match.groupId);
+                        }
+                    });
+                    const groupIdsArray = Array.from(uniqueGroupIds).sort(); // Sort to ensure consistent assignment
                     let groupAlignmentMap = new Map();
 
                     if (groupIdsArray.length === 2) {
                         groupAlignmentMap.set(groupIdsArray[0], 'left');
                         groupAlignmentMap.set(groupIdsArray[1], 'right');
+                    } else if (groupIdsArray.length === 3) {
+                        groupAlignmentMap.set(groupIdsArray[0], 'left');
+                        groupAlignmentMap.set(groupIdsArray[1], 'right');
+                        groupAlignmentMap.set(groupIdsArray[2], 'center');
                     }
 
 
@@ -615,15 +624,12 @@ async function displayMatchesAsSchedule() {
                         const categoryColor = categoryColorsMap.get(match.categoryId) || 'transparent'; // Default to transparent if no color
 
                         let textAlignStyle = '';
-                        if (groupIdsArray.length === 2) {
-                            const alignmentForGroup = groupAlignmentMap.get(match.groupId);
-                            if (alignmentForGroup) {
-                                textAlignStyle = `text-align: ${alignmentForGroup};`;
-                            }
-                        } else if (groupIdsArray.length >= 3) {
+                        if (groupIdsArray.length >= 2 && groupIdsArray.length <= 3 && match.groupId && groupAlignmentMap.has(match.groupId)) {
+                            textAlignStyle = `text-align: ${groupAlignmentMap.get(match.groupId)};`;
+                        } else if (groupIdsArray.length > 3) { // For more than 3 groups
                             textAlignStyle = `text-align: center;`;
                         }
-                        // For uniqueGroupCount === 1, no specific text-align is added, defaulting to left.
+                        // If 1 group, textAlignStyle remains empty, defaulting to browser's left align.
 
 
                         scheduleHtml += `
