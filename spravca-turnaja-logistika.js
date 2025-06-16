@@ -540,11 +540,17 @@ async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation
         const isFirstPlayingDay = sortedPlayingDays.length > 0 && targetDate === sortedPlayingDays[0];
         const initialStartTimeForDay = isFirstPlayingDay ? firstDayStartTime : otherDaysStartTime;
 
-        // 3. Určite bod vloženia a nový čas začiatku pre presunutý zápas: VŽDY pridať na koniec
-        let insertionIndex = matchesForReschedule.length; // Vždy pripojiť na koniec
-        // movedMatchData duration and bufferTime should be used as source for calculation.
-        const lastMatch = matchesForReschedule.length > 0 ? matchesForReschedule[matchesForReschedule.length - 1] : null;
-        const newStartTimeForMovedMatch = lastMatch ? calculateNextAvailableTime(lastMatch.startTime, lastMatch.duration, lastMatch.bufferTime) : initialStartTimeForDay;
+        // 3. Určite bod vloženia pre presunutý zápas
+        let insertionIndex = matchesForReschedule.length; // Predvolené: vloženie na koniec
+
+        if (droppedBeforeMatchId) {
+            // Nájdite index zápasu, pred ktorým bol presunutý zápas umiestnený
+            const targetMatchIndex = matchesForReschedule.findIndex(match => match.id === droppedBeforeMatchId);
+            if (targetMatchIndex !== -1) {
+                insertionIndex = targetMatchIndex;
+            }
+            // Ak sa targetMatchIndex nenašiel (napr. bol zmazaný medzičasom), zostane insertionIndex na konci, čo je bezpečný fallback.
+        }
         
         // Pripravte aktualizované údaje presunutého zápasu na vloženie
         const movedMatchUpdatedData = {
