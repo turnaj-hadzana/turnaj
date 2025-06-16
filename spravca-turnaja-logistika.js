@@ -655,7 +655,7 @@ async function displayMatchesAsSchedule() {
                         // Skontrolujte, či je pred aktuálnym zápasom prázdny slot
                         if (currentMatchStartInMinutes > currentTimePointerInMinutes) {
                             const emptySlotDuration = currentMatchStartInMinutes - currentTimePointerInMinutes;
-                            const emptySlotEndHour = Math.floor((currentTimePointerInMinutes + currentTimePointerInMinutes) / 60); // Bug here, should be currentPointerMinutes + emptySlotDuration
+                            const emptySlotEndHour = Math.floor((currentTimePointerInMinutes + emptySlotDuration) / 60); // Opravená chyba
                             const emptySlotEndMinute = (currentTimePointerInMinutes + emptySlotDuration) % 60;
                             const formattedEmptySlotEndTime = `${String(emptySlotEndHour).padStart(2, '0')}:${String(emptySlotEndMinute).padStart(2, '0')}`;
 
