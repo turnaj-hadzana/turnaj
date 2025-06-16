@@ -137,6 +137,7 @@ async function getCategoryMatchSettings(categoryId) {
 
 /**
  * Updates the match duration and buffer time inputs based on the selected category.
+ * This function no longer updates the match start time.
  */
 async function updateMatchDurationAndBuffer() {
     const selectedCategoryId = document.getElementById('matchCategory').value;
@@ -151,7 +152,7 @@ async function updateMatchDurationAndBuffer() {
         matchDurationInput.value = 60;
         matchBufferTimeInput.value = 5;
     }
-    findFirstAvailableTime();
+    // Removed: findFirstAvailableTime() - per user request, category change should not update start time.
 }
 
 /**
@@ -585,8 +586,8 @@ async function displayMatchesAsSchedule() {
                     scheduleHtml += `<table class="data-table match-list-table compact-table" style="width: 100%; border-collapse: collapse;">`;
                     scheduleHtml += `<thead><tr>`;
                     scheduleHtml += `<th>Čas</th>`;
-                    scheduleHtml += `<th>Domáci</th>`;
-                    scheduleHtml += `<th>Hostia</th>`;
+                    scheduleHtml += `<th>Domáci klub</th>`;
+                    scheduleHtml += `<th>Hostia klub</th>`;
                     scheduleHtml += `<th>ID Domáci</th>`;
                     scheduleHtml += `<th>ID Hostia</th>`;
                     scheduleHtml += `</tr></thead><tbody>`;
@@ -1045,10 +1046,13 @@ async function openMatchModal(matchId = null, prefillDate = '', prefillLocation 
         // After setting pre-fills, ensure duration/buffer are updated
         // Only call findFirstAvailableTime if no prefillStartTime is provided
         if (!prefillStartTime) {
+            // No longer call findFirstAvailableTime here directly from category selection
+            // If category is selected, update duration/buffer based on category
             if (matchCategorySelect.value) {
                 await updateMatchDurationAndBuffer();
             } else {
-                await findFirstAvailableTime(); // Find time even without category selected (uses default duration/buffer)
+                // If no category is selected, still attempt to find time with default duration/buffer
+                await findFirstAvailableTime();
             }
         }
     }
@@ -1199,7 +1203,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (matchGroupSelect) {
                 matchGroupSelect.disabled = false;
             }
-            await updateMatchDurationAndBuffer();
+            await updateMatchDurationAndBuffer(); // Updates duration and buffer, but not start time
         } else {
             if (matchGroupSelect) {
                 matchGroupSelect.innerHTML = '<option value="">-- Vyberte skupinu --</option>';
@@ -1209,7 +1213,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             team2NumberInput.value = '';
             matchDurationInput.value = 60; // Reset to default if no category
             matchBufferTimeInput.value = 5; // Reset to default if no category
-            await findFirstAvailableTime();
+            // Removed direct call to findFirstAvailableTime() here
         }
     });
 
