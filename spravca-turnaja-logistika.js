@@ -650,9 +650,10 @@ async function getInitialScheduleStartMinutes(date) {
  * @param {string} targetDate Dátum cieľového miesta.
  * @param {string} targetLocation Miesto cieľového miesta (názov).
  * @param {string|null} droppedProposedStartTime HH:MM string pre navrhovaný čas začiatku presunutého zápasu, alebo null pre pripojenie na koniec.
+ * @param {string|null} targetBlockedSlotId ID fantómového zablokovaného slotu, ak sa presúva na existujúci fantómový slot.
  */
-async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation, droppedProposedStartTime = null) {
-    console.log(`moveAndRescheduleMatch: Spustené pre zápas ID: ${draggedMatchId}, cieľ: ${targetDate}, ${targetLocation}, navrhovaný čas: ${droppedProposedStartTime}`);
+async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation, droppedProposedStartTime = null, targetBlockedSlotId = null) {
+    console.log(`moveAndRescheduleMatch: Spustené pre zápas ID: ${draggedMatchId}, cieľ: ${targetDate}, ${targetLocation}, navrhovaný čas: ${droppedProposedStartTime}, cieľový zablokovaný slot ID: ${targetBlockedSlotId}`);
     try {
         const draggedMatchDocRef = doc(matchesCollectionRef, draggedMatchId);
         const draggedMatchDoc = await getDoc(draggedMatchDocRef);
@@ -674,7 +675,7 @@ async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation
         const batch = writeBatch(db);
         let phantomSlotCreatedId = null;
 
-        // If moving within the same schedule, create a phantom blocked slot
+        // Ak sa presúva v rámci rovnakého rozvrhu, vytvorte fantómový zablokovaný slot
         if (isMovingWithinSameSchedule) {
             const [originalStartH, originalStartM] = originalStartTime.split(':').map(Number);
             const originalEndMinutes = (originalStartH * 60) + originalStartM + originalDuration + originalBufferTime;
@@ -685,28 +686,35 @@ async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation
                 location: originalLocation,
                 startTime: originalStartTime,
                 endTime: originalEndTime,
-                isPhantom: true, // Custom flag to mark it as a phantom/empty slot
+                isPhantom: true, // Vlastná vlajka na označenie ako fantómového/prázdneho slotu
                 createdAt: new Date(),
             };
             try {
                 const docRef = await addDoc(blockedSlotsCollectionRef, phantomSlotData);
                 phantomSlotCreatedId = docRef.id;
-                console.log(`Created phantom blocked slot ID: ${phantomSlotCreatedId} for intra-schedule move.`);
+                console.log(`Vytvorený fantómový zablokovaný slot ID: ${phantomSlotCreatedId} pre presun v rámci rozvrhu.`);
             } catch (phantomError) {
-                console.error("Error creating phantom blocked slot:", phantomError);
+                console.error("Chyba pri vytváraní fantómového zablokovaného slotu:", phantomError);
                 await showMessage('Chyba', `Chyba pri vytváraní voľného slotu: ${phantomError.message}`);
-                return; // Stop if we can't create the phantom slot
+                return; // Zastavte, ak sa nedá vytvoriť fantómový slot
             }
         } else {
-            // If moving across schedules, delete the original match document
+            // Ak sa presúva medzi rôznymi rozvrhmi, vymažte pôvodný dokument zápasu
             console.log(`moveAndRescheduleMatch: Mazanie pôvodného dokumentu zápasu (medzi rôznymi rozvrhmi): ${draggedMatchId}`);
             batch.delete(draggedMatchDocRef);
-            await batch.commit(); // Commit deletion immediately for the old schedule
+            await batch.commit(); // Potvrďte vymazanie okamžite pre starý rozvrh
         }
 
-        // Now, proceed to recalculate and save the schedule for the target.
-        // This will insert the dragged match (or update it if intra-schedule)
-        // and arrange subsequent items.
+        // AK SA PRESÚVA NA EXISTUJÚCI FANTÓMOVÝ SLOT, VYMAŽTE HO
+        if (targetBlockedSlotId) {
+            console.log(`moveAndRescheduleMatch: Mazanie cieľového fantómového slotu ID: ${targetBlockedSlotId}`);
+            await deleteDoc(doc(blockedSlotsCollectionRef, targetBlockedSlotId));
+        }
+
+
+        // Teraz pokračujte v prepočítavaní a ukladaní rozvrhu pre cieľ.
+        // Toto vloží presunutý zápas (alebo ho aktualizuje, ak ide o presun v rámci rozvrhu)
+        // a usporiada následné položky.
         await recalculateAndSaveScheduleForDateAndLocation(targetDate, targetLocation, draggedMatchId, droppedProposedStartTime);
         
         await showMessage('Úspech', 'Zápas úspešne presunutý a rozvrh prepočítaný!');
@@ -1055,9 +1063,10 @@ async function displayMatchesAsSchedule() {
                 const newDate = event.currentTarget.dataset.date;
                 const newLocation = event.currentTarget.dataset.location;
                 const droppedProposedStartTime = event.currentTarget.dataset.startTime; // Use the start time of the empty slot
+                const targetBlockedSlotId = event.currentTarget.dataset.id || null; // NEW: Get the ID of the empty slot, if it's a phantom
 
-                console.log(`Dropped match ${draggedMatchId} onto empty slot. New date: ${newDate}, new location: ${newLocation}, proposed start time: ${droppedProposedStartTime}`);
-                await moveAndRescheduleMatch(draggedMatchId, newDate, newLocation, droppedProposedStartTime);
+                console.log(`Dropped match ${draggedMatchId} onto empty slot. New date: ${newDate}, new location: ${newLocation}, proposed start time: ${droppedProposedStartTime}. Target Blocked Slot ID: ${targetBlockedSlotId}`);
+                await moveAndRescheduleMatch(draggedMatchId, newDate, newLocation, droppedProposedStartTime, targetBlockedSlotId); // Pass the ID
             });
         });
 
@@ -1143,6 +1152,7 @@ async function displayMatchesAsSchedule() {
                 const newDate = dateGroupDiv.dataset.date;
                 const newLocation = dateGroupDiv.dataset.location;
                 let droppedProposedStartTime = null; 
+                let targetBlockedSlotId = null; // NOVINKA: Predvolene null
 
                 if (draggedMatchId) {
                     const droppedOnElement = event.target.closest('tr');
@@ -1165,6 +1175,11 @@ async function displayMatchesAsSchedule() {
                     if (droppedOnElement && droppedOnElement.dataset.startTime) { 
                         // Ak sa presunie na akýkoľvek riadok (zápas, prázdny slot), použite jeho čas začiatku
                         droppedProposedStartTime = droppedOnElement.dataset.startTime;
+                        // NOVINKA: Ak sa presunie na prázdny slot (ktorý je fantóm), získajte jeho ID
+                        if (droppedOnElement.classList.contains('empty-slot-row') && droppedOnElement.dataset.isPhantom === 'true') {
+                            targetBlockedSlotId = droppedOnElement.dataset.id;
+                            console.log(`Detected drop on phantom empty slot with ID: ${targetBlockedSlotId}`);
+                        }
                     } else {
                         // Ak sa presunie priamo na pozadie divu skupiny dátumov (znamená pripojenie na koniec)
                         // V tomto prípade droppedProposedStartTime bude vypočítaný vo moveAndRescheduleMatch
@@ -1173,8 +1188,8 @@ async function displayMatchesAsSchedule() {
                         // môžeme nechať droppedProposedStartTime ako null a nechať moveAndRescheduleMatch to vypočítať.
                     }
                     
-                    console.log(`Attempting to move and reschedule match ${draggedMatchId} to Date: ${newDate}, Location: ${newLocation}, Proposed Start Time: ${droppedProposedStartTime}`);
-                    await moveAndRescheduleMatch(draggedMatchId, newDate, newLocation, droppedProposedStartTime);
+                    console.log(`Attempting to move and reschedule match ${draggedMatchId} to Date: ${newDate}, Location: ${newLocation}, Proposed Start Time: ${droppedProposedStartTime}, Target Blocked Slot ID: ${targetBlockedSlotId}`);
+                    await moveAndRescheduleMatch(draggedMatchId, newDate, newLocation, droppedProposedStartTime, targetBlockedSlotId);
                 }
             });
         });
