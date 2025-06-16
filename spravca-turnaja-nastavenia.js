@@ -1,4 +1,4 @@
-import { db, settingsCollectionRef, categoriesCollectionRef, getDoc, setDoc, doc, getDocs, query, orderBy } from './spravca-turnaja-common.js';
+import { db, settingsCollectionRef, categoriesCollectionRef, getDoc, setDoc, doc, getDocs, query, orderBy, writeBatch } from './spravca-turnaja-common.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     const loggedInUsername = localStorage.getItem('username');
@@ -130,7 +130,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             const inputs = categorySettingsContainer.querySelectorAll('.category-setting-input');
             let allValid = true;
-            const batch = db.batch(); // Použijeme batch pre efektívne ukladanie viacerých dokumentov
+            const batch = writeBatch(db); // Použijeme batch pre efektívne ukladanie viacerých dokumentov
 
             const updatedCategoriesData = {};
 
