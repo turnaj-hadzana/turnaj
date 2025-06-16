@@ -1011,7 +1011,7 @@ async function openMatchModal(matchId = null, prefillDate = '', prefillLocation 
             await populatePlayingDaysSelect(matchDateSelect, prefillDate);
             await populateSportHallSelects(matchLocationSelect, prefillLocation);
             matchStartTimeInput.value = prefillStartTime; // Use prefillStartTime if available
-            await findFirstAvailableTime(); // Re-suggest time if moved
+            // Do not call findFirstAvailableTime here if prefillStartTime is provided
         }
 
     } else { // Adding new match
@@ -1031,10 +1031,13 @@ async function openMatchModal(matchId = null, prefillDate = '', prefillLocation 
         matchBufferTimeInput.value = ''; // Clear for new match, will be set by category selection
 
         // After setting pre-fills, ensure duration/buffer are updated
-        if (matchCategorySelect.value) {
-            await updateMatchDurationAndBuffer();
-        } else {
-            await findFirstAvailableTime(); // Find time even without category selected (uses default duration/buffer)
+        // Only call findFirstAvailableTime if no prefillStartTime is provided
+        if (!prefillStartTime) {
+            if (matchCategorySelect.value) {
+                await updateMatchDurationAndBuffer();
+            } else {
+                await findFirstAvailableTime(); // Find time even without category selected (uses default duration/buffer)
+            }
         }
     }
     openModal(matchModal);
@@ -1089,7 +1092,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const matchesContainer = document.getElementById('matchesContainer');
     const team1NumberInput = document.getElementById('team1NumberInput');
     const team2NumberInput = document.getElementById('team2NumberInput');
-    const deleteMatchButtonModal = document.getElementById('deleteMatchButtonModal');
+    const deleteMatchButtonModal = document = document.getElementById('deleteMatchButtonModal');
 
     const playingDayModal = document.getElementById('playingDayModal');
     const closePlayingDayModalButton = document.getElementById('closePlayingDayModal');
