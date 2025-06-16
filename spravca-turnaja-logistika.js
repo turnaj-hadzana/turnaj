@@ -326,11 +326,7 @@ function addDragAndDropListeners() {
 function handleDragStart(e) {
     draggedMatch = e.target;
     e.dataTransfer.effectAllowed = 'move';
-    // Store information about whether Ctrl key was pressed
-    e.dataTransfer.setData('text/plain', JSON.stringify({
-        matchId: draggedMatch.dataset.matchId,
-        ctrlKey: e.ctrlKey // Pass ctrlKey state
-    }));
+    e.dataTransfer.setData('text/plain', draggedMatch.dataset.matchId);
     setTimeout(() => {
         draggedMatch.classList.add('dragging');
     }, 0); // Add class after a short delay to avoid immediate flicker
@@ -356,12 +352,6 @@ function handleDragOver(e) {
             targetRow.classList.remove('drop-over-row-before');
         }
     }
-    // Set appropriate drop effect based on Ctrl key
-    if (e.ctrlKey) {
-        e.dataTransfer.dropEffect = 'copy';
-    } else {
-        e.dataTransfer.dropEffect = 'move';
-    }
 }
 
 /**
@@ -384,23 +374,8 @@ async function handleDrop(e) {
     const targetRow = e.target.closest('tr');
 
     if (draggedMatch && targetRow && targetRow !== draggedMatch) {
-        // Retrieve data transferred during dragstart
-        const transferData = JSON.parse(e.dataTransfer.getData('text/plain'));
-        const draggedMatchId = transferData.matchId;
+        const draggedMatchId = draggedMatch.dataset.matchId;
         const targetMatchId = targetRow.dataset.matchId;
-
-        // If Ctrl key was pressed, duplicate the match
-        if (e.ctrlKey) {
-            if (!draggedMatchId) {
-                // Cannot duplicate an empty slot
-                await showMessage('Chyba', 'Prázdny slot nie je možné duplikovať.');
-                removeDragClasses();
-                return;
-            }
-            await duplicateMatch(draggedMatchId, targetRow.dataset.dayId, targetRow.dataset.placeId, targetRow.dataset.time);
-            removeDragClasses();
-            return; // Exit after duplicating
-        }
 
         if (!draggedMatchId) {
              // This happens if you drag an empty slot onto another empty slot or a match.
@@ -561,57 +536,6 @@ async function moveMatchToNewSlot(matchId, newDayId, newPlaceId, newTime, newCat
     } catch (error) {
         console.error('Chyba pri presune zápasu:', error);
         await showMessage('Chyba', `Chyba pri presune zápasu. Detail: ${error.message}`);
-    }
-}
-
-/**
- * Duplicates an existing match, places the copy at the target slot, and opens the modal for editing the new match.
- * @param {string} originalMatchId The ID of the match to duplicate.
- * @param {string} newDayId The ID of the target playing day.
- * @param {string} newPlaceId The ID of the target place.
- * @param {string} newTime The new time in HH:MM format.
- */
-async function duplicateMatch(originalMatchId, newDayId, newPlaceId, newTime) {
-    try {
-        const originalMatchRef = doc(matchesCollectionRef, originalMatchId);
-        const originalMatchDoc = await getDoc(originalMatchRef);
-
-        if (!originalMatchDoc.exists()) {
-            await showMessage('Chyba', 'Pôvodný zápas na duplikovanie sa nenašiel.');
-            return;
-        }
-
-        const originalMatchData = originalMatchDoc.data();
-        const playingDayDoc = await getDoc(doc(playingDaysCollectionRef, newDayId));
-        if (!playingDayDoc.exists()) {
-            await showMessage('Chyba', 'Cieľový hrací deň sa nenašiel.');
-            return;
-        }
-        const newDateString = playingDayDoc.data().date; // "YYYY-MM-DD"
-        const newDateTimeString = `${newDateString}T${newTime}:00`;
-
-        // Create new match data, overriding dateTime and placeId
-        const newMatchData = {
-            ...originalMatchData,
-            dateTime: newDateTimeString,
-            placeId: newPlaceId,
-            createdAt: new Date() // Set new creation timestamp for the duplicated match
-        };
-
-        // Add the new duplicated match to Firestore
-        const newDocRef = await addDoc(matchesCollectionRef, newMatchData);
-        
-        await showMessage('Úspech', 'Zápas bol úspešne duplikovaný! Môžete ho upraviť.');
-        
-        // Refresh the schedule to show the new match
-        await displayMatchesAsSchedule();
-
-        // Open the modal for the newly created match
-        openMatchModal(newDocRef.id, newDayId, newPlaceId, newTime);
-
-    } catch (error) {
-        console.error('Chyba pri duplikovaní zápasu:', error);
-        await showMessage('Chyba', `Chyba pri duplikovaní zápasu. Detail: ${error.message}`);
     }
 }
 
@@ -1539,79 +1463,67 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Event listener for opening playing day modal from schedule (edit button)
-    const editPlayingDaysButton = document.getElementById('editPlayingDaysButton');
-    if (editPlayingDaysButton) { // Added null check
-        editPlayingDaysButton.addEventListener('click', async () => {
-            const scheduleContainer = document.getElementById('scheduleContainer');
-            scheduleContainer.innerHTML = '<h2>Hracie dni</h2><p>Načítavam hracie dni...</p>';
-            try {
-                const playingDaysSnapshot = await getDocs(query(playingDaysCollectionRef, orderBy("date", "asc")));
-                let html = `<table class="data-table"><thead><tr><th>Dátum</th><th></th></tr></thead><tbody>`;
-                if (playingDaysSnapshot.empty) {
-                    html += `<tr><td colspan="2">Žiadne hracie dni.</td></tr>`;
-                } else {
-                    playingDaysSnapshot.forEach(doc => {
-                        const day = doc.data();
-                        const dateObj = new Date(day.date);
-                        const formattedDate = `${String(dateObj.getDate()).padStart(2, '0')}. ${String(dateObj.getMonth() + 1).padStart(2, '0')}. ${dateObj.getFullYear()}`;
-                        html += `<tr><td>${formattedDate}</td><td><button class="action-button edit-item-button" data-id="${doc.id}" data-type="playingDay">&#9998;</button></td></tr>`;
-                    });
-                }
-                html += `</tbody></table>`;
-                scheduleContainer.innerHTML = html;
-
-                document.querySelectorAll('.edit-item-button[data-type="playingDay"]').forEach(button => {
-                    button.addEventListener('click', (event) => openPlayingDayModal(event.target.dataset.id));
+    document.getElementById('editPlayingDaysButton').addEventListener('click', async () => {
+        const scheduleContainer = document.getElementById('scheduleContainer');
+        scheduleContainer.innerHTML = '<h2>Hracie dni</h2><p>Načítavam hracie dni...</p>';
+        try {
+            const playingDaysSnapshot = await getDocs(query(playingDaysCollectionRef, orderBy("date", "asc")));
+            let html = `<table class="data-table"><thead><tr><th>Dátum</th><th></th></tr></thead><tbody>`;
+            if (playingDaysSnapshot.empty) {
+                html += `<tr><td colspan="2">Žiadne hracie dni.</td></tr>`;
+            } else {
+                playingDaysSnapshot.forEach(doc => {
+                    const day = doc.data();
+                    const dateObj = new Date(day.date);
+                    const formattedDate = `${String(dateObj.getDate()).padStart(2, '0')}. ${String(dateObj.getMonth() + 1).padStart(2, '0')}. ${dateObj.getFullYear()}`;
+                    html += `<tr><td>${formattedDate}</td><td><button class="action-button edit-item-button" data-id="${doc.id}" data-type="playingDay">&#9998;</button></td></tr>`;
                 });
-
-            } catch (error) {
-                console.error("Chyba pri načítavaní hracích dní na úpravu:", error);
-                scheduleContainer.innerHTML = '<p>Chyba pri načítavaní hracích dní.</p>';
             }
-        });
-    }
+            html += `</tbody></table>`;
+            scheduleContainer.innerHTML = html;
+
+            document.querySelectorAll('.edit-item-button[data-type="playingDay"]').forEach(button => {
+                button.addEventListener('click', (event) => openPlayingDayModal(event.target.dataset.id));
+            });
+
+        } catch (error) {
+            console.error("Chyba pri načítavaní hracích dní na úpravu:", error);
+            scheduleContainer.innerHTML = '<p>Chyba pri načítavaní hracích dní.</p>';
+        }
+    });
 
     // Event listener for opening places modal from schedule (edit button)
-    const editPlacesButton = document.getElementById('editPlacesButton');
-    if (editPlacesButton) { // Added null check
-        editPlacesButton.addEventListener('click', async () => {
-            const scheduleContainer = document.getElementById('scheduleContainer');
-            scheduleContainer.innerHTML = '<h2>Miesta</h2><p>Načítavam miesta...</p>';
-            try {
-                const placesSnapshot = await getDocs(query(placesCollectionRef, orderBy("name", "asc")));
-                let html = `<table class="data-table"><thead><tr><th>Názov</th><th>Ubytovňa</th><th></th></tr></thead><tbody>`;
-                if (placesSnapshot.empty) {
-                    html += `<tr><td colspan="3">Žiadne miesta.</td></tr>`;
-                } else {
-                    placesSnapshot.forEach(doc => {
-                        const place = doc.data();
-                        const isAccommodationText = place.isAccommodation ? 'Áno' : 'Nie';
-                        html += `<tr><td>${place.name}</td><td>${isAccommodationText}</td><td><button class="action-button edit-item-button" data-id="${doc.id}" data-type="place">&#9998;</button></td></tr>`;
-                    });
-                }
-                html += `</tbody></table>`;
-                scheduleContainer.innerHTML = html;
-
-                document.querySelectorAll('.edit-item-button[data-type="place"]').forEach(button => {
-                    button.addEventListener('click', (event) => openPlaceModal(event.target.dataset.id));
+    document.getElementById('editPlacesButton').addEventListener('click', async () => {
+        const scheduleContainer = document.getElementById('scheduleContainer');
+        scheduleContainer.innerHTML = '<h2>Miesta</h2><p>Načítavam miesta...</p>';
+        try {
+            const placesSnapshot = await getDocs(query(placesCollectionRef, orderBy("name", "asc")));
+            let html = `<table class="data-table"><thead><tr><th>Názov</th><th>Ubytovňa</th><th></th></tr></thead><tbody>`;
+            if (placesSnapshot.empty) {
+                html += `<tr><td colspan="3">Žiadne miesta.</td></tr>`;
+            } else {
+                placesSnapshot.forEach(doc => {
+                    const place = doc.data();
+                    const isAccommodationText = place.isAccommodation ? 'Áno' : 'Nie';
+                    html += `<tr><td>${place.name}</td><td>${isAccommodationText}</td><td><button class="action-button edit-item-button" data-id="${doc.id}" data-type="place">&#9998;</button></td></tr>`;
                 });
-
-            } catch (error) {
-                console.error("Chyba pri načítavaní miest na úpravu:", error);
-                scheduleContainer.innerHTML = '<p>Chyba pri načítavaní miest.</p>';
             }
-        });
-    }
+            html += `</tbody></table>`;
+            scheduleContainer.innerHTML = html;
+
+            document.querySelectorAll('.edit-item-button[data-type="place"]').forEach(button => {
+                button.addEventListener('click', (event) => openPlaceModal(event.target.dataset.id));
+            });
+
+        } catch (error) {
+            console.error("Chyba pri načítavaní miest na úpravu:", error);
+            scheduleContainer.innerHTML = '<p>Chyba pri načítavaní miest.</p>';
+        }
+    });
 
     // Event listener for showing all matches
-    const showAllMatchesButton = document.getElementById('showAllMatchesButton');
-    if (showAllMatchesButton) { // Added null check
-        showAllMatchesButton.addEventListener('click', displayMatchesAsSchedule);
-    }
+    document.getElementById('showAllMatchesButton').addEventListener('click', displayMatchesAsSchedule);
 
     // Event listener for showing accommodation assignments
-    const showAccommodationButton = document.getElementById('showAccommodationButton');
-    if (showAccommodationButton) { // Added null check
-        showAccommodationButton.addEventListener('click', displayAccommodationAssignments);
-    }
+    document.getElementById('showAccommodationButton').addEventListener('click', displayAccommodationAssignments);
 });
