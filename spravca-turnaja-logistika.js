@@ -950,7 +950,6 @@ async function displayMatchesAsSchedule() {
                         scheduleHtml += `<th>Hostia</th>`;
                         scheduleHtml += `<th>ID Domáci</th>`;
                         scheduleHtml += `<th>ID Hostia</th>`;
-                        N;
                         scheduleHtml += `</tr></thead><tbody>`;
 
                         const isFirstPlayingDayForDate = allPlayingDayDates.length > 0 && date === allPlayingDayDates[0];
@@ -1016,7 +1015,7 @@ async function displayMatchesAsSchedule() {
                                 const blockedSlotStartHour = String(Math.floor(blockedSlot.startInMinutes / 60)).padStart(2, '0');
                                 const blockedSlotStartMinute = String(blockedSlot.startInMinutes % 60).padStart(2, '0');
                                 const blockedSlotEndHour = String(Math.floor(blockedSlot.endInMinutes / 60)).padStart(2, '0');
-                                const blockedSlotEndMinute = String(Math.floor(blockedSlot.endInMinutes % 60)).padStart(2, '0');
+                                const blockedSlotEndMinute = String(Math.floor(blockedSlot.endInMinutes % 60).padStart(2, '0');
                                 
                                 // Check for phantom status and new isBlocked status to determine rendering
                                 const isPhantomSlot = blockedSlot.isPhantom === true;
@@ -1420,7 +1419,7 @@ async function editPlayingDay(dateToEdit) {
             playingDayModalTitle.textContent = 'Upraviť hrací deň';
             deletePlayingDayButtonModal.style.display = 'inline-block';
             // Odstráňte starý poslucháč pred pridaním nového
-            if (deletePlayingDayButtonModal._currentHandler) {
+            if (deletePlayingDayButtonModal && deletePlayingDayButtonModal._currentHandler) {
                 deletePlayingDayButtonModal.removeEventListener('click', deletePlayingDayButtonModal._currentHandler); 
             }
             const handler = () => deletePlayingDay(playingDayData.date);
@@ -1468,7 +1467,7 @@ async function editPlace(placeName, placeType) {
 
             deletePlaceButtonModal.style.display = 'inline-block';
             // Odstráňte starý posluchovač pred pridaním nového
-            if (deletePlaceButtonModal._currentHandler) {
+            if (deletePlaceButtonModal && deletePlaceButtonModal._currentHandler) {
                 deletePlaceButtonModal.removeEventListener('click', deletePlaceButtonModal._currentHandler);
             }
             const handler = () => deletePlace(placeData.name, placeData.type);
