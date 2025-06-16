@@ -377,7 +377,7 @@ async function displayMatchesAsSchedule() {
             }
         });
 
-        let scheduleHtml = '';
+        let scheduleHtml = '<div style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: flex-start;">'; // Main flex container
 
         // Sort locations alphabetically
         const sortedLocations = Array.from(groupedMatchesByLocation.keys()).sort((a, b) => a.localeCompare(b));
@@ -390,7 +390,8 @@ async function displayMatchesAsSchedule() {
                 // Sort dates within each location
                 const sortedDatesForLocation = Array.from(matchesByDateForLocation.keys()).sort((a, b) => a.localeCompare(b));
 
-                scheduleHtml += `<div class="location-group" style="margin-bottom: 40px; border: 1px solid #ccc; border-radius: 10px; overflow: hidden;">`;
+                // Flex item for each location group
+                scheduleHtml += `<div class="location-group" style="flex: 1 1 45%; min-width: 300px; margin-bottom: 0; border: 1px solid #ccc; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">`; // Removed margin-bottom and added flex properties and shadow
                 scheduleHtml += `<h2 style="background-color: #007bff; color: white; padding: 18px; margin: 0; text-align: center;">Miesto: ${location}</h2>`;
 
                 sortedDatesForLocation.forEach(date => {
@@ -439,6 +440,7 @@ async function displayMatchesAsSchedule() {
                 scheduleHtml += `</div>`; // Close location-group div
             });
         }
+        scheduleHtml += '</div>'; // Close main flex container
 
         matchesContainer.innerHTML = scheduleHtml;
 
@@ -537,7 +539,7 @@ async function deletePlayingDay(dateToDelete) {
             await displayMatchesAsSchedule();
         } catch (error) {
             console.error("Chyba pri mazaní hracieho dňa:", error);
-            await showMessage('Chyba', `Chyba pri mazaní hracieho dňa ${dateToDelete}. Detail: ${error.message}`);
+            await showMessage('Chyba', `Chyba pri mazaní hracieho dňa. Detail: ${error.message}`);
         }
     }
 }
