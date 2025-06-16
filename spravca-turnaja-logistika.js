@@ -1577,17 +1577,24 @@ async function openFreeSlotModal(date, location, startTime, endTime, blockedSlot
     const blockFreeSlotButton = document.getElementById('blockFreeSlotButton');
     const unblockFreeSlotButton = document.getElementById('unblockFreeSlotButton');
 
+    // Nastaví ID slotu vo skrytom poli formulára
     freeSlotIdInput.value = blockedSlotId || '';
+    // Zobrazí informácie o slote
     freeSlotDateDisplay.textContent = date;
     freeSlotLocationDisplay.textContent = location;
     freeSlotTimeRangeDisplay.textContent = `${startTime} - ${endTime}`;
 
-    // Remove old listeners to prevent multiple firings
+    // Odstráni staré poslucháče udalostí, aby sa predišlo viacnásobným spusteniam
     blockFreeSlotButton.removeEventListener('click', createBlockedSlotAndRecalculate);
     unblockFreeSlotButton.removeEventListener('click', deleteSlotAndRecalculate);
-    unblockFreeSlotButton.classList.remove('delete-button'); // Always remove for safety at start
+    // Nový poslucháč pre zmenu fantómu na riadny zablokovaný slot
+    blockFreeSlotButton.removeEventListener('click', convertToRegularBlockedSlot); 
+
+
+    unblockFreeSlotButton.classList.remove('delete-button'); // Vždy odstráni červený štýl pre istotu
 
     let isPhantom = false;
+    // Ak existuje blockedSlotId, skontroluje, či je to fantómový slot
     if (blockedSlotId) {
         const blockedSlotDoc = await getDoc(doc(blockedSlotsCollectionRef, blockedSlotId));
         if (blockedSlotDoc.exists()) {
@@ -1595,35 +1602,67 @@ async function openFreeSlotModal(date, location, startTime, endTime, blockedSlot
         }
     }
 
+    // Logika zobrazenia tlačidiel a titulku na základe typu slotu
     if (isPhantom) {
-        freeSlotModalTitle.textContent = 'Spravovať voľný slot (presunutý zápas)';
-        blockFreeSlotButton.style.display = 'none'; // Hide "Zablokovať"
-        unblockFreeSlotButton.style.display = 'inline-block'; // Show "Vymazať slot"
-        unblockFreeSlotButton.textContent = 'Vymazať slot'; // Change text to "Vymazať slot"
-        unblockFreeSlotButton.classList.add('delete-button'); // Add red style
-        // Add listener for "Vymazať slot" button (which calls deleteSlotAndRecalculate with the phantom ID)
+        // Ak je to fantómový slot (zápas bol presunutý z tohto miesta)
+        freeSlotModalTitle.textContent = 'Spravovať fantómový slot'; // Upravený titulok
+        blockFreeSlotButton.style.display = 'inline-block'; // Zobrazí tlačidlo "Zablokovať"
+        blockFreeSlotButton.textContent = 'Zablokovať'; // Text pre zablokovanie fantómu
+        unblockFreeSlotButton.style.display = 'inline-block'; // Zobrazí tlačidlo "Vymazať slot"
+        unblockFreeSlotButton.textContent = 'Vymazať slot'; // Zmení text na "Vymazať slot"
+        unblockFreeSlotButton.classList.add('delete-button'); // Pridá červený štýl
+
+        // Pridá poslucháča pre tlačidlo "Zablokovať" pre fantómový slot
+        blockFreeSlotButton.addEventListener('click', () => convertToRegularBlockedSlot(blockedSlotId, date, location));
+        // Pridá poslucháča pre tlačidlo "Vymazať slot" (ktoré volá deleteSlotAndRecalculate s ID fantómu)
         unblockFreeSlotButton.addEventListener('click', () => deleteSlotAndRecalculate(blockedSlotId, date, location));
-    } else if (blockedSlotId) { // It's a normal blocked slot
+    } else if (blockedSlotId) {
+        // Ak je to normálny zablokovaný slot (blokovaný používateľom)
         freeSlotModalTitle.textContent = 'Upraviť zablokovaný slot';
-        blockFreeSlotButton.style.display = 'none'; // Hide "Zablokovať"
-        unblockFreeSlotButton.style.display = 'inline-block'; // Show "Odblokovať"
-        unblockFreeSlotButton.textContent = 'Odblokovať'; // Ensure correct text
-        // Add listener for "Odblokovať" button (which calls deleteSlotAndRecalculate with ID)
+        blockFreeSlotButton.style.display = 'none'; // Skryje tlačidlo "Zablokovať"
+        unblockFreeSlotButton.style.display = 'inline-block'; // Zobrazí tlačidlo "Odblokovať"
+        unblockFreeSlotButton.textContent = 'Odblokovať'; // Zabezpečí správny text
+        // Pridá poslucháča pre tlačidlo "Odblokovať" (ktoré volá deleteSlotAndRecalculate s ID)
         unblockFreeSlotButton.addEventListener('click', () => deleteSlotAndRecalculate(blockedSlotId, date, location));
-    } else { // It's a truly empty slot (no ID from dataset)
+    } else {
+        // Ak je to skutočne prázdny slot (žiadne ID z datasetu, iba vizuálna medzera)
         freeSlotModalTitle.textContent = 'Spravovať voľný slot';
-        blockFreeSlotButton.style.display = 'inline-block'; // Show "Zablokovať"
-        unblockFreeSlotButton.style.display = 'inline-block'; // Show "Vymazať"
-        blockFreeSlotButton.textContent = 'Zablokovať'; // Ensure correct text
-        unblockFreeSlotButton.textContent = 'Vymazať'; // Change text to "Vymazať"
-        unblockFreeSlotButton.classList.add('delete-button'); // Add red style
-        // Add listener for "Zablokovať" button (which calls createBlockedSlotAndRecalculate)
+        blockFreeSlotButton.style.display = 'inline-block'; // Zobrazí tlačidlo "Zablokovať"
+        unblockFreeSlotButton.style.display = 'inline-block'; // Zobrazí tlačidlo "Vymazať"
+        blockFreeSlotButton.textContent = 'Zablokovať'; // Zabezpečí správny text
+        unblockFreeSlotButton.textContent = 'Vymazať'; // Zmení text na "Vymazať"
+        unblockFreeSlotButton.classList.add('delete-button'); // Pridá červený štýl
+        // Pridá poslucháča pre tlačidlo "Zablokovať" (ktoré volá createBlockedSlotAndRecalculate)
         blockFreeSlotButton.addEventListener('click', () => createBlockedSlotAndRecalculate(date, location, startTime, endTime));
-        // Add listener for "Vymazať" button (which calls deleteSlotAndRecalculate without ID)
+        // Pridá poslucháča pre tlačidlo "Vymazať" (ktoré volá deleteSlotAndRecalculate bez ID, len pre vizuálne odstránenie)
         unblockFreeSlotButton.addEventListener('click', () => deleteSlotAndRecalculate(null, date, location));
     }
 
-    openModal(freeSlotModal);
+    openModal(freeSlotModal); // Otvorí modálne okno
+}
+
+/**
+ * Prevedie fantómový slot na riadny zablokovaný slot.
+ * @param {string} blockedSlotId ID fantómového slotu na konverziu.
+ * @param {string} date Dátum slotu.
+ * @param {string} location Miesto slotu.
+ */
+async function convertToRegularBlockedSlot(blockedSlotId, date, location) {
+    const freeSlotModal = document.getElementById('freeSlotModal');
+    const confirmed = await showConfirmation('Potvrdenie', 'Naozaj chcete tento fantómový slot zablokovať?');
+
+    if (confirmed) {
+        try {
+            const slotRef = doc(blockedSlotsCollectionRef, blockedSlotId);
+            await setDoc(slotRef, { isPhantom: false }, { merge: true }); // Zmení isPhantom na false
+            await showMessage('Úspech', 'Fantómový slot bol úspešne zablokovaný!');
+            closeModal(freeSlotModal);
+            await recalculateAndSaveScheduleForDateAndLocation(date, location); // Prepočíta rozvrh
+        } catch (error) {
+            console.error("Chyba pri konverzii fantómového slotu na riadny zablokovaný slot:", error);
+            await showMessage('Chyba', `Chyba pri zablokovaní slotu: ${error.message}`);
+        }
+    }
 }
 
 /**
