@@ -392,7 +392,7 @@ async function displayMatchesAsSchedule() {
 
                 // Flex item for each location group
                 scheduleHtml += `<div class="location-group" style="flex: 1 1 45%; min-width: 300px; margin-bottom: 0; border: 1px solid #ccc; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">`; // Removed margin-bottom and added flex properties and shadow
-                scheduleHtml += `<h2 style="background-color: #007bff; color: white; padding: 18px; margin: 0; text-align: center;">${location}</h2>`;
+                scheduleHtml += `<h2 style="background-color: #007bff; color: white; padding: 18px; margin: 0; text-align: center;">Miesto: ${location}</h2>`;
 
                 sortedDatesForLocation.forEach(date => {
                     const matchesForDateAndLocation = matchesByDateForLocation.get(date);
@@ -408,7 +408,7 @@ async function displayMatchesAsSchedule() {
                     const formattedDisplayDate = `${String(displayDateObj.getDate()).padStart(2, '0')}. ${String(displayDateObj.getMonth() + 1).padStart(2, '0')}. ${displayDateObj.getFullYear()}`;
 
                     scheduleHtml += `<div class="date-group" style="margin: 20px; border: 1px solid #eee; border-radius: 8px; overflow: hidden;">`;
-                    scheduleHtml += `<h3 style="background-color: #f7f7f7; padding: 15px; margin: 0; border-bottom: 1px solid #ddd;">${formattedDisplayDate}</h3>`;
+                    scheduleHtml += `<h3 style="background-color: #f7f7f7; padding: 15px; margin: 0; border-bottom: 1px solid #ddd;">Dátum: ${formattedDisplayDate}</h3>`;
                     scheduleHtml += `<table class="data-table match-list-table compact-table" style="width: 100%; border-collapse: collapse;">`; // Added compact-table class
                     scheduleHtml += `<thead><tr>`;
                     scheduleHtml += `<th>Čas</th>`;
@@ -425,7 +425,7 @@ async function displayMatchesAsSchedule() {
                         const formattedEndTime = matchEndTime.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' });
 
                         scheduleHtml += `
-                            <tr data-id="${match.id}" class="match-row">
+                            <tr draggable="true" data-id="${match.id}" class="match-row">
                                 <td>${match.startTime} - ${formattedEndTime}</td>
                                 <td>${match.team1ClubName || 'N/A'}</td>
                                 <td>${match.team2ClubName || 'N/A'}</td>
@@ -444,13 +444,52 @@ async function displayMatchesAsSchedule() {
 
         matchesContainer.innerHTML = scheduleHtml;
 
-        // Add event listeners to each match row
+        // Add event listeners to each match row for click (edit) and drag
         matchesContainer.querySelectorAll('.match-row').forEach(row => {
             row.addEventListener('click', (event) => {
                 const matchId = event.currentTarget.dataset.id;
                 editMatch(matchId);
             });
+            // Add dragstart listener
+            row.addEventListener('dragstart', (event) => {
+                event.dataTransfer.setData('text/plain', event.target.dataset.id);
+                event.dataTransfer.effectAllowed = 'move';
+                // Optional: Add a class to the dragged element for visual feedback
+                event.target.classList.add('dragging');
+            });
+
+            // Optional: Remove dragging class on dragend
+            row.addEventListener('dragend', (event) => {
+                event.target.classList.remove('dragging');
+            });
         });
+
+        // Add dragover and drop listeners to the matchesContainer to allow dropping anywhere
+        matchesContainer.addEventListener('dragover', (event) => {
+            event.preventDefault(); // Crucial to allow a drop
+            event.dataTransfer.dropEffect = 'move';
+            matchesContainer.classList.add('drop-target-active'); // Optional: visual feedback
+        });
+
+        matchesContainer.addEventListener('dragleave', () => {
+            matchesContainer.classList.remove('drop-target-active'); // Optional: visual feedback
+        });
+
+        matchesContainer.addEventListener('drop', (event) => {
+            event.preventDefault();
+            matchesContainer.classList.remove('drop-target-active'); // Optional: visual feedback
+
+            const matchId = event.dataTransfer.getData('text/plain');
+            if (matchId) {
+                // Open the edit modal for the dragged match
+                editMatch(matchId);
+                // Optionally, if dropped on a specific date/location block,
+                // you could pass that info to editMatch to pre-fill.
+                // This requires more complex logic to identify the drop target's data.
+                // For simplicity now, just open the modal.
+            }
+        });
+
 
         // The following event listeners for date and location headers should still work conceptually,
         // but their click targets might need adjustment if the HTML structure for headers changes significantly.
