@@ -533,7 +533,7 @@ async function displayMatchesAsSchedule() {
                     const dayName = displayDateObj.toLocaleDateString('sk-SK', { weekday: 'long' }); // Get full day name
 
                     scheduleHtml += `<div class="date-group" data-date="${date}" data-location="${location}" style="margin: 20px; border: 1px solid #eee; border-radius: 8px; overflow: hidden;">`; // Added data-date and data-location
-                    scheduleHtml += `<h3 style="background-color: #f7f7f7; padding: 15px; margin: 0; border-bottom: 1px solid #ddd;">${dayName}, ${formattedDisplayDate}</h3>`; // Added dayName
+                    scheduleHtml += `<h3 style="background-color: #f7f7f7; padding: 15px; margin: 0; border-bottom: 1px solid #ddd;">${dayName} ${formattedDisplayDate}</h3>`; // Added dayName
                     scheduleHtml += `<table class="data-table match-list-table compact-table" style="width: 100%; border-collapse: collapse;">`; // Added compact-table class
                     scheduleHtml += `<thead><tr>`;
                     scheduleHtml += `<th>Čas</th>`;
