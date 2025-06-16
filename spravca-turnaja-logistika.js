@@ -152,12 +152,11 @@ async function updateMatchDurationAndBuffer() {
         matchDurationInput.value = 60;
         matchBufferTimeInput.value = 5;
     }
-    // Odstránené: findFirstAvailableTime() - podľa požiadavky užívateľa, zmena kategórie by nemala aktualizovať čas začiatku.
 }
 
 /**
  * Nájde prvý dostupný časový slot pre zápas na základe dátumu, miesta, trvania a časovej rezervy.
- * Prioritou je nájsť voľný zápas, ktorý má presne takú dĺžku, akú vyžaduje zápas (trvanie).
+ * Prioritou je nájsť voľný slot, ktorý má presne takú dĺžku, akú vyžaduje zápas (trvanie).
  * Ak taký slot neexistuje, čas sa nastaví hneď po poslednom existujúcom zápase v daný deň a na danom mieste,
  * alebo na počiatočný čas dňa, ak nie sú žiadne zápasy.
  */
@@ -241,27 +240,17 @@ async function findFirstAvailableTime() {
             nextEventStart: Infinity // No next event in this slot
         });
 
-        // 2. Search for Priority 1: Exact fit for requiredMatchDuration (the match itself)
+        // 2. Search for Priority 1: Exact fit for the total event footprint (match duration + buffer)
         for (const gap of availableGaps) {
             // A potential match start time for this gap
             const potentialMatchStartTimeInMinutes = gap.start;
-            // The time when the new match, including its buffer, would finish
-            const potentialFullEventEndTimeInMinutes = potentialMatchStartTimeInMinutes + newMatchFullFootprint;
 
-            // Check if the gap can *at least* accommodate the match duration
-            if (gap.duration >= requiredMatchDuration) {
-                // Now check the exact fit condition: is the available space exactly equal to requiredMatchDuration
-                // AND does it allow for the buffer without overlap?
-                if (gap.duration === requiredMatchDuration) {
-                    // If the gap is EXACTLY the match duration, then we need to ensure the buffer
-                    // doesn't cause an overlap with the *next* event.
-                    if (potentialFullEventEndTimeInMinutes <= gap.nextEventStart) {
-                        const formattedHour = String(Math.floor(potentialMatchStartTimeInMinutes / 60)).padStart(2, '0');
-                        const formattedMinute = String(potentialMatchStartTimeInMinutes % 60).padStart(2, '0');
-                        matchStartTimeInput.value = `${formattedHour}:${formattedMinute}`;
-                        return; // Found and set Priority 1 slot
-                    }
-                }
+            // Check if the gap is exactly the size of the new match's full footprint
+            if (gap.duration === newMatchFullFootprint) {
+                const formattedHour = String(Math.floor(potentialMatchStartTimeInMinutes / 60)).padStart(2, '0');
+                const formattedMinute = String(potentialMatchStartTimeInMinutes % 60).padStart(2, '0');
+                matchStartTimeInput.value = `${formattedHour}:${formattedMinute}`;
+                return; // Found and set Priority 1 slot
             }
         }
 
@@ -667,7 +656,7 @@ async function displayMatchesAsSchedule() {
                             scheduleHtml += `
                                 <tr class="empty-slot-row" data-date="${date}" data-location="${location}" data-start-time="${currentTimePointer}">
                                     <td>${currentTimePointer} - ${formattedEmptySlotEndTime}</td>
-                                    <td colspan="4" style="text-align: center; color: #888; font-style: italic;">Voľný zápas</td>
+                                    <td colspan="4" style="text-align: center; color: #888; font-style: italic;">Voľný slot</td>
                                 </tr>
                             `;
                         }
@@ -1091,7 +1080,8 @@ async function openMatchModal(matchId = null, prefillDate = '', prefillLocation 
     } else { // Pridanie nového zápasu
         matchModalTitle.textContent = 'Pridať nový zápas';
         await populateCategorySelect(matchCategorySelect);
-        await populatePlayingDaysSelect(matchDateSelect, prefillDate);
+        // Ensure to pass select elements to populate functions
+        await populatePlayingDaysSelect(matchDateSelect, prefillDate); 
         await populateSportHallSelects(matchLocationSelect, prefillLocation);
         
         if (matchGroupSelect) {
@@ -1105,8 +1095,27 @@ async function openMatchModal(matchId = null, prefillDate = '', prefillLocation 
         team2NumberInput.value = '';
         team2NumberInput.disabled = true;
 
-        matchDurationInput.value = ''; // Vymazať pre nový zápas, nastaví sa výberom kategórie
-        matchBufferTimeInput.value = ''; // Vymazať pre nový zápas, nastaví sa výberom kategórie
+        // Nastavte predvolené hodnoty pre trvanie a rezervu pre nový zápas
+        // Tieto hodnoty budú použité findFirstAvailableTime
+        let defaultDuration = 60; // Predvolené trvanie
+        let defaultBufferTime = 5; // Predvolená rezerva
+        
+        // Pokúste sa načítať predvolené nastavenia z prvej kategórie, ak existuje
+        const settingsDocRef = doc(settingsCollectionRef, SETTINGS_DOC_ID);
+        const settingsDoc = await getDoc(settingsDocRef);
+        if (settingsDoc.exists()) {
+            const data = settingsDoc.data();
+            const categorySettings = data.categoryMatchSettings;
+            if (categorySettings) {
+                const firstCategoryIdWithSettings = Object.keys(categorySettings)[0];
+                if (firstCategoryIdWithSettings) {
+                    defaultDuration = categorySettings[firstCategoryIdWithSettings].duration || defaultDuration;
+                    defaultBufferTime = categorySettings[firstCategoryIdWithSettings].bufferTime || defaultBufferTime;
+                }
+            }
+        }
+        matchDurationInput.value = defaultDuration;
+        matchBufferTimeInput.value = defaultBufferTime;
 
         // Získajte čas začiatku po poslednom zápase alebo počiatočný čas dňa
         await findFirstAvailableTime();
@@ -1153,7 +1162,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const matchForm = document.getElementById('matchForm');
     const matchIdInput = document.getElementById('matchId');
     const matchDateSelect = document.getElementById('matchDateSelect');
-    const matchLocationSelect = document.getElementById('matchLocationSelect'); // Opravené preklepy v referencii
+    const matchLocationSelect = document.getElementById('matchLocationSelect'); 
     const matchStartTimeInput = document.getElementById('matchStartTime');
     const matchDurationInput = document.getElementById('matchDuration');
     const matchBufferTimeInput = document.getElementById('matchBufferTime');
