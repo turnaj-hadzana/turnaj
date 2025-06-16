@@ -576,7 +576,7 @@ async function openPlaceModal(placeId = null) {
         deletePlaceButtonModal.onclick = () => handleDeletePlace(placeId);
     } else {
         placeModalTitle.textContent = 'Pridať miesto';
-        deletePlaceButtonModal.style.display = 'none';
+        deletePlaceButtonButton.style.display = 'none';
         document.getElementById('placeId').value = ''; // Clear ID for adding
     }
     openModal(placeModal);
@@ -1048,6 +1048,8 @@ window.openAccommodationModalWrapper = (id, data) => openAccommodationModal(id, 
 // Drag and Drop functionality
 let draggedMatch = null;
 // Global variable to store info about a recently ghosted match for display purposes
+let ghostedMatchInfo = null;
+
 
 function addDragAndDropListeners() {
     const draggables = document.querySelectorAll('.match-row.draggable');
@@ -1164,9 +1166,7 @@ function addDragAndDropListeners() {
                     ghostedMatchInfo = {
                         playingDay: oldPlayingDay,
                         placeId: oldPlaceId,
-                        time: matchData.time,
-                        matchNumber: matchData.matchNumber, // Still store for potential future use or debugging
-                        categoryName: matchData.categoryName // Still store for potential future use or debugging
+                        time: matchData.time
                     };
 
                 } catch (error) {
@@ -1245,9 +1245,7 @@ function addDragAndDropListeners() {
                 ghostedMatchInfo = {
                     playingDay: oldPlayingDay,
                     placeId: oldPlaceId,
-                    time: matchData.time,
-                    matchNumber: matchData.matchNumber, // Still store for potential future use or debugging
-                    categoryName: matchData.categoryName // Still store for potential future use or debugging
+                    time: matchData.time
                 };
 
                 await displayMatchesAsSchedule(); // Re-render the whole schedule
@@ -1316,9 +1314,7 @@ function addDragAndDropListeners() {
                 ghostedMatchInfo = {
                     playingDay: oldPlayingDay,
                     placeId: oldPlaceId,
-                    time: matchData.time,
-                    matchNumber: matchData.matchNumber, // Still store for potential future use or debugging
-                    categoryName: matchData.categoryName // Still store for potential future use or debugging
+                    time: matchData.time
                 };
 
                 await displayMatchesAsSchedule(); // Re-render the whole schedule
