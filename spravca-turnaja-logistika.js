@@ -837,7 +837,7 @@ async function displayMatchesAsSchedule() {
                 let locationGroupStyle = "flex: 1 1 45%; min-width: 300px; margin-bottom: 0; border: 1px solid #ccc; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 8px rgba(0,0,0,0.1);";
                 // Ak je nepárny počet hál a toto je posledná hala, pridajte margin-right: auto
                 if (isOddNumberOfLocations && i === allSportHalls.length - 1) {
-                    locationGroupStyle += " margin-right: 51%;";
+                    locationGroupStyle += " margin-right: 50.5%;";
                 }
 
                 scheduleHtml += `<div class="location-group" style="${locationGroupStyle}">`;
