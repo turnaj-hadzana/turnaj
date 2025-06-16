@@ -973,3 +973,9 @@ td:last-child {
     opacity: 0.5; /* Zníženie priehľadnosti presúvaného riadku */
     transform: scale(0.98); /* Mierne zmenšenie pre pocit "zdvihnutia" */
 }
+
+.add-button.drag-over-add-button {
+    background-color: #28a745; /* Tmavšia zelená na hover */
+    box-shadow: 0 0 15px rgba(40, 167, 69, 0.6); /* Výraznejší tieň */
+    transform: scale(1.05); /* Mierne zväčšenie */
+}
