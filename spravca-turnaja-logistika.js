@@ -628,8 +628,8 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, drag
         const cleanupBatch = writeBatch(db); // Create a new batch for cleanup
         trailingBlockedSlotsSnapshot.docs.forEach(docToDelete => {
             const blockedSlotData = docToDelete.data();
-            const [bsStartH, bsStartM] = blockedSlotData.startTime.split(':').map(Number);
-            const bsStartInMinutes = bsStartH * 60 + bsStartM; // Use bsM here
+            const [bsStartH, bsStartM] = blockedSlotData.startTime.split(':').map(Number); // Corrected: use bsStartM
+            const bsStartInMinutes = bsStartH * 60 + bsStartM; // Corrected: use bsStartM
 
             // Vymazať, ak sa zablokovaný slot začína na alebo po našom konečnom vypočítanom konci rozvrhu.
             if (bsStartInMinutes >= currentTimePointer) {
@@ -1604,8 +1604,8 @@ async function openFreeSlotModal(date, location, startTime, endTime, blockedSlot
     const freeSlotLocationDisplay = document.getElementById('freeSlotLocationDisplay');
     const freeSlotTimeRangeDisplay = document.getElementById('freeSlotTimeRangeDisplay');
     const freeSlotIdInput = document.getElementById('freeSlotId');
-    const blockFreeSlotButton = document.getElementById('blockFreeSlotButton'); // This is freeSlotSaveButton
-    const unblockFreeSlotButton = document.getElementById('unblockFreeSlotButton'); // This is deleteFreeSlotButton
+    const blockFreeSlotButton = document.getElementById('blockSlotButton'); // This is freeSlotSaveButton
+    const unblockFreeSlotButton = document.getElementById('deleteFreeSlotButton'); // This is deleteFreeSlotButton
 
     // Nastaví ID slotu vo skrytom poli formulára
     freeSlotIdInput.value = blockedSlotId || '';
