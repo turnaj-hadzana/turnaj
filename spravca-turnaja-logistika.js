@@ -417,7 +417,7 @@ async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation
         }
 
         await batch.commit();
-        await showMessage('Úspech', `Zápas bol presunutý a rozvrh pre ${targetLocation} dňa ${targetDate} bol prepočítaný.`);
+        // await showMessage('Úspech', `Zápas bol presunutý a rozvrh pre ${targetLocation} dňa ${targetDate} bol prepočítaný.`); // Správa zakomentovaná
         await displayMatchesAsSchedule(); // Refresh the display
     } catch (error) {
         console.error("Chyba pri presúvaní a prepočítavaní rozvrhu:", error);
@@ -1010,7 +1010,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const placeNameInput = document.getElementById('placeName');
     const placeAddressInput = document.getElementById('placeAddress');
     const placeGoogleMapsUrlInput = document.getElementById('placeGoogleMapsUrl');
-    const deletePlaceButtonModal = document.getElementById('deletePlaceButtonModal');
+    const deletePlaceButtonModal = document = document.getElementById('deletePlaceButtonModal');
 
     if (categoriesContentSection) {
         categoriesContentSection.style.display = 'block';
