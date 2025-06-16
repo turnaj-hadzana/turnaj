@@ -1010,7 +1010,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const placeNameInput = document.getElementById('placeName');
     const placeAddressInput = document.getElementById('placeAddress');
     const placeGoogleMapsUrlInput = document.getElementById('placeGoogleMapsUrl');
-    const deletePlaceButtonModal = document = document.getElementById('deletePlaceButtonModal');
+    const deletePlaceButtonModal = document.getElementById('deletePlaceButtonModal');
 
     if (categoriesContentSection) {
         categoriesContentSection.style.display = 'block';
