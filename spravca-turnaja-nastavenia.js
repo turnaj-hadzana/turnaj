@@ -71,11 +71,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <input type="number" id="duration-${categoryId}" class="category-setting-input" data-category-id="${categoryId}" data-setting-type="duration" value="${categoryData.duration || 0}" min="0">
                     </div>
                     <div class="form-group">
-                        <label for="bufferTime-${categoryId}">Čas na prípravu (minúty):</label>
+                        <label for="bufferTime-${categoryId}">Čas medzi zápasmi (minúty):</label>
                         <input type="number" id="bufferTime-${categoryId}" class="category-setting-input" data-category-id="${categoryId}" data-setting-type="bufferTime" value="${categoryData.bufferTime || 0}" min="0">
                     </div>
                     <div class="form-group">
-                        <label for="color-${categoryId}">Farba kategórie:</label>
+                        <label for="color-${categoryId}">Farba:</label>
                         <input type="color" id="color-${categoryId}" class="category-setting-input" data-category-id="${categoryId}" data-setting-type="color" value="${categoryData.color || '#000000'}">
                     </div>
                 `;
