@@ -404,13 +404,11 @@ async function displayMatchesAsSchedule() {
                 scheduleHtml += `<h3 style="background-color: #f0f0f0; padding: 15px; margin: 0; border-bottom: 1px solid #ddd;">Dátum: ${formattedDisplayDate}, Miesto: ${location}</h3>`;
                 scheduleHtml += `<table class="data-table match-list-table" style="width: 100%; border-collapse: collapse;">`;
                 scheduleHtml += `<thead><tr>`;
-                scheduleHtml += `<th>Čas začiatku</th>`;
-                scheduleHtml += `<th>Čas konca</th>`;
+                scheduleHtml += `<th>Čas</th>`; // Changed from 'Čas začiatku' and 'Čas konca'
                 scheduleHtml += `<th>Domáci klub</th>`;
                 scheduleHtml += `<th>Hostia klub</th>`;
                 scheduleHtml += `<th>ID Domáci</th>`;
                 scheduleHtml += `<th>ID Hostia</th>`;
-                // Removed 'Akcie' column
                 scheduleHtml += `</tr></thead><tbody>`;
 
                 matchesForGroup.forEach(match => {
@@ -421,8 +419,7 @@ async function displayMatchesAsSchedule() {
 
                     scheduleHtml += `
                         <tr data-id="${match.id}" class="match-row">
-                            <td>${match.startTime}</td>
-                            <td>${formattedEndTime}</td>
+                            <td>${match.startTime} - ${formattedEndTime}</td> <!-- Combined time display -->
                             <td>${match.team1ClubName || 'N/A'}</td>
                             <td>${match.team2ClubName || 'N/A'}</td>
                             <td>${match.team1DisplayName || 'N/A'}</td>
