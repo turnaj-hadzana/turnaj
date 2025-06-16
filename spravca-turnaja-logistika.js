@@ -605,7 +605,35 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, drag
         }
         
         await batch.commit();
-        console.log("recalculateAndSaveScheduleForDateAndLocation: Batch commit úspešný. Obnovujem rozvrh.");
+        console.log("recalculateAndSaveScheduleForDateAndLocation: Batch commit úspešný.");
+
+        // --- Nová logika pre automatické vymazanie prázdnych slotov na konci dňa ---
+        console.log(`recalculateAndSaveScheduleForDateAndLocation: Spúšťam čistenie koncových zablokovaných slotov. Posledný currentTimePointer: ${currentTimePointer}`);
+
+        const trailingBlockedSlotsQuery = query(
+            blockedSlotsCollectionRef,
+            where("date", "==", date),
+            where("location", "==", location)
+        );
+        const trailingBlockedSlotsSnapshot = await getDocs(trailingBlockedSlotsQuery);
+
+        const cleanupBatch = writeBatch(db); // Create a new batch for cleanup
+        trailingBlockedSlotsSnapshot.docs.forEach(docToDelete => {
+            const blockedSlotData = docToDelete.data();
+            const [bsStartH, bsStartM] = blockedSlotData.startTime.split(':').map(Number);
+            const bsStartInMinutes = bsStartH * 60 + bsStartM;
+
+            // Double check: if the blocked slot starts at or after our final calculated schedule end, delete it.
+            if (bsStartInMinutes >= currentTimePointer) {
+                 console.log(`Čistím koncový zablokovaný slot: ID ${docToDelete.id}, začiatok: ${blockedSlotData.startTime}`);
+                 cleanupBatch.delete(doc(blockedSlotsCollectionRef, docToDelete.id));
+            }
+        });
+        await cleanupBatch.commit();
+        console.log("recalculateAndSaveScheduleForDateAndLocation: Čistenie koncových slotov dokončené.");
+        // --- Koniec novej logiky ---
+
+
         await displayMatchesAsSchedule();
         await showMessage('Úspech', 'Rozvrh bol úspešne prepočítaný a aktualizovaný!');
 
@@ -1744,10 +1772,27 @@ async function deleteMatch(matchId) {
     const confirmed = await showConfirmation('Potvrdenie vymazania', 'Naozaj chcete vymazať tento zápas?');
     if (confirmed) {
         try {
-            await deleteDoc(doc(matchesCollectionRef, matchId));
+            const matchDocRef = doc(matchesCollectionRef, matchId);
+            const matchDoc = await getDoc(matchDocRef);
+            let date = null;
+            let location = null;
+            if (matchDoc.exists()) {
+                date = matchDoc.data().date;
+                location = matchDoc.data().location;
+            }
+
+            await deleteDoc(matchDocRef);
             await showMessage('Úspech', 'Zápas vymazaný!');
             closeModal(document.getElementById('matchModal'));
-            displayMatchesAsSchedule(); // Just refresh, no need for complex recalculation here, it's just one match removal
+            
+            // Only recalculate if date and location are known, which they should be
+            if (date && location) {
+                await recalculateAndSaveScheduleForDateAndLocation(date, location);
+            } else {
+                // Fallback if match details are missing for some reason
+                displayMatchesAsSchedule(); 
+            }
+
         }
         catch (error) {
             console.error("Chyba pri mazaní zápasu:", error);
