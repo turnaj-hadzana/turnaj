@@ -157,18 +157,15 @@ async function updateMatchDurationAndBuffer() {
 
 /**
  * Nájde prvý dostupný časový slot pre zápas na základe dátumu, miesta, trvania a časovej rezervy.
+ * Táto funkcia bola prepracovaná, aby vždy hľadala čas po poslednom zápase v daný deň/mieste.
  */
 async function findFirstAvailableTime() {
     const matchDateSelect = document.getElementById('matchDateSelect');
     const matchLocationSelect = document.getElementById('matchLocationSelect');
-    const matchDurationInput = document.getElementById('matchDuration');
-    const matchBufferTimeInput = document.getElementById('matchBufferTime');
     const matchStartTimeInput = document.getElementById('matchStartTime');
 
     const selectedDate = matchDateSelect.value;
     const selectedLocationName = matchLocationSelect.value;
-    const duration = parseInt(matchDurationInput.value) || 60;
-    const bufferTime = parseInt(matchBufferTimeInput.value) || 5;
 
     if (!selectedDate || !selectedLocationName) {
         matchStartTimeInput.value = '';
@@ -191,55 +188,33 @@ async function findFirstAvailableTime() {
         const sortedPlayingDays = playingDaysSnapshot.docs.map(d => d.data().date).sort();
         const isFirstPlayingDay = sortedPlayingDays.length > 0 && selectedDate === sortedPlayingDays[0];
 
-        let [startH, startM] = (isFirstPlayingDay ? firstDayStartTime : otherDaysStartTime).split(':').map(Number);
-        const endSearchHour = 22;
-        const intervalMinutes = 1;
+        const initialStartTimeForDay = isFirstPlayingDay ? firstDayStartTime : otherDaysStartTime;
 
         const existingMatchesQuery = query(
             matchesCollectionRef,
             where("date", "==", selectedDate),
-            where("location", "==", selectedLocationName)
+            where("location", "==", selectedLocationName),
+            orderBy("startTime", "asc")
         );
         const existingMatchesSnapshot = await getDocs(existingMatchesQuery);
+        const matchesForLocationAndDate = existingMatchesSnapshot.docs.map(doc => doc.data());
 
-        const existingEvents = existingMatchesSnapshot.docs.map(doc => {
-            const data = doc.data();
-            const [eventStartH, eventStartM] = data.startTime.split(':').map(Number);
-            const startInMinutes = eventStartH * 60 + eventStartM;
-            const endInMinutes = startInMinutes + (data.duration || 0) + (data.bufferTime || 0);
-            return { start: startInMinutes, end: endInMinutes };
-        });
+        let nextAvailableTime = initialStartTimeForDay;
 
-        existingEvents.sort((a, b) => a.start - b.start);
-
-        for (let hour = startH; hour <= endSearchHour; hour++) {
-            const currentMinuteStart = (hour === startH) ? startM : 0;
-            for (let minute = currentMinuteStart; minute < 60; minute += intervalMinutes) {
-                const potentialStartInMinutes = hour * 60 + minute;
-                const potentialEndInMinutes = potentialStartInMinutes + duration + bufferTime;
-
-                let overlap = false;
-                for (const existingEvent of existingEvents) {
-                    if (potentialStartInMinutes < existingEvent.end && potentialEndInMinutes > existingEvent.start) {
-                        overlap = true;
-                        break;
-                    }
-                }
-
-                if (!overlap) {
-                    const formattedHour = String(hour).padStart(2, '0');
-                    const formattedMinute = String(minute).padStart(2, '0');
-                    matchStartTimeInput.value = `${formattedHour}:${formattedMinute}`;
-                    return;
-                }
-            }
+        if (matchesForLocationAndDate.length > 0) {
+            // Nájdi posledný zápas a vypočítaj čas po ňom
+            const lastMatch = matchesForLocationAndDate[matchesForLocationAndDate.length - 1];
+            nextAvailableTime = calculateNextAvailableTime(lastMatch.startTime, lastMatch.duration, lastMatch.bufferTime);
         }
-        matchStartTimeInput.value = '';
+        
+        matchStartTimeInput.value = nextAvailableTime;
+
     } catch (error) {
         console.error("Chyba pri hľadaní prvého dostupného času:", error);
         matchStartTimeInput.value = '';
     }
 }
+
 
 /**
  * Získa úplný zobrazovaný názov a informácie o klube pre tím.
@@ -376,26 +351,11 @@ async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation
         const isFirstPlayingDay = sortedPlayingDays.length > 0 && targetDate === sortedPlayingDays[0];
         const initialStartTimeForDay = isFirstPlayingDay ? firstDayStartTime : otherDaysStartTime;
 
-        // 3. Určite bod vloženia a nový čas začiatku pre presunutý zápas
-        let insertionIndex = matchesForReschedule.length; // Predvolene na pripojenie na koniec
-        let newStartTimeForMovedMatch = null;
-
-        if (droppedBeforeMatchId) {
-            const targetMatchIndex = matchesForReschedule.findIndex(m => m.id === droppedBeforeMatchId);
-            if (targetMatchIndex !== -1) {
-                insertionIndex = targetMatchIndex;
-                newStartTimeForMovedMatch = matchesForReschedule[targetMatchIndex].startTime; // Zápas sa vloží pred existujúci zápas, prevezme jeho čas
-            } else {
-                // Cieľový zápas nebol nájdený, pridajte na koniec
-                const lastMatch = matchesForReschedule[matchesForReschedule.length - 1];
-                newStartTimeForMovedMatch = lastMatch ? calculateNextAvailableTime(lastMatch.startTime, lastMatch.duration, lastMatch.bufferTime) : initialStartTimeForDay;
-                insertionIndex = matchesForReschedule.length;
-            }
-        } else {
-            // Umiestnené na koniec skupiny dátumov alebo do prázdnej oblasti
-            const lastMatch = matchesForReschedule[matchesForReschedule.length - 1];
-            newStartTimeForMovedMatch = lastMatch ? calculateNextAvailableTime(lastMatch.startTime, lastMatch.duration, lastMatch.bufferTime) : initialStartTimeForDay;
-        }
+        // 3. Určite bod vloženia a nový čas začiatku pre presunutý zápas: VŽDY pridať na koniec
+        let insertionIndex = matchesForReschedule.length; // Vždy pripojiť na koniec
+        // movedMatchData duration and bufferTime should be used as source for calculation.
+        const lastMatch = matchesForReschedule.length > 0 ? matchesForReschedule[matchesForReschedule.length - 1] : null;
+        const newStartTimeForMovedMatch = lastMatch ? calculateNextAvailableTime(lastMatch.startTime, lastMatch.duration, lastMatch.bufferTime) : initialStartTimeForDay;
         
         // Pripravte aktualizované údaje presunutého zápasu na vloženie
         const movedMatchUpdatedData = {
@@ -1069,8 +1029,7 @@ async function openMatchModal(matchId = null, prefillDate = '', prefillLocation 
         await populateCategorySelect(matchCategorySelect);
         await populatePlayingDaysSelect(matchDateSelect, prefillDate);
         await populateSportHallSelects(matchLocationSelect, prefillLocation);
-        matchStartTimeInput.value = prefillStartTime; // Predvyplniť čas začiatku, ak je z prázdneho slotu
-
+        
         if (matchGroupSelect) {
             matchGroupSelect.innerHTML = '<option value="">-- Vyberte skupinu --</option>';
             matchGroupSelect.disabled = true;
@@ -1085,18 +1044,8 @@ async function openMatchModal(matchId = null, prefillDate = '', prefillLocation 
         matchDurationInput.value = ''; // Vymazať pre nový zápas, nastaví sa výberom kategórie
         matchBufferTimeInput.value = ''; // Vymazať pre nový zápas, nastaví sa výberom kategórie
 
-        // Po nastavení predvyplnení sa uistite, že trvanie/rezerva sú aktualizované
-        // Zavolajte findFirstAvailableTime iba ak nie je poskytnutý prefillStartTime
-        if (!prefillStartTime) {
-            // Už nevolajte findFirstAvailableTime priamo z výberu kategórie
-            // Ak je kategória vybratá, aktualizujte trvanie/rezervu na základe kategórie
-            if (matchCategorySelect.value) {
-                await updateMatchDurationAndBuffer();
-            } else {
-                // Ak nie je vybraná žiadna kategória, pokúste sa nájsť čas s predvoleným trvaním/rezervou
-                await findFirstAvailableTime();
-            }
-        }
+        // Získajte čas začiatku po poslednom zápase alebo počiatočný čas dňa
+        await findFirstAvailableTime();
     }
     openModal(matchModal);
 }
@@ -1140,7 +1089,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const matchForm = document.getElementById('matchForm');
     const matchIdInput = document.getElementById('matchId');
     const matchDateSelect = document.getElementById('matchDateSelect');
-    const matchLocationSelect = document.getElementById('matchLocationSelect');
+    const matchLocationSelect = document = document.getElementById('matchLocationSelect');
     const matchStartTimeInput = document.getElementById('matchStartTime');
     const matchDurationInput = document.getElementById('matchDuration');
     const matchBufferTimeInput = document.getElementById('matchBufferTime');
