@@ -337,7 +337,7 @@ async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation
             await showMessage('Chyba', 'Presúvaný zápas nebol nájdený.');
             return;
         }
-        const movedMatchData = { id: draggedMatchDoc.id, ...movedMatchData.data() };
+        const movedMatchData = { id: draggedMatchDoc.id, ...draggedMatchDoc.data() };
 
         // Fetch all matches for the target date and location, excluding the dragged match if it was already there
         const existingMatchesQuery = query(
@@ -499,6 +499,17 @@ async function displayMatchesAsSchedule() {
         const existingPlacesData = placesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         console.log("displayMatchesAsSchedule: Načítané miesta:", existingPlacesData);
 
+        const settingsDocRef = doc(settingsCollectionRef, SETTINGS_DOC_ID);
+        const settingsDoc = await getDoc(settingsDocRef);
+        let globalFirstDayStartTime = '08:00';
+        let globalOtherDaysStartTime = '08:00';
+        if (settingsDoc.exists()) {
+            const data = settingsDoc.data();
+            globalFirstDayStartTime = data.firstDayStartTime || '08:00';
+            globalOtherDaysStartTime = data.otherDaysStartTime || '08:00';
+        }
+
+
         // Group matches first by Location, then by Date
         const groupedMatchesByLocation = new Map(); // Key: "location", Value: Map (Key: "date", Value: Array of matches)
         allMatches.forEach(match => {
@@ -525,16 +536,16 @@ async function displayMatchesAsSchedule() {
         if (sortedLocations.length === 0) {
             scheduleHtml += '<p>Žiadne zápasy na zobrazenie. Pridajte nové zápasy pomocou tlačidla "+".</p>';
         } else {
-            sortedLocations.forEach(location => {
+            for (const location of sortedLocations) { // Use for...of for async inside
                 const matchesByDateForLocation = groupedMatchesByLocation.get(location);
                 // Sort dates within each location
                 const sortedDatesForLocation = Array.from(matchesByDateForLocation.keys()).sort((a, b) => a.localeCompare(b));
 
                 // Flex item for each location group
-                scheduleHtml += `<div class="location-group" style="flex: 1 1 45%; min-width: 300px; margin-bottom: 0; border: 1px solid #ccc; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">`; // Removed margin-bottom and added flex properties and shadow
+                scheduleHtml += `<div class="location-group" style="flex: 1 1 45%; min-width: 300px; margin-bottom: 0; border: 1px solid #ccc; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">`;
                 scheduleHtml += `<h2 style="background-color: #007bff; color: white; padding: 18px; margin: 0; text-align: center;">${location}</h2>`;
 
-                sortedDatesForLocation.forEach(date => {
+                for (const date of sortedDatesForLocation) { // Use for...of for async inside
                     const matchesForDateAndLocation = matchesByDateForLocation.get(date);
 
                     // Sort matches by start time
@@ -546,11 +557,11 @@ async function displayMatchesAsSchedule() {
 
                     const displayDateObj = new Date(date);
                     const formattedDisplayDate = `${String(displayDateObj.getDate()).padStart(2, '0')}. ${String(displayDateObj.getMonth() + 1).padStart(2, '0')}. ${displayDateObj.getFullYear()}`;
-                    const dayName = displayDateObj.toLocaleDateString('sk-SK', { weekday: 'long' }); // Get full day name                    
+                    const dayName = displayDateObj.toLocaleDateString('sk-SK', { weekday: 'long' });
 
-                    scheduleHtml += `<div class="date-group" data-date="${date}" data-location="${location}" style="margin: 20px; border: 1px solid #eee; border-radius: 8px; overflow: hidden;">`; // Added data-date and data-location
-                    scheduleHtml += `<h3 style="background-color: #f7f7f7; padding: 15px; margin: 0; border-bottom: 1px solid #ddd;">${dayName}, ${formattedDisplayDate}</h3>`; // Added dayName
-                    scheduleHtml += `<table class="data-table match-list-table compact-table" style="width: 100%; border-collapse: collapse;">`; // Added compact-table class
+                    scheduleHtml += `<div class="date-group" data-date="${date}" data-location="${location}" style="margin: 20px; border: 1px solid #eee; border-radius: 8px; overflow: hidden;">`;
+                    scheduleHtml += `<h3 style="background-color: #f7f7f7; padding: 15px; margin: 0; border-bottom: 1px solid #ddd;">${dayName}, ${formattedDisplayDate}</h3>`;
+                    scheduleHtml += `<table class="data-table match-list-table compact-table" style="width: 100%; border-collapse: collapse;">`;
                     scheduleHtml += `<thead><tr>`;
                     scheduleHtml += `<th>Čas</th>`;
                     scheduleHtml += `<th>Domáci</th>`;
@@ -559,10 +570,35 @@ async function displayMatchesAsSchedule() {
                     scheduleHtml += `<th></th>`;
                     scheduleHtml += `</tr></thead><tbody>`;
 
-                    matchesForDateAndLocation.forEach(match => {
-                        const [startH, startM] = match.startTime.split(':').map(Number);
+                    // Determine the initial start time for this specific date
+                    const isFirstPlayingDayForDate = existingPlayingDays.length > 0 && date === existingPlayingDays[0];
+                    let currentTimePointer = isFirstPlayingDayForDate ? globalFirstDayStartTime : globalOtherDaysStartTime;
+
+                    for (let i = 0; i < matchesForDateAndLocation.length; i++) {
+                        const match = matchesForDateAndLocation[i];
+                        const [matchStartH, matchStartM] = match.startTime.split(':').map(Number);
+                        const currentMatchStartInMinutes = matchStartH * 60 + matchStartM;
+
+                        let [pointerH, pointerM] = currentTimePointer.split(':').map(Number);
+                        let currentTimePointerInMinutes = pointerH * 60 + pointerM;
+
+                        // Check for empty slot before the current match
+                        if (currentMatchStartInMinutes > currentTimePointerInMinutes) {
+                            const emptySlotDuration = currentMatchStartInMinutes - currentTimePointerInMinutes;
+                            const emptySlotEndHour = Math.floor((currentTimePointerInMinutes + emptySlotDuration) / 60);
+                            const emptySlotEndMinute = (currentTimePointerInMinutes + emptySlotDuration) % 60;
+                            const formattedEmptySlotEndTime = `${String(emptySlotEndHour).padStart(2, '0')}:${String(emptySlotEndMinute).padStart(2, '0')}`;
+
+                            scheduleHtml += `
+                                <tr class="empty-slot-row">
+                                    <td>${currentTimePointer} - ${formattedEmptySlotEndTime}</td>
+                                    <td colspan="4" style="text-align: center; color: #888; font-style: italic;">Voľný slot</td>
+                                </tr>
+                            `;
+                        }
+
                         const matchEndTime = new Date();
-                        matchEndTime.setHours(startH, startM + match.duration, 0, 0);
+                        matchEndTime.setHours(matchStartH, matchStartM + match.duration, 0, 0);
                         const formattedEndTime = matchEndTime.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' });
 
                         // Get the color for the category
@@ -577,12 +613,15 @@ async function displayMatchesAsSchedule() {
                                 <td style="background-color: ${categoryColor};">${match.team2ShortDisplayName || 'N/A'}</td>
                             </tr>
                         `;
-                    });
+
+                        // Update currentTimePointer for the next iteration
+                        currentTimePointer = calculateNextAvailableTime(match.startTime, match.duration, match.bufferTime);
+                    }
 
                     scheduleHtml += `</tbody></table></div>`; // Close date-group table and div
-                });
+                }
                 scheduleHtml += `</div>`; // Close location-group div
-            });
+            }
         }
         scheduleHtml += '</div>'; // Close main flex container
 
