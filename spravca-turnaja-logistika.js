@@ -1376,7 +1376,8 @@ async function openMatchModal(matchId = null, prefillDate = '', prefillLocation 
         }
         const matchData = matchDoc.data();
         await populatePlayingDaysSelect(matchDateSelect, matchData.date);
-        await populateSportHallSelects(matchLocationSelect, matchData.date); // Správne je matchData.location
+        // OPRAVA: Použite matchData.location namiesto matchData.date
+        await populateSportHallSelects(matchLocationSelect, matchData.location);
         matchStartTimeInput.value = matchData.startTime || '';
         matchDurationInput.value = matchData.duration || '';
         matchBufferTimeInput.value = matchData.bufferTime || '';
