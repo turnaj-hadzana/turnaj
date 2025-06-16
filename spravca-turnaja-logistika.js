@@ -1,4 +1,5 @@
 import { db, categoriesCollectionRef, groupsCollectionRef, clubsCollectionRef, matchesCollectionRef, playingDaysCollectionRef, placesCollectionRef, openModal, closeModal, populateCategorySelect, populateGroupSelect, getDocs, doc, setDoc, addDoc, getDoc, query, where, orderBy, deleteDoc, writeBatch, settingsCollectionRef, showMessage, showConfirmation } from './spravca-turnaja-common.js';
+import { collection } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js';
 const SETTINGS_DOC_ID = 'matchTimeSettings';
 // Nová referencia na kolekciu pre zablokované sloty
 export const blockedSlotsCollectionRef = collection(db, 'tournamentData', 'mainTournamentData', 'blockedSlots');
