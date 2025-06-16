@@ -841,7 +841,8 @@ async function displayMatchesAsSchedule() {
                 }
 
                 scheduleHtml += `<div class="location-group" style="${locationGroupStyle}">`;
-                scheduleHtml += `<h2 style="background-color: #007bff; color: white; padding: 18px; margin: 0; text-align: center;">${location}</h2>`;
+                // Pridanie data- atribútov a triedy pre klikateľnosť na hlavičku haly
+                scheduleHtml += `<h2 class="location-header-clickable" data-location="${location}" data-type="Športová hala" style="background-color: #007bff; color: white; padding: 18px; margin: 0; text-align: center; cursor: pointer;">${location}</h2>`;
 
                 if (allPlayingDayDates.length === 0) {
                     scheduleHtml += `<p style="margin: 20px; text-align: center; color: #888;">Žiadne hracie dni boli definované.</p>`;
@@ -862,8 +863,8 @@ async function displayMatchesAsSchedule() {
                         scheduleHtml += `<table class="data-table match-list-table compact-table" style="width: 100%; border-collapse: collapse;">`;
                         scheduleHtml += `<thead><tr>`;
                         scheduleHtml += `<th>Čas</th>`;
-                        scheduleHtml += `<th>Domáci</th>`;
-                        scheduleHtml += `<th>Hostia</th>`;
+                        scheduleHtml += `<th>Domáci klub</th>`;
+                        scheduleHtml += `<th>Hostia klub</th>`;
                         scheduleHtml += `<th>ID Domáci</th>`;
                         scheduleHtml += `<th>ID Hostia</th>`;
                         scheduleHtml += `</tr></thead><tbody>`;
@@ -1011,6 +1012,18 @@ async function displayMatchesAsSchedule() {
             });
         });
 
+        // NOVINKA: Poslucháč udalostí pre hlavičku športovej haly
+        matchesContainer.querySelectorAll('.location-header-clickable').forEach(header => {
+            header.addEventListener('click', (event) => {
+                // Zabezpečte, aby kliknutie na vnútorne prvky hlavičky (ak by boli pridané)
+                // nespôsobilo nežiaduce správanie, ak by mali vlastných poslucháčov.
+                // V tomto prípade by celá oblasť mala otvoriť modál.
+                const locationToEdit = header.dataset.location;
+                const locationTypeToEdit = header.dataset.type; // Toto by malo byť "Športová hala"
+                editPlace(locationToEdit, locationTypeToEdit);
+            });
+        });
+
         // Pridajte poslucháčov dragover a drop pre divy skupiny dátumov (obsahujúce tabuľky)
         matchesContainer.querySelectorAll('.date-group').forEach(dateGroupDiv => {
             dateGroupDiv.addEventListener('dragover', (event) => {
@@ -1081,18 +1094,19 @@ async function displayMatchesAsSchedule() {
             });
         });
 
-        matchesContainer.querySelectorAll('.delete-location-header').forEach(header => {
-            header.addEventListener('click', (event) => {
-                if (event.target.tagName === 'A' || event.target.closest('.hall-address')) {
-                    return;
-                }
-                if (event.target === header || event.target.closest('.hall-name')) {
-                    const locationToEdit = header.dataset.location;
-                    const locationTypeToEdit = header.dataset.type;
-                    editPlace(locationToEdit, locationTypeToEdit);
-                }
-            });
-        });
+        // Táto časť bola duplicitná s .location-header-clickable, takže ju odstraňujem.
+        // matchesContainer.querySelectorAll('.delete-location-header').forEach(header => {
+        //     header.addEventListener('click', (event) => {
+        //         if (event.target.tagName === 'A' || event.target.closest('.hall-address')) {
+        //             return;
+        //         }
+        //         if (event.target === header || event.target.closest('.hall-name')) {
+        //             const locationToEdit = header.dataset.location;
+        //             const locationTypeToEdit = header.dataset.type;
+        //             editPlace(locationToEdit, locationTypeToEdit);
+        //         }
+        //     });
+        // });
 
     } catch (error) {
         console.error("Chyba pri načítaní rozvrhu zápasov (zachytená chyba):", error);
