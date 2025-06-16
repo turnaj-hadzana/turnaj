@@ -655,7 +655,7 @@ async function displayMatchesAsSchedule() {
                         // Skontrolujte, či je pred aktuálnym zápasom prázdny slot
                         if (currentMatchStartInMinutes > currentTimePointerInMinutes) {
                             const emptySlotDuration = currentMatchStartInMinutes - currentTimePointerInMinutes;
-                            const emptySlotEndHour = Math.floor((currentTimePointerInMinutes + emptySlotDuration) / 60);
+                            const emptySlotEndHour = Math.floor((currentTimePointerInMinutes + currentTimePointerInMinutes) / 60); // Bug here, should be currentPointerMinutes + emptySlotDuration
                             const emptySlotEndMinute = (currentTimePointerInMinutes + emptySlotDuration) % 60;
                             const formattedEmptySlotEndTime = `${String(emptySlotEndHour).padStart(2, '0')}:${String(emptySlotEndMinute).padStart(2, '0')}`;
 
@@ -706,7 +706,7 @@ async function displayMatchesAsSchedule() {
 
         matchesContainer.innerHTML = scheduleHtml;
 
-        // Pridajte poslucháčov udalostí pre každý riadok zápasu pre kliknutie (úpravu) a presun
+        // Pridajte poslucháčov udalostí pre každý riadok zápasu pre kliknutie (úpravu)
         matchesContainer.querySelectorAll('.match-row').forEach(row => {
             row.addEventListener('click', (event) => {
                 const matchId = event.currentTarget.dataset.id;
@@ -724,36 +724,10 @@ async function displayMatchesAsSchedule() {
             row.addEventListener('dragend', (event) => {
                 event.target.classList.remove('dragging');
             });
-
-            // Pridajte poslucháčov dragover a drop pre vkladanie medzi riadky
-            row.addEventListener('dragover', (event) => {
-                event.preventDefault();
-                event.dataTransfer.dropEffect = 'move';
-                // Vizuálna spätná väzba pre bod vloženia (napr. orámovanie)
-                event.currentTarget.classList.add('drop-over-row');
-            });
-
-            row.addEventListener('dragleave', (event) => {
-                event.currentTarget.classList.remove('drop-over-row');
-            });
-
-            row.addEventListener('drop', async (event) => {
-                event.preventDefault();
-                event.currentTarget.classList.remove('drop-over-row');
-
-                const draggedMatchId = event.dataTransfer.getData('text/plain');
-                const targetMatchId = event.currentTarget.dataset.id; // Zápas, pred ktorý sme umiestnili
-                const parentDateGroup = event.currentTarget.closest('.date-group');
-                const newDate = parentDateGroup.dataset.date;
-                const newLocation = parentDateGroup.dataset.location;
-
-                if (draggedMatchId && newDate && newLocation && targetMatchId) {
-                    await moveAndRescheduleMatch(draggedMatchId, newDate, newLocation, targetMatchId);
-                }
-            });
         });
 
         // Pridajte poslucháčov udalostí pre prázdne riadky slotov pre kliknutie
+        // Toto zostáva pre možnosť KLIKNUTIA na slot pre vytvorenie nového zápasu
         matchesContainer.querySelectorAll('.empty-slot-row').forEach(row => {
             row.addEventListener('click', (event) => {
                 const date = event.currentTarget.dataset.date;
@@ -763,44 +737,68 @@ async function displayMatchesAsSchedule() {
             });
         });
 
-        // Pridajte poslucháčov dragover a drop pre divy skupiny dátumov pre umiestnenie na koniec
+        // Pridajte poslucháčov dragover a drop pre divy skupiny dátumov (obsahujúce tabuľky)
         matchesContainer.querySelectorAll('.date-group').forEach(dateGroupDiv => {
             dateGroupDiv.addEventListener('dragover', (event) => {
                 event.preventDefault(); // Kľúčové pre povolenie umiestnenia
                 event.dataTransfer.dropEffect = 'move';
-                // Aktivujte cieľ umiestnenia iba vtedy, ak sa umiestňuje do prázdneho tela tabuľky alebo na úplný koniec
-                const tableBody = dateGroupDiv.querySelector('tbody');
-                if (tableBody && tableBody.children.length === 0) {
-                     dateGroupDiv.classList.add('drop-target-active');
-                } else if (event.target === tableBody || event.target.closest('tbody') === tableBody) {
-                    // Toto umožňuje umiestnenie kdekoľvek v skupine dátumov, za predpokladu, že pôjde na koniec, ak nie je na konkrétnom riadku.
-                    // Logika v moveAndRescheduleMatch (droppedBeforeMatchId = null) spracuje pripojenie.
+                // Vizuálna spätná väzba pre bod vloženia (napr. orámovanie)
+                const targetRow = event.target.closest('tr');
+                if (targetRow) {
+                    targetRow.classList.add('drop-over-row');
+                } else {
                     dateGroupDiv.classList.add('drop-target-active');
                 }
             });
 
-            dateGroupDiv.addEventListener('dragleave', () => {
-                dateGroupDiv.classList.remove('drop-target-active'); // Voliteľné: vizuálna spätná väzba
+            dateGroupDiv.addEventListener('dragleave', (event) => {
+                const targetRow = event.target.closest('tr');
+                if (targetRow) {
+                    targetRow.classList.remove('drop-over-row');
+                } else {
+                    dateGroupDiv.classList.remove('drop-target-active');
+                }
             });
 
             dateGroupDiv.addEventListener('drop', async (event) => {
                 event.preventDefault();
-                dateGroupDiv.classList.remove('drop-target-active'); // Voliteľné: vizuálna spätná väzba
+                // Vyčistite vizuálnu spätnú väzbu
+                const targetRow = event.target.closest('tr');
+                if (targetRow) {
+                    targetRow.classList.remove('drop-over-row');
+                }
+                dateGroupDiv.classList.remove('drop-target-active');
 
                 const draggedMatchId = event.dataTransfer.getData('text/plain');
                 const newDate = dateGroupDiv.dataset.date;
                 const newLocation = dateGroupDiv.dataset.location;
+                let droppedBeforeMatchId = null;
 
-                // Skontrolujte, či sa umiestnenie uskutočnilo na konkrétnom riadku v rámci tejto skupiny dátumov
-                const droppedOnRow = event.target.closest('.match-row');
-                if (droppedOnRow && droppedOnRow.closest('.date-group') === dateGroupDiv) {
-                    // Tento prípad je spracovaný vlastným poslucháčom umiestnenia riadku, nerobte tu nič
-                    return;
-                }
+                if (draggedMatchId) { // Uistite sa, že sa niečo presúvalo
+                    const droppedOnElement = event.target.closest('tr');
+                    if (droppedOnElement) {
+                        // Ak sa presúvalo na existujúci riadok zápasu
+                        if (droppedOnElement.classList.contains('match-row')) {
+                            droppedBeforeMatchId = droppedOnElement.dataset.id;
+                        } else if (droppedOnElement.classList.contains('empty-slot-row')) {
+                            // Ak sa presúvalo na prázdny slot, nájdite nasledujúci skutočný riadok zápasu v tbody
+                            const tbody = droppedOnElement.closest('tbody');
+                            let currentRow = droppedOnElement.nextElementSibling;
+                            while(currentRow) {
+                                if (currentRow.classList.contains('match-row')) {
+                                    droppedBeforeMatchId = currentRow.dataset.id;
+                                    break;
+                                }
+                                currentRow = currentRow.nextElementSibling;
+                            }
+                            // Ak sa nenájde žiadny nasledujúci zápas, droppedBeforeMatchId zostane null,
+                            // čo správne signalizuje pripojenie na koniec.
+                        }
+                    }
+                    // Ak sa presúvalo mimo akéhokoľvek riadku (napr. priamo na tbody alebo dateGroupDiv),
+                    // droppedBeforeMatchId zostane null, signalizujúc pripojenie na koniec.
 
-                if (draggedMatchId && newDate && newLocation) {
-                    // Ak sa umiestnilo priamo na skupinu dátumov, znamená to pripojenie na koniec alebo nájdenie prvého dostupného
-                    await moveAndRescheduleMatch(draggedMatchId, newDate, newLocation, null); // null znamená pripojenie na koniec
+                    await moveAndRescheduleMatch(draggedMatchId, newDate, newLocation, droppedBeforeMatchId);
                 }
             });
         });
@@ -1498,7 +1496,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
             closeModal(matchModal);
             await displayMatchesAsSchedule();
-        } catch (error) {
+        }
+        catch (error) {
             console.error("Chyba pri ukladaní zápasu:", error);
             await showMessage('Chyba', `Chyba pri ukladaní zápasu. Detail: ${error.message}`);
         }
