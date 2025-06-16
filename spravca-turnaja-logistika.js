@@ -1038,26 +1038,28 @@ async function displayMatchesAsSchedule() {
                 const endTime = event.currentTarget.dataset.endTime;
                 openFreeSlotModal(date, location, startTime, endTime, blockedSlotId); // Otvoriť modál na úpravu zablokovaného slotu
             });
-            // NEW: Add drop listeners to blocked slots as well
+            // UPRAVENÉ: Poslucháči dragover a drop pre zablokované sloty
             row.addEventListener('dragover', (event) => {
-                event.preventDefault(); // Crucial to allow dropping
-                event.dataTransfer.dropEffect = 'move';
-                event.currentTarget.classList.add('drop-over-row');
+                event.preventDefault(); // Povoliť drop
+                event.dataTransfer.dropEffect = 'none'; // Zmeniť efekt na "none" pre vizuálne označenie, že drop nie je povolený
+                event.currentTarget.classList.add('drop-over-forbidden'); // Pridajte triedu pre vizuálnu spätnú väzbu
             });
             row.addEventListener('dragleave', (event) => {
-                event.currentTarget.classList.remove('drop-over-row');
+                event.currentTarget.classList.remove('drop-over-forbidden'); // Odstrániť triedu po opustení
             });
             row.addEventListener('drop', async (event) => {
                 event.preventDefault();
-                event.currentTarget.classList.remove('drop-over-row');
+                event.currentTarget.classList.remove('drop-over-forbidden'); // Vyčistiť vizuálnu spätnú väzbu
 
                 const draggedMatchId = event.dataTransfer.getData('text/plain');
-                const newDate = event.currentTarget.dataset.date;
-                const newLocation = event.currentTarget.dataset.location;
-                const droppedProposedStartTime = event.currentTarget.dataset.startTime; // Use the start time of the blocked slot
+                const date = event.currentTarget.dataset.date;
+                const location = event.currentTarget.dataset.location;
+                const startTime = event.currentTarget.dataset.startTime;
+                const endTime = event.currentTarget.dataset.endTime;
 
-                console.log(`Dropped match ${draggedMatchId} onto blocked slot. New date: ${newDate}, new location: ${newLocation}, proposed start time: ${droppedProposedStartTime}`);
-                await moveAndRescheduleMatch(draggedMatchId, newDate, newLocation, droppedProposedStartTime);
+                console.log(`Pokus o presun zápasu ${draggedMatchId} na zablokovaný slot: Dátum ${date}, Miesto ${location}, Čas ${startTime}-${endTime}. Presun ZAMITNUTÝ.`);
+                await showMessage('Upozornenie', 'Tento časový slot je zablokovaný. Zápas naň nie je možné presunúť.');
+                // NIE JE potrebné volať moveAndRescheduleMatch, zápas zostane na pôvodnom mieste
             });
         });
 
@@ -1080,9 +1082,9 @@ async function displayMatchesAsSchedule() {
                 event.dataTransfer.dropEffect = 'move';
                 // Vizuálna spätná väzba pre bod vloženia (napr. orámovanie)
                 const targetRow = event.target.closest('tr');
-                if (targetRow) {
+                if (targetRow && !targetRow.classList.contains('blocked-slot-row')) { // Len ak nie je zablokovaný slot
                     targetRow.classList.add('drop-over-row');
-                } else {
+                } else if (!targetRow) { // Ak sa presúva na pozadie date-group, nie na riadok
                     dateGroupDiv.classList.add('drop-target-active');
                 }
             });
@@ -1091,9 +1093,8 @@ async function displayMatchesAsSchedule() {
                 const targetRow = event.target.closest('tr');
                 if (targetRow) {
                     targetRow.classList.remove('drop-over-row');
-                } else {
-                    dateGroupDiv.classList.remove('drop-target-active');
                 }
+                dateGroupDiv.classList.remove('drop-target-active');
             });
 
             dateGroupDiv.addEventListener('drop', async (event) => {
@@ -1112,8 +1113,15 @@ async function displayMatchesAsSchedule() {
 
                 if (draggedMatchId) {
                     const droppedOnElement = event.target.closest('tr');
-                    if (droppedOnElement && droppedOnElement.dataset.startTime) { // Ensure dataset.startTime exists
-                        // Ak sa presunie na akýkoľvek riadok (zápas, prázdny slot, zablokovaný slot), použite jeho čas začiatku
+                    // Ak sa presunie na zablokovaný slot, zamedzte presunu
+                    if (droppedOnElement && droppedOnElement.classList.contains('blocked-slot-row')) {
+                        console.log(`Pokus o presun zápasu ${draggedMatchId} na zablokovaný slot. Presun ZAMITNUTÝ.`);
+                        await showMessage('Upozornenie', 'Tento časový slot je zablokovaný. Zápas naň nie je možné presunúť.');
+                        return; // Zastaviť drop operáciu
+                    }
+                    
+                    if (droppedOnElement && droppedOnElement.dataset.startTime) { 
+                        // Ak sa presunie na akýkoľvek riadok (zápas, prázdny slot), použite jeho čas začiatku
                         droppedProposedStartTime = droppedOnElement.dataset.startTime;
                     } else {
                         // Ak sa presunie priamo na pozadie divu skupiny dátumov (znamená pripojenie na koniec)
@@ -1688,7 +1696,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const addOptions = document.getElementById('addOptions');
     const addPlayingDayButton = document.getElementById('addPlayingDayButton');
     const addPlaceButton = document.getElementById('addPlaceButton');
-    const addMatchButton = document.getElementById('addMatchButton');
+    const addMatchButton = document = document.getElementById('addMatchButton');
 
     const matchModal = document.getElementById('matchModal');
     const closeMatchModalButton = document.getElementById('closeMatchModal');
