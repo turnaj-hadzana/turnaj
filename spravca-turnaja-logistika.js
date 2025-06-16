@@ -1048,8 +1048,6 @@ window.openAccommodationModalWrapper = (id, data) => openAccommodationModal(id, 
 // Drag and Drop functionality
 let draggedMatch = null;
 // Global variable to store info about a recently ghosted match for display purposes
-let ghostedMatchInfo = null;
-
 
 function addDragAndDropListeners() {
     const draggables = document.querySelectorAll('.match-row.draggable');
