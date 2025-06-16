@@ -628,8 +628,8 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, drag
         const cleanupBatch = writeBatch(db); // Create a new batch for cleanup
         trailingBlockedSlotsSnapshot.docs.forEach(docToDelete => {
             const blockedSlotData = docToDelete.data();
-            const [bsStartH, bsStartM] = blockedSlotData.startTime.split(':').map(Number); // Corrected: use bsStartM
-            const bsStartInMinutes = bsStartH * 60 + bsStartM; // Corrected: use bsStartM
+            const [bsStartH, bsStartM] = blockedSlotData.startTime.split(':').map(Number);
+            const bsStartInMinutes = bsStartH * 60 + bsStartM;
 
             // Vymazať, ak sa zablokovaný slot začína na alebo po našom konečnom vypočítanom konci rozvrhu.
             if (bsStartInMinutes >= currentTimePointer) {
@@ -1870,7 +1870,7 @@ async function unblockBlockedSlot(slotId, date, location) {
             await setDoc(slotRef, { isBlocked: false, isPhantom: false }, { merge: true }); // Odblokovať a zabezpečiť, že nie je fantóm
             await showMessage('Úspech', 'Slot bol úspešne odblokovaný!');
             closeModal(freeSlotModal);
-            await recalculateAndSaveScheduleForDateAndLocation(date, location); // Prepočíta rozvrh
+            await displayMatchesAsSchedule(); // Len obnovte zobrazenie, NEPREPOČÍTAVAJTE
         } catch (error) {
             console.error("Chyba pri odblokovaní slotu:", error);
             await showMessage('Chyba', `Chyba pri odblokovaní slotu: ${error.message}`);
