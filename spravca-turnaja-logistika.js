@@ -157,12 +157,16 @@ async function updateMatchDurationAndBuffer() {
 
 /**
  * Nájde prvý dostupný časový slot pre zápas na základe dátumu, miesta, trvania a časovej rezervy.
- * Táto funkcia bola prepracovaná, aby vždy hľadala čas po poslednom zápase v daný deň/mieste.
+ * Prioritou je nájsť voľný slot, ktorý má presne takú dĺžku, akú vyžaduje zápas (trvanie + rezerva).
+ * Ak taký slot neexistuje, čas sa nastaví hneď po poslednom existujúcom zápase v daný deň a na danom mieste,
+ * alebo na počiatočný čas dňa, ak nie sú žiadne zápasy.
  */
 async function findFirstAvailableTime() {
     const matchDateSelect = document.getElementById('matchDateSelect');
     const matchLocationSelect = document.getElementById('matchLocationSelect');
     const matchStartTimeInput = document.getElementById('matchStartTime');
+    const matchDurationInput = document.getElementById('matchDuration'); // Get duration from input
+    const matchBufferTimeInput = document.getElementById('matchBufferTime'); // Get buffer time from input
 
     const selectedDate = matchDateSelect.value;
     const selectedLocationName = matchLocationSelect.value;
@@ -189,6 +193,12 @@ async function findFirstAvailableTime() {
         const isFirstPlayingDay = sortedPlayingDays.length > 0 && selectedDate === sortedPlayingDays[0];
 
         const initialStartTimeForDay = isFirstPlayingDay ? firstDayStartTime : otherDaysStartTime;
+        let [initialH, initialM] = initialStartTimeForDay.split(':').map(Number);
+        let currentPointerMinutes = initialH * 60 + initialM; // Pointer to the current time being considered
+
+        const requiredMatchDuration = parseInt(matchDurationInput.value) || 0;
+        const requiredBufferTime = parseInt(matchBufferTimeInput.value) || 0;
+        const requiredTotalSlotTime = requiredMatchDuration + requiredBufferTime;
 
         const existingMatchesQuery = query(
             matchesCollectionRef,
@@ -197,17 +207,59 @@ async function findFirstAvailableTime() {
             orderBy("startTime", "asc")
         );
         const existingMatchesSnapshot = await getDocs(existingMatchesQuery);
-        const matchesForLocationAndDate = existingMatchesSnapshot.docs.map(doc => doc.data());
+        const matchesForLocationAndDate = existingMatchesSnapshot.docs.map(doc => {
+            const data = doc.data();
+            const [startH, startM] = data.startTime.split(':').map(Number);
+            const startInMinutes = startH * 60 + startM;
+            const endInMinutes = startInMinutes + (data.duration || 0) + (data.bufferTime || 0);
+            return { start: startInMinutes, end: endInMinutes, id: doc.id };
+        });
 
-        let nextAvailableTime = initialStartTimeForDay;
+        let foundExactFit = false;
+        let exactFitStartTime = '';
 
-        if (matchesForLocationAndDate.length > 0) {
-            // Nájdi posledný zápas a vypočítaj čas po ňom
-            const lastMatch = matchesForLocationAndDate[matchesForLocationAndDate.length - 1];
-            nextAvailableTime = calculateNextAvailableTime(lastMatch.startTime, lastMatch.duration, lastMatch.bufferTime);
+        // Check the gap before the first match (if any) or if there are no matches at all
+        if (matchesForLocationAndDate.length === 0) {
+            // No matches, so the initial time is the first available slot. This is an "exact fit" by definition.
+            exactFitStartTime = initialStartTimeForDay;
+            foundExactFit = true;
+        } else {
+            const firstMatch = matchesForLocationAndDate[0];
+            const gapBeforeFirstMatch = firstMatch.start - currentPointerMinutes;
+            if (gapBeforeFirstMatch === requiredTotalSlotTime) {
+                exactFitStartTime = `${String(Math.floor(currentPointerMinutes / 60)).padStart(2, '0')}:${String(currentPointerMinutes % 60).padStart(2, '0')}`;
+                foundExactFit = true;
+            }
         }
-        
-        matchStartTimeInput.value = nextAvailableTime;
+
+        // If no exact fit found initially, search between matches
+        if (!foundExactFit) { 
+            for (let i = 0; i < matchesForLocationAndDate.length - 1; i++) {
+                const currentMatch = matchesForLocationAndDate[i];
+                const nextMatch = matchesForLocationAndDate[i + 1];
+
+                const gapStartTime = currentMatch.end;
+                const gapDuration = nextMatch.start - gapStartTime;
+
+                if (gapDuration === requiredTotalSlotTime) {
+                    exactFitStartTime = `${String(Math.floor(gapStartTime / 60)).padStart(2, '0')}:${String(gapStartTime % 60).padStart(2, '0')}`;
+                    foundExactFit = true;
+                    break;
+                }
+            }
+        }
+
+        if (foundExactFit) {
+            matchStartTimeInput.value = exactFitStartTime;
+        } else {
+            // Fallback: If no exact fit, set time after the last match
+            let nextAvailableTime = initialStartTimeForDay; // Default if no matches or no exact fit
+            if (matchesForLocationAndDate.length > 0) {
+                const lastMatch = matchesForLocationAndDate[matchesForLocationAndDate.length - 1];
+                nextAvailableTime = calculateNextAvailableTime(lastMatch.startTime, lastMatch.duration, lastMatch.bufferTime);
+            }
+            matchStartTimeInput.value = nextAvailableTime;
+        }
 
     } catch (error) {
         console.error("Chyba pri hľadaní prvého dostupného času:", error);
@@ -385,7 +437,7 @@ async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation
             // Získajte trvanie a rezervu pre tento konkrétny zápas
             const categorySettings = await getCategoryMatchSettings(match.categoryId);
             const duration = categorySettings.duration;
-            const bufferTime = categorySettings.bufferTime;
+            const bufferTime = categorySettings.design.bufferTime; 
 
             // Priraďte aktuálny časový ukazovateľ ako nový čas začiatku
             match.startTime = currentPackTimePointer;
