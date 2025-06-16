@@ -304,6 +304,130 @@ const getTeamName = async (categoryId, groupId, teamNumber, categoriesMap, group
 };
 
 /**
+ * Calculates the next available start time for a match given a previous match's end time and buffer.
+ * @param {string} prevEndTime HH:MM string of the previous match's end time.
+ * @param {number} prevBufferTime Buffer time in minutes after the previous match.
+ * @returns {string} HH:MM string of the next available start time.
+ */
+function calculateNextAvailableTime(prevStartTime, duration, bufferTime) {
+    let [prevH, prevM] = prevStartTime.split(':').map(Number);
+    let totalMinutes = (prevH * 60) + prevM + duration + bufferTime;
+
+    let newH = Math.floor(totalMinutes / 60);
+    let newM = totalMinutes % 60;
+
+    return `${String(newH).padStart(2, '0')}:${String(newM).padStart(2, '0')}`;
+}
+
+
+/**
+ * Recalculates and reschedules matches for a specific date and location after a drag & drop operation.
+ * This function handles inserting a match and shifting subsequent matches' times.
+ * @param {string} draggedMatchId The ID of the match that was dragged.
+ * @param {string} targetDate The date of the drop target.
+ * @param {string} targetLocation The location of the drop target.
+ * @param {string|null} droppedBeforeMatchId The ID of the match the dragged match was dropped before, or null if dropped at the end.
+ */
+async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation, droppedBeforeMatchId = null) {
+    try {
+        const draggedMatchDoc = await getDoc(doc(matchesCollectionRef, draggedMatchId));
+        if (!draggedMatchDoc.exists()) {
+            await showMessage('Chyba', 'Presúvaný zápas nebol nájdený.');
+            return;
+        }
+        const movedMatchData = { id: draggedMatchDoc.id, ...draggedMatchDoc.data() };
+
+        // Fetch all matches for the target date and location, excluding the dragged match if it was already there
+        const existingMatchesQuery = query(
+            matchesCollectionRef,
+            where("date", "==", targetDate),
+            where("location", "==", targetLocation),
+            orderBy("startTime", "asc")
+        );
+        const existingMatchesSnapshot = await getDocs(existingMatchesQuery);
+        let matchesForReschedule = existingMatchesSnapshot.docs
+            .map(doc => ({ id: doc.id, ...doc.data() }))
+            .filter(match => match.id !== draggedMatchId); // Ensure the dragged match isn't duplicated
+
+        // Get global start times from settings
+        const settingsDocRef = doc(settingsCollectionRef, SETTINGS_DOC_ID);
+        const settingsDoc = await getDoc(settingsDocRef);
+        let firstDayStartTime = '08:00';
+        let otherDaysStartTime = '08:00';
+        if (settingsDoc.exists()) {
+            const data = settingsDoc.data();
+            firstDayStartTime = data.firstDayStartTime || '08:00';
+            otherDaysStartTime = data.otherDaysStartTime || '08:00';
+        }
+
+        const playingDaysSnapshot = await getDocs(query(playingDaysCollectionRef, orderBy("date", "asc")));
+        const sortedPlayingDays = playingDaysSnapshot.docs.map(d => d.data().date).sort();
+        const isFirstPlayingDay = sortedPlayingDays.length > 0 && targetDate === sortedPlayingDays[0];
+        const initialStartTime = isFirstPlayingDay ? firstDayStartTime : otherDaysStartTime;
+
+        // Determine insertion index
+        let insertionIndex = matchesForReschedule.length; // Default to end
+        if (droppedBeforeMatchId) {
+            const targetMatchIndex = matchesForReschedule.findIndex(m => m.id === droppedBeforeMatchId);
+            if (targetMatchIndex !== -1) {
+                insertionIndex = targetMatchIndex;
+            }
+        }
+
+        // Insert the moved match into the correct position
+        matchesForReschedule.splice(insertionIndex, 0, movedMatchData);
+
+        const batch = writeBatch(db);
+        let currentAvailableTime = initialStartTime;
+
+        // Iterate through the reordered list and update start times
+        for (let i = 0; i < matchesForReschedule.length; i++) {
+            const match = matchesForReschedule[i];
+            const matchRef = doc(matchesCollectionRef, match.id);
+
+            // Get duration and buffer for this specific match (important if categories have different settings)
+            const categorySettings = await getCategoryMatchSettings(match.categoryId);
+            const duration = categorySettings.duration;
+            const bufferTime = categorySettings.bufferTime;
+
+            // Calculate new start time
+            let newStartTime = currentAvailableTime;
+
+            // Update the match document with new date, location, and start time
+            batch.update(matchRef, {
+                date: targetDate,
+                location: targetLocation,
+                startTime: newStartTime,
+                duration: duration, // Ensure these are up-to-date
+                bufferTime: bufferTime // Ensure these are up-to-date
+            });
+
+            // Calculate next available time for the subsequent match
+            currentAvailableTime = calculateNextAvailableTime(newStartTime, duration, bufferTime);
+
+            // Basic check to prevent excessively long schedules
+            if (parseInt(currentAvailableTime.split(':')[0]) >= 24) { // If next available time goes past midnight
+                console.warn(`Rozvrh pre ${targetDate} v ${targetLocation} presiahol 24:00. Posledný zápas: ${match.id} do ${currentAvailableTime}`);
+                // This scenario means the schedule overflows the day.
+                // A more robust solution might involve:
+                // 1. Alerting the user about the overflow.
+                // 2. Not saving these changes, or allowing user to manually correct.
+                // For this implementation, we will still save, but log a warning.
+            }
+        }
+
+        await batch.commit();
+        await showMessage('Úspech', `Zápas bol presunutý a rozvrh pre ${targetLocation} dňa ${targetDate} bol prepočítaný.`);
+        await displayMatchesAsSchedule(); // Refresh the display
+    } catch (error) {
+        console.error("Chyba pri presúvaní a prepočítavaní rozvrhu:", error);
+        await showMessage('Chyba', `Chyba pri presúvaní zápasu: ${error.message}.`);
+        await displayMatchesAsSchedule(); // Refresh to show current state even with error
+    }
+}
+
+
+/**
  * Displays the full match schedule. Buses and accommodation removed.
  * Changed to table display (one row per match).
  */
@@ -462,30 +586,73 @@ async function displayMatchesAsSchedule() {
             row.addEventListener('dragend', (event) => {
                 event.target.classList.remove('dragging');
             });
+
+            // Add dragover and drop listeners for inserting between rows
+            row.addEventListener('dragover', (event) => {
+                event.preventDefault();
+                event.dataTransfer.dropEffect = 'move';
+                // Visual feedback for insertion point (e.g., a border)
+                event.currentTarget.classList.add('drop-over-row');
+            });
+
+            row.addEventListener('dragleave', (event) => {
+                event.currentTarget.classList.remove('drop-over-row');
+            });
+
+            row.addEventListener('drop', async (event) => {
+                event.preventDefault();
+                event.currentTarget.classList.remove('drop-over-row');
+
+                const draggedMatchId = event.dataTransfer.getData('text/plain');
+                const targetMatchId = event.currentTarget.dataset.id; // The match we dropped BEFORE
+                const parentDateGroup = event.currentTarget.closest('.date-group');
+                const newDate = parentDateGroup.dataset.date;
+                const newLocation = parentDateGroup.dataset.location;
+
+                if (draggedMatchId && newDate && newLocation && targetMatchId) {
+                    await moveAndRescheduleMatch(draggedMatchId, newDate, newLocation, targetMatchId);
+                }
+            });
         });
 
-        // Add dragover and drop listeners to the date-group divs
+        // Add dragover and drop listeners to the date-group divs for dropping at the end
         matchesContainer.querySelectorAll('.date-group').forEach(dateGroupDiv => {
             dateGroupDiv.addEventListener('dragover', (event) => {
                 event.preventDefault(); // Crucial to allow a drop
                 event.dataTransfer.dropEffect = 'move';
-                dateGroupDiv.classList.add('drop-target-active'); // Optional: visual feedback
+                // Only activate drop-target if dropping into an empty table body or at the very end
+                const tableBody = dateGroupDiv.querySelector('tbody');
+                if (tableBody && tableBody.children.length === 0) {
+                     dateGroupDiv.classList.add('drop-target-active');
+                } else if (event.target === tableBody || event.target.closest('tbody') === tableBody) {
+                    // This allows dropping anywhere in the date-group, assuming it will go to the end if not on a specific row.
+                    // The logic in moveAndRescheduleMatch (droppedBeforeMatchId = null) will handle appending.
+                    dateGroupDiv.classList.add('drop-target-active');
+                }
             });
 
             dateGroupDiv.addEventListener('dragleave', () => {
                 dateGroupDiv.classList.remove('drop-target-active'); // Optional: visual feedback
             });
 
-            dateGroupDiv.addEventListener('drop', (event) => {
+            dateGroupDiv.addEventListener('drop', async (event) => {
                 event.preventDefault();
                 dateGroupDiv.classList.remove('drop-target-active'); // Optional: visual feedback
 
-                const matchId = event.dataTransfer.getData('text/plain');
+                const draggedMatchId = event.dataTransfer.getData('text/plain');
                 const newDate = dateGroupDiv.dataset.date;
                 const newLocation = dateGroupDiv.dataset.location;
 
-                if (matchId && newDate && newLocation) {
-                    editMatch(matchId, newDate, newLocation); // Pass new date and location
+                // Check if the drop occurred on a specific row inside this date-group
+                const droppedOnRow = event.target.closest('.match-row');
+                if (droppedOnRow && droppedOnRow.closest('.date-group') === dateGroupDiv) {
+                    // This case is handled by the row's own drop listener, do nothing here
+                    return;
+                }
+
+                if (draggedMatchId && newDate && newLocation) {
+                    // If dropped directly on the date-group, it means append to end or find first available
+                    await moveAndRescheduleMatch(draggedMatchId, newDate, newLocation, null); // null indicates append to end
                 }
             });
         });
@@ -760,7 +927,12 @@ async function editMatch(matchId, newDate = '', newLocation = '') {
 
             // After opening the modal and setting date/location, find the first available time
             // This will recalculate the start time based on the new date/location
-            await findFirstAvailableTime();
+            // Only find first available if newDate/newLocation are provided (from drag/drop)
+            // If just editing existing match, keep its time.
+            if (newDate || newLocation) {
+                 await findFirstAvailableTime(); // This will suggest the first available time in the new spot
+            }
+
 
         } else {
             await showMessage('Informácia', "Zápas sa nenašiel.");
@@ -783,7 +955,8 @@ async function deleteMatch(matchId) {
             await showMessage('Úspech', 'Zápas vymazaný!');
             closeModal(document.getElementById('matchModal'));
             displayMatchesAsSchedule();
-        } catch (error) {
+        }
+        catch (error) {
             console.error("Chyba pri mazaní zápasu:", error);
             await showMessage('Chyba', `Chyba pri mazaní zápasu. Detail: ${error.message}`);
         }
@@ -837,7 +1010,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const placeNameInput = document.getElementById('placeName');
     const placeAddressInput = document.getElementById('placeAddress');
     const placeGoogleMapsUrlInput = document.getElementById('placeGoogleMapsUrl');
-    const deletePlaceButtonModal = document.getElementById('deletePlaceButtonModal');
+    const deletePlaceButtonModal = document = document.getElementById('deletePlaceButtonModal');
 
     if (categoriesContentSection) {
         categoriesContentSection.style.display = 'block';
