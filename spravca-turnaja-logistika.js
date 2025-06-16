@@ -254,7 +254,7 @@ async function findFirstAvailableTime() {
             console.log("Medzera pred prvým zápasom: Trvanie =", gapBeforeFirstMatchDuration, "minút.");
 
             // Skontrolujte, či táto medzera dokáže presne prispôsobiť požadované trvanie zápasu
-            if (gapBeforeFirstMatchDuration >= requiredMatchDuration) { // Zmenené z '===' na '>='
+            if (gapBeforeFirstMatchDuration >= requiredMatchDuration) {
                 // A uistite sa, že sa rezerva tiež zmestí pred prvý skutočný zápas
                 if (initialPointerMinutes + requiredMatchDuration + requiredBufferTime <= firstMatch.start) {
                     bestCandidateStartTimeInMinutes = initialPointerMinutes;
@@ -276,7 +276,7 @@ async function findFirstAvailableTime() {
                 console.log(`Kontrola medzery medzi zápasom ${currentMatch.id} (končí ${currentMatch.end}) a ${nextMatch.id} (začína ${nextMatch.start}): Trvanie = ${gapDuration}`);
 
                 // Skontrolujte, či táto medzera dokáže presne prispôsobiť požadované trvanie zápasu
-                if (gapDuration >= requiredMatchDuration) { // Zmenené z '===' na '>='
+                if (gapDuration >= requiredMatchDuration) {
                     // A uistite sa, že sa rezerva tiež zmestí pred ďalší skutočný zápas
                     if (gapStartInMinutes + requiredMatchDuration + requiredBufferTime <= nextMatch.start) {
                         bestCandidateStartTimeInMinutes = gapStartInMinutes;
@@ -298,6 +298,7 @@ async function findFirstAvailableTime() {
             let nextAvailableTime = initialStartTimeForDay; 
             if (matchesForLocationAndDate.length > 0) {
                 const lastMatch = matchesForLocationAndDate[matchesForLocationAndDate.length - 1];
+                console.log("Fallback: Posledný existujúci zápas:", lastMatch);
                 nextAvailableTime = calculateNextAvailableTime(lastMatch.startTime, lastMatch.duration, lastMatch.bufferTime);
             }
             matchStartTimeInput.value = nextAvailableTime;
@@ -384,13 +385,16 @@ const getTeamName = async (categoryId, groupId, teamNumber, categoriesMap, group
  * @returns {string} Reťazec HH:MM ďalšieho dostupného času začiatku.
  */
 function calculateNextAvailableTime(prevStartTime, duration, bufferTime) {
+    console.log(`calculateNextAvailableTime: Vstup - prevStartTime: ${prevStartTime}, duration: ${duration}, bufferTime: ${bufferTime}`);
     let [prevH, prevM] = prevStartTime.split(':').map(Number);
     let totalMinutes = (prevH * 60) + prevM + duration + bufferTime;
 
     let newH = Math.floor(totalMinutes / 60);
     let newM = totalMinutes % 60;
 
-    return `${String(newH).padStart(2, '0')}:${String(newM).padStart(2, '0')}`;
+    const resultTime = `${String(newH).padStart(2, '0')}:${String(newM).padStart(2, '0')}`;
+    console.log(`calculateNextAvailableTime: Výstup - ${resultTime}`);
+    return resultTime;
 }
 
 
@@ -406,7 +410,7 @@ function calculateNextAvailableTime(prevStartTime, duration, bufferTime) {
 async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation, droppedBeforeMatchId = null) {
     try {
         const draggedMatchDocRef = doc(matchesCollectionRef, draggedMatchId);
-        const draggedMatchDoc = await getDoc(draggedMatchRef);
+        const draggedMatchDoc = await getDoc(draggedMatchDocRef); // Opravená referencia na draggedMatchDocRef
         if (!draggedMatchDoc.exists()) {
             await showMessage('Chyba', 'Presúvaný zápas nebol nájdený.');
             return;
