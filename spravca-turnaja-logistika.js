@@ -247,11 +247,11 @@ async function findFirstAvailableTime() {
  * @param {number} teamNumber The order number of the team in the group.
  * @param {Map<string, string>} categoriesMap Map of category IDs to names.
  * @param {Map<string, string>} groupsMap Map of group IDs to names.
- * @returns {Promise<{fullDisplayName: string|null, clubName: string|null, clubId: string|null}>} Team display information.
+ * @returns {Promise<{fullDisplayName: string|null, clubName: string|null, clubId: string|null, shortDisplayName: string|null}>} Team display information.
  */
 const getTeamName = async (categoryId, groupId, teamNumber, categoriesMap, groupsMap) => {
     if (!categoryId || !groupId || !teamNumber) {
-        return { fullDisplayName: null, clubName: null, clubId: null };
+        return { fullDisplayName: null, clubName: null, clubId: null, shortDisplayName: null };
     }
     try {
         const categoryName = categoriesMap.get(categoryId) || categoryId;
@@ -291,15 +291,17 @@ const getTeamName = async (categoryId, groupId, teamNumber, categoriesMap, group
         }
 
         const fullDisplayName = `${shortCategoryName} ${shortGroupName}${teamNumber}`;
+        const shortDisplayName = `${shortGroupName}${teamNumber}`; // Display name without category
 
         return {
             fullDisplayName: fullDisplayName,
             clubName: clubName,
-            clubId: clubId
+            clubId: clubId,
+            shortDisplayName: shortDisplayName // Return the new short display name
         };
     } catch (error) {
         console.error("Chyba pri získavaní názvu tímu:", error);
-        return { fullDisplayName: `Chyba`, clubName: `Chyba`, clubId: null };
+        return { fullDisplayName: `Chyba`, clubName: `Chyba`, clubId: null, shortDisplayName: `Chyba` };
     }
 };
 
@@ -477,9 +479,11 @@ async function displayMatchesAsSchedule() {
             return {
                 ...match,
                 team1DisplayName: team1Data.status === 'fulfilled' ? team1Data.value.fullDisplayName : 'N/A',
+                team1ShortDisplayName: team1Data.status === 'fulfilled' ? team1Data.value.shortDisplayName : 'N/A', // New short display name
                 team1ClubName: team1Data.status === 'fulfilled' ? team1Data.value.clubName : 'N/A',
                 team1ClubId: team1Data.status === 'fulfilled' ? team1Data.value.clubId : null,
                 team2DisplayName: team2Data.status === 'fulfilled' ? team2Data.value.fullDisplayName : 'N/A',
+                team2ShortDisplayName: team2Data.status === 'fulfilled' ? team2Data.value.shortDisplayName : 'N/A', // New short display name
                 team2ClubName: team2Data.status === 'fulfilled' ? team2Data.value.clubName : 'N/A',
                 team2ClubId: team2Data.status === 'fulfilled' ? team2Data.value.clubId : null,
             };
@@ -569,8 +573,8 @@ async function displayMatchesAsSchedule() {
                                 <td>${match.startTime} - ${formattedEndTime}</td>
                                 <td>${match.team1ClubName || 'N/A'}</td>
                                 <td>${match.team2ClubName || 'N/A'}</td>
-                                <td style="background-color: ${categoryColor};">${match.team1DisplayName || 'N/A'}</td>
-                                <td style="background-color: ${categoryColor};">${match.team2DisplayName || 'N/A'}</td>
+                                <td style="background-color: ${categoryColor};">${match.team1ShortDisplayName || 'N/A'}</td>
+                                <td style="background-color: ${categoryColor};">${match.team2ShortDisplayName || 'N/A'}</td>
                             </tr>
                         `;
                     });
