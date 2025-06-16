@@ -592,7 +592,7 @@ async function displayMatchesAsSchedule() {
                             scheduleHtml += `
                                 <tr class="empty-slot-row">
                                     <td>${currentTimePointer} - ${formattedEmptySlotEndTime}</td>
-                                    <td colspan="4" style="text-align: center; color: #888; font-style: italic;">Voľný slot</td>
+                                    <td colspan="4" style="text-align: center; color: #888; font-style: italic;"></td>
                                 </tr>
                             `;
                         }
