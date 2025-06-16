@@ -625,7 +625,19 @@ async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation
 
         // Zoraďte všetky udalosti podľa ich startInMinutes. Toto zabezpečí, že presunutý zápas
         // je koncepčne umiestnený na svojom cieľovom mieste vzhľadom na ostatné.
-        eventsToReschedule.sort((a, b) => a.startInMinutes - b.startInMinutes);
+        // Dôležité: Pridajte sekundárne kritérium radenia, aby sa presúvaný zápas umiestnil pred iné,
+        // ak majú rovnaký čas začiatku.
+        eventsToReschedule.sort((a, b) => {
+            // Primárne radenie podľa startInMinutes
+            if (a.startInMinutes !== b.startInMinutes) {
+                return a.startInMinutes - b.startInMinutes;
+            }
+            // Sekundárne radenie: ak sú startInMinutes rovnaké, uprednostnite presúvaný zápas
+            if (a.id === draggedMatchId) return -1;
+            if (b.id === draggedMatchId) return 1;
+            // V opačnom prípade zachovajte existujúce relatívne poradie (alebo podľa ID pre konzistenciu)
+            return a.id.localeCompare(b.id); 
+        });
         console.log('moveAndRescheduleMatch: Všetky udalosti PO zoradení:', JSON.stringify(eventsToReschedule.map(e => ({ id: e.id, type: e.type, startInMinutes: e.startInMinutes }))));
 
         // Iterujte cez zoradené udalosti a prepočítajte skutočné časy začiatku pre zápasy.
@@ -646,18 +658,14 @@ async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation
 
                 let newMatchStartTimeInMinutes;
 
-                if (event.id === draggedMatchId) {
-                    // Presunutý zápas sa pokúša začať v čase, kde bol pustený (movedMatchProposedStartMinutes),
-                    // ale nie skôr ako aktuálny ukazovateľ rozvrhu (currentSchedulePointer).
-                    newMatchStartTimeInMinutes = Math.max(currentSchedulePointer, movedMatchProposedStartMinutes);
-                    console.log(`moveAndRescheduleMatch: Presúvaný zápas ${event.id}, navrhovaný čas: ${movedMatchProposedStartMinutes}, nový vypočítaný čas: ${newMatchStartTimeInMinutes} (Pôvodný čas: ${originalStartTimeStr})`); // Enhanced log
-                } else {
-                    // Pre ostatné existujúce zápasy v cieľovom rozvrhu:
-                    // Mali by sa pokúsiť zachovať svoje relatívne poradie (event.startInMinutes),
-                    // ale nemôžu začať skôr ako aktuálny ukazovateľ rozvrhu.
-                    newMatchStartTimeInMinutes = Math.max(currentSchedulePointer, event.startInMinutes);
-                    console.log(`moveAndRescheduleMatch: Iný zápas ${event.id}, pôvodný čas: ${event.startInMinutes}, nový vypočítaný čas: ${newMatchStartTimeInMinutes}`);
-                }
+                // Pre presúvaný zápas sa snažíme začať v čase, kde bol pustený (movedMatchProposedStartMinutes),
+                // ale nie skôr ako aktuálny ukazovateľ rozvrhu (currentSchedulePointer), ktorý zohľadňuje predchádzajúce udalosti.
+                // Pre ostatné zápasy sa snažíme zachovať ich relatívne poradie (event.startInMinutes),
+                // ale nemôžu začať skôr ako aktuálny ukazovateľ rozvrhu.
+                // V oboch prípadoch Math.max zabezpečuje, že sa zápas nezačne prekrývať s predchádzajúcou udalosťou.
+                newMatchStartTimeInMinutes = Math.max(currentSchedulePointer, event.startInMinutes);
+                
+                console.log(`moveAndRescheduleMatch: Zápas ${event.id}, pôvodný navrhovaný čas (podľa drop/miesta v zozname): ${event.startInMinutes}, nový vypočítaný čas: ${newMatchStartTimeInMinutes}`);
                 
                 // Aktualizujte ukazovateľ pre ďalšiu udalosť na základe *skutočného* času konca tohto zápasu.
                 currentSchedulePointer = newMatchStartTimeInMinutes + (event.duration || 0) + (event.bufferTime || 0);
