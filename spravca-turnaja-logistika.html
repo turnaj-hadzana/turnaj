@@ -26,13 +26,14 @@
         <main>
             <section id="categoriesContentSection" class="section-block">
                 <h2>Zoznam zápasov</h2>
-                <div id="matchesContainer">
-                    <!-- Rozvrh zápasov bude vložený tu JavaScriptom -->
-                    Načítavam rozvrh zápasov...
+                <div id="matchesContainer" class="schedule-container">
+                    <p>Načítavam rozvrh zápasov...</p>
                 </div>
             </section>
         </main>
     </div>
+
+    <!-- Modálne okno pre hracie dni -->
     <div id="playingDayModal" class="modal">
         <div class="modal-content">
             <span class="close" id="closePlayingDayModal">&times;</span>
@@ -49,10 +50,11 @@
         </div>
     </div>
 
+    <!-- Modálne okno pre miesta (haly, stravovanie) -->
     <div id="placeModal" class="modal">
         <div class="modal-content">
             <span class="close" id="closePlaceModal">&times;</span>
-            <h2>Pridať / Upraviť miesto</h2>
+            <h2>Spravovať miesto</h2>
             <form id="placeForm">
                 <input type="hidden" id="placeId">
                 <div class="form-group">
@@ -73,7 +75,7 @@
                 </div>
                 <div class="form-group">
                     <label for="placeGoogleMapsUrl">Odkaz na Google Maps:</label>
-                    <input type="url" id="placeGoogleMapsUrl" required>
+                    <input type="url" id="placeGoogleMapsUrl" placeholder="https://maps.app.goo.gl/..." required>
                 </div>
                 <button type="submit">Uložiť</button>
                 <button type="button" id="deletePlaceButtonModal" class="action-button delete-button" style="display: none; margin-left: 10px;">Vymazať</button>
@@ -81,6 +83,7 @@
         </div>
     </div>
 
+    <!-- Modálne okno pre zápas -->
     <div id="matchModal" class="modal">
     <div class="modal-content">
         <span class="close" id="closeMatchModal">&times;</span>
@@ -89,15 +92,11 @@
             <input type="hidden" id="matchId">
             <div class="form-group">
                 <label for="matchDateSelect">Dátum zápasu:</label>
-                <select id="matchDateSelect" required>
-                    <option value="">-- Vyberte dátum --</option>
-                </select>
+                <select id="matchDateSelect" required></select>
             </div>
             <div class="form-group">
-                <label for="matchLocationSelect">Miesto (Športová hala):</label>
-                <select id="matchLocationSelect" required>
-                    <option value="">-- Vyberte miesto (športovú halu) --</option>
-                </select>
+                <label for="matchLocationSelect">Miesto (športová hala):</label>
+                <select id="matchLocationSelect" required></select>
             </div>
             <div class="form-group">
                 <label for="matchStartTime">Čas začiatku:</label>
@@ -125,11 +124,11 @@
             </div>
             <div class="form-group">
                 <label for="matchDuration">Trvanie zápasu (min.):</label>
-                <input type="number" id="matchDuration" min="1" required>
+                <input type="number" id="matchDuration" min="1" value="60" required>
             </div>
             <div class="form-group">
                 <label for="matchBufferTime">Prestávka po zápase (min.):</label>
-                <input type="number" id="matchBufferTime" min="0" required>
+                <input type="number" id="matchBufferTime" min="0" value="5" required>
             </div>
             <button type="submit">Uložiť zápas</button>
             <button type="button" id="deleteMatchButtonModal" class="action-button delete-button" style="display: none; margin-left: 10px;">Vymazať</button>
@@ -137,6 +136,32 @@
     </div>
 </div>
 
+<!-- Nové modálne okno pre voľné sloty -->
+<div id="freeSlotModal" class="modal">
+    <div class="modal-content">
+        <span class="close" id="closeFreeSlotModal">&times;</span>
+        <h2 id="freeSlotModalTitle">Spravovať voľný slot</h2>
+        <form id="freeSlotForm">
+            <input type="hidden" id="freeSlotId">
+            <div class="form-group">
+                <strong>Dátum:</strong> <span id="freeSlotDateDisplay"></span>
+            </div>
+            <div class="form-group">
+                <strong>Miesto:</strong> <span id="freeSlotLocationDisplay"></span>
+            </div>
+            <div class="form-group">
+                <strong>Časový rozsah:</strong> <span id="freeSlotTimeRangeDisplay"></span>
+            </div>
+            <div class="form-group">
+                <input type="checkbox" id="blockSlotCheckbox">
+                <label for="blockSlotCheckbox">Zablokovať tento slot pre nové zápasy</label>
+            </div>
+            <button type="button" id="freeSlotSaveButton">Uložiť</button>
+            <button type="button" id="deleteFreeSlotButton" class="action-button delete-button" style="display: none; margin-left: 10px;">Odblokovať</button>
+        </form>
+    </div>
+</div>
+    
     <div id="controlsContainer">
         <button id="addButton" class="add-button">+</button>
         <div id="addOptions" class="add-options-dropdown">
