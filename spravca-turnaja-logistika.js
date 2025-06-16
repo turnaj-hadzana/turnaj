@@ -436,7 +436,7 @@ async function displayMatchesAsSchedule() {
     if (!matchesContainer) return;
 
     matchesContainer.innerHTML = '';
-    matchesContainer.insertAdjacentHTML('afterbegin', '<p>Načítavam logistiku turnaja...</p>');
+    matchesContainer.insertAdjacentHTML('afterbegin', '<p>Načítavam zoznam zápasov...</p>');
 
     try {
         // Fetch all data required for the schedule
