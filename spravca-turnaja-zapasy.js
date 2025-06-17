@@ -1767,12 +1767,9 @@ async function openFreeSlotModal(date, location, startTime, endTime, blockedSlot
             unblockButton.textContent = 'Vymazať'; 
             unblockButton.classList.add('delete-button'); 
             const deleteHandler = () => { 
-                console.log(`openFreeSlotModal: Kliknuté na 'Vymazať' pre vizuálny voľný interval. Spúšťam deleteSlotAndRecalculate.`);
-                // For a purely visual slot, there's no DB record to delete.
-                // We just need to close the modal and refresh the schedule to remove the visual row.
-                closeModal(freeSlotModal);
-                // Trigger recalculation so the visual empty slot row is removed and schedule compacts if needed
-                recalculateAndSaveScheduleForDateAndLocation(date, location);
+                console.log(`openFreeSlotModal: Kliknuté na 'Vymazať' pre vizuálny voľný interval. Spúšťam handleDeleteSlot.`);
+                // Pass startTime and endTime for the visual gap
+                handleDeleteSlot(blockedSlotId, date, location, startTime, endTime); // blockedSlotId will be null here
             };
             unblockButton.addEventListener('click', deleteHandler);
             unblockButton._currentHandler = deleteHandler; 
@@ -1802,8 +1799,8 @@ async function openFreeSlotModal(date, location, startTime, endTime, blockedSlot
             deletePhantomButton.textContent = 'Vymazať'; // Odstráni DB záznam pre fantóm
             deletePhantomButton.classList.add('delete-button');
             const deleteHandler = () => {
-                console.log(`openFreeSlotModal: Kliknuté na 'Vymazať' pre fantómový interval ID: ${blockedSlotId}. Spúšťam deleteSlotAndRecalculate.`);
-                deleteSlotAndRecalculate(blockedSlotId, date, location);
+                console.log(`openFreeSlotModal: Kliknuté na 'Vymazať' pre fantómový interval ID: ${blockedSlotId}. Spúšťam handleDeleteSlot.`);
+                handleDeleteSlot(blockedSlotId, date, location);
             };
             deletePhantomButton.addEventListener('click', deleteHandler);
             deletePhantomButton._currentHandler = deleteHandler; 
@@ -1835,8 +1832,8 @@ async function openFreeSlotModal(date, location, startTime, endTime, blockedSlot
             deletePhantomButton.textContent = 'Vymazať slot'; // Completely deletes the user blocked slot from DB
             deletePhantomButton.classList.add('delete-button');
             const deleteHandler = () => {
-                console.log(`openFreeSlotModal: Kliknuté na 'Vymazať slot' pre zablokovaný interval ID: ${blockedSlotId}. Spúšťam deleteSlotAndRecalculate.`);
-                deleteSlotAndRecalculate(blockedSlotId, date, location);
+                console.log(`openFreeSlotModal: Kliknuté na 'Vymazať slot' pre zablokovaný interval ID: ${blockedSlotId}. Spúšťam handleDeleteSlot.`);
+                handleDeleteSlot(blockedSlotId, date, location);
             };
             deletePhantomButton.addEventListener('click', deleteHandler);
             deletePhantomButton._currentHandler = deleteHandler;
@@ -1864,8 +1861,8 @@ async function openFreeSlotModal(date, location, startTime, endTime, blockedSlot
             unblockButton.textContent = 'Vymazať slot'; // Completely deletes the placeholder slot from DB
             unblockButton.classList.add('delete-button');
             const deleteHandler = () => {
-                console.log(`openFreeSlotModal: Kliknuté na 'Vymazať slot' pre placeholder interval ID: ${blockedSlotId}. Spúšťam deleteSlotAndRecalculate.`);
-                deleteSlotAndRecalculate(blockedSlotId, date, location);
+                console.log(`openFreeSlotModal: Kliknuté na 'Vymazať slot' pre placeholder interval ID: ${blockedSlotId}. Spúšťam handleDeleteSlot.`);
+                handleDeleteSlot(blockedSlotId, date, location);
             };
             unblockButton.addEventListener('click', deleteHandler);
             unblockButton._currentHandler = deleteHandler;
@@ -2135,31 +2132,92 @@ async function reblockUnblockedSlot(slotId, date, location) {
  * @param {string|null} slotId ID slotu na vymazanie. Ak je null (pre voľný slot, ktorý nemá DB záznam), nič sa nevymaže z DB, len sa prepočíta.
  * @param {string} date Dátum slotu.
  * @param {string} location Miesto slotu.
+ * @param {string|null} visualGapStartTime Voliteľné: Čas začiatku vizuálnej medzery (ak slotId je null).
+ * @param {string|null} visualGapEndTime Voliteľné: Čas konca vizuálnej medzery (ak slotId je null).
  */
-async function deleteSlotAndRecalculate(slotId, date, location) {
-    console.log(`deleteSlotAndRecalculate: === FUNKCIA VYMAZAŤ INTERVAL SPUSTENÁ ===`);
-    console.log(`deleteSlotAndRecalculate: ID slotu: ${slotId}, Dátum: ${date}, Miesto: ${location}`);
-    const freeSlotModal = document.getElementById('freeSlotModal'); // Get reference here
-    const confirmed = await showConfirmation('Potvrdenie', 'Naozaj chcete vymazať tento interval z databázy?');
-    if (confirmed) {
-        try {
-            if (slotId) { // Ak existuje ID (je to zablokovaný interval alebo fantómový slot)
-                console.log(`deleteSlotAndRecalculate: Pokúšam sa vymazať dokument blockedSlot ID: ${slotId}`);
-                await deleteDoc(doc(blockedSlotsCollectionRef, slotId));
-                console.log(`deleteSlotAndRecalculate: Dokument blockedSlot ID: ${slotId} úspešne vymazaný.`);
-                await showMessage('Úspech', 'Slot bol úspešne vymazaný!'); // Ponechané pre potvrdenie akcie v DB
-            } else { // Ak nemá ID (je to čisto vizuálny voľný slot), žiadne vymazanie z DB sa neuskutoční.
-                console.log(`deleteSlotAndRecalculate: Interval nemá ID, nevykonáva sa žiadne vymazanie z DB.`);
-                // Správa tu bola odstránená podľa požiadavky používateľa, aby sa nezobrazovala "Informácia" pre čisto vizuálne sloty.
+async function handleDeleteSlot(slotId, date, location, visualGapStartTime = null, visualGapEndTime = null) {
+    console.log(`handleDeleteSlot: === SPUŠTENÁ FUNKCIA NA SPRACovanie VYMAZANIA SLOTU ===`);
+    console.log(`handleDeleteSlot: ID slotu: ${slotId}, Dátum: ${date}, Miesto: ${location}, Visual Gap Start: ${visualGapStartTime}, Visual Gap End: ${visualGapEndTime}`);
+    const freeSlotModal = document.getElementById('freeSlotModal');
+
+    // Confirm deletion with the user
+    let confirmationMessage = 'Naozaj chcete vymazať tento interval?';
+    if (slotId === null) {
+        confirmationMessage = 'Naozaj chcete odstrániť túto voľnú medzeru a prípadne posunúť nasledujúce zápasy?';
+    } else {
+        confirmationMessage = 'Naozaj chcete vymazať tento interval z databázy?';
+    }
+
+    const confirmed = await showConfirmation('Potvrdenie vymazania', confirmationMessage);
+    if (!confirmed) {
+        console.log(`handleDeleteSlot: Vymazanie zrušené používateľom.`);
+        return;
+    }
+
+    try {
+        const batch = writeBatch(db); // Use batch for potentially multiple operations
+
+        if (slotId) { // If it's a DB-backed slot (blocked, phantom, or placeholder)
+            console.log(`handleDeleteSlot: Pokúšam sa vymazať dokument blockedSlot ID: ${slotId}`);
+            batch.delete(doc(blockedSlotsCollectionRef, slotId));
+            await showMessage('Úspech', 'Slot bol úspešne vymazaný z databázy!');
+        } else { // It's a purely visual "Voľný slot dostupný"
+            console.log(`handleDeleteSlot: Vizuálny voľný interval, bez DB záznamu na vymazanie.`);
+            
+            // Convert visualGapStartTime to minutes
+            const [gapSH, gapSM] = visualGapStartTime.split(':').map(Number);
+            const gapStartInMinutes = gapSH * 60 + gapSM;
+
+            // Find the first match that starts at or after the gap's start time
+            const matchesQuery = query(
+                matchesCollectionRef,
+                where("date", "==", date),
+                where("location", "==", location),
+                orderBy("startTime", "asc")
+            );
+            const matchesSnapshot = await getDocs(matchesQuery);
+
+            let firstMatchToShift = null;
+            let firstMatchDocRef = null;
+
+            for (const matchDoc of matchesSnapshot.docs) {
+                const matchData = matchDoc.data();
+                const [matchSH, matchSM] = matchData.startTime.split(':').map(Number);
+                const matchStartInMinutes = matchSH * 60 + matchSM;
+
+                // Find the first match that is currently inside or after this gap
+                if (matchStartInMinutes >= gapStartInMinutes) {
+                    firstMatchToShift = matchData;
+                    firstMatchDocRef = matchDoc.ref; // Get reference to update later
+                    console.log(`handleDeleteSlot: Nájdený prvý zápas na posun: ${matchDoc.id} o ${matchData.startTime}`);
+                    break; // Found the first one, no need to continue
+                }
             }
-            closeModal(freeSlotModal);
-            // Toto teraz skompaktuje rozvrh a vyplní medzeru.
-            console.log(`deleteSlotAndRecalculate: Spúšťam prepočet rozvrhu pre dátum: ${date}, miesto: ${location}`);
-            await recalculateAndSaveScheduleForDateAndLocation(date, location); 
-        } catch (error) {
-            console.error("Chyba pri odstraňovaní slotu:", error);
-            await showMessage('Chyba', `Chyba pri odstraňovaní slotu: ${error.message}`);
+
+            if (firstMatchToShift && firstMatchDocRef) {
+                // Shift this first match's start time to the beginning of the gap
+                const newStartTimeForFirstMatch = visualGapStartTime; // Use the gap's start time
+
+                console.log(`handleDeleteSlot: Posúvam zápas ${firstMatchDocRef.id} z ${firstMatchToShift.startTime} na ${newStartTimeForFirstMatch}`);
+                batch.update(firstMatchDocRef, { startTime: newStartTimeForFirstMatch });
+                await showMessage('Úspech', 'Voľný interval odstránený, nasledujúce zápasy posunuté!');
+            } else {
+                await showMessage('Informácia', 'Na tomto mieste už neboli žiadne zápasy na posun. Voľný interval odstránený.');
+            }
         }
+
+        // Commit all batched operations (deletion and/or update)
+        await batch.commit();
+        console.log("handleDeleteSlot: Batch commit successful.");
+
+        closeModal(freeSlotModal);
+        // After any deletion or shift, recalculate the schedule to re-render it correctly
+        await recalculateAndSaveScheduleForDateAndLocation(date, location);
+        console.log("handleDeleteSlot: Prepočet rozvrhu dokončený.");
+
+    } catch (error) {
+        console.error("handleDeleteSlot: Chyba pri odstraňovaní/posúvaní slotu:", error);
+        await showMessage('Chyba', `Chyba pri odstraňovaní/posúvaní slotu: ${error.message}`);
     }
 }
 
