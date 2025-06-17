@@ -949,8 +949,8 @@ async function displayMatchesAsSchedule() {
                         scheduleHtml += `<th>Domáci</th>`;
                         scheduleHtml += `<th>Hostia</th>`;
                         scheduleHtml += `<th>ID Domáci</th>`;
-                        <th>ID Hostia</th>
-                        `</tr></thead><tbody>`;
+                        scheduleHtml += `<th>ID Hostia</th>`;
+                        scheduleHtml += `</tr></thead><tbody>`;
 
                         const isFirstPlayingDayForDate = allPlayingDayDates.length > 0 && date === allPlayingDayDates[0];
                         const initialScheduleStartMinutes = (isFirstPlayingDayForDate ? globalFirstDayStartTime : globalOtherDaysStartTime).split(':').map(Number).reduce((h, m) => h * 60 + m);
