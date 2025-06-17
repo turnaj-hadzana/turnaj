@@ -2295,7 +2295,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         deletePlaceButtonModal.style.display = 'none';
         // Ensure no old handler is present before opening for add
         if (deletePlaceButtonModal && deletePlaceButtonModal._currentHandler) { // Check if handler exists before removing
-            deletePlaceButtonModal.removeEventListener('click', deletePlaceButtonButtonModal._currentHandler);
+            deletePlaceButtonModal.removeEventListener('click', deletePlaceButtonModal._currentHandler);
             delete deletePlaceButtonModal._currentHandler;
         }
         openModal(placeModal);
