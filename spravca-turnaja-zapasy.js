@@ -885,18 +885,7 @@ async function displayMatchesAsSchedule() {
                         const formattedDisplayDate = `${String(displayDateObj.getDate()).padStart(2, '0')}. ${String(displayDateObj.getMonth() + 1).padStart(2, '0')}. ${displayDateObj.getFullYear()}`;
                         const dayName = displayDateObj.toLocaleDateString('sk-SK', { weekday: 'long' });
 
-                        scheduleHtml += `<div class="date-group" data-date="${date}" data-location="${location}" style="margin: 20px; border: 1px solid #eee; border-radius: 8px; overflow: hidden;">`;
-                        scheduleHtml += `<h3 style="background-color: #eaeaea; padding: 15px; margin: 0; border-bottom: 1px solid #ddd;">${dayName} ${formattedDisplayDate}</h3>`;
-
-                        scheduleHtml += `<table class="data-table match-list-table compact-table" style="width: 100%; border-collapse: collapse;">`;
-                        scheduleHtml += `<thead><tr>`;
-                        scheduleHtml += `<th>Čas</th>`;
-                        scheduleHtml += `<th>Domáci</th>`;
-                        scheduleHtml += `<th>Hostia</th>`;
-                        scheduleHtml += `<th>ID Domáci</th>`;
-                        // OPRAVA: Pridaný chýbajúci uzatvárací <th> tag
-                        scheduleHtml += `<th>ID Hostia</th></tr></thead><tbody>`;
-
+                        // Initial currentTimePointerInMinutes for this day and location
                         const isFirstPlayingDayForDate = allPlayingDayDates.length > 0 && date === allPlayingDayDates[0];
                         const initialScheduleStartMinutes = (isFirstPlayingDayForDate ? globalFirstDayStartTime : globalOtherDaysStartTime).split(':').map(Number).reduce((h, m) => h * 60 + m);
                         let currentTimePointerInMinutes = initialScheduleStartMinutes;
@@ -915,6 +904,39 @@ async function displayMatchesAsSchedule() {
                         ];
                         currentEventsForRendering.sort((a, b) => a.startInMinutes - b.startInMinutes);
                         console.log(`displayMatchesAsSchedule: Udalosti pre render pre ${location} na ${date} (zoradené):`, JSON.stringify(currentEventsForRendering.map(e => ({id: e.id, type: e.type, startTime: e.startTime || e.startInMinutes, endTime: e.endTime || e.endInMinutes, isPhantom: e.isPhantom, isBlocked: e.isBlocked}))));
+
+                        // Determine the end time of the last event in minutes for this specific date and location
+                        let lastEventEndForDataAttribute = initialScheduleStartMinutes;
+                        if (currentEventsForRendering.length > 0) {
+                             // Find the actual end of the last *active* event (match or user-blocked slot)
+                            const lastActiveEvent = currentEventsForRendering.filter(e => e.type === 'match' || (e.type === 'blocked_slot' && e.isBlocked === true))
+                                .reduce((latest, current) => {
+                                    return (latest === null || current.endInMinutes > latest.endInMinutes) ? current : latest;
+                                }, null);
+
+                            if (lastActiveEvent) {
+                                lastEventEndForDataAttribute = lastActiveEvent.endInMinutes;
+                            } else {
+                                // If no active events, but there are phantoms/unblocked placeholders,
+                                // the "last event end" should be the initial start time of the day.
+                                lastEventEndForDataAttribute = initialScheduleStartMinutes;
+                            }
+                        } else {
+                            lastEventEndForDataAttribute = initialScheduleStartMinutes;
+                        }
+
+                        const formattedLastEventEndTime = `${String(Math.floor(lastEventEndForDataAttribute / 60)).padStart(2, '0')}:${String(lastEventEndForDataAttribute % 60).padStart(2, '0')}`;
+                        
+                        scheduleHtml += `<div class="date-group" data-date="${date}" data-location="${location}" data-last-event-end-time="${formattedLastEventEndTime}" style="margin: 20px; border: 1px solid #eee; border-radius: 8px; overflow: hidden;">`;
+                        scheduleHtml += `<h3 style="background-color: #eaeaea; padding: 15px; margin: 0; border-bottom: 1px solid #ddd;">${dayName} ${formattedDisplayDate}</h3>`;
+
+                        scheduleHtml += `<table class="data-table match-list-table compact-table" style="width: 100%; border-collapse: collapse;">`;
+                        scheduleHtml += `<thead><tr>`;
+                        scheduleHtml += `<th>Čas</th>`;
+                        scheduleHtml += `<th>Domáci</th>`;
+                        scheduleHtml += `<th>Hostia</th>`;
+                        scheduleHtml += `<th>ID Domáci</th>`;
+                        scheduleHtml += `<th>ID Hostia</th></tr></thead><tbody>`;
 
 
                         for (const event of currentEventsForRendering) {
@@ -1013,20 +1035,8 @@ async function displayMatchesAsSchedule() {
                             currentTimePointerInMinutes = Math.max(currentTimePointerInMinutes, event.endInMinutes);
                         }
                         
-                        // Check if there is a purely visual empty slot after the last event in the schedule (up to 24:00)
-                        const endOfDayMinutes = 24 * 60;
-                        if (currentTimePointerInMinutes < endOfDayMinutes) {
-                            const formattedEmptySlotStartTime = `${String(Math.floor(currentTimePointerInMinutes / 60)).padStart(2, '0')}:${String(currentTimePointerInMinutes % 60).padStart(2, '0')}`;
-                            const formattedEmptySlotEndTime = `${String(Math.floor(endOfDayMinutes / 60)).padStart(2, '0')}:${String(endOfDayMinutes % 60).padStart(2, '0')}`;
-                            scheduleHtml += `
-                                <tr class="empty-slot-row" data-date="${date}" data-location="${location}" data-start-time="${formattedEmptySlotStartTime}" data-end-time="${formattedEmptySlotEndTime}">
-                                    <td>${formattedEmptySlotStartTime} - ${formattedEmptySlotEndTime}</td>
-                                    <td colspan="4" style="text-align: center; color: #888; font-style: italic;">Voľný slot dostupný</td>
-                                </tr>
-                            `;
-                            contentAddedForThisDate = true;
-                            console.log(`displayMatchesAsSchedule: Pridaný ZÁVEREČNÝ prázdny slot: ${formattedEmptySlotStartTime}-${formattedEmptySlotEndTime}`);
-                        }
+                        // ODSTRÁNENÉ: Predtým tu bola logika na zobrazenie "Voľný slot dostupný" až do 24:00.
+                        // Už sa na konci dňa nezobrazujú prázdne sloty.
 
 
                         if (!contentAddedForThisDate) {
@@ -1213,11 +1223,9 @@ async function displayMatchesAsSchedule() {
                             console.log(`Detected drop on empty/unblocked slot with ID: ${targetBlockedSlotId}`);
                         }
                     } else {
-                        // Ak sa presunie priamo na pozadie divu skupiny dátumov (znamená pripojenie na koniec)
-                        // V tomto prípade droppedProposedStartTime bude vypočítaný vo moveAndRescheduleMatch
-                        // alebo nájdeme koniec rozvrhu tu pre konzistentnosť.
-                        // Aby sa zachovalo existujúce správanie "pripojenia na koniec", ak sa presunie na prázdne miesto,
-                        // môžeme nechať droppedProposedStartTime ako null a nechať moveAndRescheduleMatch to vypočítať.
+                        // NOVINKA: Ak sa pustí na pozadie dateGroupDiv, získajte data-last-event-end-time
+                        droppedProposedStartTime = dateGroupDiv.dataset.lastEventEndTime;
+                        console.log(`Dropped on background. Proposed start time (last event end): ${droppedProposedStartTime}`);
                     }
                     
                     console.log(`Attempting to move and reschedule match ${draggedMatchId} to Date: ${newDate}, Location: ${newLocation}, Proposed Start Time: ${droppedProposedStartTime}, Target Blocked Slot ID: ${targetBlockedSlotId}`);
