@@ -1277,6 +1277,11 @@ async function displayMatchesAsSchedule() {
                     const initialStartTime = dateGroupDiv.dataset.initialStartTime;
                     let dropBeforeFirstContent = false;
 
+                    // getBoundingClientRect().top gives the distance from viewport top.
+                    // clientY gives the mouse pointer's vertical coordinate.
+                    // If the mouse pointer is close to or above the top of the first content row, consider it "before".
+                    const droppedY = event.clientY; 
+
                     if (firstContentRow) {
                         const firstContentRowRect = firstContentRow.getBoundingClientRect();
                         // If dropped very near or above the first content row (added a slightly larger buffer)
@@ -1708,17 +1713,17 @@ async function openFreeSlotModal(date, location, startTime, endTime, blockedSlot
     if (blockButton && blockButton._currentHandler) {
         blockButton.removeEventListener('click', blockButton._currentHandler);
         delete blockButton._currentHandler;
-        console.log("openFreeSlotModal: Odstránený starý poslucháč pre 'blockButton'.");
+        console.log("openFreeSlotModal: Odstránený starý posluchovač pre 'blockButton'.");
     }
     if (unblockButton && unblockButton._currentHandler) {
         unblockButton.removeEventListener('click', unblockButton._currentHandler);
         delete unblockButton._currentHandler;
-        console.log("openFreeSlotModal: Odstránený starý poslucháč pre 'unblockButton'.");
+        console.log("openFreeSlotModal: Odstránený starý posluchovač pre 'unblockButton'.");
     }
     if (deletePhantomButton && deletePhantomButton._currentHandler) {
         deletePhantomButton.removeEventListener('click', deletePhantomButton._currentHandler);
         delete deletePhantomButton._currentHandler;
-        console.log("openFreeSlotModal: Odstránený starý poslucháč pre 'deletePhantomButton'.");
+        console.log("openFreeSlotModal: Odstránený starý posluchovač pre 'deletePhantomButton'.");
     }
 
 
@@ -2181,10 +2186,39 @@ async function handleDeleteSlot(slotId, date, location, visualGapStartTime = nul
             batch.delete(doc(blockedSlotsCollectionRef, slotId));
             await showMessage('Úspech', 'Slot bol úspešne vymazaný z databázy!');
         } else { // It's a purely visual "Voľný slot dostupný"
-            // REMOVED: Direct update of first match here.
-            // The recalculateAndSaveScheduleForDateAndLocation will now handle all shifts.
-            console.log(`handleDeleteSlot: Vizuálny voľný interval, bez DB záznamu na vymazanie. Spoľahnutie sa na prepočet.`);
-            await showMessage('Úspech', 'Voľný interval odstránený. Rozvrh sa prepočítava pre posun zápasov!');
+            console.log(`handleDeleteSlot: Vizuálny voľný interval, bez DB záznamu na vymazanie. Hľadám priľahlý slot na vymazanie.`);
+            // Calculate the start of the next potential event (which would be the end of this visual gap)
+            const nextEventStartTimeInMinutes = (parseInt(visualGapEndTime.split(':')[0]) * 60) + parseInt(visualGapEndTime.split(':')[1]);
+
+            // Query for any phantom or placeholder slot that starts *exactly* at this visual gap's end time
+            const adjacentSlotsQuery = query(
+                blockedSlotsCollectionRef,
+                where("date", "==", date),
+                where("location", "==", location),
+                where("startInMinutes", "==", nextEventStartTimeInMinutes)
+            );
+            const adjacentSlotsSnapshot = await getDocs(adjacentSlotsQuery);
+
+            let adjacentSlotToDeleteId = null;
+            if (!adjacentSlotsSnapshot.empty) {
+                // Find the first adjacent slot that is either a phantom or a non-blocked placeholder
+                adjacentSlotsSnapshot.docs.forEach(docSnap => {
+                    const data = docSnap.data();
+                    if (data.isPhantom === true || data.isBlocked === false) { // This is a phantom or a placeholder that can be removed
+                        adjacentSlotToDeleteId = docSnap.id;
+                        console.log(`handleDeleteSlot: Nájdený priľahlý slot na vymazanie: ID ${adjacentSlotToDeleteId}, typ: ${data.isPhantom ? 'fantóm' : 'placeholder'}`);
+                        return; // Found one, can stop
+                    }
+                });
+            }
+
+            if (adjacentSlotToDeleteId) {
+                // If an adjacent phantom/placeholder is found, delete it from the batch
+                batch.delete(doc(blockedSlotsCollectionRef, adjacentSlotToDeleteId));
+                await showMessage('Úspech', 'Priľahlý interval bol odstránený. Rozvrh sa prepočítava!');
+            } else {
+                await showMessage('Úspech', 'Voľný interval odstránený. Rozvrh sa prepočítava pre posun zápasov!');
+            }
         }
 
         // Commit all batched operations (deletion and/or update)
