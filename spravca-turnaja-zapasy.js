@@ -1297,7 +1297,8 @@ async function displayMatchesAsSchedule() {
                             // Find the very first visible row
                             for (let i = 0; i < tableBody.rows.length; i++) {
                                 const row = tableBody.rows[i];
-                                if (row.style.display !== 'none') { // Consider only visible rows
+                                // Check for display style, not just class, as rows might be hidden
+                                if (window.getComputedStyle(row).display !== 'none') { 
                                     firstContentRowCandidate = row;
                                     break;
                                 }
@@ -1308,6 +1309,10 @@ async function displayMatchesAsSchedule() {
                             firstContentRowCandidate.dataset.startTime === droppedProposedStartTime && firstContentRowCandidate.dataset.id) {
                             targetBlockedSlotId = firstContentRowCandidate.dataset.id;
                             console.log(`Dropped on background (likely at beginning), targeting initial empty slot with ID: ${targetBlockedSlotId}.`);
+                        } else {
+                            // If there's no initial empty slot, or it's a match, we don't have a targetBlockedSlotId
+                            // but still want to insert at the initial start time. This is fine.
+                            console.log("No initial empty slot placeholder to target, but inserting at initial day start.");
                         }
                         console.log(`Dropped on background. Proposed start time (initial day start): ${droppedProposedStartTime}`);
                     }
