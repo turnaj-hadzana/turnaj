@@ -583,6 +583,11 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location) {
                 if (event.startTime !== newStartTimeStr) {
                     batch.update(matchRef, { startTime: newStartTimeStr });
                     console.log(`recalculateAndSaveScheduleForDateAndLocation: Aktualizujem zápas ${event.id} s novým časom: ${newStartTimeStr}`);
+                    // DÔLEŽITÉ: Aktualizujte objekt udalosti v pamäti pre následné výpočty
+                    event.startTime = newStartTimeStr; // Aktualizujte reťazec
+                    event.startInMinutes = newMatchStartTimeInMinutes; // Aktualizujte vypočítané minúty
+                    // Prepočítajte endInMinutes na základe nového času začiatku
+                    event.endInMinutes = newMatchStartTimeInMinutes + event.duration + event.bufferTime;
                 } else {
                     console.log(`recalculateAndSaveScheduleForDateAndLocation: Zápas ${event.id} čas sa nezmenil, preskočené aktualizácie: ${newStartTimeStr}`);
                 }
@@ -2162,48 +2167,10 @@ async function handleDeleteSlot(slotId, date, location, visualGapStartTime = nul
             batch.delete(doc(blockedSlotsCollectionRef, slotId));
             await showMessage('Úspech', 'Slot bol úspešne vymazaný z databázy!');
         } else { // It's a purely visual "Voľný slot dostupný"
-            console.log(`handleDeleteSlot: Vizuálny voľný interval, bez DB záznamu na vymazanie.`);
-            
-            // Convert visualGapStartTime to minutes
-            const [gapSH, gapSM] = visualGapStartTime.split(':').map(Number);
-            const gapStartInMinutes = gapSH * 60 + gapSM;
-
-            // Find the first match that starts at or after the gap's start time
-            const matchesQuery = query(
-                matchesCollectionRef,
-                where("date", "==", date),
-                where("location", "==", location),
-                orderBy("startTime", "asc")
-            );
-            const matchesSnapshot = await getDocs(matchesQuery);
-
-            let firstMatchToShift = null;
-            let firstMatchDocRef = null;
-
-            for (const matchDoc of matchesSnapshot.docs) {
-                const matchData = matchDoc.data();
-                const [matchSH, matchSM] = matchData.startTime.split(':').map(Number);
-                const matchStartInMinutes = matchSH * 60 + matchSM;
-
-                // Find the first match that is currently inside or after this gap
-                if (matchStartInMinutes >= gapStartInMinutes) {
-                    firstMatchToShift = matchData;
-                    firstMatchDocRef = matchDoc.ref; // Get reference to update later
-                    console.log(`handleDeleteSlot: Nájdený prvý zápas na posun: ${matchDoc.id} o ${matchData.startTime}`);
-                    break; // Found the first one, no need to continue
-                }
-            }
-
-            if (firstMatchToShift && firstMatchDocRef) {
-                // Shift this first match's start time to the beginning of the gap
-                const newStartTimeForFirstMatch = visualGapStartTime; // Use the gap's start time
-
-                console.log(`handleDeleteSlot: Posúvam zápas ${firstMatchDocRef.id} z ${firstMatchToShift.startTime} na ${newStartTimeForFirstMatch}`);
-                batch.update(firstMatchDocRef, { startTime: newStartTimeForFirstMatch });
-                await showMessage('Úspech', 'Voľný interval odstránený, nasledujúce zápasy posunuté!');
-            } else {
-                await showMessage('Informácia', 'Na tomto mieste už neboli žiadne zápasy na posun. Voľný interval odstránený.');
-            }
+            // REMOVED: Direct update of first match here.
+            // The recalculateAndSaveScheduleForDateAndLocation will now handle all shifts.
+            console.log(`handleDeleteSlot: Vizuálny voľný interval, bez DB záznamu na vymazanie. Spoľahnutie sa na prepočet.`);
+            await showMessage('Úspech', 'Voľný interval odstránený. Rozvrh sa prepočítava pre posun zápasov!');
         }
 
         // Commit all batched operations (deletion and/or update)
