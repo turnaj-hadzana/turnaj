@@ -1254,8 +1254,28 @@ async function displayMatchesAsSchedule() {
                         return; // Zastaviť drop operáciu
                     }
                     
-                    if (droppedOnElement && droppedOnElement.dataset.startTime) { 
-                        // If dropped on any row (match or empty/unblocked slot), use its start time
+                    // NEW LOGIC FOR DROPPING BEFORE THE FIRST MATCH/SLOT
+                    // Check if the drop occurred before any existing rows
+                    const droppedY = event.clientY;
+                    const tableBody = dateGroupDiv.querySelector('tbody');
+                    let firstRowRect = null;
+                    if (tableBody && tableBody.rows.length > 0) {
+                        firstRowRect = tableBody.rows[0].getBoundingClientRect();
+                    }
+
+                    const initialStartTime = dateGroupDiv.dataset.initialStartTime;
+
+                    // If dropped very near or above the first row, suggest the initial start time for the day
+                    if (firstRowRect && droppedY <= firstRowRect.top + 10) { // Add a small buffer for "above"
+                        droppedProposedStartTime = initialStartTime;
+                        console.log(`Dropped before first row. Proposed start time (initial start): ${droppedProposedStartTime}`);
+                        // If the first row itself is an empty slot, we should delete it as it's being "filled"
+                        if (tableBody.rows[0].classList.contains('empty-slot-row') && tableBody.rows[0].dataset.id) {
+                            targetBlockedSlotId = tableBody.rows[0].dataset.id;
+                            console.log(`Targeting the first empty slot with ID: ${targetBlockedSlotId}`);
+                        }
+                    } else if (droppedOnElement && droppedOnElement.dataset.startTime) { 
+                        // If dropped on any other row (match or empty/unblocked slot), use its start time
                         droppedProposedStartTime = droppedOnElement.dataset.startTime;
                         // If dropped on an empty/unblocked placeholder slot, get its ID to delete it
                         if (droppedOnElement.classList.contains('empty-slot-row') && droppedOnElement.dataset.id) {
@@ -1263,27 +1283,10 @@ async function displayMatchesAsSchedule() {
                             console.log(`Detected drop on empty/unblocked slot with ID: ${targetBlockedSlotId}`);
                         }
                     } else {
-                         // If dropped on the background of dateGroupDiv, it should go to the very beginning if the pointer is at initial start
-                        const initialStartTime = dateGroupDiv.dataset.initialStartTime;
-                        const lastEventEndTime = dateGroupDiv.dataset.lastEventEndTime;
-
-                        // Check if the drop position is essentially before the first element
-                        // This is a heuristic: if the clientY is close to the top of the dateGroupDiv,
-                        // and there are elements, we can infer "before first". This is tricky without exact coordinates.
-                        // A more robust solution would be to have a dedicated "drop before first" zone.
-                        // For now, if no specific row is targeted, it means either at the very beginning or very end.
-                        // We will try to infer "before first" if the initial start time is the last event end time,
-                        // meaning the schedule is currently empty or only has events at the very start.
-                        
-                        // If the schedule is completely empty for this date/location, droppedProposedStartTime should be the initial start time.
-                        // Otherwise, if dropped on the background, it means "append to end".
-                        if (initialStartTime === lastEventEndTime) {
-                            droppedProposedStartTime = initialStartTime;
-                            console.log(`Dropped on empty schedule. Proposed start time (initial start): ${droppedProposedStartTime}`);
-                        } else {
-                            droppedProposedStartTime = lastEventEndTime;
-                            console.log(`Dropped on background (non-empty schedule). Proposed start time (last event end): ${droppedProposedStartTime}`);
-                        }
+                         // If dropped on the background of dateGroupDiv (not directly on a row),
+                         // it should go to the very end of the existing schedule.
+                        droppedProposedStartTime = dateGroupDiv.dataset.lastEventEndTime;
+                        console.log(`Dropped on background (non-empty schedule). Proposed start time (last event end): ${droppedProposedStartTime}`);
                     }
                     
                     console.log(`Attempting to move and reschedule match ${draggedMatchId} to Date: ${newDate}, Location: ${newLocation}, Proposed Start Time: ${droppedProposedStartTime}, Target Blocked Slot ID: ${targetBlockedSlotId}`);
@@ -1758,13 +1761,17 @@ async function openFreeSlotModal(date, location, startTime, endTime, blockedSlot
             console.log("openFreeSlotModal: Pridaný poslucháč a zobrazené tlačidlo 'Zablokovať'.");
         }
 
-        if (unblockButton) { // Toto je teraz tlačidlo "Vymazať" pre čistý voľný slot
+        if (unblockButton) { 
             unblockButton.style.display = 'inline-block';
-            unblockButton.textContent = 'Vymazať'; // Zmenené z "Zrušiť" na "Vymazať"
-            unblockButton.classList.add('delete-button'); // Pridaná trieda delete-button
-            const deleteHandler = () => { // Zmenené z cancelHandler na deleteHandler
-                console.log("openFreeSlotModal: Kliknuté na 'Vymazať' pre nový voľný interval (zatváram modál, nič z DB).");
+            unblockButton.textContent = 'Vymazať'; 
+            unblockButton.classList.add('delete-button'); 
+            const deleteHandler = () => { 
+                console.log(`openFreeSlotModal: Kliknuté na 'Vymazať' pre vizuálny voľný interval. Spúšťam deleteSlotAndRecalculate.`);
+                // For a purely visual slot, there's no DB record to delete.
+                // We just need to close the modal and refresh the schedule to remove the visual row.
                 closeModal(freeSlotModal);
+                // Trigger recalculation so the visual empty slot row is removed and schedule compacts if needed
+                recalculateAndSaveScheduleForDateAndLocation(date, location);
             };
             unblockButton.addEventListener('click', deleteHandler);
             unblockButton._currentHandler = deleteHandler; 
@@ -2142,6 +2149,7 @@ async function deleteSlotAndRecalculate(slotId, date, location) {
                 await showMessage('Úspech', 'Slot bol úspešne vymazaný!');
             } else { // If there's no ID (it's a purely visual empty slot), no DB deletion happens.
                 console.log(`deleteSlotAndRecalculate: Interval nemá ID, nevykonáva sa žiadne vymazanie z DB.`);
+                // Show message for consistency, but emphasize no DB record was involved
                 await showMessage('Informácia', 'Nebol k dispozícii žiadny DB záznam pre tento voľný interval na vymazanie.');
             }
             closeModal(freeSlotModal);
