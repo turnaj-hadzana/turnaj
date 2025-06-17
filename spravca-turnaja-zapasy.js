@@ -547,7 +547,7 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location) {
         const processedBlockedSlotIds = new Set(); // Sleduje ID slotov, ktoré boli spracované/použité/aktualizované
         
         for (const event of activeEvents) {
-            console.log(`recalculateAndSaveScheduleForDateAndLocation: Spracovávam aktívnu udalosť: ID ${event.id}, Typ: ${event.type}, Pôvodný štart: ${event.startTime || event.startInMinutes}, Aktuálny currentTimePointer: ${currentTimePointer}`);
+            console.log(`recalculateAndSaveScheduleForDateAndLocation: Spracovávam aktívnu udalosť: ID ${event.id}, Typ: ${event.type}, Pôvodný štart: ${event.startTime || event.startInMinutes}, Aktuálny currentTimePointer pred spracovaním: ${currentTimePointer}`);
 
             // 1. Manažujte medzeru PRED aktuálnou aktívnou udalosťou (ak existuje)
             if (currentTimePointer < event.startInMinutes) {
@@ -594,6 +594,8 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location) {
                 let newMatchStartTimeInMinutes = Math.max(currentTimePointer, event.startInMinutes);
                 const newStartTimeStr = `${String(Math.floor(newMatchStartTimeInMinutes / 60)).padStart(2, '0')}:${String(newMatchStartTimeInMinutes % 60).padStart(2, '0')}`;
 
+                console.log(`  Match ${event.id}: Pôvodný event.startInMinutes: ${event.startInMinutes}, Aktuálny currentTimePointer: ${currentTimePointer}. newMatchStartTimeInMinutes (Math.max): ${newMatchStartTimeInMinutes}`);
+
                 if (event.startTime !== newStartTimeStr) {
                     batch.update(matchRef, { startTime: newStartTimeStr });
                     console.log(`recalculateAndSaveScheduleForDateAndLocation: Aktualizujem zápas ${event.id} s novým časom: ${newStartTimeStr}`);
@@ -616,6 +618,7 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location) {
                 currentTimePointer = Math.max(currentTimePointer, event.endInMinutes); // Posuňte ukazovateľ za koniec zablokovaného slotu
                 console.log(`recalculateAndSaveScheduleForDateAndLocation: Blokovaný slot ${event.id}, ukazovateľ posunutý na ${currentTimePointer} minút.`);
             }
+            console.log(`recalculateAndSaveScheduleForDateAndLocation: Aktuálny currentTimePointer po spracovaní udalosti: ${currentTimePointer}`);
         }
 
         // 3. Manažujte koncovú medzeru PO poslednej aktívnej udalosti (ak existuje)
