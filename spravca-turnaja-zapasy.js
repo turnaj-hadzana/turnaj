@@ -545,22 +545,18 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location) {
         console.log(`recalculateAndSaveScheduleForDateAndLocation: Počiatočný ukazovateľ času rozvrhu: ${currentTimePointer} minút.`);
 
         const processedBlockedSlotIds = new Set(); // Sleduje ID slotov, ktoré boli spracované/použité/aktualizované
-        
+        const newPlaceholderSlots = []; // Zoznam nových placeholderov, ktoré sa majú vytvoriť
+
         for (const event of activeEvents) {
             console.log(`recalculateAndSaveScheduleForDateAndLocation: Spracovávam aktívnu udalosť: ID ${event.id}, Typ: ${event.type}, Pôvodný štart: ${event.startTime || event.startInMinutes}, Aktuálny currentTimePointer pred spracovaním: ${currentTimePointer}`);
 
-            // 1. Manažujte medzeru PRED aktuálnou aktívnou udalosťou (ak existuje)
+            // Manažujte medzeru PRED aktuálnou aktívnou udalosťou (ak existuje a je väčšia ako 0 minút)
             if (currentTimePointer < event.startInMinutes) {
                 const gapStart = currentTimePointer;
                 const gapEnd = event.startInMinutes;
                 
-                // Hľadajte existujúci placeholder slot, ktorý presne zodpovedá tejto medzere
-                const existingPlaceholder = allExistingBlockedSlots.find(s =>
-                    s.isBlocked === false && s.isPhantom === false &&
-                    s.startInMinutes === gapStart && s.endInMinutes === gapEnd
-                );
-
-                const newPlaceholderData = {
+                // Vytvorte nový placeholder slot pre túto medzeru
+                newPlaceholderSlots.push({
                     date: date,
                     location: location,
                     startTime: `${String(Math.floor(gapStart / 60)).padStart(2, '0')}:${String(gapStart % 60).padStart(2, '0')}`,
@@ -570,24 +566,11 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location) {
                     isBlocked: false,
                     isPhantom: false,
                     createdAt: new Date()
-                };
-
-                if (existingPlaceholder) {
-                    // Ak sa nájde existujúci placeholder, aktualizujte ho (aj keď sa nič nemení, označí sa ako spracovaný)
-                    // Použite setDoc s merge: true, aby sa predišlo premazaniu existujúceho dokumentu s rovnakým ID
-                    batch.set(doc(blockedSlotsCollectionRef, existingPlaceholder.id), newPlaceholderData, { merge: true });
-                    processedBlockedSlotIds.add(existingPlaceholder.id);
-                    console.log(`recalculateAndSaveScheduleForDateAndLocation: Aktualizovaný existujúci placeholder slot pre medzeru: ID ${existingPlaceholder.id}, Čas: ${newPlaceholderData.startTime}-${newPlaceholderData.endTime}`);
-                } else {
-                    // Ak neexistuje, vytvorte nový placeholder slot pre túto medzeru
-                    const newDocRef = doc(blockedSlotsCollectionRef); // Firestore generuje nové ID
-                    batch.set(newDocRef, newPlaceholderData);
-                    processedBlockedSlotIds.add(newDocRef.id);
-                    console.log(`recalculateAndSaveScheduleForDateAndLocation: Vytvorený nový placeholder slot pre medzeru: Čas: ${newPlaceholderData.startTime}-${newPlaceholderData.endTime}`);
-                }
+                });
+                console.log(`recalculateAndSaveScheduleForDateAndLocation: Navrhnutý nový placeholder slot pre medzeru: Čas: ${newPlaceholderSlots[newPlaceholderSlots.length - 1].startTime}-${newPlaceholderSlots[newPlaceholderSlots.length - 1].endTime}`);
             }
 
-            // 2. Manažujte aktuálnu aktívnu udalosť
+            // Manažujte aktuálnu aktívnu udalosť
             if (event.type === 'match') {
                 const matchRef = doc(matchesCollectionRef, event.id);
                 
@@ -621,50 +604,42 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location) {
             console.log(`recalculateAndSaveScheduleForDateAndLocation: Aktuálny currentTimePointer po spracovaní udalosti: ${currentTimePointer}`);
         }
 
-        // 3. Manažujte koncovú medzeru PO poslednej aktívnej udalosti (ak existuje)
-        // Toto je upravené tak, aby sa na konci dňa NEZOBRAZOVALI prázdne sloty
-        // const endOfDayMinutes = 24 * 60; // 24:00
-        // if (currentTimePointer < endOfDayMinutes) {
-        //     const gapStart = currentTimePointer;
-        //     const gapEnd = endOfDayMinutes; // End of the day
+        // 3. Spravujte koncové medzery po poslednej udalosti A vyčistite staré, nepotrebné placeholder sloty
+        // Najprv pridajte nové placeholder sloty
+        for (const newPlaceholder of newPlaceholderSlots) {
+            // Pred pridaním skontrolujte, či už takýto slot existuje v DB
+            const existingSamePlaceholderQuery = query(
+                blockedSlotsCollectionRef,
+                where("date", "==", newPlaceholder.date),
+                where("location", "==", newPlaceholder.location),
+                where("startTime", "==", newPlaceholder.startTime),
+                where("endTime", "==", newPlaceholder.endTime),
+                where("isBlocked", "==", false),
+                where("isPhantom", "==", false)
+            );
+            const existingSamePlaceholderSnapshot = await getDocs(existingSamePlaceholderQuery);
 
-        //     const existingPlaceholder = allExistingBlockedSlots.find(s =>
-        //         s.isBlocked === false && s.isPhantom === false &&
-        //         s.startInMinutes === gapStart && s.endInMinutes === gapEnd
-        //     );
-
-        //     const newPlaceholderData = {
-        //         date: date,
-        //         location: location,
-        //         startTime: `${String(Math.floor(gapStart / 60)).padStart(2, '0')}:${String(gapStart % 60).padStart(2, '0')}`,
-        //         endTime: `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(gapEnd % 60).padStart(2, '0')}`,
-        //         startInMinutes: gapStart,
-        //         endInMinutes: gapEnd,
-        //         isBlocked: false,
-        //         isPhantom: false,
-        //         createdAt: new Date()
-        //     };
-
-        //     if (existingPlaceholder) {
-        //         batch.set(doc(blockedSlotsCollectionRef, existingPlaceholder.id), newPlaceholderData, { merge: true });
-        //         processedBlockedSlotIds.add(existingPlaceholder.id);
-        //         console.log(`recalculateAndSaveScheduleForDateAndLocation: Aktualizovaný existujúci koncový placeholder slot: ID ${existingPlaceholder.id}, Čas: ${newPlaceholderData.startTime}-${newPlaceholderData.endTime}`);
-        //     } else {
-        //         const newDocRef = doc(blockedSlotsCollectionRef);
-        //         batch.set(newDocRef, newPlaceholderData);
-        //         processedBlockedSlotIds.add(newDocRef.id);
-        //         console.log(`recalculateAndSaveScheduleForDateAndLocation: Vytvorený nový koncový placeholder slot: Čas: ${newPlaceholderData.startTime}-${newPlaceholderData.endTime}`);
-        //     }
-        // }
-
-
-        // 4. Vyčistenie: Vymažte všetky fantómové sloty A všetky staré placeholder sloty, ktoré už nie sú potrebné
+            if (existingSamePlaceholderSnapshot.empty) {
+                // Ak takýto placeholder neexistuje, pridajte ho
+                const newDocRef = doc(blockedSlotsCollectionRef);
+                batch.set(newDocRef, newPlaceholder);
+                processedBlockedSlotIds.add(newDocRef.id);
+                console.log(`recalculateAndSaveScheduleForDateAndLocation: Vytvorený nový unikátny placeholder slot: Čas: ${newPlaceholder.startTime}-${newPlaceholder.endTime}`);
+            } else {
+                // Ak existuje, použite jeho ID a označte ho ako spracovaný
+                const existingPlaceholderId = existingSamePlaceholderSnapshot.docs[0].id;
+                processedBlockedSlotIds.add(existingPlaceholderId);
+                console.log(`recalculateAndSaveScheduleForDateAndLocation: Nájdený existujúci placeholder slot, ktorý sa zhoduje, ID: ${existingPlaceholderId}.`);
+            }
+        }
+        
+        // Vymažte všetky fantómové sloty A všetky staré placeholder sloty, ktoré už nie sú potrebné (nie sú v processedBlockedSlotIds)
         allExistingBlockedSlots.forEach(slot => {
             if (!processedBlockedSlotIds.has(slot.id)) {
-                // If it's a phantom or an old placeholder that wasn't re-created/accounted for, delete it
+                // Ak slot NIE JE v zozname spracovaných a NIE JE používateľom zablokovaný, vymažte ho
                 if (slot.isPhantom === true || (slot.isBlocked === false && slot.isPhantom === false)) {
                     batch.delete(doc(blockedSlotsCollectionRef, slot.id));
-                    console.log(`recalculateAndSaveScheduleForDateAndLocation: Pridané do batchu na vymazanie redundantného/fantómového slotu ID: ${slot.id}`);
+                    console.log(`recalculateAndSaveScheduleForDateAndLocation: Pridané do batchu na vymazanie redundantného/fantómového slotu ID: ${slot.id}, isPhantom: ${slot.isPhantom}, isBlocked: ${slot.isBlocked}`);
                 }
             }
         });
