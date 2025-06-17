@@ -520,75 +520,9 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location) {
             endInMinutes: (parseInt(doc.data().endTime.split(':')[0]) * 60) + parseInt(doc.data().endTime.split(':')[1])
         }));
         console.log("recalculateAndSaveScheduleForDateAndLocation: Všetky načítané blokované sloty:", JSON.stringify(allBlockedSlots.map(s => ({id:s.id, isBlocked:s.isBlocked, isPhantom:s.isPhantom}))));
-
-        // Filtrácia a zlúčenie duplicitných voľných slotov
-        // Krok 1: Oddelenie "placeholder" slotov (isBlocked: false, isPhantom: false)
-        let placeholderSlots = allBlockedSlots.filter(s => s.isBlocked === false && s.isPhantom === false);
-        let idsToKeep = new Set(allBlockedSlots.filter(s => s.isBlocked === true || s.isPhantom === true).map(s => s.id)); // Keep truly blocked or phantoms
-
-        // Krok 2: Zlúčenie prekrývajúcich sa alebo priľahlých placeholder slotov
-        if (placeholderSlots.length > 0) { // Only proceed if there are placeholders
-            placeholderSlots.sort((a, b) => a.startInMinutes - b.startInMinutes);
-            let mergedPlaceholderSlots = [];
-            let currentMerged = null;
-
-            for (const slot of placeholderSlots) {
-                if (currentMerged === null) {
-                    currentMerged = { ...slot };
-                    mergedPlaceholderSlots.push(currentMerged); // Add the first slot
-                } else {
-                    // Check for overlap or adjacency (within a minute tolerance)
-                    if (slot.startInMinutes <= currentMerged.endInMinutes + 1) { // +1 to merge adjacent slots
-                        // Merge by extending the end time of the current merged slot
-                        currentMerged.endInMinutes = Math.max(currentMerged.endInMinutes, slot.endInMinutes);
-                        // Mark the duplicate slot for deletion, as it's now covered by currentMerged
-                        batch.delete(doc(blockedSlotsCollectionRef, slot.id));
-                        idsToKeep.delete(slot.id); // No longer needed
-                        console.log(`recalculateAndSaveScheduleForDateAndLocation: Označený na vymazanie duplicitný/prekrývajúci sa placeholder slot ID: ${slot.id}`);
-                    } else {
-                        // Current merged slot is finalized, start a new one
-                        currentMerged = { ...slot };
-                        mergedPlaceholderSlots.push(currentMerged);
-                    }
-                }
-            }
-            
-            // Step 3: Update existing merged slots or add new ones if they changed
-            for (const mergedSlot of mergedPlaceholderSlots) {
-                const originalSlot = allBlockedSlots.find(s => s.id === mergedSlot.id);
-                const newStartTimeStr = `${String(Math.floor(mergedSlot.startInMinutes / 60)).padStart(2, '0')}:${String(mergedSlot.startInMinutes % 60).padStart(2, '0')}`;
-                const newEndTimeStr = `${String(Math.floor(mergedSlot.endInMinutes / 60)).padStart(2, '0')}:${String(mergedSlot.endInMinutes % 60).padStart(2, '0')}`;
-
-                if (originalSlot) {
-                    // If the slot already exists and its times changed due to merging, update it
-                    if (originalSlot.startInMinutes !== mergedSlot.startInMinutes || originalSlot.endInMinutes !== mergedSlot.endInMinutes) {
-                        batch.update(doc(blockedSlotsCollectionRef, mergedSlot.id), {
-                            startTime: newStartTimeStr,
-                            endTime: newEndTimeStr,
-                            startInMinutes: mergedSlot.startInMinutes,
-                            endInMinutes: mergedSlot.endInMinutes
-                        });
-                        console.log(`recalculateAndSaveScheduleForDateAndLocation: Aktualizujem zlúčený placeholder slot ID: ${mergedSlot.id} na ${newStartTimeStr}-${newEndTimeStr}`);
-                    }
-                    idsToKeep.add(mergedSlot.id); // Ensure this merged slot's ID is kept
-                } else {
-                    // This is a new "merged" slot that might have been formed from multiple existing ones,
-                    // or it could be the first placeholder created. Assign a new ID if it truly needs one.
-                    // For simplicity, if it was not 'originalSlot', assume it was part of what was deleted,
-                    // so we need to add it back if it's a result of merging.
-                    // This might require more complex logic for ID management, but for now we rely on originalSlot.
-                    // The main goal is to ensure only *one* placeholder covers the merged span.
-                    // We effectively only update the original if it exists and delete others.
-                }
-            }
-            // Now, filter allBlockedSlots to only include what we want to keep (truly blocked, phantoms, and the *final* merged placeholders)
-            allBlockedSlots = allBlockedSlots.filter(s => idsToKeep.has(s.id));
-        }
-
-
-        // Combine all events (matches and *active* blocked slots) and sort them by their start time
-        // Note: For scheduling, only actual matches and explicitly blocked slots are "obstacles".
-        // Placeholder slots (isBlocked:false, isPhantom:false) are "gaps".
+        
+        // Combine all events (matches and ALL types of blocked slots) for sorting and processing
+        // Now, isBlocked:false, isPhantom:false slots are treated as fixed obstacles too.
         let eventsToProcess = [
             ...currentMatches.map(m => {
                 const [h, mVal] = m.startTime.split(':').map(Number);
@@ -597,37 +531,62 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location) {
                 const bufferTime = Number(m.bufferTime) || 0;
                 return { ...m, startInMinutes: startMin, endInMinutes: startMin + duration + bufferTime };
             }),
-            ...allBlockedSlots.filter(slot => slot.isBlocked === true) // ONLY USER-SET BLOCKED SLOTS are obstacles
+            ...allBlockedSlots.filter(slot => slot.isPhantom === false) // Include user-blocked AND persistent placeholders
         ];
 
-        // Sort all events (matches and active blocked slots) by their start time
+        // Sort all events (matches and all non-phantom blocked slots) by their start time
         eventsToProcess.sort((a, b) => a.startInMinutes - b.startInMinutes);
-        console.log(`recalculateAndSaveScheduleForDateAndLocation: Všetky udalosti po zoradení (vrátane aktívnych blokovaných slotov):`, JSON.stringify(eventsToProcess.map(e => ({id: e.id, type: e.type, startInMinutes: e.startInMinutes, isPhantom: e.isPhantom, isBlocked: e.isBlocked}))));
+        console.log(`recalculateAndSaveScheduleForDateAndLocation: Všetky udalosti po zoradení (vrátane všetkých non-phantom slotov):`, JSON.stringify(eventsToProcess.map(e => ({id: e.id, type: e.type, startInMinutes: e.startInMinutes, isPhantom: e.isPhantom, isBlocked: e.isBlocked}))));
 
         const initialScheduleStartMinutes = await getInitialScheduleStartMinutes(date);
         let currentTimePointer = initialScheduleStartMinutes;
         console.log(`recalculateAndSaveScheduleForDateAndLocation: Počiatočný ukazovateľ času rozvrhu: ${currentTimePointer} minút.`);
 
-        const idsOfPhantomsToDelete = new Set(); // Store IDs of phantom slots to delete
-        const idsOfPlaceholdersToDelete = new Set(); // Store IDs of placeholders to delete if they are at the end
+        const slotsToDeleteFromBatch = new Set(); // To collect IDs of slots that become redundant
 
-        // Iterate through events and re-assign start times for matches
         for (const event of eventsToProcess) {
             console.log(`recalculateAndSaveScheduleForDateAndLocation: Spracovávam udalosť: ID ${event.id}, Typ: ${event.type}, Pôvodný štart: ${event.startTime || event.startInMinutes}, Aktuálny currentTimePointer: ${currentTimePointer}`);
 
             if (event.type === 'blocked_slot') {
-                // For actively blocked slots, simply advance the pointer past their end time
+                // If this blocked slot is a persistent placeholder (isBlocked:false, isPhantom:false)
+                // and it is being "overwritten" by currentTimePointer (meaning a match or previous blocked slot
+                // has pushed time beyond its start), then this placeholder is redundant.
+                if (event.isBlocked === false && event.isPhantom === false && currentTimePointer > event.startInMinutes) {
+                    slotsToDeleteFromBatch.add(event.id);
+                    console.log(`recalculateAndSaveScheduleForDateAndLocation: Označený na vymazanie redundantný placeholder slot (currentTimePointer > start): ${event.id}`);
+                }
+                
+                // For all blocked slots (user-blocked and persistent placeholders), advance the pointer past their end time
                 currentTimePointer = Math.max(currentTimePointer, event.endInMinutes);
-                console.log(`recalculateAndSaveScheduleForDateAndLocation: Aktívny zablokovaný slot ${event.id}, ukazovateľ posunutý na ${currentTimePointer} minút.`);
+                console.log(`recalculateAndSaveScheduleForDateAndLocation: Blokovaný slot ${event.id} (isBlocked:${event.isBlocked}, isPhantom:${event.isPhantom}), ukazovateľ posunutý na ${currentTimePointer} minút.`);
             } else if (event.type === 'match') {
                 const matchRef = doc(matchesCollectionRef, event.id);
-                // Assign new start time to the match, based on current pointer
-                let newMatchStartTimeInMinutes = currentTimePointer;
+                
+                // If a match's *current* start time (event.startInMinutes) is BEFORE currentTimePointer,
+                // it means it needs to be shifted forward to avoid overlap.
+                let newMatchStartTimeInMinutes = Math.max(currentTimePointer, event.startInMinutes);
+
+                // Check for overlapping placeholder slots that this match is now covering
+                allBlockedSlots.forEach(slot => {
+                    if (slot.isBlocked === false && slot.isPhantom === false && slot.id !== event.id) { // Ensure it's a placeholder, not the match itself
+                        // Check if the match (in its new potential position) completely covers the placeholder
+                        if (newMatchStartTimeInMinutes <= slot.startInMinutes && (newMatchStartTimeInMinutes + event.duration + event.bufferTime) >= slot.endInMinutes) {
+                            slotsToDeleteFromBatch.add(slot.id);
+                            console.log(`recalculateAndSaveScheduleForDateAndLocation: Označený na vymazanie placeholder slot (prekrytý zápasom ${event.id}): ${slot.id}`);
+                        }
+                    }
+                });
+
                 const newStartTimeStr = `${String(Math.floor(newMatchStartTimeInMinutes / 60)).padStart(2, '0')}:${String(newMatchStartTimeInMinutes % 60).padStart(2, '0')}`;
 
-                // Update the match document in Firestore batch
-                batch.update(matchRef, { startTime: newStartTimeStr });
-                console.log(`recalculateAndSaveScheduleForDateAndLocation: Aktualizujem zápas ${event.id} s novým časom: ${newStartTimeStr}`);
+                // Only update if the start time has actually changed
+                if (event.startTime !== newStartTimeStr) {
+                    batch.update(matchRef, { startTime: newStartTimeStr });
+                    console.log(`recalculateAndSaveScheduleForDateAndLocation: Aktualizujem zápas ${event.id} s novým časom: ${newStartTimeStr}`);
+                } else {
+                    console.log(`recalculateAndSaveScheduleForDateAndLocation: Zápas ${event.id} čas sa nezmenil, preskočené aktualizácie: ${newStartTimeStr}`);
+                }
+                
 
                 // Advance the pointer past this match (including its duration and buffer)
                 currentTimePointer = newMatchStartTimeInMinutes + event.duration + event.bufferTime;
@@ -635,34 +594,16 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location) {
             }
         }
 
-        // Cleanup: Identify and delete *all* phantom blocked slots (`isPhantom: true`)
-        // and *all* placeholder slots (`isBlocked: false, isPhantom: false`) that are beyond the last active event.
-        const allDynamicSlots = allBlockedSlots.filter(s => s.isPhantom === true || s.isBlocked === false); // Get all phantoms and placeholders
-        allDynamicSlots.forEach(slotToDelete => {
-            if (slotToDelete.startInMinutes >= currentTimePointer && (slotToDelete.isPhantom === true || slotToDelete.isBlocked === false)) { // Check if it's after the last active event
-                 if (slotToDelete.isPhantom === true) {
-                    idsOfPhantomsToDelete.add(slotToDelete.id);
-                    console.log(`recalculateAndSaveScheduleForDateAndLocation: Označený na vymazanie koncový fantómový slot ID: ${slotToDelete.id}`);
-                } else if (slotToDelete.isBlocked === false) { // This is a placeholder that is now trailing
-                    idsOfPlaceholdersToDelete.add(slotToDelete.id);
-                    console.log(`recalculateAndSaveScheduleForDateAndLocation: Označený na vymazanie koncový placeholder slot ID: ${slotToDelete.id}`);
-                }
+        // Final cleanup: Delete all phantom slots and any marked-for-deletion placeholders
+        allBlockedSlots.forEach(slot => {
+            if (slot.isPhantom === true || slotsToDeleteFromBatch.has(slot.id)) {
+                batch.delete(doc(blockedSlotsCollectionRef, slot.id));
+                console.log(`recalculateAndSaveScheduleForDateAndLocation: Pridané do batchu na finálne vymazanie slotu ID: ${slot.id} (Phantom: ${slot.isPhantom}, Marked for deletion: ${slotsToDeleteFromBatch.has(slot.id)})`);
             }
         });
 
-        // Execute deletions for identified phantoms and trailing placeholders
-        for (const slotId of idsOfPhantomsToDelete) {
-            batch.delete(doc(blockedSlotsCollectionRef, slotId));
-            console.log(`recalculateAndSaveScheduleForDateAndLocation: Pridané do batchu na vymazanie fantómového slotu ID: ${slotId}`);
-        }
-        for (const slotId of idsOfPlaceholdersToDelete) {
-            batch.delete(doc(blockedSlotsCollectionRef, slotId));
-            console.log(`recalculateAndSaveScheduleForDateAndLocation: Pridané do batchu na vymazanie koncového placeholder slotu ID: ${slotId}`);
-        }
-
-
         await batch.commit();
-        console.log("recalculateAndSaveScheduleForDateAndLocation: Final batch commit (including phantom and trailing placeholder deletions) successful.");
+        console.log("recalculateAndSaveScheduleForDateAndLocation: Final batch commit (including specific slot deletions) successful.");
 
         // Reload the display to reflect changes
         await displayMatchesAsSchedule();
@@ -708,7 +649,7 @@ async function getInitialScheduleStartMinutes(date) {
  * @param {string} targetDate Dátum cieľového miesta.
  * @param {string} targetLocation Miesto cieľového miesta (názov).
  * @param {string|null} droppedProposedStartTime HH:MM string pre navrhovaný čas začiatku presunutého zápasu, alebo null pre pripojenie na koniec.
- * @param {string|null} targetBlockedSlotId ID fantómového zablokovaného slotu, ak sa presúva na existujúci fantómový slot.
+ * @param {string|null} targetBlockedSlotId ID zablokovaného slotu, na ktorý sa presúva (môže byť aj placeholder).
  */
 async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation, droppedProposedStartTime = null, targetBlockedSlotId = null) {
     console.log(`moveAndRescheduleMatch: Spustené pre zápas ID: ${draggedMatchId}, cieľ: ${targetDate}, ${targetLocation}, navrhovaný čas: ${droppedProposedStartTime}, cieľový zablokovaný slot ID: ${targetBlockedSlotId}`);
@@ -726,9 +667,6 @@ async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation
         const originalDate = draggedMatchData.date;
         const originalLocation = draggedMatchData.location;
 
-        const isCrossMove = (originalDate !== targetDate || originalLocation !== targetLocation);
-        console.log(`moveAndRescheduleMatch: Je to cross-move? ${isCrossMove}`);
-
         // Get duration and bufferTime from the dragged match data, or default if not present
         const matchDuration = Number(draggedMatchData.duration) || 60;
         const matchBufferTime = Number(draggedMatchData.bufferTime) || 5;
@@ -736,25 +674,22 @@ async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation
         const originalMatchStartInMinutes = originalMatchStartH * 60 + originalMatchStartM;
         const originalMatchEndInMinutes = originalMatchStartInMinutes + matchDuration + matchBufferTime;
 
-        // Vytvorte placeholder slot na pôvodnom mieste zápasu LEN AK je to cross-move alebo ak sa mení miesto/dátum
-        if (originalDate !== targetDate || originalLocation !== targetLocation) {
-            const newPlaceholderSlotData = {
-                date: originalDate,
-                location: originalLocation,
-                startTime: draggedMatchData.startTime,
-                endTime: `${String(Math.floor(originalMatchEndInMinutes / 60)).padStart(2, '0')}:${String(originalMatchEndInMinutes % 60).padStart(2, '0')}`,
-                startInMinutes: originalMatchStartInMinutes,
-                endInMinutes: originalMatchEndInMinutes,
-                isBlocked: false, // This is an empty slot, not an active block
-                isPhantom: false, // This is NOT a phantom that should be auto-deleted
-                createdAt: new Date()
-            };
-            await addDoc(blockedSlotsCollectionRef, newPlaceholderSlotData);
-            console.log(`moveAndRescheduleMatch: Placeholder slot vytvorený na pôvodnom mieste: ${originalDate}, ${originalLocation}, ${draggedMatchData.startTime}`);
-        } else {
-            console.log(`moveAndRescheduleMatch: Nie je cross-move, placeholder slot na pôvodnom mieste sa nevytvorí.`);
-        }
-
+        // Vždy vytvorte placeholder slot na pôvodnom mieste zápasu
+        // (bez ohľadu na to, či ide o cross-move alebo nie)
+        const newPlaceholderSlotData = {
+            date: originalDate,
+            location: originalLocation,
+            startTime: draggedMatchData.startTime,
+            endTime: `${String(Math.floor(originalMatchEndInMinutes / 60)).padStart(2, '0')}:${String(originalMatchEndInMinutes % 60).padStart(2, '0')}`,
+            startInMinutes: originalMatchStartInMinutes,
+            endInMinutes: originalMatchEndInMinutes,
+            isBlocked: false, // This is an empty slot, not an active block
+            isPhantom: false, // This is NOT a phantom that should be auto-deleted by general cleanup
+            createdAt: new Date()
+        };
+        await addDoc(blockedSlotsCollectionRef, newPlaceholderSlotData);
+        console.log(`moveAndRescheduleMatch: Placeholder slot vytvorený na pôvodnom mieste: ${originalDate}, ${originalLocation}, ${draggedMatchData.startTime}`);
+        
         // 2. Update the original match document to its new location/time
         const updatedMatchData = {
             ...draggedMatchData,
@@ -780,8 +715,10 @@ async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation
         console.log(`moveAndRescheduleMatch: Prepočítanie pre pôvodnú lokáciu (${originalDate}, ${originalLocation}) dokončené.`);
 
         // Cieľové miesto
-        await recalculateAndSaveScheduleForDateAndLocation(targetDate, targetLocation);
-        console.log(`moveAndRescheduleMatch: Prepočítanie pre cieľovú lokáciu (${targetDate}, ${targetLocation}) dokončené.`);
+        if (originalDate !== targetDate || originalLocation !== targetLocation) { // Only recalculate target if different
+            await recalculateAndSaveScheduleForDateAndLocation(targetDate, targetLocation);
+            console.log(`moveAndRescheduleMatch: Prepočítanie pre cieľovú lokáciu (${targetDate}, ${targetLocation}) dokončené.`);
+        }
 
         await showMessage('Úspech', 'Zápas úspešne presunutý a rozvrh prepočítaný!');
         closeModal(document.getElementById('messageModal')); // Close any message modal
@@ -973,7 +910,6 @@ async function displayMatchesAsSchedule() {
                         let contentAddedForThisDate = false;
 
                         // Kombinujte zápasy a VŠETKY typy zablokovaných slotov na správne vykreslenie.
-                        // Avšak pre určenie currentTimePointerInMinutes sú dôležité len aktívne prekážky.
                         const currentEventsForRendering = [
                             ...matchesForDateAndLocation.map(m => ({
                                 ...m,
@@ -981,8 +917,8 @@ async function displayMatchesAsSchedule() {
                                 startInMinutes: (parseInt(m.startTime.split(':')[0]) * 60 + parseInt(m.startTime.split(':')[1])),
                                 endInMinutes: (parseInt(m.startTime.split(':')[0]) * 60 + parseInt(m.startTime.split(':')[1])) + (m.duration || (allSettings.categoryMatchSettings?.[m.categoryId]?.duration || 60)) + (m.bufferTime || (allSettings.categoryMatchSettings?.[m.categoryId]?.bufferTime || 5))
                             })),
-                            // Filter out phantom slots from the rendering list, as they are implicitly covered by other blocks or consolidated placeholders
-                            ...blockedSlotsForDateAndLocation.filter(s => s.isPhantom === false) // ONLY non-phantom blocked slots are rendered directly
+                            // Include ALL blocked slots (user-blocked, phantom, and placeholder) for rendering
+                            ...blockedSlotsForDateAndLocation 
                         ];
                         currentEventsForRendering.sort((a, b) => a.startInMinutes - b.startInMinutes);
                         console.log(`displayMatchesAsSchedule: Udalosti pre render pre ${location} na ${date} (zoradené):`, JSON.stringify(currentEventsForRendering.map(e => ({id: e.id, type: e.type, startTime: e.startTime || e.startInMinutes, endTime: e.endTime || e.endInMinutes, isPhantom: e.isPhantom, isBlocked: e.isBlocked}))));
@@ -990,26 +926,20 @@ async function displayMatchesAsSchedule() {
                         // Determine the end time of the last event in minutes for this specific date and location
                         let lastEventEndForDataAttribute = initialScheduleStartMinutes;
                         if (currentEventsForRendering.length > 0) {
-                             // Find the actual end of the last *active* event (match or user-blocked slot)
-                            const lastActiveEvent = currentEventsForRendering.filter(e => e.type === 'match' || (e.type === 'blocked_slot' && e.isBlocked === true))
+                            // Find the actual end of the last *any* event that should occupy space
+                            const lastActualEvent = currentEventsForRendering
                                 .reduce((latest, current) => {
                                     return (latest === null || current.endInMinutes > latest.endInMinutes) ? current : latest;
                                 }, null);
 
-                            if (lastActiveEvent) {
-                                lastEventEndForDataAttribute = lastActiveEvent.endInMinutes;
-                            } else {
-                                // If no active events, but there are unblocked placeholders,
-                                // the "last event end" should be the initial start time of the day.
-                                lastEventEndForDataAttribute = initialScheduleStartMinutes;
+                            if (lastActualEvent) {
+                                lastEventEndForDataAttribute = lastActualEvent.endInMinutes;
                             }
-                        } else {
-                            lastEventEndForDataAttribute = initialScheduleStartMinutes;
                         }
 
                         const formattedLastEventEndTime = `${String(Math.floor(lastEventEndForDataAttribute / 60)).padStart(2, '0')}:${String(lastEventEndForDataAttribute % 60).padStart(2, '0')}`;
                         
-                        scheduleHtml += `<div class="date-group" data-date="${date}" data-location="${location}" data-last-event-end-time="${formattedLastEventEndTime}" style="margin: 20px; border: 1px solid #eee; border-radius: 8px; overflow: hidden;">`;
+                        scheduleHtml += `<div class="date-group" data-date="${date}" data-location="${location}" data-last-event-end-time="${formattedLastEventEndTime}" data-initial-start-time="${String(Math.floor(initialScheduleStartMinutes / 60)).padStart(2, '0')}:${String(initialScheduleStartMinutes % 60).padStart(2, '0')}" style="margin: 20px; border: 1px solid #eee; border-radius: 8px; overflow: hidden;">`;
                         scheduleHtml += `<h3 style="background-color: #eaeaea; padding: 15px; margin: 0; border-bottom: 1px solid #ddd;">${dayName} ${formattedDisplayDate}</h3>`;
 
                         scheduleHtml += `<table class="data-table match-list-table compact-table" style="width: 100%; border-collapse: collapse;">`;
@@ -1022,22 +952,18 @@ async function displayMatchesAsSchedule() {
 
 
                         for (const event of currentEventsForRendering) {
-                            // Prázdne sloty pred udalosťou (iba ak nie sú obsadené zablokovaným alebo fantómovým slotom)
-                            // We now check against *all* blocked slots to ensure we don't render a "pure empty slot" if there's a DB-managed blocked slot in that space.
-                            let hasDbManagedSlotInGap = false;
-                            // Check against all blocked slots from DB including phantoms, to avoid rendering a generic 'empty slot' over them.
-                            for (const bs of blockedSlotsForDateAndLocation) {
-                                if (bs.startInMinutes >= currentTimePointerInMinutes && bs.startInMinutes < event.startInMinutes) {
-                                    // If a DB managed slot starts within the current gap before the event,
-                                    // and it's not the same as the current event, then we shouldn't render a pure empty slot here.
-                                    if (!(bs.id === event.id && bs.type === event.type)) { // Exclude checking against itself
-                                        hasDbManagedSlotInGap = true;
-                                        break;
-                                    }
+                            // Prázdne sloty pred udalosťou (iba ak nie sú obsadené ŽIADNYM DB záznamom)
+                            // We now check against *all* events (matches and all blocked slots)
+                            let isGapCoveredByDbEvent = false;
+                            for (const existingEvent of currentEventsForRendering) {
+                                if (existingEvent.startInMinutes <= currentTimePointerInMinutes && existingEvent.endInMinutes > currentTimePointerInMinutes && existingEvent.id !== event.id) {
+                                     // If any existing event starts before or at current pointer, and ends after current pointer, it covers the gap
+                                    isGapCoveredByDbEvent = true;
+                                    break;
                                 }
                             }
-
-                            if (currentTimePointerInMinutes < event.startInMinutes && !hasDbManagedSlotInGap) {
+                            
+                            if (currentTimePointerInMinutes < event.startInMinutes && !isGapCoveredByDbEvent) {
                                 const formattedEmptySlotStartTime = `${String(Math.floor(currentTimePointerInMinutes / 60)).padStart(2, '0')}:${String(currentTimePointerInMinutes % 60).padStart(2, '0')}`;
                                 const formattedEmptySlotEndTime = `${String(Math.floor(event.startInMinutes / 60)).padStart(2, '0')}:${String(event.startInMinutes % 60).padStart(2, '0')}`;
                                 scheduleHtml += `
@@ -1083,7 +1009,7 @@ async function displayMatchesAsSchedule() {
                                 const blockedSlotEndHour = String(Math.floor(blockedSlot.endInMinutes / 60)).padStart(2, '0');
                                 const blockedSlotEndMinute = String(blockedSlot.endInMinutes % 60).padStart(2, '0');
                                 
-                                const isUserBlocked = blockedSlot.isBlocked === true; // Only rendering user-blocked or consolidated placeholders
+                                const isUserBlocked = blockedSlot.isBlocked === true; 
 
                                 let rowClass = '';
                                 let cellStyle = '';
@@ -1094,12 +1020,17 @@ async function displayMatchesAsSchedule() {
                                     rowClass = 'blocked-slot-row'; 
                                     cellStyle = 'text-align: center; color: white; background-color: #dc3545; font-style: italic;';
                                     displayText = 'Zablokovaný slot';
-                                    dataAttributes = `data-is-blocked="true"`;
-                                } else { // isBlocked === false: This is our consolidated placeholder empty slot
-                                    rowClass = 'empty-slot-row'; 
-                                    cellStyle = 'text-align: center; color: #888; font-style: italic;';
+                                    dataAttributes = `data-is-blocked="true" data-is-phantom="${blockedSlot.isPhantom}"`;
+                                } else if (blockedSlot.isPhantom === true) { // isBlocked === false && isPhantom === true
+                                    rowClass = 'empty-slot-row phantom-slot-row'; // Style phantoms differently if needed
+                                    cellStyle = 'text-align: center; color: #888; font-style: italic; border: 1px dashed #ffa000;'; // Example: dashed orange border
+                                    displayText = 'Fantómový interval'; 
+                                    dataAttributes = `data-is-blocked="false" data-is-phantom="true"`;
+                                } else { // isBlocked === false && isPhantom === false (the new persistent placeholder from a moved match)
+                                    rowClass = 'empty-slot-row moved-from-slot'; 
+                                    cellStyle = 'text-align: center; color: #888; font-style: italic; background-color: #f0f0f0;'; // Different background for moved-from
                                     displayText = 'Voľný interval po presune'; 
-                                    dataAttributes = `data-is-blocked="false" data-is-phantom="false"`; // Ensure phantom is false for consolidated
+                                    dataAttributes = `data-is-blocked="false" data-is-phantom="false"`; 
                                 }
 
                                 console.log(`displayMatchesAsSchedule: Renderujem blocked slot: ID ${blockedSlot.id}, Čas: ${blockedSlotStartHour}:${blockedSlotStartMinute}-${blockedSlotEndHour}:${blockedSlotEndMinute}, Miesto: ${blockedSlot.location}, Dátum: ${blockedSlot.date}, isPhantom: ${blockedSlot.isPhantom}, isBlocked: ${isUserBlocked}`);
@@ -1116,9 +1047,30 @@ async function displayMatchesAsSchedule() {
                             currentTimePointerInMinutes = Math.max(currentTimePointerInMinutes, event.endInMinutes);
                         }
                         
-                        // ODSTRÁNENÉ: Predtým tu bola logika na zobrazenie "Voľný slot dostupný" až do 24:00.
-                        // Už sa na konci dňa nezobrazujú prázdne sloty.
-
+                        // Prázdny slot na konci dňa, ak je priestor a nie je už pokrytý
+                        const endOfDayMinutes = 24 * 60; // 24:00
+                        if (currentTimePointerInMinutes < endOfDayMinutes) {
+                            const formattedEmptySlotStartTime = `${String(Math.floor(currentTimePointerInMinutes / 60)).padStart(2, '0')}:${String(currentTimePointerInMinutes % 60).padStart(2, '0')}`;
+                            const formattedEmptySlotEndTime = `24:00`; // Represent end of day
+                            // Check if this final "empty slot" is covered by any existing DB entry
+                            let isEndGapCovered = false;
+                             for (const existingEvent of currentEventsForRendering) {
+                                if (existingEvent.startInMinutes <= currentTimePointerInMinutes && existingEvent.endInMinutes > currentTimePointerInMinutes) {
+                                    isEndGapCovered = true;
+                                    break;
+                                }
+                            }
+                            if (!isEndGapCovered) {
+                                scheduleHtml += `
+                                    <tr class="empty-slot-row" data-date="${date}" data-location="${location}" data-start-time="${formattedEmptySlotStartTime}" data-end-time="${formattedEmptySlotEndTime}">
+                                        <td>${formattedEmptySlotStartTime} - ${formattedEmptySlotEndTime}</td>
+                                        <td colspan="4" style="text-align: center; color: #888; font-style: italic;">Voľný slot dostupný</td>
+                                    </tr>
+                                `;
+                                contentAddedForThisDate = true;
+                                console.log(`displayMatchesAsSchedule: Pridaný koncový PURE prázdny slot: ${formattedEmptySlotStartTime}-24:00`);
+                            }
+                        }
 
                         if (!contentAddedForThisDate) {
                             scheduleHtml += `<tr><td colspan="5" style="text-align: center; color: #888; font-style: italic; padding: 15px;">Žiadne zápasy ani zablokované sloty pre tento deň.</td></tr>`;
@@ -1311,7 +1263,11 @@ async function displayMatchesAsSchedule() {
                             console.log(`Detected drop on empty/unblocked slot with ID: ${targetBlockedSlotId}`);
                         }
                     } else {
-                        // If dropped on the background of dateGroupDiv, use the last event end time for this date and location
+                        // If dropped on the background of dateGroupDiv, determine if it's "before first event" or "after last event"
+                        // Simplification: For now, if dropped on background, assume it's "at the end".
+                        // To accurately place it at the beginning, we would need a specific drop target for the beginning.
+                        // For now, if dropped on the general date-group div (not a specific row), use the last event end time.
+                        // For "before first event", the 'empty-slot-row' at the beginning would be the target.
                         droppedProposedStartTime = dateGroupDiv.dataset.lastEventEndTime;
                         console.log(`Dropped on background. Proposed start time (last event end): ${droppedProposedStartTime}`);
                     }
@@ -2486,7 +2442,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else {
             team1NumberInput.value = '';
             team1NumberInput.disabled = true;
-            team2NumberInput.value = '';
             team2NumberInput.disabled = true;
         }
     });
