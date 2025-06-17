@@ -1069,7 +1069,7 @@ async function displayMatchesAsSchedule() {
                             if (!isEndGapCovered) {
                                 scheduleHtml += `
                                     <tr class="empty-slot-row" data-date="${date}" data-location="${location}" data-start-time="${formattedEmptySlotStartTime}" data-end-time="${formattedEmptySlotEndTime}">
-                                        <td>${formattedEmptySlotStartTime} - ${formattedEmptySlotEndTime}</td>
+                                        <td>${formattedEmptySlotStartTime} - ${formattedEmptySlotStartTime}</td>
                                         <td colspan="4" style="text-align: center; color: #888; font-style: italic;">Voľný slot dostupný</td>
                                     </tr>
                                 `;
@@ -1260,26 +1260,40 @@ async function displayMatchesAsSchedule() {
                         return; // Zastaviť drop operáciu
                     }
                     
-                    // NEW LOGIC FOR DROPPING BEFORE THE FIRST MATCH/SLOT
-                    // Check if the drop occurred before any existing rows
-                    const droppedY = event.clientY;
+                    // NEW LOGIC FOR DROPPING BEFORE THE FIRST MATCH/SLOT - Robustnejšie nájdenie prvého obsahového riadku
                     const tableBody = dateGroupDiv.querySelector('tbody');
-                    let firstRowRect = null;
-                    if (tableBody && tableBody.rows.length > 0) {
-                        firstRowRect = tableBody.rows[0].getBoundingClientRect();
+                    let firstContentRow = null;
+                    if (tableBody) {
+                        for (let i = 0; i < tableBody.rows.length; i++) {
+                            const row = tableBody.rows[i];
+                            // Consider only actual match rows or blocked slots (which also includes placeholders) as content
+                            if (row.classList.contains('match-row') || row.classList.contains('blocked-slot-row') || row.classList.contains('moved-from-slot')) {
+                                firstContentRow = row;
+                                break;
+                            }
+                        }
                     }
 
                     const initialStartTime = dateGroupDiv.dataset.initialStartTime;
+                    let dropBeforeFirstContent = false;
 
-                    // If dropped very near or above the first row, suggest the initial start time for the day
-                    if (firstRowRect && droppedY <= firstRowRect.top + 10) { // Add a small buffer for "above"
-                        droppedProposedStartTime = initialStartTime;
-                        console.log(`Dropped before first row. Proposed start time (initial start): ${droppedProposedStartTime}`);
-                        // If the first row itself is an empty slot, we should delete it as it's being "filled"
-                        if (tableBody.rows[0].classList.contains('empty-slot-row') && tableBody.rows[0].dataset.id) {
-                            targetBlockedSlotId = tableBody.rows[0].dataset.id;
-                            console.log(`Targeting the first empty slot with ID: ${targetBlockedSlotId}`);
+                    if (firstContentRow) {
+                        const firstContentRowRect = firstContentRow.getBoundingClientRect();
+                        // If dropped very near or above the first content row (added a slightly larger buffer)
+                        if (droppedY < firstContentRowRect.top + 20) { // Increased buffer from 10 to 20
+                            dropBeforeFirstContent = true;
+                            droppedProposedStartTime = initialStartTime;
+                            // If the first content row is an empty slot (placeholder or phantom), we should delete it as it's being "filled"
+                            if (firstContentRow.classList.contains('empty-slot-row') && firstContentRow.dataset.id) {
+                                targetBlockedSlotId = firstContentRow.dataset.id;
+                                console.log(`Targeting the first empty slot with ID: ${targetBlockedSlotId} (when dropping before first content).`);
+                            }
+                            console.log(`Dropped before first actual content row. Proposed start time (initial start): ${droppedProposedStartTime}`);
                         }
+                    }
+
+                    if (dropBeforeFirstContent) {
+                         // Logic already set for dropBeforeFirstContent
                     } else if (droppedOnElement && droppedOnElement.dataset.startTime) { 
                         // If dropped on any other row (match or empty/unblocked slot), use its start time
                         droppedProposedStartTime = droppedOnElement.dataset.startTime;
