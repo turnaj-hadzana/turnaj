@@ -619,39 +619,40 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location) {
         }
 
         // 3. Manažujte koncovú medzeru PO poslednej aktívnej udalosti (ak existuje)
-        const endOfDayMinutes = 24 * 60; // 24:00
-        if (currentTimePointer < endOfDayMinutes) {
-            const gapStart = currentTimePointer;
-            const gapEnd = endOfDayMinutes; // End of the day
+        // Toto je upravené tak, aby sa na konci dňa NEZOBRAZOVALI prázdne sloty
+        // const endOfDayMinutes = 24 * 60; // 24:00
+        // if (currentTimePointer < endOfDayMinutes) {
+        //     const gapStart = currentTimePointer;
+        //     const gapEnd = endOfDayMinutes; // End of the day
 
-            const existingPlaceholder = allExistingBlockedSlots.find(s =>
-                s.isBlocked === false && s.isPhantom === false &&
-                s.startInMinutes === gapStart && s.endInMinutes === gapEnd
-            );
+        //     const existingPlaceholder = allExistingBlockedSlots.find(s =>
+        //         s.isBlocked === false && s.isPhantom === false &&
+        //         s.startInMinutes === gapStart && s.endInMinutes === gapEnd
+        //     );
 
-            const newPlaceholderData = {
-                date: date,
-                location: location,
-                startTime: `${String(Math.floor(gapStart / 60)).padStart(2, '0')}:${String(gapStart % 60).padStart(2, '0')}`,
-                endTime: `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(gapEnd % 60).padStart(2, '0')}`,
-                startInMinutes: gapStart,
-                endInMinutes: gapEnd,
-                isBlocked: false,
-                isPhantom: false,
-                createdAt: new Date()
-            };
+        //     const newPlaceholderData = {
+        //         date: date,
+        //         location: location,
+        //         startTime: `${String(Math.floor(gapStart / 60)).padStart(2, '0')}:${String(gapStart % 60).padStart(2, '0')}`,
+        //         endTime: `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(gapEnd % 60).padStart(2, '0')}`,
+        //         startInMinutes: gapStart,
+        //         endInMinutes: gapEnd,
+        //         isBlocked: false,
+        //         isPhantom: false,
+        //         createdAt: new Date()
+        //     };
 
-            if (existingPlaceholder) {
-                batch.set(doc(blockedSlotsCollectionRef, existingPlaceholder.id), newPlaceholderData, { merge: true });
-                processedBlockedSlotIds.add(existingPlaceholder.id);
-                console.log(`recalculateAndSaveScheduleForDateAndLocation: Aktualizovaný existujúci koncový placeholder slot: ID ${existingPlaceholder.id}, Čas: ${newPlaceholderData.startTime}-${newPlaceholderData.endTime}`);
-            } else {
-                const newDocRef = doc(blockedSlotsCollectionRef);
-                batch.set(newDocRef, newPlaceholderData);
-                processedBlockedSlotIds.add(newDocRef.id);
-                console.log(`recalculateAndSaveScheduleForDateAndLocation: Vytvorený nový koncový placeholder slot: Čas: ${newPlaceholderData.startTime}-${newPlaceholderData.endTime}`);
-            }
-        }
+        //     if (existingPlaceholder) {
+        //         batch.set(doc(blockedSlotsCollectionRef, existingPlaceholder.id), newPlaceholderData, { merge: true });
+        //         processedBlockedSlotIds.add(existingPlaceholder.id);
+        //         console.log(`recalculateAndSaveScheduleForDateAndLocation: Aktualizovaný existujúci koncový placeholder slot: ID ${existingPlaceholder.id}, Čas: ${newPlaceholderData.startTime}-${newPlaceholderData.endTime}`);
+        //     } else {
+        //         const newDocRef = doc(blockedSlotsCollectionRef);
+        //         batch.set(newDocRef, newPlaceholderData);
+        //         processedBlockedSlotIds.add(newDocRef.id);
+        //         console.log(`recalculateAndSaveScheduleForDateAndLocation: Vytvorený nový koncový placeholder slot: Čas: ${newPlaceholderData.startTime}-${newPlaceholderData.endTime}`);
+        //     }
+        // }
 
 
         // 4. Vyčistenie: Vymažte všetky fantómové sloty A všetky staré placeholder sloty, ktoré už nie sú potrebné
@@ -1063,6 +1064,7 @@ async function displayMatchesAsSchedule() {
                                     displayText = 'Fantómový interval'; 
                                     dataAttributes = `data-is-blocked="false" data-is-phantom="true"`;
                                 } else { // isBlocked === false && isPhantom === false (the new persistent placeholder or original moved-from slot)
+                                    // This is the "Voľný slot dostupný" placeholder
                                     rowClass = 'empty-slot-row free-slot-available-row'; // NEW CLASS for all persistent empty slots
                                     cellStyle = 'text-align: center; color: #888; font-style: italic; background-color: #f0f0f0;'; 
                                     displayText = 'Voľný slot dostupný'; // This is now always a DB entry
@@ -1790,7 +1792,7 @@ async function openFreeSlotModal(date, location, startTime, endTime, blockedSlot
             };
             blockButton.addEventListener('click', blockHandler);
             blockButton._currentHandler = blockHandler; 
-            console.log("openFreeSlotModal: Pridaný poslucháč a zobrazené tlačidlo 'Zablokovať' pre fantómový slot.");
+            console.log("openFreeSlotModal: Pridaný posluchovač a zobrazené tlačidlo 'Zablokovať' pre fantómový slot.");
         }
 
         if (deletePhantomButton) {
@@ -1803,7 +1805,7 @@ async function openFreeSlotModal(date, location, startTime, endTime, blockedSlot
             };
             deletePhantomButton.addEventListener('click', deleteHandler);
             deletePhantomButton._currentHandler = deleteHandler; 
-            console.log("openFreeSlotModal: Pridaný poslucháč a zobrazené tlačidlo 'Vymazať' pre fantómový slot.");
+            console.log("openFreeSlotModal: Pridaný posluchovač a zobrazené tlačidlo 'Vymazať' pre fantómový slot.");
         }
         if (unblockButton) { unblockButton.style.display = 'none'; } // This button is not for phantoms
 
