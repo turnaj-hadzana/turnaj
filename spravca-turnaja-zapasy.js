@@ -1594,7 +1594,7 @@ async function openMatchModal(matchId = null, prefillDate = '', prefillLocation 
             matchGroupSelect.disabled = true;
         }
 
-        // Ak je skupina vybratá, odblokujte polia tímov, inak ich zablokujte
+        // Ak je skupina vybraná, odblokujte polia tímov, inak ich zablokujte
         if (matchGroupSelect.value) {
             team1NumberInput.disabled = false;
             team2NumberInput.disabled = false;
