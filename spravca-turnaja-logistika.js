@@ -1640,7 +1640,7 @@ async function openFreeSlotModal(date, location, startTime, endTime, blockedSlot
     const freeSlotTimeRangeDisplay = document.getElementById('freeSlotTimeRangeDisplay');
     const freeSlotIdInput = document.getElementById('freeSlotId');
     
-    // Získajte obe tlačidlá pre správu slotov
+    // Získajte referencie na tlačidlá priamo pri každom otvorení modálneho okna
     const blockButton = document.getElementById('blockSlotButton'); // Tlačidlo Zablokovať/Reblokovať
     const deleteUnblockButton = document.getElementById('deleteFreeSlotButton'); // Tlačidlo Odblokovať/Vymazať
     const phantomSlotDeleteButton = document.getElementById('phantomSlotDeleteButton'); // NOVÉ TLAČIDLO
@@ -1667,13 +1667,13 @@ async function openFreeSlotModal(date, location, startTime, endTime, blockedSlot
     freeSlotLocationDisplay.textContent = location;
     freeSlotTimeRangeDisplay.textContent = `${startTime} - ${endTime}`;
 
-    // Reset štýlov a zobrazenia tlačidiel
+    // Reset štýlov a zobrazenia tlačidiel na začiatku
     if (blockButton) blockButton.style.display = 'none';
     if (deleteUnblockButton) {
         deleteUnblockButton.style.display = 'none';
         deleteUnblockButton.classList.remove('delete-button'); // Vždy odstráni červený štýl pre istotu
     }
-    if (phantomSlotDeleteButton) { // Ensure new button is hidden by default
+    if (phantomSlotDeleteButton) { 
         phantomSlotDeleteButton.style.display = 'none';
         phantomSlotDeleteButton.classList.remove('delete-button');
     }
@@ -1712,7 +1712,7 @@ async function openFreeSlotModal(date, location, startTime, endTime, blockedSlot
             blockButton.textContent = 'Zablokovať';
             const blockHandler = () => createBlockedSlotAndRecalculate(date, location, startTime, endTime);
             blockButton.addEventListener('click', blockHandler);
-            blockButton._currentHandler = blockHandler;
+            blockButton._currentHandler = blockHandler; // Uložte referenciu na handler
             console.log("openFreeSlotModal: Zobrazené tlačidlo 'Zablokovať'.");
         }
 
@@ -1726,7 +1726,7 @@ async function openFreeSlotModal(date, location, startTime, endTime, blockedSlot
                 recalculateAndSaveScheduleForDateAndLocation(date, location);
             };
             deleteUnblockButton.addEventListener('click', deleteHandler);
-            deleteUnblockButton._currentHandler = deleteHandler;
+            deleteUnblockButton._currentHandler = deleteHandler; // Uložte referenciu na handler
             console.log("openFreeSlotModal: Zobrazené tlačidlo 'Vymazať'.");
         }
 
@@ -1740,7 +1740,7 @@ async function openFreeSlotModal(date, location, startTime, endTime, blockedSlot
             blockButton.textContent = 'Zablokovať'; // Konvertuje fantóm na riadny zablokovaný
             const blockHandler = () => convertToRegularBlockedSlot(blockedSlotId, date, location);
             blockButton.addEventListener('click', blockHandler);
-            blockButton._currentHandler = blockHandler;
+            blockButton._currentHandler = blockHandler; // Uložte referenciu na handler
             console.log("openFreeSlotModal: Zobrazené tlačidlo 'Zablokovať' pre fantómový slot.");
         }
 
@@ -1751,7 +1751,7 @@ async function openFreeSlotModal(date, location, startTime, endTime, blockedSlot
             phantomSlotDeleteButton.classList.add('delete-button');
             const deleteHandler = () => deleteSlotAndRecalculate(blockedSlotId, date, location);
             phantomSlotDeleteButton.addEventListener('click', deleteHandler);
-            phantomSlotDeleteButton._currentHandler = deleteHandler;
+            phantomSlotDeleteButton._currentHandler = deleteHandler; // Uložte referenciu na handler
             console.log("openFreeSlotModal: Zobrazené tlačidlo 'Vymazať' pre fantómový slot.");
         }
         // Skryje deleteUnblockButton, aby nedošlo ku kolízii
@@ -1773,7 +1773,7 @@ async function openFreeSlotModal(date, location, startTime, endTime, blockedSlot
             deleteUnblockButton.classList.remove('delete-button'); // Odstráni červený štýl
             const unblockHandler = () => unblockBlockedSlot(blockedSlotId, date, location);
             deleteUnblockButton.addEventListener('click', unblockHandler);
-            deleteUnblockButton._currentHandler = unblockHandler;
+            deleteUnblockButton._currentHandler = unblockHandler; // Uložte referenciu na handler
             console.log("openFreeSlotModal: Zobrazené tlačidlo 'Odblokovať'.");
         }
 
@@ -1786,7 +1786,7 @@ async function openFreeSlotModal(date, location, startTime, endTime, blockedSlot
             blockButton.textContent = 'Zablokovať'; // Zmení isBlocked na true
             const reblockHandler = () => reblockUnblockedSlot(blockedSlotId, date, location);
             blockButton.addEventListener('click', reblockHandler);
-            blockButton._currentHandler = reblockHandler;
+            blockButton._currentHandler = reblockHandler; // Uložte referenciu na handler
             console.log("openFreeSlotModal: Zobrazené tlačidlo 'Zablokovať' pre odblokovaný slot.");
         }
 
@@ -1796,7 +1796,7 @@ async function openFreeSlotModal(date, location, startTime, endTime, blockedSlot
             deleteUnblockButton.classList.add('delete-button');
             const deleteHandler = () => deleteSlotAndRecalculate(blockedSlotId, date, location);
             deleteUnblockButton.addEventListener('click', deleteHandler);
-            deleteUnblockButton._currentHandler = deleteHandler;
+            deleteUnblockButton._currentHandler = deleteHandler; // Uložte referenciu na handler
             console.log("openFreeSlotModal: Zobrazené tlačidlo 'Vymazať slot'.");
         }
     }
