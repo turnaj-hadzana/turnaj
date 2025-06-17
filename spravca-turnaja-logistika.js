@@ -949,8 +949,8 @@ async function displayMatchesAsSchedule() {
                         scheduleHtml += `<th>Domáci</th>`;
                         scheduleHtml += `<th>Hostia</th>`;
                         scheduleHtml += `<th>ID Domáci</th>`;
-                        scheduleHtml += `<th>ID Hostia</th>`;
-                        scheduleHtml += `</tr></thead><tbody>`;
+                        // OPRAVA: Pridaný chýbajúci uzatvárací <th> tag
+                        scheduleHtml += `<th>ID Hostia</th></tr></thead><tbody>`;
 
                         const isFirstPlayingDayForDate = allPlayingDayDates.length > 0 && date === allPlayingDayDates[0];
                         const initialScheduleStartMinutes = (isFirstPlayingDayForDate ? globalFirstDayStartTime : globalOtherDaysStartTime).split(':').map(Number).reduce((h, m) => h * 60 + m);
@@ -1640,9 +1640,10 @@ async function openFreeSlotModal(date, location, startTime, endTime, blockedSlot
     const freeSlotTimeRangeDisplay = document.getElementById('freeSlotTimeRangeDisplay');
     const freeSlotIdInput = document.getElementById('freeSlotId');
     
-    const blockButton = document.getElementById('blockSlotButton');
-    const deleteUnblockButton = document.getElementById('deleteFreeSlotButton');
-    const phantomSlotDeleteButton = document.getElementById('phantomSlotDeleteButton');
+    // Získanie referencií na tlačidlá priamo z DOM
+    const blockButton = document.getElementById('blockFreeSlotButton'); // OPRAVA: Zmenené ID
+    const deleteUnblockButton = document.getElementById('unblockFreeSlotButton'); // OPRAVA: Zmenené ID
+    const phantomSlotDeleteButton = document.getElementById('phantomSlotDeleteButton'); // NOVINKA: Získanie referencie na nové tlačidlo
 
     // Vyčistite všetky predchádzajúce poslucháče udalostí pre všetky tlačidlá
     if (blockButton && blockButton._currentHandler) {
@@ -2021,7 +2022,7 @@ async function reblockUnblockedSlot(slotId, date, location) {
             const [startH, startM] = (await getDoc(slotRef)).data().startTime.split(':').map(Number);
             const startInMinutes = startH * 60 + startM;
             const [endH, endM] = (await getDoc(slotRef)).data().endTime.split(':').map(Number);
-            const endInMinutes = endM * 60 + endM; // OPRAVA: Preklep, malo by byť endM
+            const endInMinutes = endH * 60 + endM; // OPRAVA: Preklep, malo by byť endH * 60 + endM
 
             const matchesQuery = query(
                 matchesCollectionRef,
