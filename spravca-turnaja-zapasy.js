@@ -587,7 +587,7 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, drag
                         // Ak sa prekrýva a koniec je za ukazovateľom (slot začal pred ukazovateľom)
                         currentTimePointer = event.endInMinutes;
                     }
-                    console.log(`recalculateAndSaveScheduleForDateAndLocation: Aktívny zablokovaný slot/fantóm ${event.id}, ukazovateľ posunutý na ${currentTimePointer} minút.`);
+                    console.log(`recalculateAndSaveScheduleForDateAndLocation: Aktívny zablokovaný interval/fantóm ${event.id}, ukazovateľ posunutý na ${currentTimePointer} minút.`);
                 } else { // Je to odblokovaný slot-placeholder, nespotrebúva čas a neposúva ukazovateľ
                     console.log(`recalculateAndSaveScheduleForDateAndLocation: Neaktívny zablokovaný interval (placeholder) ${event.id}. Ukazovateľ času sa neposúva.`);
                 }
@@ -660,7 +660,7 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, drag
             // Tým sa zabezpečí, že skutočné, používateľom zablokované sloty (isBlocked === true a isPhantom === false) zostanú.
             // Tiež zabezpečiť, že interval už nie je v `idsOfCoveredBlockedSlotsToDelete`, aby sa predišlo dvojitému spracovaniu
             if (bsStartInMinutes >= currentTimePointer && (blockedSlotData.isPhantom === true || blockedSlotData.isBlocked === false) && !idsOfCoveredBlockedSlotsToDelete.has(docToDelete.id)) {
-                 console.log(`Čistím koncový zablokovaný slot: ID ${docToDelete.id}, začiatok: ${blockedSlotData.startTime}, isPhantom: ${blockedSlotData.isPhantom}, isBlocked: ${blockedSlotData.isBlocked}`);
+                 console.log(`Čistím koncový zablokovaný interval: ID ${docToDelete.id}, začiatok: ${blockedSlotData.startTime}, isPhantom: ${blockedSlotData.isPhantom}, isBlocked: ${blockedSlotData.isBlocked}`);
                  cleanupBatch.delete(doc(blockedSlotsCollectionRef, docToDelete.id));
             }
         });
@@ -738,7 +738,7 @@ async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation
         const batch = writeBatch(db);
         let phantomSlotCreatedId = null;
 
-        // Ak sa presúva v rámci rovnakého rozvrhu, vytvorte fantómový zablokovaný slot
+        // Ak sa presúva v rámci rovnakého rozvrhu, vytvorte fantómový zablokovaný interval
         if (isMovingWithinSameSchedule) {
             const [originalStartH, originalStartM] = originalStartTime.split(':').map(Number);
             const originalEndMinutes = (originalStartH * 60) + originalStartM + originalDuration + originalBufferTime;
@@ -1057,7 +1057,7 @@ async function displayMatchesAsSchedule() {
                                 } else if (isUserBlocked) {
                                     rowClass = 'blocked-slot-row'; // Visually blocked
                                     cellStyle = 'text-align: center; color: white; background-color: #dc3545; font-style: italic;';
-                                    displayText = 'Zablokovaný slot';
+                                    displayText = 'Zablokovaný interval';
                                 } else { // It's an unblocked placeholder interval (isBlocked === false and not phantom)
                                     rowClass = 'empty-slot-row'; // Visually like an empty slot
                                     cellStyle = 'text-align: center; color: #888; font-style: italic;';
@@ -1183,7 +1183,7 @@ async function displayMatchesAsSchedule() {
                 const startTime = event.currentTarget.dataset.startTime;
                 const endTime = event.currentTarget.dataset.endTime;
 
-                console.log(`Pokus o presun zápasu ${draggedMatchId} na zablokovaný slot: Dátum ${date}, Miesto ${location}, Čas ${startTime}-${endTime}. Presun ZAMITNUTÝ.`);
+                console.log(`Pokus o presun zápasu ${draggedMatchId} na zablokovaný interval: Dátum ${date}, Miesto ${location}, Čas ${startTime}-${endTime}. Presun ZAMITNUTÝ.`);
                 await showMessage('Upozornenie', 'Tento časový interval je zablokovaný. Zápas naň nie je možné presunúť.');
                 // NIE JE potrebné volať moveAndRescheduleMatch, zápas zostane na pôvodnom mieste
             });
@@ -1250,9 +1250,9 @@ async function displayMatchesAsSchedule() {
                         console.log(`Pustené na pozadie dateGroupDiv.`);
                     }
 
-                    // Ak sa presunie na zablokovaný slot, zamedzte presunu
+                    // Ak sa presunie na zablokovaný interval, zamedzte presunu
                     if (droppedOnElement && droppedOnElement.classList.contains('blocked-slot-row')) {
-                        console.log(`Pokus o presun zápasu ${draggedMatchId} na zablokovaný slot. Presun ZAMITNUTÝ.`);
+                        console.log(`Pokus o presun zápasu ${draggedMatchId} na zablokovaný interval. Presun ZAMIETNUTÝ.`);
                         await showMessage('Upozornenie', 'Tento časový interval je zablokovaný. Zápas naň nie je možné presunúť.');
                         return; // Zastaviť drop operáciu
                     }
@@ -1797,8 +1797,8 @@ async function openFreeSlotModal(date, location, startTime, endTime, blockedSlot
 
     } else if (isUserBlockedFromDB) {
         // Normálny zablokovaný interval (blokovaný používateľom)
-        freeSlotModalTitle.textContent = 'Upraviť zablokovaný slot';
-        console.log("openFreeSlotModal: Typ slotu: Normálny zablokovaný slot.");
+        freeSlotModalTitle.textContent = 'Upraviť zablokovaný interval';
+        console.log("openFreeSlotModal: Typ slotu: Normálny zablokovaný interval.");
         
         // Tlačidlo "Zablokovať" je skryté, pretože je už zablokovaný
         if (blockButton) blockButton.style.display = 'none'; 
@@ -1852,7 +1852,7 @@ async function openFreeSlotModal(date, location, startTime, endTime, blockedSlot
 
 
 /**
- * Prevedie fantómový interval na riadny zablokovaný slot.
+ * Prevedie fantómový interval na riadny zablokovaný interval.
  * @param {string} blockedSlotId ID fantómového slotu na konverziu.
  * @param {string} date Dátum slotu.
  * @param {string} location Miesto slotu.
@@ -1876,7 +1876,7 @@ async function convertToRegularBlockedSlot(blockedSlotId, date, location) {
             await recalculateAndSaveScheduleForDateAndLocation(date, location); // Prepočíta rozvrh
             console.log("convertToRegularBlockedSlot: Prepočet rozvrhu dokončený.");
         } catch (error) {
-            console.error("Chyba pri konverzii fantómového slotu na riadny zablokovaný slot:", error);
+            console.error("Chyba pri konverzii fantómového slotu na riadny zablokovaný interval:", error);
             await showMessage('Chyba', `Chyba pri zablokovaní slotu: ${error.message}`);
         }
     }
@@ -1985,7 +1985,7 @@ async function createBlockedSlotAndRecalculate(date, location, startTime, endTim
             return; // Zastaviť operáciu uloženia
         }
 
-        console.log(`createBlockedSlotAndRecalculate: Pokúšam sa pridať nový zablokovaný slot:`, slotData);
+        console.log(`createBlockedSlotAndRecalculate: Pokúšam sa pridať nový zablokovaný interval:`, slotData);
         await addDoc(blockedSlotsCollectionRef, slotData);
         console.log(`createBlockedSlotAndRecalculate: Nový zablokovaný interval úspešne pridaný.`);
         await showMessage('Úspech', 'Slot bol úspešne zablokovaný!');
@@ -2598,7 +2598,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                     if (newMatchStartInMinutes < blockedSlotEndInMinutes && newMatchEndInMinutesWithBuffer > blockedSlotStartInMinutes) {
                         overlapFound = true;
-                        overlappingMatchDetails = { ...blockedSlot, type: 'blocked_slot' }; // Označte ako zablokovaný slot
+                        overlappingMatchDetails = { ...blockedSlot, type: 'blocked_slot' }; // Označte ako zablokovaný interval
                         return;
                     }
                 }
@@ -2623,7 +2623,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (overlappingMatchDetails.type !== 'blocked_slot') {
                     errorMessage += `Tímy: ${overlappingMatchDetails.team1DisplayName} vs ${overlappingMatchDetails.team2DisplayName}\n\n`;
                 } else {
-                    errorMessage += `(Zablokovaný slot)\n\n`;
+                    errorMessage += `(Zablokovaný interval)\n\n`;
                 }
                 errorMessage += `Prosím, upravte čas začiatku alebo trvanie nového zápasu, alebo prestávku po zápase.`;
                 await showMessage('Chyba', errorMessage);
