@@ -1203,55 +1203,39 @@ async function displayMatchesAsSchedule() {
         // Pridajte poslucháčov dragover a drop pre divy skupiny dátumov (obsahujúce tabuľky)
         matchesContainer.querySelectorAll('.date-group').forEach(dateGroupDiv => {
             dateGroupDiv.addEventListener('dragover', (event) => {
-                event.preventDefault();
+                event.preventDefault(); // Kľúčové pre povolenie umiestnenia
                 event.dataTransfer.dropEffect = 'move';
                 
+                // Vizuálna spätná väzba pre bod vloženia (napr. orámovanie)
                 const targetRow = event.target.closest('tr');
-                // Remove all previous visual feedback from any rows in this date group
-                dateGroupDiv.querySelectorAll('tr.drop-over-top, tr.drop-over-bottom, tr.drop-over-forbidden').forEach(row => {
-                    row.classList.remove('drop-over-top');
-                    row.classList.remove('drop-over-bottom');
-                    row.classList.remove('drop-over-forbidden');
-                });
-                dateGroupDiv.classList.remove('drop-target-active'); // Clear date-group background highlight
-
-                if (targetRow && targetRow.classList.contains('blocked-slot-row') && targetRow.dataset.isBlocked === 'true') {
-                    // If over a user-blocked row, indicate it's forbidden
+                if (targetRow && !targetRow.classList.contains('blocked-slot-row')) {
+                    // If over a valid row (match or empty), highlight the row
+                    targetRow.classList.add('drop-over-row');
+                } else if (targetRow && targetRow.classList.contains('blocked-slot-row')) {
+                    // If over a blocked row, indicate it's forbidden
                     targetRow.classList.add('drop-over-forbidden');
-                } else if (targetRow) {
-                    // If over any other valid row (match or empty/phantom), highlight the row based on cursor position
-                    const rowRect = targetRow.getBoundingClientRect();
-                    const rowMiddleY = rowRect.top + (rowRect.height / 2);
-                    if (event.clientY < rowMiddleY) {
-                        targetRow.classList.add('drop-over-top'); // New class for top half
-                        targetRow.classList.remove('drop-over-bottom'); // Ensure other is removed
-                    } else {
-                        targetRow.classList.add('drop-over-bottom'); // New class for bottom half
-                        targetRow.classList.remove('drop-over-top');
-                    }
                 } else {
-                    // If over the date-group div itself (empty space or header), highlight the date-group background
+                    // If over the date-group div itself (empty space), highlight the date-group
                     dateGroupDiv.classList.add('drop-target-active');
                 }
             });
 
             dateGroupDiv.addEventListener('dragleave', (event) => {
-                // Clear all drag-over related classes when leaving the date-group
-                dateGroupDiv.querySelectorAll('tr.drop-over-top, tr.drop-over-bottom, tr.drop-over-forbidden').forEach(row => {
-                    row.classList.remove('drop-over-top');
-                    row.classList.remove('drop-over-bottom');
-                    row.classList.remove('drop-over-forbidden');
-                });
+                const targetRow = event.target.closest('tr');
+                if (targetRow) {
+                    targetRow.classList.remove('drop-over-row');
+                    targetRow.classList.remove('drop-over-forbidden');
+                }
                 dateGroupDiv.classList.remove('drop-target-active');
             });
 
             dateGroupDiv.addEventListener('drop', async (event) => {
                 event.preventDefault();
-                // Clear visual feedback
-                const targetElement = event.target.closest('tr, .date-group');
-                if (targetElement) {
-                    targetElement.classList.remove('drop-over-row');
-                    targetElement.classList.remove('drop-over-forbidden');
+                // Vyčistite vizuálnu spätnú väzbu
+                const targetRow = event.target.closest('tr');
+                if (targetRow) {
+                    targetRow.classList.remove('drop-over-row');
+                    targetRow.classList.remove('drop-over-forbidden');
                 }
                 dateGroupDiv.classList.remove('drop-target-active');
 
@@ -1261,91 +1245,76 @@ async function displayMatchesAsSchedule() {
                 let droppedProposedStartTime = null;
                 let targetBlockedSlotId = null;
 
-                if (!draggedMatchId) {
-                    return;
-                }
+                if (draggedMatchId) {
+                    // Ak sa presunie na zablokovaný slot, zamedzte presunu
+                    if (targetRow && targetRow.classList.contains('blocked-slot-row')) {
+                        console.log(`Pokus o presun zápasu ${draggedMatchId} na zablokovaný slot. Presun ZAMITNUTÝ.`);
+                        await showMessage('Upozornenie', 'Tento časový interval je zablokovaný. Zápas naň nie je možné presunúť.');
+                        return; // Zastaviť drop operáciu
+                    }
 
-                // 1. Prevent dropping on blocked-slot-rows (user-blocked type)
-                const droppedOnRow = event.target.closest('tr');
-                if (droppedOnRow && droppedOnRow.classList.contains('blocked-slot-row') && droppedOnRow.dataset.isBlocked === 'true') {
-                    console.log(`Pokus o presun zápasu ${draggedMatchId} na zablokovaný slot. Presun ZAMITNUTÝ.`);
-                    await showMessage('Upozornenie', 'Tento časový interval je zablokovaný. Zápas naň nie je možné presunúť.');
-                    return;
-                }
-
-                // 2. Determine insertion point
-                const allContentRows = Array.from(dateGroupDiv.querySelectorAll('tbody tr')).filter(row => 
-                    !row.classList.contains('hidden-row') // Exclude any hidden rows if they exist
-                );
-
-                let insertionFound = false;
-
-                // Case A: Dropped into an empty date-group (no rows, or only placeholder rows)
-                if (allContentRows.length === 0) {
-                    droppedProposedStartTime = dateGroupDiv.dataset.initialStartTime;
-                    console.log(`Dropped into empty date-group. Proposed start time: ${droppedProposedStartTime}`);
-                    insertionFound = true;
-                } else {
-                    // Find the precise row where the drop happened, or if it's before the first/after the last
-                    for (let i = 0; i < allContentRows.length; i++) {
-                        const currentRow = allContentRows[i];
-                        const rowRect = currentRow.getBoundingClientRect();
+                    // Logika určenia miesta vloženia
+                    if (targetRow && (targetRow.classList.contains('match-row') || targetRow.classList.contains('empty-slot-row'))) {
+                        const rowRect = targetRow.getBoundingClientRect();
                         const rowMiddleY = rowRect.top + (rowRect.height / 2);
 
                         if (event.clientY < rowMiddleY) {
-                            // Drop in top half of current row -> insert BEFORE this row
-                            droppedProposedStartTime = currentRow.dataset.startTime;
-                            if (currentRow.classList.contains('empty-slot-row') && currentRow.dataset.id) {
-                                // If dropping before an empty slot, we still want to "consume" it if the match fits there.
-                                // This assumes the empty slot is acting as a "placeholder" for an available time.
-                                // If the dragged match fully covers this empty slot, we delete the empty slot.
-                                // For now, we'll mark it as target to be deleted by `moveAndRescheduleMatch`
-                                targetBlockedSlotId = currentRow.dataset.id;
+                            // Drop occurred in the top half of the row, insert before this row
+                            droppedProposedStartTime = targetRow.dataset.startTime;
+                            if (targetRow.classList.contains('empty-slot-row') && targetRow.dataset.id) {
+                                targetBlockedSlotId = targetRow.dataset.id;
                                 console.log(`Targeting empty slot ID: ${targetBlockedSlotId} (inserting before).`);
                             }
-                            insertionFound = true;
                             console.log(`Dropped before row. Proposed start time: ${droppedProposedStartTime}`);
-                            break;
-                        } else if (i === allContentRows.length - 1) {
-                            // Drop in bottom half of LAST row -> insert AFTER this row
-                            if (currentRow.classList.contains('match-row')) {
-                                const [startH, startM] = currentRow.dataset.startTime.split(':').map(Number);
-                                const duration = Number(currentRow.dataset.duration) || 0;
-                                const bufferTime = Number(currentRow.dataset.bufferTime) || 0;
+                        } else {
+                            // Drop occurred in the bottom half of the row, insert after this row
+                            if (targetRow.classList.contains('match-row')) {
+                                const [startH, startM] = targetRow.dataset.startTime.split(':').map(Number);
+                                const duration = Number(targetRow.dataset.duration) || 0;
+                                const bufferTime = Number(targetRow.dataset.bufferTime) || 0;
                                 const endInMinutes = (startH * 60) + startM + duration + bufferTime;
                                 droppedProposedStartTime = `${String(Math.floor(endInMinutes / 60)).padStart(2, '0')}:${String(endInMinutes % 60).padStart(2, '0')}`;
-                            } else if (currentRow.classList.contains('empty-slot-row')) {
-                                droppedProposedStartTime = currentRow.dataset.endTime;
-                                if (currentRow.dataset.id) {
-                                    // If dropping after an empty slot, we consider the empty slot effectively filled
-                                    targetBlockedSlotId = currentRow.dataset.id;
+                                console.log(`Dropped after match row. Proposed start time: ${droppedProposedStartTime}`);
+                            } else if (targetRow.classList.contains('empty-slot-row')) {
+                                droppedProposedStartTime = targetRow.dataset.endTime;
+                                if (targetRow.dataset.id) {
+                                    targetBlockedSlotId = targetRow.dataset.id;
                                     console.log(`Targeting empty slot ID: ${targetBlockedSlotId} (inserting after, and filling).`);
                                 }
+                                console.log(`Dropped after empty slot row. Proposed start time: ${droppedProposedStartTime}`);
                             }
-                            insertionFound = true;
-                            console.log(`Dropped after last row. Proposed start time: ${droppedProposedStartTime}`);
-                            break;
                         }
-                    }
-                }
-                
-                // If insertion point still not found (e.g. dropped on the table header, or some empty space not directly on a row)
-                if (!insertionFound) {
-                    // Fallback: If no specific row was targeted accurately, default to the start of the day
-                    droppedProposedStartTime = dateGroupDiv.dataset.initialStartTime;
-                    // And if there's an initial placeholder, target it.
-                    const firstContentRow = allContentRows[0];
-                    if (firstContentRow && firstContentRow.classList.contains('empty-slot-row') &&
-                        firstContentRow.dataset.startTime === droppedProposedStartTime && firstContentRow.dataset.id) {
-                        targetBlockedSlotId = firstContentRow.dataset.id;
-                        console.log(`Fallback to initial day start, consuming initial empty slot with ID: ${targetBlockedSlotId}.`);
                     } else {
-                        console.log(`Fallback to initial day start, no initial empty slot found to consume.`);
-                    }
-                }
+                        // If dropped on the background of dateGroupDiv (no specific row was targeted),
+                        // this means it should go to the very beginning of the day.
+                        droppedProposedStartTime = dateGroupDiv.dataset.initialStartTime;
 
-                console.log(`Attempting to move and reschedule match ${draggedMatchId} to Date: ${newDate}, Location: ${newLocation}, Proposed Start Time: ${droppedProposedStartTime}, Target Blocked Slot ID: ${targetBlockedSlotId}`);
-                await moveAndRescheduleMatch(draggedMatchId, newDate, newLocation, droppedProposedStartTime, targetBlockedSlotId);
+                        // Check if there's an initial empty slot (placeholder) that starts exactly at the initialStartTime
+                        // and this drop would fill it.
+                        const tableBody = dateGroupDiv.querySelector('tbody');
+                        let firstContentRowCandidate = null;
+                        if (tableBody && tableBody.rows.length > 0) {
+                            // Find the very first visible row
+                            for (let i = 0; i < tableBody.rows.length; i++) {
+                                const row = tableBody.rows[i];
+                                if (row.style.display !== 'none') { // Consider only visible rows
+                                    firstContentRowCandidate = row;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (firstContentRowCandidate && firstContentRowCandidate.classList.contains('empty-slot-row') &&
+                            firstContentRowCandidate.dataset.startTime === droppedProposedStartTime && firstContentRowCandidate.dataset.id) {
+                            targetBlockedSlotId = firstContentRowCandidate.dataset.id;
+                            console.log(`Dropped on background (likely at beginning), targeting initial empty slot with ID: ${targetBlockedSlotId}.`);
+                        }
+                        console.log(`Dropped on background. Proposed start time (initial day start): ${droppedProposedStartTime}`);
+                    }
+
+                    console.log(`Attempting to move and reschedule match ${draggedMatchId} to Date: ${newDate}, Location: ${newLocation}, Proposed Start Time: ${droppedProposedStartTime}, Target Blocked Slot ID: ${targetBlockedSlotId}`);
+                    await moveAndRescheduleMatch(draggedMatchId, newDate, newLocation, droppedProposedStartTime, targetBlockedSlotId);
+                }
             });
         });
 
