@@ -979,11 +979,12 @@ async function displayMatchesAsSchedule() {
                             // Aktuálna udalosť
                             if (event.type === 'match') {
                                 const match = event;
-                                // NEW: Calculate endTime based on match.duration (if present) or category settings
+                                // Calculate endTime based on match.duration (if present) or category settings
                                 const matchDuration = match.duration || (allSettings.categoryMatchSettings?.[match.categoryId]?.duration || 60);
-                                const matchEndTimeObj = new Date();
-                                matchEndTimeObj.setHours(parseInt(match.startTime.split(':')[0]), parseInt(match.startTime.split(':')[1]) + matchDuration + (match.bufferTime || (allSettings.categoryMatchSettings?.[match.categoryId]?.bufferTime || 5)), 0, 0);
-                                const formattedEndTime = matchEndTimeObj.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' });
+                                // The displayed end time should NOT include the buffer time.
+                                const displayedMatchEndTimeInMinutes = (parseInt(match.startTime.split(':')[0]) * 60 + parseInt(match.startTime.split(':')[1])) + matchDuration;
+                                const formattedDisplayedEndTime = `${String(Math.floor(displayedMatchEndTimeInMinutes / 60)).padStart(2, '0')}:${String(displayedMatchEndTimeInMinutes % 60).padStart(2, '0')}`;
+                                
                                 const categoryColor = categoryColorsMap.get(match.categoryId) || 'transparent';
                                 let textAlignStyle = '';
                                 if (match.groupId && groupAlignmentMapForLocation.has(match.groupId)) {
@@ -991,11 +992,11 @@ async function displayMatchesAsSchedule() {
                                 } else if (groupIdsArrayInLocation.length > 3) {
                                      textAlignStyle = `text-align: center;`;
                                 }
-                                console.log(`displayMatchesAsSchedule: Renderujem zápas: ID ${match.id}, Čas: ${match.startTime}-${formattedEndTime}, Miesto: ${match.location}, Dátum: ${match.date}`);
+                                console.log(`displayMatchesAsSchedule: Renderujem zápas: ID ${match.id}, Čas: ${match.startTime}-${formattedDisplayedEndTime} (zobrazený), Miesto: ${match.location}, Dátum: ${match.date}`);
 
                                 scheduleHtml += `
                                     <tr draggable="true" data-id="${match.id}" class="match-row" data-start-time="${match.startTime}">
-                                        <td>${match.startTime} - ${formattedEndTime}</td>
+                                        <td>${match.startTime} - ${formattedDisplayedEndTime}</td>
                                         <td style="${textAlignStyle}">${match.team1ClubName || 'N/A'}</td>
                                         <td style="${textAlignStyle}">${match.team2ClubName || 'N/A'}</td>
                                         <td style="background-color: ${categoryColor}; ${textAlignStyle}">${match.team1ShortDisplayName || 'N/A'}</td>
