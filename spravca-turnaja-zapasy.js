@@ -1027,7 +1027,7 @@ async function displayMatchesAsSchedule() {
                                 console.log(`displayMatchesAsSchedule: Renderujem zápas: ID ${match.id}, Čas: ${match.startTime}-${formattedDisplayedEndTime} (zobrazený), Miesto: ${match.location}, Dátum: ${match.date}`);
 
                                 scheduleHtml += `
-                                    <tr draggable="true" data-id="${match.id}" class="match-row" data-start-time="${match.startTime}">
+                                    <tr draggable="true" data-id="${match.id}" class="match-row" data-start-time="${match.startTime}" data-duration="${match.duration}" data-buffer-time="${match.bufferTime}">
                                         <td>${match.startTime} - ${formattedDisplayedEndTime}</td>
                                         <td style="${textAlignStyle}">${match.team1ClubName || 'N/A'}</td>
                                         <td style="${textAlignStyle}">${match.team2ClubName || 'N/A'}</td>
@@ -1242,94 +1242,76 @@ async function displayMatchesAsSchedule() {
                 const draggedMatchId = event.dataTransfer.getData('text/plain');
                 const newDate = dateGroupDiv.dataset.date;
                 const newLocation = dateGroupDiv.dataset.location;
-                let droppedProposedStartTime = null; 
-                let targetBlockedSlotId = null; 
+                let droppedProposedStartTime = null;
+                let targetBlockedSlotId = null;
 
                 if (draggedMatchId) {
-                    const droppedOnElement = event.target.closest('tr');
-                    
-                    // Log pre lepšie ladenie
-                    console.log(`Drop event: Presúvané ID: ${draggedMatchId}`);
-                    if (droppedOnElement) {
-                        console.log(`Pustené NA element s ID: ${droppedOnElement.dataset.id}, Trieda: ${droppedOnElement.classList.value}, Čas začiatku: ${droppedOnElement.dataset.startTime}`);
-                    } else {
-                        console.log(`Pustené na pozadie dateGroupDiv.`);
-                    }
-
                     // Ak sa presunie na zablokovaný slot, zamedzte presunu
-                    if (droppedOnElement && droppedOnElement.classList.contains('blocked-slot-row')) {
+                    if (targetRow && targetRow.classList.contains('blocked-slot-row')) {
                         console.log(`Pokus o presun zápasu ${draggedMatchId} na zablokovaný slot. Presun ZAMITNUTÝ.`);
                         await showMessage('Upozornenie', 'Tento časový interval je zablokovaný. Zápas naň nie je možné presunúť.');
                         return; // Zastaviť drop operáciu
                     }
-                    
-                    // Logic for dropping before the first match/slot or onto an empty space
-                    const tableBody = dateGroupDiv.querySelector('tbody');
-                    let firstContentRow = null;
-                    if (tableBody) {
-                        // Find the first row that represents an actual time slot (match or blocked slot of any kind)
-                        for (let i = 0; i < tableBody.rows.length; i++) {
-                            const row = tableBody.rows[i];
-                            if (row.classList.contains('match-row') || row.classList.contains('blocked-slot-row') || row.classList.contains('empty-slot-row')) {
-                                firstContentRow = row;
-                                break;
+
+                    // Logika určenia miesta vloženia
+                    if (targetRow && (targetRow.classList.contains('match-row') || targetRow.classList.contains('empty-slot-row'))) {
+                        const rowRect = targetRow.getBoundingClientRect();
+                        const rowMiddleY = rowRect.top + (rowRect.height / 2);
+
+                        if (event.clientY < rowMiddleY) {
+                            // Drop occurred in the top half of the row, insert before this row
+                            droppedProposedStartTime = targetRow.dataset.startTime;
+                            if (targetRow.classList.contains('empty-slot-row') && targetRow.dataset.id) {
+                                targetBlockedSlotId = targetRow.dataset.id;
+                                console.log(`Targeting empty slot ID: ${targetBlockedSlotId} (inserting before).`);
+                            }
+                            console.log(`Dropped before row. Proposed start time: ${droppedProposedStartTime}`);
+                        } else {
+                            // Drop occurred in the bottom half of the row, insert after this row
+                            if (targetRow.classList.contains('match-row')) {
+                                const [startH, startM] = targetRow.dataset.startTime.split(':').map(Number);
+                                const duration = Number(targetRow.dataset.duration) || 0;
+                                const bufferTime = Number(targetRow.dataset.bufferTime) || 0;
+                                const endInMinutes = (startH * 60) + startM + duration + bufferTime;
+                                droppedProposedStartTime = `${String(Math.floor(endInMinutes / 60)).padStart(2, '0')}:${String(endInMinutes % 60).padStart(2, '0')}`;
+                                console.log(`Dropped after match row. Proposed start time: ${droppedProposedStartTime}`);
+                            } else if (targetRow.classList.contains('empty-slot-row')) {
+                                droppedProposedStartTime = targetRow.dataset.endTime;
+                                if (targetRow.dataset.id) {
+                                    targetBlockedSlotId = targetRow.dataset.id;
+                                    console.log(`Targeting empty slot ID: ${targetBlockedSlotId} (inserting after, and filling).`);
+                                }
+                                console.log(`Dropped after empty slot row. Proposed start time: ${droppedProposedStartTime}`);
                             }
                         }
-                    }
-                    
-                    const initialStartTime = dateGroupDiv.dataset.initialStartTime;
-                    const droppedY = event.clientY;
-
-                    // Determine if the drop happened before the first content row
-                    if (firstContentRow && droppedY < firstContentRow.getBoundingClientRect().top + (firstContentRow.offsetHeight / 2)) {
-                        droppedProposedStartTime = initialStartTime;
-                        // If the first content row is an empty slot (placeholder or phantom), we should delete it as it's being "filled"
-                        if (firstContentRow.classList.contains('empty-slot-row') && firstContentRow.dataset.id) {
-                            targetBlockedSlotId = firstContentRow.dataset.id;
-                            console.log(`Targeting the first empty slot with ID: ${targetBlockedSlotId} (when dropping before first content).`);
-                        }
-                        console.log(`Dropped before first actual content row. Proposed start time (initial start): ${droppedProposedStartTime}`);
-                    } else if (droppedOnElement && droppedOnElement.dataset.startTime) { 
-                        // If dropped on any other row (match or empty/unblocked slot), use its start time
-                        droppedProposedStartTime = droppedOnElement.dataset.startTime;
-                        // If dropped on an empty/unblocked placeholder slot, get its ID to delete it
-                        if (droppedOnElement.classList.contains('empty-slot-row') && droppedOnElement.dataset.id) {
-                            targetBlockedSlotId = droppedOnElement.dataset.id;
-                            console.log(`Detected drop on empty/unblocked slot with ID: ${targetBlockedSlotId}`);
-                        }
                     } else {
-                        // If dropped on the background of dateGroupDiv (not directly on a row),
-                        // it should go to the very end of the existing schedule.
-                        // We need to find the latest end time of any event (match or blocked slot) for this date/location.
-                        const lastEventEndForThisDateLoc = await (async () => {
-                            const matchesQ = query(matchesCollectionRef, where("date", "==", newDate), where("location", "==", newLocation));
-                            const matchesSnap = await getDocs(matchesQ);
-                            let maxEnd = initialScheduleStartMinutes; // Assume initial start if no matches
-                            matchesSnap.docs.forEach(matchDoc => {
-                                const data = matchDoc.data();
-                                const [startH, startM] = data.startTime.split(':').map(Number);
-                                const startInMinutes = startH * 60 + startM;
-                                const duration = Number(data.duration) || 0;
-                                const bufferTime = Number(data.bufferTime) || 0;
-                                maxEnd = Math.max(maxEnd, startInMinutes + duration + bufferTime);
-                            });
+                        // If dropped on the background of dateGroupDiv (no specific row was targeted),
+                        // this means it should go to the very beginning of the day.
+                        droppedProposedStartTime = dateGroupDiv.dataset.initialStartTime;
 
-                            const blockedQ = query(blockedSlotsCollectionRef, where("date", "==", newDate), where("location", "==", newLocation), where("isBlocked", "==", true)); // Only truly blocked ones
-                            const blockedSnap = await getDocs(blockedQ);
-                            blockedSnap.docs.forEach(blockedDoc => {
-                                const data = blockedDoc.data();
-                                const [startH, startM] = data.startTime.split(':').map(Number);
-                                const startInMinutes = startH * 60 + startM;
-                                const [endH, endM] = data.endTime.split(':').map(Number);
-                                const endInMinutes = endH * 60 + endM;
-                                maxEnd = Math.max(maxEnd, endInMinutes);
-                            });
-                            return `${String(Math.floor(maxEnd / 60)).padStart(2, '0')}:${String(maxEnd % 60).padStart(2, '0')}`;
-                        })();
-                        droppedProposedStartTime = lastEventEndForThisDateLoc;
-                        console.log(`Dropped on background (non-empty schedule). Proposed start time (last event end): ${droppedProposedStartTime}`);
+                        // Check if there's an initial empty slot (placeholder) that starts exactly at the initialStartTime
+                        // and this drop would fill it.
+                        const tableBody = dateGroupDiv.querySelector('tbody');
+                        let firstContentRowCandidate = null;
+                        if (tableBody && tableBody.rows.length > 0) {
+                            // Find the very first visible row
+                            for (let i = 0; i < tableBody.rows.length; i++) {
+                                const row = tableBody.rows[i];
+                                if (row.style.display !== 'none') { // Consider only visible rows
+                                    firstContentRowCandidate = row;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (firstContentRowCandidate && firstContentRowCandidate.classList.contains('empty-slot-row') &&
+                            firstContentRowCandidate.dataset.startTime === droppedProposedStartTime && firstContentRowCandidate.dataset.id) {
+                            targetBlockedSlotId = firstContentRowCandidate.dataset.id;
+                            console.log(`Dropped on background (likely at beginning), targeting initial empty slot with ID: ${targetBlockedSlotId}.`);
+                        }
+                        console.log(`Dropped on background. Proposed start time (initial day start): ${droppedProposedStartTime}`);
                     }
-                    
+
                     console.log(`Attempting to move and reschedule match ${draggedMatchId} to Date: ${newDate}, Location: ${newLocation}, Proposed Start Time: ${droppedProposedStartTime}, Target Blocked Slot ID: ${targetBlockedSlotId}`);
                     await moveAndRescheduleMatch(draggedMatchId, newDate, newLocation, droppedProposedStartTime, targetBlockedSlotId);
                 }
