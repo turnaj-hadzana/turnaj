@@ -522,6 +522,7 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, drag
         }));
 
         let eventsToProcess = [];
+        const idsOfCoveredBlockedSlotsToDelete = new Set(); // NOVINKA: Set na ukladanie ID slotov na vymazanie
 
         // Ak sa volá z drag&drop, pridajte presunutý zápas do zoznamu udalostí
         if (draggedMatchId) {
@@ -597,6 +598,21 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, drag
                 
                 // Preveďte na HH:MM
                 const newStartTimeStr = `${String(Math.floor(newMatchStartTimeInMinutes / 60)).padStart(2, '0')}:${String(newMatchStartTimeInMinutes % 60).padStart(2, '0')}`;
+                
+                // NOVINKA: Skontrolujte a označte fantómové/odblokované sloty na vymazanie, ak ich nový zápas prekryje
+                const newMatchEndTimeInMinutes = newMatchStartTimeInMinutes + (event.duration || 0) + (event.bufferTime || 0);
+
+                allBlockedSlots.forEach(bs => {
+                    // Len ak je to fantóm alebo odblokovaný placeholder slot
+                    if (bs.isPhantom === true || bs.isBlocked === false) {
+                        // Skontrolujte, či je slot úplne pokrytý novým zápasom
+                        if (bs.startInMinutes >= newMatchStartTimeInMinutes && bs.endInMinutes <= newMatchEndTimeInMinutes) {
+                            idsOfCoveredBlockedSlotsToDelete.add(bs.id);
+                            console.log(`recalculateAndSaveScheduleForDateAndLocation: Označený na vymazanie pokrytý slot ID: ${bs.id}, začiatok: ${bs.startTime}, koniec: ${bs.endTime}, isPhantom: ${bs.isPhantom}, isBlocked: ${bs.isBlocked}`);
+                        }
+                    }
+                });
+
 
                 // Ak sa zmenil dátum alebo miesto, aktualizujte aj to.
                 const updateData = {
@@ -612,6 +628,12 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, drag
             }
         }
         
+        // NOVINKA: Vymažte všetky fantómové/odblokované sloty, ktoré boli prekryté zápasmi
+        for (const slotId of idsOfCoveredBlockedSlotsToDelete) {
+            batch.delete(doc(blockedSlotsCollectionRef, slotId));
+            console.log(`recalculateAndSaveScheduleForDateAndLocation: Pridané do batchu na vymazanie pokrytého slotu ID: ${slotId}`);
+        }
+
         await batch.commit();
         console.log("recalculateAndSaveScheduleForDateAndLocation: Batch commit úspešný.");
 
@@ -636,7 +658,8 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, drag
             // Vymazať, ak sa zablokovaný slot začína na alebo po našom konečnom vypočítanom konci rozvrhu,
             // A ak je to fantómový slot (isPhantom === true) ALEBO je to odblokovaný placeholder slot (isBlocked === false).
             // Tým sa zabezpečí, že skutočné, používateľom zablokované sloty (isBlocked === true a isPhantom === false) zostanú.
-            if (bsStartInMinutes >= currentTimePointer && (blockedSlotData.isPhantom === true || blockedSlotData.isBlocked === false)) {
+            // Tiež zabezpečiť, že slot už nie je v `idsOfCoveredBlockedSlotsToDelete`, aby sa predišlo dvojitému spracovaniu
+            if (bsStartInMinutes >= currentTimePointer && (blockedSlotData.isPhantom === true || blockedSlotData.isBlocked === false) && !idsOfCoveredBlockedSlotsToDelete.has(docToDelete.id)) {
                  console.log(`Čistím koncový zablokovaný slot: ID ${docToDelete.id}, začiatok: ${blockedSlotData.startTime}, isPhantom: ${blockedSlotData.isPhantom}, isBlocked: ${blockedSlotData.isBlocked}`);
                  cleanupBatch.delete(doc(blockedSlotsCollectionRef, docToDelete.id));
             }
