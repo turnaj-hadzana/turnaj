@@ -949,8 +949,8 @@ async function displayMatchesAsSchedule() {
                         scheduleHtml += `<th>Domáci</th>`;
                         scheduleHtml += `<th>Hostia</th>`;
                         scheduleHtml += `<th>ID Domáci</th>`;
-                        scheduleHtml += `<th>ID Hostia</th>`;
-                        scheduleHtml += `</tr></thead><tbody>`;
+                        <th>ID Hostia</th>
+                        `</tr></thead><tbody>`;
 
                         const isFirstPlayingDayForDate = allPlayingDayDates.length > 0 && date === allPlayingDayDates[0];
                         const initialScheduleStartMinutes = (isFirstPlayingDayForDate ? globalFirstDayStartTime : globalOtherDaysStartTime).split(':').map(Number).reduce((h, m) => h * 60 + m);
@@ -1713,7 +1713,7 @@ async function openFreeSlotModal(date, location, startTime, endTime, blockedSlot
             blockButton.style.display = 'inline-block';
             blockButton.textContent = 'Zablokovať';
             const blockHandler = () => {
-                console.log("openFreeSlotModal: Kliknuté na 'Zablokovať' pre nový voľný slot.");
+                console.log("openFreeSlotModal: Kliknuté na 'Zablokovať' pre nový voľný slot. Spúšťam createBlockedSlotAndRecalculate.");
                 createBlockedSlotAndRecalculate(date, location, startTime, endTime);
             };
             blockButton.addEventListener('click', blockHandler);
@@ -1745,7 +1745,7 @@ async function openFreeSlotModal(date, location, startTime, endTime, blockedSlot
             blockButton.style.display = 'inline-block';
             blockButton.textContent = 'Zablokovať'; // Konvertuje fantóm na riadny zablokovaný
             const blockHandler = () => {
-                console.log(`openFreeSlotModal: Kliknuté na 'Zablokovať' pre fantómový slot ID: ${blockedSlotId}.`);
+                console.log(`openFreeSlotModal: Kliknuté na 'Zablokovať' pre fantómový slot ID: ${blockedSlotId}. Spúšťam convertToRegularBlockedSlot.`);
                 convertToRegularBlockedSlot(blockedSlotId, date, location);
             };
             blockButton.addEventListener('click', blockHandler);
@@ -1759,7 +1759,7 @@ async function openFreeSlotModal(date, location, startTime, endTime, blockedSlot
             phantomSlotDeleteButton.textContent = 'Vymazať'; // Jednoduchý text "Vymazať"
             phantomSlotDeleteButton.classList.add('delete-button');
             const deleteHandler = () => {
-                console.log(`openFreeSlotModal: Kliknuté na 'Vymazať' pre fantómový slot ID: ${blockedSlotId}.`);
+                console.log(`openFreeSlotModal: Kliknuté na 'Vymazať' pre fantómový slot ID: ${blockedSlotId}. Spúšťam deleteSlotAndRecalculate.`);
                 deleteSlotAndRecalculate(blockedSlotId, date, location);
             };
             phantomSlotDeleteButton.addEventListener('click', deleteHandler);
@@ -1784,7 +1784,7 @@ async function openFreeSlotModal(date, location, startTime, endTime, blockedSlot
             deleteUnblockButton.textContent = 'Odblokovať'; // Zmení isBlocked na false
             deleteUnblockButton.classList.remove('delete-button'); // Odstráni červený štýl
             const unblockHandler = () => {
-                console.log(`openFreeSlotModal: Kliknuté na 'Odblokovať' pre zablokovaný slot ID: ${blockedSlotId}.`);
+                console.log(`openFreeSlotModal: Kliknuté na 'Odblokovať' pre zablokovaný slot ID: ${blockedSlotId}. Spúšťam unblockBlockedSlot.`);
                 unblockBlockedSlot(blockedSlotId, date, location);
             };
             deleteUnblockButton.addEventListener('click', unblockHandler);
@@ -1800,7 +1800,7 @@ async function openFreeSlotModal(date, location, startTime, endTime, blockedSlot
             blockButton.style.display = 'inline-block';
             blockButton.textContent = 'Zablokovať'; // Zmení isBlocked na true
             const reblockHandler = () => {
-                console.log(`openFreeSlotModal: Kliknuté na 'Zablokovať' (re-blokovať) pre odblokovaný slot ID: ${blockedSlotId}.`);
+                console.log(`openFreeSlotModal: Kliknuté na 'Zablokovať' (re-blokovať) pre odblokovaný slot ID: ${blockedSlotId}. Spúšťam reblockUnblockedSlot.`);
                 reblockUnblockedSlot(blockedSlotId, date, location);
             };
             blockButton.addEventListener('click', reblockHandler);
@@ -1813,7 +1813,7 @@ async function openFreeSlotModal(date, location, startTime, endTime, blockedSlot
             deleteUnblockButton.textContent = 'Vymazať slot'; // Úplné vymazanie odblokovaného slotu
             deleteUnblockButton.classList.add('delete-button');
             const deleteHandler = () => {
-                console.log(`openFreeSlotModal: Kliknuté na 'Vymazať slot' pre odblokovaný slot ID: ${blockedSlotId}.`);
+                console.log(`openFreeSlotModal: Kliknuté na 'Vymazať slot' pre odblokovaný slot ID: ${blockedSlotId}. Spúšťam deleteSlotAndRecalculate.`);
                 deleteSlotAndRecalculate(blockedSlotId, date, location);
             };
             deleteUnblockButton.addEventListener('click', deleteHandler);
@@ -2021,7 +2021,7 @@ async function reblockUnblockedSlot(slotId, date, location) {
             const [startH, startM] = (await getDoc(slotRef)).data().startTime.split(':').map(Number);
             const startInMinutes = startH * 60 + startM;
             const [endH, endM] = (await getDoc(slotRef)).data().endTime.split(':').map(Number);
-            const endInMinutes = endH * 60 + endM;
+            const endInMinutes = endM * 60 + endM; // OPRAVA: Preklep, malo by byť endM
 
             const matchesQuery = query(
                 matchesCollectionRef,
