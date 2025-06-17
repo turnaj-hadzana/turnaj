@@ -2294,6 +2294,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         placeGoogleMapsUrlInput.value = '';
         deletePlaceButtonModal.style.display = 'none';
         // Ensure no old handler is present before opening for add
+        // OPRAVA PREKLEPU: Zmenené deletePlaceButtonButtonModal na deletePlaceButtonModal
         if (deletePlaceButtonModal && deletePlaceButtonModal._currentHandler) { // Check if handler exists before removing
             deletePlaceButtonModal.removeEventListener('click', deletePlaceButtonModal._currentHandler);
             delete deletePlaceButtonModal._currentHandler;
