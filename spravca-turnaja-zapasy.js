@@ -984,7 +984,8 @@ async function displayMatchesAsSchedule() {
                         currentEventsForRendering.sort((a, b) => a.startInMinutes - b.startInMinutes);
                         console.log(`displayMatchesAsSchedule: Udalosti pre render pre ${location} na ${date} (zoradené):`, JSON.stringify(currentEventsForRendering.map(e => ({id: e.id, type: e.type, startTime: e.startTime || e.startInMinutes, endTime: e.endTime || e.endInMinutes, isPhantom: e.isPhantom, isBlocked: e.isBlocked}))));
 
-                        const initialScheduleStartMinutes = (isFirstPlayingDayForDate ? globalFirstDayStartTime : globalOtherDaysStartTime).split(':').map(Number).reduce((h, m) => h * 60 + m);
+                        // Use the getInitialScheduleStartMinutes function to determine the correct initial start time.
+                        const initialScheduleStartMinutes = await getInitialScheduleStartMinutes(date); 
                         let currentTimePointerInMinutes = initialScheduleStartMinutes;
                         let contentAddedForThisDate = false;
                         
