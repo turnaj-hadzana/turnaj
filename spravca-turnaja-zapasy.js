@@ -1263,13 +1263,27 @@ async function displayMatchesAsSchedule() {
                             console.log(`Detected drop on empty/unblocked slot with ID: ${targetBlockedSlotId}`);
                         }
                     } else {
-                        // If dropped on the background of dateGroupDiv, determine if it's "before first event" or "after last event"
-                        // Simplification: For now, if dropped on background, assume it's "at the end".
-                        // To accurately place it at the beginning, we would need a specific drop target for the beginning.
-                        // For now, if dropped on the general date-group div (not a specific row), use the last event end time.
-                        // For "before first event", the 'empty-slot-row' at the beginning would be the target.
-                        droppedProposedStartTime = dateGroupDiv.dataset.lastEventEndTime;
-                        console.log(`Dropped on background. Proposed start time (last event end): ${droppedProposedStartTime}`);
+                         // If dropped on the background of dateGroupDiv, it should go to the very beginning if the pointer is at initial start
+                        const initialStartTime = dateGroupDiv.dataset.initialStartTime;
+                        const lastEventEndTime = dateGroupDiv.dataset.lastEventEndTime;
+
+                        // Check if the drop position is essentially before the first element
+                        // This is a heuristic: if the clientY is close to the top of the dateGroupDiv,
+                        // and there are elements, we can infer "before first". This is tricky without exact coordinates.
+                        // A more robust solution would be to have a dedicated "drop before first" zone.
+                        // For now, if no specific row is targeted, it means either at the very beginning or very end.
+                        // We will try to infer "before first" if the initial start time is the last event end time,
+                        // meaning the schedule is currently empty or only has events at the very start.
+                        
+                        // If the schedule is completely empty for this date/location, droppedProposedStartTime should be the initial start time.
+                        // Otherwise, if dropped on the background, it means "append to end".
+                        if (initialStartTime === lastEventEndTime) {
+                            droppedProposedStartTime = initialStartTime;
+                            console.log(`Dropped on empty schedule. Proposed start time (initial start): ${droppedProposedStartTime}`);
+                        } else {
+                            droppedProposedStartTime = lastEventEndTime;
+                            console.log(`Dropped on background (non-empty schedule). Proposed start time (last event end): ${droppedProposedStartTime}`);
+                        }
                     }
                     
                     console.log(`Attempting to move and reschedule match ${draggedMatchId} to Date: ${newDate}, Location: ${newLocation}, Proposed Start Time: ${droppedProposedStartTime}, Target Blocked Slot ID: ${targetBlockedSlotId}`);
@@ -1744,18 +1758,17 @@ async function openFreeSlotModal(date, location, startTime, endTime, blockedSlot
             console.log("openFreeSlotModal: Pridaný poslucháč a zobrazené tlačidlo 'Zablokovať'.");
         }
 
-        if (unblockButton) { 
+        if (unblockButton) { // Toto je teraz tlačidlo "Vymazať" pre čistý voľný slot
             unblockButton.style.display = 'inline-block';
-            unblockButton.textContent = 'Zrušiť'; 
-            unblockButton.classList.add('action-button'); 
-            unblockButton.classList.remove('delete-button');
-            const cancelHandler = () => { 
-                console.log("openFreeSlotModal: Kliknuté na 'Zrušiť' pre nový voľný interval (zatváram modál).");
+            unblockButton.textContent = 'Vymazať'; // Zmenené z "Zrušiť" na "Vymazať"
+            unblockButton.classList.add('delete-button'); // Pridaná trieda delete-button
+            const deleteHandler = () => { // Zmenené z cancelHandler na deleteHandler
+                console.log("openFreeSlotModal: Kliknuté na 'Vymazať' pre nový voľný interval (zatváram modál, nič z DB).");
                 closeModal(freeSlotModal);
             };
-            unblockButton.addEventListener('click', cancelHandler);
-            unblockButton._currentHandler = cancelHandler; 
-            console.log("openFreeSlotModal: Pridaný poslucháč a zobrazené tlačidlo 'Zrušiť'.");
+            unblockButton.addEventListener('click', deleteHandler);
+            unblockButton._currentHandler = deleteHandler; 
+            console.log("openFreeSlotModal: Pridaný poslucháč a zobrazené tlačidlo 'Vymazať'.");
         }
         // deletePhantomButton remains hidden
 
