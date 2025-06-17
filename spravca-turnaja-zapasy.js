@@ -966,7 +966,7 @@ async function displayMatchesAsSchedule() {
                         scheduleHtml += `<div class="date-group" data-date="${date}" data-location="${location}" style="margin: 20px; border: 1px solid #eee; border-radius: 8px; overflow: hidden;">`;
                         scheduleHtml += `<h3 style="background-color: #eaeaea; padding: 15px; margin: 0; border-bottom: 1px solid #ddd;">${dayName} ${formattedDisplayDate}</h3>`;
 
-                        scheduleHtml += `<table class="data-table match-list-table compact-table" style="width: 100%; border-collapse: collapse;">`;
+                        scheduleHtml += `<table class="data-table match-list-table compact-table" style="width: 100%; background-color: #eaeaea; border-collapse: collapse;">`;
                         scheduleHtml += `<thead><tr>`;
                         scheduleHtml += `<th>Čas</th>`;
                         scheduleHtml += `<th>Domáci</th>`;
