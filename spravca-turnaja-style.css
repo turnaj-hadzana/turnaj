@@ -172,7 +172,7 @@ th {
     font-weight: bold;
 }
 tbody tr:nth-child(even) {
-    background-color: #f9f9f9;
+    background-color: #f7f7f7;
 }
 tbody tr:hover {
     background-color: #e9e9e9;
