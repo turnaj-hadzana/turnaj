@@ -2147,14 +2147,13 @@ async function deleteSlotAndRecalculate(slotId, date, location) {
                 console.log(`deleteSlotAndRecalculate: Pokúšam sa vymazať dokument blockedSlot ID: ${slotId}`);
                 await deleteDoc(doc(blockedSlotsCollectionRef, slotId));
                 console.log(`deleteSlotAndRecalculate: Dokument blockedSlot ID: ${slotId} úspešne vymazaný.`);
-                await showMessage('Úspech', 'Slot bol úspešne vymazaný!');
-            } else { // If there's no ID (it's a purely visual empty slot), no DB deletion happens.
+                await showMessage('Úspech', 'Slot bol úspešne vymazaný!'); // Ponechané pre potvrdenie akcie v DB
+            } else { // Ak nemá ID (je to čisto vizuálny voľný slot), žiadne vymazanie z DB sa neuskutoční.
                 console.log(`deleteSlotAndRecalculate: Interval nemá ID, nevykonáva sa žiadne vymazanie z DB.`);
-                // Show message for consistency, but emphasize no DB record was involved
-                await showMessage('Informácia', 'Nebol k dispozícii žiadny DB záznam pre tento voľný interval na vymazanie.');
+                // Správa tu bola odstránená podľa požiadavky používateľa, aby sa nezobrazovala "Informácia" pre čisto vizuálne sloty.
             }
             closeModal(freeSlotModal);
-            // This will now compact the schedule and fill the gap.
+            // Toto teraz skompaktuje rozvrh a vyplní medzeru.
             console.log(`deleteSlotAndRecalculate: Spúšťam prepočet rozvrhu pre dátum: ${date}, miesto: ${location}`);
             await recalculateAndSaveScheduleForDateAndLocation(date, location); 
         } catch (error) {
