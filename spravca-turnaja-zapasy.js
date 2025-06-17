@@ -120,7 +120,7 @@ async function populateAllPlaceSelects(selectElement, selectedPlaceCombined = ''
  * Získa nastavenia trvania zápasu a časovej rezervy pre danú kategóriu.
  * @param {string} categoryId ID kategórie.
  * @returns {Promise<{duration: number, bufferTime: number}>} Nastavenia zápasu.
- */
+*/
 async function getCategoryMatchSettings(categoryId) {
     try {
         const settingsDocRef = doc(settingsCollectionRef, SETTINGS_DOC_ID);
@@ -167,7 +167,7 @@ async function updateMatchDurationAndBuffer() {
  * Prioritou je nájsť voľný slot, ktorý má presne takú dĺžku, akú vyžaduje zápas (trvanie).
  * Ak taký interval neexistuje, čas sa nastaví hneď po poslednom existujúcom zápase v daný deň a na danom mieste,
  * alebo na počiatočný čas dňa, ak nie sú žiadne zápasy.
- */
+*/
 async function findFirstAvailableTime() {
     const matchDateSelect = document.getElementById('matchDateSelect');
     const matchLocationSelect = document.getElementById('matchLocationSelect');
@@ -412,7 +412,7 @@ async function findFirstAvailableTime() {
  * @param {Map<string, string>} categoriesMap Mapa ID kategórií na názvy.
  * @param {Map<string, string>} groupsMap Mapa ID skupín na názvy.
  * @returns {Promise<{fullDisplayName: string|null, clubName: string|null, clubId: string|null, shortDisplayName: string|null}>} Informácie o zobrazení tímu.
- */
+*/
 const getTeamName = async (categoryId, groupId, teamNumber, categoriesMap, groupsMap) => {
     if (!categoryId || !groupId || !teamNumber) {
         return { fullDisplayName: null, clubName: null, clubId: null, shortDisplayName: null };
@@ -475,7 +475,7 @@ const getTeamName = async (categoryId, groupId, teamNumber, categoriesMap, group
  * @param {number} duration Trvanie predchádzajúceho zápasu v minútach.
  * @param {number} bufferTime Časová rezerva v minútach po predchádzajúcom zápase.
  * @returns {string} Reťazec HH:MM ďalšieho dostupného času začiatku.
- */
+*/
 function calculateNextAvailableTime(prevStartTime, duration, bufferTime) {
     console.log(`calculateNextAvailableTime: Vstup - prevStartTime: ${prevStartTime}, duration: ${duration}, bufferTime: ${bufferTime}`);
     let [prevH, prevM] = prevStartTime.split(':').map(Number);
@@ -495,7 +495,7 @@ function calculateNextAvailableTime(prevStartTime, duration, bufferTime) {
  * pre konkrétny dátum a miesto.
  * @param {string} date Dátum, pre ktorý sa má prepočítať rozvrh.
  * @param {string} location Miesto, pre ktoré sa má prepočítať rozvrh.
- */
+*/
 async function recalculateAndSaveScheduleForDateAndLocation(date, location) {
     console.log(`recalculateAndSaveScheduleForDateAndLocation: Spustené pre Dátum: ${date}, Miesto: ${location}.`);
     try {
@@ -682,7 +682,7 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location) {
  * Pomocná funkcia na získanie počiatočného času rozvrhu pre daný dátum.
  * @param {string} date Dátum.
  * @returns {Promise<number>} Počiatočný čas rozvrhu v minútach od polnoci.
- */
+*/
 async function getInitialScheduleStartMinutes(date) {
     const settingsDocRef = doc(settingsCollectionRef, SETTINGS_DOC_ID);
     const settingsDoc = await getDoc(settingsDocRef);
@@ -714,7 +714,7 @@ async function getInitialScheduleStartMinutes(date) {
  * @param {string} targetLocation Miesto cieľového miesta (názov).
  * @param {string|null} droppedProposedStartTime HH:MM string pre navrhovaný čas začiatku presunutého zápasu, alebo null pre pripojenie na koniec.
  * @param {string|null} targetBlockedSlotId ID zablokovaného slotu, na ktorý sa presúva (môže byť aj placeholder).
- */
+*/
 async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation, droppedProposedStartTime = null, targetBlockedSlotId = null) {
     console.log(`moveAndRescheduleMatch: Spustené pre zápas ID: ${draggedMatchId}, cieľ: ${targetDate}, ${targetLocation}, navrhovaný čas: ${droppedProposedStartTime}, cieľový zablokovaný slot ID: ${targetBlockedSlotId}`);
     try {
@@ -802,7 +802,7 @@ async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation
 
 /**
  * Zobrazí kompletný rozvrh zápasov.
- */
+*/
 async function displayMatchesAsSchedule() {
     const matchesContainer = document.getElementById('matchesContainer');
     if (!matchesContainer) return;
@@ -1368,7 +1368,7 @@ async function displayMatchesAsSchedule() {
 /**
  * Zmaže hrací deň a všetky súvisiace zápasy. Autobusové trasy a ubytovanie odstránené.
  * @param {string} dateToDelete Dátum hracieho dňa na zmazanie.
- */
+*/
 async function deletePlayingDay(dateToDelete) {
     const confirmed = await showConfirmation(
         'Potvrdenie vymazania',
@@ -1418,7 +1418,7 @@ async function deletePlayingDay(dateToDelete) {
  * Zmaže miesto (športovú halu alebo stravovacie zariadenie) a všetky súvisiace zápasy. Autobusové trasy a ubytovanie odstránené.
  * @param {string} placeNameToDelete Názov miesta na zmazanie.
  * @param {string} placeTypeToDelete Typ miesta na zmazanie.
- */
+*/
 async function deletePlace(placeNameToDelete, placeTypeToDelete) {
     const confirmed = await showConfirmation(
         'Potvrdenie vymazania',
@@ -1467,7 +1467,7 @@ async function deletePlace(placeNameToDelete, placeTypeToDelete) {
 /**
  * Otvorí modálne okno na úpravu existujúceho hracieho dňa.
  * @param {string} dateToEdit Dátum hracieho dňa na úpravu.
- */
+*/
 async function editPlayingDay(dateToEdit) {
     // Get references to elements inside the function to ensure they are available
     const playingDayModal = document.getElementById('playingDayModal');
@@ -1511,7 +1511,7 @@ async function editPlayingDay(dateToEdit) {
  * Otvorí modálne okno na úpravu existujúceho miesta.
  * @param {string} placeName Názov miesta na úpravu.
  * @param {string} placeType Typ miesta na úpravu.
- */
+*/
 async function editPlace(placeName, placeType) {
     // Get references to elements inside the function to ensure they are available
     const placeModal = document.getElementById('placeModal');
@@ -1562,7 +1562,7 @@ async function editPlace(placeName, placeType) {
  * @param {string} [prefillDate=''] Voliteľné: Dátum na predvyplnenie modálneho okna.
  * @param {string} [prefillLocation=''] Voliteľné: Miesto na predvyplnenie modálneho okna.
  * @param {string} [prefillStartTime=''] Voliteľné: Čas začiatku na predvyplnenie modálneho okna.
- */
+*/
 async function openMatchModal(matchId = null, prefillDate = '', prefillLocation = '', prefillStartTime = '') {
     // Get references to elements inside the function to ensure they are available
     const matchModal = document.getElementById('matchModal');
@@ -1698,7 +1698,7 @@ async function openMatchModal(matchId = null, prefillDate = '', prefillLocation 
  * @param {string} startTime Čas začiatku slotu (HH:MM).
  * @param {string} endTime Čas konca slotu (HH:MM).
  * @param {string} blockedSlotId ID zablokovaného slotu. Teraz vždy existuje.
- */
+*/
 async function openFreeSlotModal(date, location, startTime, endTime, blockedSlotId) {
     // Debugging logs
     console.log(`openFreeSlotModal: Volané pre Dátum: ${date}, Miesto: ${location}, Čas: ${startTime}-${endTime}, ID slotu: ${blockedSlotId}`);
@@ -1882,7 +1882,7 @@ async function openFreeSlotModal(date, location, startTime, endTime, blockedSlot
  * @param {string} blockedSlotId ID fantómového slotu na konverziu.
  * @param {string} date Dátum slotu.
  * @param {string} location Miesto slotu.
- */
+*/
 async function convertToRegularBlockedSlot(blockedSlotId, date, location) {
     console.log(`convertToRegularBlockedSlot: === FUNKCIA ZABLOKOVAŤ FANTÓMOVÝ INTERVAL SPUSTENÁ ===`);
     console.log(`convertToRegularBlockedSlot: ID slotu: ${blockedSlotId}, Dátum: ${date}, Miesto: ${location}`);
@@ -1914,7 +1914,7 @@ async function convertToRegularBlockedSlot(blockedSlotId, date, location) {
  * @param {string} location Miesto slotu.
  * @param {string} startTime Čas začiatku slotu (HH:MM).
  * @param {string} endTime Čas konca slotu (HH:MM).
- */
+*/
 async function createBlockedSlotAndRecalculate(date, location, startTime, endTime) {
     console.log(`createBlockedSlotAndRecalculate: === FUNKCIA ZABLOKOVAŤ VOĽNÝ INTERVAL SPUSTENÁ ===`);
     console.log(`createBlockedSlotAndRecalculate: Dátum: ${date}, Miesto: ${location}, Čas: ${startTime}-${endTime}`);
@@ -2030,7 +2030,7 @@ async function createBlockedSlotAndRecalculate(date, location, startTime, endTim
  * @param {string} slotId ID slotu na odblokovanie.
  * @param {string} date Dátum slotu.
  * @param {string} string Miesto slotu.
- */
+*/
 async function unblockBlockedSlot(slotId, date, location) {
     console.log(`unblockBlockedSlot: === FUNKCIA ODBLOKOVAŤ INTERVAL SPUSTENÁ ===`);
     console.log(`unblockBlockedSlot: ID slotu: ${slotId}, Dátum: ${date}, Miesto: ${location}`);
@@ -2060,7 +2060,7 @@ async function unblockBlockedSlot(slotId, date, location) {
  * @param {string} slotId ID slotu na znovu zablokovanie.
  * @param {string} date Dátum slotu.
  * @param {string} location Miesto slotu.
- */
+*/
 async function reblockUnblockedSlot(slotId, date, location) {
     console.log(`reblockUnblockedSlot: === FUNKCIA ZNOVU ZABLOKOVAŤ INTERVAL SPUSTENÁ ===`);
     console.log(`reblockUnblockedSlot: ID slotu: ${slotId}, Dátum: ${date}, Miesto: ${location}`);
@@ -2133,7 +2133,7 @@ async function reblockUnblockedSlot(slotId, date, location) {
  * @param {string} slotId ID slotu na vymazanie. Teraz vždy existuje.
  * @param {string} date Dátum slotu.
  * @param {string} location Miesto slotu.
- */
+*/
 async function handleDeleteSlot(slotId, date, location) {
     console.log(`handleDeleteSlot: === SPUŠTENÁ FUNKCIA NA SPRACovanie VYMAZANIA SLOTU ===`);
     console.log(`handleDeleteSlot: ID slotu: ${slotId}, Dátum: ${date}, Miesto: ${location}`);
@@ -2170,7 +2170,7 @@ async function handleDeleteSlot(slotId, date, location) {
 /**
  * Zmaže zápas z Firestore.
  * @param {string} matchId ID zápasu na zmazanie.
- */
+*/
 async function deleteMatch(matchId) {
     const confirmed = await showConfirmation('Potvrdenie vymazania', 'Naozaj chcete vymazať tento zápas?');
     if (confirmed) {
@@ -2212,7 +2212,7 @@ async function deleteMatch(matchId) {
  * Vyčistí (vymaže) všetky Zvyšné fantómové sloty (`isPhantom: true`)
  * a placeholder sloty (`isBlocked: false, isPhantom: false`) na konci každého dňa a miesta pri načítaní stránky.
  * Táto funkcia je teraz zjednodušená, keďže recalculateAndSaveScheduleForDateAndLocation by mala manažovať väčšinu.
- */
+*/
 async function cleanupTrailingBlockedSlotsOnLoad() {
     console.log("cleanupTrailingBlockedSlotsOnLoad: Spustená funkcia pre čistenie koncových slotov.");
     try {
