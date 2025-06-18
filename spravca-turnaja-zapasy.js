@@ -2272,7 +2272,6 @@ async function handleDeleteSlot(slotId, date, location) {
         await showMessage('Úspech', 'Slot bol úspešne vymazaný z databázy!');
         closeModal(freeSlotModal);
         
-        // Ensure to pass date and location correctly to recalculateAndSaveScheduleForDateAndLocation
         await recalculateAndSaveScheduleForDateAndLocation(
             date, 
             location, 
