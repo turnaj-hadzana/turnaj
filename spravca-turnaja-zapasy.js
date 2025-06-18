@@ -644,7 +644,7 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, trig
                 startInMinutes: (parseInt(doc.data().startTime.split(':')[0]) * 60 + parseInt(doc.data().startTime.split(':')[1])),
                 endInMinutes: (parseInt(doc.data().endTime.split(':')[0]) * 60 + parseInt(doc.data().endTime.split(':')[1]))
             }))
-            .filter(slot => (slot.isBlocked === true || slot.isPhantom === true) && slot.id !== excludedBlockedSlotId); // Zahrňte len aktívne zablokované a fantómy pre časovú os, a vylúčte explicitne zadaný slot
+            .filter(slot => slot.id !== excludedBlockedSlotId); // Zahrňte len aktívne zablokované a fantómy pre časovú os, a vylúčte explicitne zadaný slot
 
         // Vytvoríme "pevnú" timeline pre generovanie medzier
         let finalTimelineEvents = [
@@ -664,6 +664,8 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, trig
 
                 // Skontrolujte, či sa prekrýva s nejakým iným pevným eventom v tomto rozsahu
                 const isGapCovered = finalTimelineEvents.some(e => {
+                    // Upravená podmienka: Skontrolujte, či sa prekrýva s akýmkoľvek iným existujúcim eventom (zápas, zablokovaný alebo fantóm)
+                    // a uistite sa, že to nie je ten istý event, ktorý práve spracovávame
                     if (e.id === event.id && e.type === event.type) return false;
                     return (potentialGapStart < e.endInMinutes && potentialGapEnd > e.startInMinutes);
                 });
