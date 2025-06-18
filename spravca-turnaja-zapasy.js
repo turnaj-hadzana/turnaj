@@ -503,21 +503,22 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location) {
         const batch1 = writeBatch(db); // Batch pre aktualizáciu zápasov a odstránenie starých placeholderov/fantómov
 
         // Fáza 1: Vyčistite staré dynamické sloty a posuňte zápasy
-        // 1a. Vymažte VŠETKY dynamické sloty (placeholdery a fantómy) pre toto miesto/dátum.
-        const dynamicSlotsToCleanupQuery = query(
+        // 1a. Vymažte VŠETKY dynamické sloty (placeholdery) pre toto miesto/dátum, ktoré NIE SÚ fantómy.
+        const dynamicPlaceholdersToCleanupQuery = query(
             blockedSlotsCollectionRef,
             where("date", "==", date),
             where("location", "==", location),
-            where("isBlocked", "==", false) // Toto sú naše placeholdery a fantómy, ktoré sa majú dynamicky generovať
+            where("isBlocked", "==", false),
+            where("isPhantom", "==", false) // Nová podmienka: vymažte len tie, ktoré nie sú fantómy
         );
-        const dynamicSlotsToCleanupSnapshot = await getDocs(dynamicSlotsToCleanupQuery);
-        dynamicSlotsToCleanupSnapshot.docs.forEach(docToDelete => {
+        const dynamicPlaceholdersToCleanupSnapshot = await getDocs(dynamicPlaceholdersToCleanupQuery);
+        dynamicPlaceholdersToCleanupSnapshot.docs.forEach(docToDelete => {
             batch1.delete(doc(blockedSlotsCollectionRef, docToDelete.id));
-            console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 1): Pridané do batchu na vymazanie dynamického slotu ID: ${docToDelete.id}`);
+            console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 1): Pridané do batchu na vymazanie dynamického placeholder slotu ID: ${docToDelete.id}`);
         });
 
         // 1b. Načítajte aktuálne zápasy a používateľom pevne zablokované sloty.
-        const matchesQuery = query(matchesCollectionRef, where("date", "==", date), where("location", "==", location), orderBy("startTime", "asc"));
+        const matchesQuery = query(matchesCollectionRef, where("date", "==", date), where("location", "==", location));
         const matchesSnapshot = await getDocs(matchesQuery);
         let currentMatches = matchesSnapshot.docs.map(doc => ({
             id: doc.id,
@@ -585,83 +586,94 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location) {
         await batch1.commit(); // Commit the first batch (cleanup and match updates)
         console.log("recalculateAndSaveScheduleForDateAndLocation (Fáza 1): Prvý batch commit úspešný (vyčistenie a posun zápasov).");
 
-        // Fáza 2: Generovanie placeholderov a finálne usporiadanie
+        // Fáza 2: Generovanie placeholderov
         const batch2 = writeBatch(db); // Nový batch pre pridanie placeholderov
 
-        // Načítajte VŠETKY udalosti ZNOVU, teraz s aktualizovanými časmi zápasov
-        const allMatchesFinalSnapshot = await getDocs(query(matchesCollectionRef, where("date", "==", date), where("location", "==", location)));
-        const allMatchesFinal = allMatchesFinalSnapshot.docs.map(doc => ({
+        // Načítajte VŠETKY (už posunuté) zápasy, všetky POUŽÍVATEĽOM ZABLOKOVANÉ sloty a perzistentné fantómy
+        const allMatchesForFinalTimeline = (await getDocs(query(matchesCollectionRef, where("date", "==", date), where("location", "==", location)))).docs.map(doc => ({
             id: doc.id,
             type: 'match',
-            ...doc.data()
+            ...doc.data(),
+            startInMinutes: (parseInt(doc.data().startTime.split(':')[0]) * 60 + parseInt(doc.data().startTime.split(':')[1])),
+            endInMinutes: (parseInt(doc.data().startTime.split(':')[0]) * 60 + parseInt(doc.data().startTime.split(':')[1])) + (Number(doc.data().duration) || 0) + (Number(doc.data().bufferTime) || 0)
         }));
 
-        const allBlockedSlotsFinalSnapshot = await getDocs(query(blockedSlotsCollectionRef, where("date", "==", date), where("location", "==", location)));
-        const allBlockedSlotsFinal = allBlockedSlotsFinalSnapshot.docs.map(doc => ({
+        const userBlockedSlotsForFinalTimeline = (await getDocs(query(blockedSlotsCollectionRef, where("date", "==", date), where("location", "==", location), where("isBlocked", "==", true)))).docs.map(doc => ({
             id: doc.id,
             type: 'blocked_slot',
-            ...doc.data()
+            isBlocked: true, // Ensure this is explicitly set
+            isPhantom: false, // User blocked slots are never phantoms
+            ...doc.data(),
+            startInMinutes: (parseInt(doc.data().startTime.split(':')[0]) * 60 + parseInt(doc.data().startTime.split(':')[1])),
+            endInMinutes: (parseInt(doc.data().endTime.split(':')[0]) * 60 + parseInt(doc.data().endTime.split(':')[1]))
         }));
 
-        // Zlúčte VŠETKY udalosti pre finálne usporiadanie timeline, vrátane fantómov a zablokovaných slotov
-        let allTimelineEvents = [
-            ...allMatchesFinal.map(m => {
-                const [h, mVal] = m.startTime.split(':').map(Number);
-                const startInMinutes = h * 60 + mVal;
-                const duration = Number(m.duration) || 0;
-                const bufferTime = Number(m.bufferTime) || 0;
-                return {
-                    ...m,
-                    startInMinutes: startInMinutes,
-                    endInMinutes: startInMinutes + duration + bufferTime
-                };
-            }),
-            ...allBlockedSlotsFinal.map(s => {
-                const [startH, startM] = s.startTime.split(':').map(Number);
-                const startInMinutes = startH * 60 + startM;
-                const [endH, endM] = s.endTime.split(':').map(Number);
-                const endInMinutes = endH * 60 + endM;
-                return {
-                    ...s,
-                    startInMinutes: startInMinutes,
-                    endInMinutes: endInMinutes
-                };
-            })
+        // Zahrňte perzistentné fantómy do pevnej časovej osi
+        const persistentPhantomsForFinalTimeline = (await getDocs(query(blockedSlotsCollectionRef, where("date", "==", date), where("location", "==", location), where("isPhantom", "==", true)))).docs.map(doc => ({
+            id: doc.id,
+            type: 'blocked_slot',
+            isBlocked: false, // Phantoms are not user-blocked
+            isPhantom: true, // Ensure this is explicitly set
+            ...doc.data(),
+            startInMinutes: (parseInt(doc.data().startTime.split(':')[0]) * 60 + parseInt(doc.data().startTime.split(':')[1])),
+            endInMinutes: (parseInt(doc.data().endTime.split(':')[0]) * 60 + parseInt(doc.data().endTime.split(':')[1]))
+        }));
+
+        // Vytvoríme "pevnú" timeline pre generovanie medzier
+        let fixedTimelineEvents = [
+            ...allMatchesForFinalTimeline,
+            ...userBlockedSlotsForFinalTimeline,
+            ...persistentPhantomsForFinalTimeline // Pridajte perzistentné fantómy
         ];
 
-        allTimelineEvents.sort((a, b) => a.startInMinutes - b.startInMinutes);
-        console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 2): Finálne zoradené udalosti timeline:`, JSON.stringify(allTimelineEvents.map(e => ({id: e.id, type: e.type, startInMinutes: e.startInMinutes}))));
+        fixedTimelineEvents.sort((a, b) => a.startInMinutes - b.startInMinutes);
+        console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 2): Pevné udalosti timeline pre generovanie placeholderov:`, JSON.stringify(fixedTimelineEvents.map(e => ({id: e.id, type: e.type, startInMinutes: e.startInMinutes, isPhantom: e.isPhantom}))));
 
-        currentTimePointer = initialScheduleStartMinutes; // Reset ukazovateľa pre generovanie placeholderov
-        console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 2): Počiatočný ukazovateľ času pre generovanie placeholderov: ${currentTimePointer} minút.`);
+        currentTimePointer = initialScheduleStartMinutes;
 
-        for (const event of allTimelineEvents) {
-            // Vytvorenie placeholderu, ak existuje medzera pred aktuálnou udalosťou
+        for (const event of fixedTimelineEvents) {
+            // Ak je medzera pred aktuálnou udalosťou a táto udalosť nie je placeholder (fantóm ani voľný), vytvorte placeholder
             if (currentTimePointer < event.startInMinutes) {
-                const gapStart = currentTimePointer;
-                const gapEnd = event.startInMinutes;
-                const newPlaceholderData = {
-                    date: date,
-                    location: location,
-                    startTime: `${String(Math.floor(gapStart / 60)).padStart(2, '0')}:${String(gapStart % 60).padStart(2, '0')}`,
-                    endTime: `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(gapEnd % 60).padStart(2, '0')}`,
-                    startInMinutes: gapStart,
-                    endInMinutes: gapEnd,
-                    isBlocked: false, // Je to placeholder, nie je používateľom zablokovaný
-                    isPhantom: false, // Nie je ani "fantóm", ale riadny voľný slot
-                    createdAt: new Date()
-                };
-                batch2.set(doc(blockedSlotsCollectionRef), newPlaceholderData);
-                console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 2): Vytvorený placeholder pred udalosťou: Čas: ${newPlaceholderData.startTime}-${newPlaceholderData.endTime}`);
+                // Vytvorte placeholder IBA ak medzi currentTimePointer a začiatkom eventu nie je už žiadny iný phantom alebo user-blocked slot
+                // Toto je dôležité, aby sa zabránilo prekrývaniu placeholderov s existujúcimi (aj fantómovými) slotmi.
+                const potentialGapStart = currentTimePointer;
+                const potentialGapEnd = event.startInMinutes;
+
+                // Skontrolujte, či v tomto potenciálnom medzislovnom rozsahu už existuje nejaký FIXNÝ event
+                const isGapCovered = fixedTimelineEvents.some(e => {
+                    // Ignorujte aktuálny event, ktorý práve spracovávame
+                    if (e.id === event.id && e.type === event.type) return false;
+
+                    // Ak sa iný pevný event prekrýva s touto potenciálnou medzerou
+                    return (potentialGapStart < e.endInMinutes && potentialGapEnd > e.startInMinutes);
+                });
+
+                if (!isGapCovered) {
+                    const newPlaceholderData = {
+                        date: date,
+                        location: location,
+                        startTime: `${String(Math.floor(potentialGapStart / 60)).padStart(2, '0')}:${String(potentialGapStart % 60).padStart(2, '0')}`,
+                        endTime: `${String(Math.floor(potentialGapEnd / 60)).padStart(2, '0')}:${String(potentialGapEnd % 60).padStart(2, '0')}`,
+                        startInMinutes: potentialGapStart,
+                        endInMinutes: potentialGapEnd,
+                        isBlocked: false, // Je to placeholder
+                        isPhantom: false, // Nie je fantóm
+                        createdAt: new Date()
+                    };
+                    batch2.set(doc(blockedSlotsCollectionRef), newPlaceholderData);
+                    console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 2): Vytvorený placeholder: Čas: ${newPlaceholderData.startTime}-${newPlaceholderData.endTime}`);
+                } else {
+                    console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 2): Preskočená tvorba placeholderu, medzera už je pokrytá iným eventom.`);
+                }
             }
 
-            // Posuňte currentTimePointer za aktuálnu udalosť
+            // Posuňte currentTimePointer za túto pevnú udalosť
             currentTimePointer = Math.max(currentTimePointer, event.endInMinutes);
-            console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 2): Aktuálny currentTimePointer po spracovaní udalosti: ${currentTimePointer}`);
+            console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 2): Aktuálny currentTimePointer po spracovaní pevnej udalosti: ${currentTimePointer}`);
         }
 
-        // Manažujte poslednú medzeru na konci dňa (ak existuje)
-        const endOfDayMinutes = 24 * 60; // 24:00
+        // Manažujte poslednú medzeru na konci dňa
+        const endOfDayMinutes = 24 * 60;
         if (currentTimePointer < endOfDayMinutes) {
             const gapStart = currentTimePointer;
             const gapEnd = endOfDayMinutes;
@@ -680,7 +692,7 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location) {
             console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 2): Vytvorený koncový placeholder slot: Čas: ${newPlaceholderData.startTime}-${newPlaceholderData.endTime}`);
         }
 
-        await batch2.commit(); // Commit the second batch (new placeholders)
+        await batch2.commit();
         console.log("recalculateAndSaveScheduleForDateAndLocation (Fáza 2): Druhý batch commit úspešný (nové placeholdery).");
 
         await displayMatchesAsSchedule(); // Obnovte zobrazenie
@@ -1061,7 +1073,7 @@ async function displayMatchesAsSchedule() {
                                 } else if (isPhantom) { // isBlocked === false && isPhantom === true
                                     rowClass = 'empty-slot-row phantom-slot-row'; // Štýl pre fantómy inak, ak je potrebné
                                     cellStyle = 'text-align: center; color: #888; font-style: italic; border: 1px dashed #ffa000;'; // Príklad: prerušovaný oranžový okraj
-                                    displayText = 'Fantómový interval'; 
+                                    displayText = `Slot po presunutom zápase (${blockedSlotStartHour}:${blockedSlotStartMinute} - ${blockedSlotEndHour}:${blockedSlotEndMinute})`; 
                                     dataAttributes = `data-is-blocked="false" data-is-phantom="true"`;
                                 } else { // isBlocked === false && isPhantom === false (nový perzistentný placeholder alebo pôvodný presunutý slot)
                                     // Toto je placeholder "Voľný slot dostupný"
@@ -1761,7 +1773,7 @@ async function openFreeSlotModal(date, location, startTime, endTime, blockedSlot
     // Logika zobrazenia tlačidiel a titulku na základe typu slotu
     if (isPhantom) {
         // Fantómový interval (zápas bol presunutý v rámci rovnakej haly/dňa a zanechal za sebou tento záznam v DB)
-        freeSlotModalTitle.textContent = 'Spravovať fantómový slot';
+        freeSlotModalTitle.textContent = 'Spravovať presunutý slot'; // Upravený text
         console.log("openFreeSlotModal: Typ slotu: Fantómový slot (dočasný).");
         
         if (blockButton) {
@@ -2029,7 +2041,8 @@ async function unblockBlockedSlot(slotId, date, location) {
             // pretože tento priestor môže byť teraz k dispozícii pre posunutie existujúcich zápasov.
             await recalculateAndSaveScheduleForDateAndLocation(date, location); 
             console.log("unblockBlockedSlot: Zobrazenie rozvrhu obnovené a prepočítané.");
-        } catch (error) {
+        }
+        catch (error) {
             console.error("Chyba pri odblokovaní slotu:", error);
             await showMessage('Chyba', `Chyba pri odblokovaní slotu: ${error.message}`);
         }
