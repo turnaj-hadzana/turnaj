@@ -706,10 +706,31 @@ async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation
         const draggedMatchData = draggedMatchDoc.data();
         const originalDate = draggedMatchData.date;
         const originalLocation = draggedMatchData.location;
+        const originalStartTime = draggedMatchData.startTime;
+        const originalDuration = Number(draggedMatchData.duration) || 0;
+        const originalBufferTime = Number(draggedMatchData.bufferTime) || 0;
 
-        // Vytvorenie voľného slotu (placeholderu) na pôvodnom mieste zápasu je ODSTRÁNENÉ.
-        // Namiesto toho sa spoliehame na recalculateAndSaveScheduleForDateAndLocation,
-        // ktorá automaticky vyplní prázdne miesta novými "Voľný slot dostupný" placeholdermi.
+        // Vypočítajte pôvodný časový rozsah zápasu
+        const [originalStartH, originalStartM] = originalStartTime.split(':').map(Number);
+        const originalStartInMinutes = originalStartH * 60 + originalStartM;
+        const originalEndInMinutes = originalStartInMinutes + originalDuration + originalBufferTime;
+
+        // Vytvorte fantómový zablokovaný slot na pôvodnom mieste zápasu
+        const phantomSlotData = {
+            date: originalDate,
+            location: originalLocation,
+            startTime: originalStartTime,
+            endTime: `${String(Math.floor(originalEndInMinutes / 60)).padStart(2, '0')}:${String(originalEndInMinutes % 60).padStart(2, '0')}`,
+            startInMinutes: originalStartInMinutes,
+            endInMinutes: originalEndInMinutes,
+            isBlocked: false, // Nie je blokovaný používateľom, je to len dočasný placeholder
+            isPhantom: true, // Označte ako fantóm
+            createdAt: new Date(),
+            originalMatchId: draggedMatchId // Referencia na presunutý zápas
+        };
+        batch.set(doc(blockedSlotsCollectionRef), phantomSlotData);
+        console.log(`moveAndRescheduleMatch: Pridané do batchu na vytvorenie fantómového slotu na pôvodnom mieste zápasu ${draggedMatchId}:`, phantomSlotData);
+
 
         // Aktualizujte dokument pôvodného zápasu na jeho nové miesto/čas
         const updatedMatchData = {
