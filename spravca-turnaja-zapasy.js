@@ -519,6 +519,7 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, trig
             docRef: doc.ref,
             ...doc.data(),
             startInMinutes: (parseInt(doc.data().startTime.split(':')[0]) * 60 + parseInt(doc.data().startTime.split(':')[1])),
+            // End time pre zápasy zahŕňa aj bufferTime
             endInMinutes: (parseInt(doc.data().startTime.split(':')[0]) * 60 + parseInt(doc.data().startTime.split(':')[1])) + (Number(doc.data().duration) || 0) + (Number(doc.data().bufferTime) || 0)
         }));
 
@@ -595,6 +596,7 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, trig
                     batch.update(event.docRef, { startTime: proposedStartTimeStr });
                     console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): Aktualizujem zápas ${event.id} z ${event.startTime} na ${proposedStartTimeStr}`);
                 }
+                // currentTimePointer by mal byť vždy po skončení udalosti + jej bufferu
                 currentTimePointer = proposedStartTimeInMinutes + (Number(event.duration) || 0) + (Number(event.bufferTime) || 0);
             } else { // Zablokované sloty
                 currentTimePointer = proposedStartTimeInMinutes + (event.endInMinutes - event.startInMinutes); // Dĺžka blokovaného slotu
@@ -637,7 +639,7 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, trig
         finalTimelineEvents.sort((a, b) => a.startInMinutes - b.startInMinutes);
         console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 4): Pevné udalosti timeline pre generovanie placeholderov (zápasy + aktívne zablokované):`, JSON.stringify(finalTimelineEvents.map(e => ({id: e.id, type: e.type, startInMinutes: e.startInMinutes, isBlocked: e.isBlocked}))));
 
-        currentTimePointer = initialScheduleStartMinutes;
+        currentTimePointer = initialScheduleStartMinutes; // Resetujte ukazovateľ pre generovanie placeholderov
 
         let generatedPlaceholderCount = 0;
         let reusedPlaceholderCount = 0;
@@ -679,8 +681,8 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, trig
                     generatedPlaceholderCount++;
                 }
             }
-
-            currentTimePointer = event.endInMinutes; // HLAVNÁ OPRAVA: Posuňte ukazovateľ na koniec aktuálnej udalosti (vrátane rezervy/dĺžky)
+            // HLAVNÁ OPRAVA: Posuňte ukazovateľ na koniec aktuálnej udalosti (vrátane jej rezervy/dĺžky)
+            currentTimePointer = event.endInMinutes; 
             console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 4): Aktuálny currentTimePointer po spracovaní udalosti: ${currentTimePointer}`);
         }
 
@@ -2219,7 +2221,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             matchGroupSelect.disabled = true;
             team1NumberInput.value = '';
             team1NumberInput.disabled = true;
-            team2NumberInput.value = '';
             team2NumberInput.disabled = true;
             matchDurationInput.value = 60; // Reset na predvolené, ak nie je kategória
             matchBufferTimeInput.value = 5; // Reset na predvolené, ak nie je kategória
