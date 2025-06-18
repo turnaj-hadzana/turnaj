@@ -477,7 +477,7 @@ const getTeamName = async (categoryId, groupId, teamNumber, categoriesMap, group
  * @returns {string} Reťazec HH:MM ďalšieho dostupného času začiatku.
 */
 function calculateNextAvailableTime(prevStartTime, duration, bufferTime) {
-    console.log(`calculateNextAvailableTime: Vstup - prevStartTime: ${prevStartTime}, duration: ${duration}, bufferTime: ${bufferTime}`); // Debugging
+    console.log(`calculateNextAvailableTime: Vstup - prevStartTime: ${prevStartTime}, duration: ${duration}, bufferTime: ${bufferTime}`);
     let [prevH, prevM] = prevStartTime.split(':').map(Number);
     let totalMinutes = (prevH * 60) + prevM + duration + bufferTime;
 
@@ -485,7 +485,7 @@ function calculateNextAvailableTime(prevStartTime, duration, bufferTime) {
     let newM = totalMinutes % 60;
 
     const resultTime = `${String(newH).padStart(2, '0')}:${String(newM).padStart(2, '0')}`;
-    console.log(`calculateNextAvailableTime: Výstup - ${resultTime}`); // Debugging
+    console.log(`calculateNextAvailableTime: Výstup - ${resultTime}`);
     return resultTime;
 }
 
@@ -692,7 +692,7 @@ async function getInitialScheduleStartMinutes(date) {
  * @param {string|null} targetBlockedSlotId ID zablokovaného slotu, na ktorý sa presúva (môže byť aj placeholder).
 */
 async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation, droppedProposedStartTime = null, targetBlockedSlotId = null) {
-    console.log(`moveAndRescheduleMatch: Spustené pre zápas ID: ${draggedMatchId}, cieľ: ${targetDate}, ${targetLocation}, navrhovaný čas: ${droppedProposedStartTime}, cieľový zablokovaný slot ID: ${targetBlockedSlotId}`); // Debugging
+    console.log(`moveAndRescheduleMatch: Spustené pre zápas ID: ${draggedMatchId}, cieľ: ${targetDate}, ${targetLocation}, navrhovaný čas: ${droppedProposedStartTime}, cieľový zablokovaný slot ID: ${targetBlockedSlotId}`);
     try {
         const batch = writeBatch(db);
 
@@ -700,34 +700,16 @@ async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation
         const draggedMatchDoc = await getDoc(draggedMatchDocRef);
         if (!draggedMatchDoc.exists()) {
             await showMessage('Chyba', 'Presúvaný zápas nebol nájdený.');
-            console.error('moveAndRescheduleMatch: Presúvaný zápas nenájdený!', draggedMatchId); // Debugging
+            console.error('moveAndRescheduleMatch: Presúvaný zápas nenájdený!', draggedMatchId);
             return;
         }
         const draggedMatchData = draggedMatchDoc.data();
         const originalDate = draggedMatchData.date;
         const originalLocation = draggedMatchData.location;
 
-        // Vytvorenie voľného slotu (placeholderu) na pôvodnom mieste zápasu
-        // Ak sa presunie v rámci rovnakej haly/dňa, tento slot bude vyplnený po prepočítaní
-        const matchDuration = Number(draggedMatchData.duration) || 60;
-        const matchBufferTime = Number(draggedMatchData.bufferTime) || 5;
-        const [originalMatchStartH, originalMatchStartM] = draggedMatchData.startTime.split(':').map(Number);
-        const originalMatchStartInMinutes = originalMatchStartH * 60 + originalMatchStartM;
-        const originalMatchEndInMinutes = originalMatchStartInMinutes + matchDuration + matchBufferTime;
-
-        const vacatedSlotData = {
-            date: originalDate,
-            location: originalLocation,
-            startTime: draggedMatchData.startTime,
-            endTime: `${String(Math.floor(originalMatchEndInMinutes / 60)).padStart(2, '0')}:${String(originalMatchEndInMinutes % 60).padStart(2, '0')}`,
-            startInMinutes: originalMatchStartInMinutes,
-            endInMinutes: originalMatchEndInMinutes,
-            isBlocked: false, // Je to placeholder
-            isPhantom: false, // Nie je fantóm
-            createdAt: new Date()
-        };
-        batch.set(doc(blockedSlotsCollectionRef), vacatedSlotData);
-        console.log(`moveAndRescheduleMatch: Voľný slot (placeholder) vytvorený na pôvodnom mieste: ${originalDate}, ${originalLocation}, ${vacatedSlotData.startTime}`);
+        // Vytvorenie voľného slotu (placeholderu) na pôvodnom mieste zápasu je ODSTRÁNENÉ.
+        // Namiesto toho sa spoliehame na recalculateAndSaveScheduleForDateAndLocation,
+        // ktorá automaticky vyplní prázdne miesta novými "Voľný slot dostupný" placeholdermi.
 
         // Aktualizujte dokument pôvodného zápasu na jeho nové miesto/čas
         const updatedMatchData = {
@@ -736,7 +718,7 @@ async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation
             location: targetLocation,
             startTime: droppedProposedStartTime // Toto je presný čas dropnutého slotu
         };
-        batch.set(draggedMatchDocRef, updatedMatchData, { merge: true }); // Znovu vložte/aktualizujte s rovnakým ID
+        batch.set(draggedMatchDocRef, updatedMatchData, { merge: true });
         console.log(`moveAndRescheduleMatch: Pridané do batchu na aktualizáciu/opätovné vloženie zápasu: ${draggedMatchId} s novými dátami:`, updatedMatchData);
 
         // Vymažte cieľový zablokovaný slot, ak sa naň presúva
@@ -758,11 +740,11 @@ async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation
         }
 
         await showMessage('Úspech', 'Zápas úspešne presunutý a rozvrh prepočítaný!');
-        closeModal(document.getElementById('messageModal')); // Zatvorte všetky modálne okná správ
+        closeModal(document.getElementById('messageModal'));
     } catch (error) {
         console.error("moveAndRescheduleMatch: Chyba pri presúvaní a prepočítavaní rozvrhu:", error);
         await showMessage('Chyba', `Chyba pri presúvaní zápasu: ${error.message}.`);
-        await displayMatchesAsSchedule(); // Obnovte zobrazenie, aby sa zobrazili aktuálny stav aj pri chybe
+        await displayMatchesAsSchedule();
     }
 }
 
