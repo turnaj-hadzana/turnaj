@@ -388,7 +388,7 @@ async function findFirstAvailableTime() {
 
             if (nextAvailableTimeInMinutes === -1) {
                 matchStartTimeInput.value = '';
-                await showMessage('Informácia', 'Na vybranom mieste a dátume nie sú k dispozícii žiadne voľné sloty na vloženie zápasu, dokonca ani po poslednom zápase alebo od začiatku dňa.');
+                await showMessage('Informácia', 'Na vybranej lokalite a dátume nie sú k dispozícii žiadne voľné sloty na vloženie zápasu, dokonca ani po poslednom zápase alebo od začiatku dňa.');
             } else {
                 const formattedHour = String(Math.floor(nextAvailableTimeInMinutes / 60)).padStart(2, '0');
                 const formattedMinute = String(nextAvailableTimeInMinutes % 60).padStart(2, '0');
@@ -837,20 +837,20 @@ async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation
 
 
 /**
- * Helper to generate a comparable display string for an event row.
- * @param {object} event The event object (match or blocked slot).
- * @param {object} allSettings All global settings, including categoryMatchSettings.
- * @param {Map<string, string>} categoryColorsMap Map of category IDs to colors.
- * @returns {string} A string representation of the event's displayed content.
+ * Pomocná funkcia na generovanie porovnateľného zobrazovacieho reťazca pre riadok udalosti.
+ * @param {object} event Objekt udalosti (zápas alebo zablokovaný slot).
+ * @param {object} allSettings Všetky globálne nastavenia, vrátane nastavení kategórie zápasu.
+ * @returns {string} Reťazcová reprezentácia zobrazeného obsahu udalosti.
  */
-function getEventDisplayString(event, allSettings, categoryColorsMap) {
+function getEventDisplayString(event, allSettings) {
     if (event.type === 'match') {
         const matchDuration = event.duration || (allSettings.categoryMatchSettings?.[event.categoryId]?.duration || 60);
-        // Note: displayedMatchEndTimeInMinutes should NOT include buffer time for display purposes
+        // Poznámka: displayedMatchEndTimeInMinutes by NEmal obsahovať časovú rezervu na účely zobrazenia
         const displayedMatchEndTimeInMinutes = (parseInt(event.startTime.split(':')[0]) * 60 + parseInt(event.startTime.split(':')[1])) + matchDuration;
         const formattedDisplayedEndTime = `${String(Math.floor(displayedMatchEndTimeInMinutes / 60)).padStart(2, '0')}:${String(displayedMatchEndTimeInMinutes % 60).padStart(2, '0')}`;
         
-        // This string represents the visible text content of a match row
+        // Tento reťazec predstavuje viditeľný textový obsah riadku zápasu.
+        // Použijeme všetky textové polia riadku pre jedinečnosť.
         return `${event.startTime} - ${formattedDisplayedEndTime}|${event.team1ClubName || 'N/A'}|${event.team2ClubName || 'N/A'}|${event.team1ShortDisplayName || 'N/A'}|${event.team2ShortDisplayName || 'N/A'}`;
     } else if (event.type === 'blocked_slot') {
         const blockedSlotStartHour = String(Math.floor(event.startInMinutes / 60)).padStart(2, '0');
@@ -862,13 +862,13 @@ function getEventDisplayString(event, allSettings, categoryColorsMap) {
         if (event.isBlocked === true) {
             displayText = 'Zablokovaný slot';
         } else if (event.isPhantom === true) {
-            // For phantom slots, the time range is part of the display text, so include it for uniqueness
+            // Pre fantómové sloty je časový rozsah súčasťou zobrazovaného textu, takže ho zahrňte pre jedinečnosť
             displayText = `Slot po presunutom zápase (${blockedSlotStartHour}:${blockedSlotStartMinute} - ${blockedSlotEndHour}:${blockedSlotEndMinute})`;
         } else {
-            // This is the "Voľný slot dostupný" placeholder
+            // Toto je zástupný symbol "Voľný slot dostupný"
             displayText = 'Voľný slot dostupný';
         }
-        // Include time range for comparison for all blocked slot types
+        // Zahrňte časový rozsah pre porovnanie pre všetky typy zablokovaných slotov.
         return `${blockedSlotStartHour}:${blockedSlotStartMinute} - ${blockedSlotEndHour}:${blockedSlotEndMinute}|${displayText}`;
     }
     return '';
@@ -1067,7 +1067,7 @@ async function displayMatchesAsSchedule() {
                         let lastEventDisplayString = null;
 
                         for (const event of currentEventsForRendering) {
-                            const currentEventDisplayString = getEventDisplayString(event, allSettings, categoryColorsMap); 
+                            const currentEventDisplayString = getEventDisplayString(event, allSettings); 
                             
                             // Pridajte udalosť len ak jej zobrazovací reťazec je odlišný od predchádzajúceho,
                             // alebo ak ide o prvú udalosť.
@@ -2681,7 +2681,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 existingMatchEndTimeObj.setHours(existingStartHour, existingStartMinute + durationOrEndTime, 0, 0);
                 const formattedExistingEndTime = existingMatchEndTimeObj.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit'});
 
-                errorMessage += `v mieste "${matchLocationName}" dňa ${matchDate}:\n\n` +
+                errorMessage += `v lokalite "${matchLocationName}" dňa ${matchDate}:\n\n` +
                       `Existujúci časový rozsah: ${overlappingMatchDetails.startTime} - ${formattedExistingEndTime}\n`;
                 if (overlappingMatchDetails.type !== 'blocked_slot') {
                     errorMessage += `Tímy: ${overlappingMatchDetails.team1DisplayName} vs ${overlappingMatchDetails.team2DisplayName}\n\n`;
