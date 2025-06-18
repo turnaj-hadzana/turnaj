@@ -242,7 +242,7 @@ async function findFirstAvailableTime() {
             const duration = Number(data.duration) || 0;
             const bufferTime = Number(data.bufferTime) || 0;
 
-            // ZMENA: endOfPlay a fullFootprintEnd
+            // Nové: endOfPlay a fullFootprintEnd
             const endOfPlayInMinutes = startInMinutes + duration;
             const fullFootprintEndInMinutes = startInMinutes + duration + bufferTime; 
 
@@ -533,7 +533,7 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, trig
             const duration = Number(data.duration) || 0;
             const bufferTime = Number(data.bufferTime) || 0;
 
-            // Nové: endOfPlayInMinutes a footprintEndInMinutes
+            // Nové: endOfPlay a fullFootprintEnd
             const endOfPlayInMinutes = startInMinutes + duration;
             const footprintEndInMinutes = startInMinutes + duration + bufferTime;
 
@@ -689,6 +689,13 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, trig
 
         // Fáza 4.1: Identifikujte a pridajte/aktualizujte voľné sloty
         let updatedOrCreatedFreeSlotIds = new Set(); // Sledujte ID slotov, ktoré boli aktualizované alebo vytvorené
+
+        // Pridajte imaginárnu "udalosť" na konci dňa, aby ste zachytili poslednú medzeru
+        finalTimelineEvents.push({
+            type: 'end_of_day',
+            startInMinutes: 24 * 60, // Konec dňa
+            footprintEndInMinutes: 24 * 60 // Zabezpečenie, že aj koniec dňa je "obsadený" pre výpočet medzier
+        });
 
         for (const event of finalTimelineEvents) {
             if (currentTimePointer < event.startInMinutes) {
@@ -903,9 +910,9 @@ function getEventDisplayString(event, allSettings, categoryColorsMap) {
             const blockedSlotEndMinute = String(event.endInMinutes % 60).padStart(2, '0');
             return `${blockedSlotStartHour}:${blockedSlotStartMinute} - ${blockedSlotEndHour}:${blockedSlotEndMinute}|${displayText}`;
         } else {
-            // Zmena: Už nerozlišujeme fantómy, všetko je "Voľný slot dostupný" ak nie je zablokované
+            // Zmena: Použite uložené startTime a endTime pre voľné sloty
             displayText = 'Voľný slot dostupný'; 
-            return displayText; // Pre voľné sloty vráťte iba text pre konsolidáciu
+            return `${event.startTime} - ${event.endTime}|${displayText}`; 
         }
     }
     return '';
@@ -1114,27 +1121,38 @@ async function displayMatchesAsSchedule() {
                             
                             // Konsolidácia po sebe idúcich voľných slotov
                             const isCurrentFreeSlot = event.type === 'blocked_slot' && event.isBlocked === false;
-                            const isLastFreeSlot = lastEventType === 'blocked_slot' && lastEventDisplayString === 'Voľný slot dostupný'; // kontrolujeme zobrazený text
-
-                            // Ak je aktuálny aj posledný slot voľný a majú rovnaký zobrazený text,
-                            // a sú po sebe (ich start/end sa zhodujú, ak sú spojené),
-                            // preskočte aktuálny, ak bol už spracovaný.
-                            // Táto zjednodušená logika je pre UI, hlavná logika prepočtu je v recalculateAndSaveScheduleForDateAndLocation.
-                            if (isCurrentFreeSlot && isLastFreeSlot) {
-                                // Ak sú oba "Voľný slot dostupný", predpokladáme, že ich chceme skonsolidovať vizuálne.
-                                console.log(`displayMatchesAsSchedule: Preskakujem po sebe idúci voľný slot pre vizuálnu konsolidáciu: ${currentEventDisplayString}`);
+                            const isLastFreeSlot = lastEventType === 'blocked_slot' && lastEventDisplayString && lastEventDisplayString.includes('Voľný slot dostupný'); // kontrolujeme zobrazený text
+                            
+                            // Ak sú oba "Voľný slot dostupný" a majú rovnaké start/end časy
+                            if (isCurrentFreeSlot && isLastFreeSlot && 
+                                finalEventsToRender.length > 0 &&
+                                finalEventsToRender[finalEventsToRender.length - 1].startTime === event.startTime &&
+                                finalEventsToRender[finalEventsToRender.length - 1].endTime === event.endTime) {
+                                console.log(`displayMatchesAsSchedule: Preskakujem po sebe idúci duplicitný voľný slot: ${currentEventDisplayString}`);
                                 continue; 
                             }
                             
-                            // Pridajte udalosť len ak jej zobrazovací reťazec je odlišný od predchádzajúceho (okrem špecifických voľných slotov),
-                            // alebo ak ide o prvú udalosť.
-                            if (currentEventDisplayString !== lastEventDisplayString || finalEventsToRender.length === 0) {
-                                finalEventsToRender.push(event);
-                                lastEventDisplayString = currentEventDisplayString;
-                                lastEventType = event.type;
-                            } else {
-                                console.log(`displayMatchesAsSchedule: Preskakujem duplicitný po sebe idúci riadok pre zobrazenie: ${currentEventDisplayString}`);
+                            // Ak je aktuálny voľný slot a predchádzajúca udalosť (zápas alebo zablokovaný slot)
+                            // končí presne tam, kde tento voľný slot začína, a ak je to rovnaký vizuálny typ.
+                            if (isCurrentFreeSlot && finalEventsToRender.length > 0) {
+                                const lastRenderedEvent = finalEventsToRender[finalEventsToRender.length - 1];
+                                let lastEventFootprintEnd = null;
+
+                                if (lastRenderedEvent.type === 'match') {
+                                    lastEventFootprintEnd = lastRenderedEvent.footprintEndInMinutes;
+                                } else if (lastRenderedEvent.type === 'blocked_slot') {
+                                    lastEventFootprintEnd = lastRenderedEvent.endInMinutes;
+                                }
+
+                                if (lastEventFootprintEnd === event.startInMinutes && lastEventType === event.type && lastEventDisplayString === currentEventDisplayString) {
+                                    console.log(`displayMatchesAsSchedule: Preskakujem konsolidovaný voľný slot: ${currentEventDisplayString}`);
+                                    continue;
+                                }
                             }
+
+                            finalEventsToRender.push(event);
+                            lastEventDisplayString = currentEventDisplayString;
+                            lastEventType = event.type;
                         }
                         console.log(`displayMatchesAsSchedule: FinalEventsToRender (po odstránení duplicitných po sebe idúcich riadkov a koncových voľných):`, JSON.stringify(finalEventsToRender.map(e => ({id: e.id, type: e.type, startTime: e.startTime || e.startInMinutes, endTime: e.endTime || e.endInMinutes, isBlocked: e.isBlocked, endOfPlayInMinutes: e.endOfPlayInMinutes, footprintEndInMinutes: e.footprintEndInMinutes}))));
 
