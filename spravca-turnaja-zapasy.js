@@ -920,10 +920,10 @@ function getEventDisplayString(event, allSettings, categoryColorsMap) {
         if (event.isBlocked === true) {
             displayText = 'Zablokovaný slot';
         } else if (event.isPhantom === true) {
-            // For phantom slots, the time range is part of the display text, so include it for uniqueness
-            displayText = `Slot po presunutom zápase`; // Removed time range from display text as per user request
+            // ZMENA: Pre fantómové sloty sa teraz zobrazí "Voľný slot dostupný"
+            displayText = 'Voľný slot dostupný'; 
         } else {
-            // This is the "Voľný slot dostupný" placeholder
+            // Toto je "Voľný slot dostupný" placeholder
             displayText = 'Voľný slot dostupný';
         }
         // Include time range for comparison for all blocked slot types
@@ -1213,28 +1213,20 @@ async function displayMatchesAsSchedule() {
 
                                 let rowClass = '';
                                 let cellStyle = '';
-                                let displayText = '';
-                                let dataAttributes = '';
+                                let displayText = ''; // Toto bude nastavené logikou nižšie
+                                let dataAttributes = `data-is-blocked="${isUserBlocked}" data-is-phantom="${isPhantom}"`; // Vždy zahrňte obe príznaky
 
                                 if (isUserBlocked) { 
                                     rowClass = 'blocked-slot-row'; 
                                     cellStyle = 'text-align: center; color: white; background-color: #dc3545; font-style: italic;';
-                                    displayText = 'Zablokovaný slot';
-                                    dataAttributes = `data-is-blocked="true" data-is-phantom="${isPhantom}"`;
-                                } else if (isPhantom) { // isBlocked === false && isPhantom === true
-                                    rowClass = 'empty-slot-row phantom-slot-row'; // Štýl pre fantómy inak, ak je potrebné
-                                    cellStyle = 'text-align: center; color: #888; font-style: italic; border: 1px dashed #ffa000;'; // Príklad: prerušovaný oranžový okraj
-                                    displayText = `Slot po presunutom zápase`; // Display without time range as per user request
-                                    dataAttributes = `data-is-blocked="false" data-is-phantom="true"`;
-                                } else { // isBlocked === false && isPhantom === false (nový perzistentný placeholder alebo pôvodný presunutý slot)
-                                    // Toto je placeholder "Voľný slot dostupný"
-                                    rowClass = 'empty-slot-row free-slot-available-row'; // NOVÁ TRIEDA pre všetky perzistentné prázdne sloty
+                                    displayText = 'Zablokovaný slot'; 
+                                } else { // Toto pokrýva fantómové sloty aj bežné voľné placeholdery
+                                    rowClass = 'empty-slot-row free-slot-available-row'; // Obidva dostanú túto triedu pre poslucháčov udalostí
                                     cellStyle = 'text-align: center; color: #888; font-style: italic; background-color: #f0f0f0;'; 
-                                    displayText = 'Voľný slot dostupný'; // Toto je teraz vždy záznam v DB
-                                    dataAttributes = `data-is-blocked="false" data-is-phantom="false"`; 
+                                    displayText = 'Voľný slot dostupný'; // Zjednotený text pre fantómové aj skutočné prázdne placeholdery
                                 }
 
-                                console.log(`displayMatchesAsSchedule: Vykresľujem zablokovaný slot: ID ${blockedSlot.id}, Čas: ${blockedSlotStartHour}:${blockedSlotStartMinute}-${blockedSlotEndHour}:${blockedSlot.endMinute}, Miesto: ${blockedSlot.location}, Dátum: ${blockedSlot.date}, isPhantom: ${blockedSlot.isPhantom}, isBlocked: ${isUserBlocked}`);
+                                console.log(`displayMatchesAsSchedule: Vykresľujem zablokovaný slot: ID ${blockedSlot.id}, Čas: ${blockedSlotStartHour}:${blockedSlotStartMinute}-${blockedSlotEndHour}:${blockedSlot.endMinute}, Miesto: ${blockedSlot.location}, Dátum: ${blockedSlot.date}, isPhantom: ${blockedSlot.isPhantom}, isBlocked: ${isUserBlocked}, Display Text: "${displayText}"`);
 
                                 scheduleHtml += `
                                     <tr class="${rowClass}" data-id="${blockedSlot.id}" data-date="${date}" data-location="${location}" data-start-time="${blockedSlotStartHour}:${blockedSlotStartMinute}" data-end-time="${blockedSlotEndHour}:${blockedSlotEndMinute}" ${dataAttributes}>
@@ -1924,7 +1916,7 @@ async function openFreeSlotModal(date, location, startTime, endTime, blockedSlot
     // Logika zobrazenia tlačidiel a titulku na základe typu slotu
     if (isPhantom) {
         // Fantómový interval (zápas bol presunutý v rámci rovnakej haly/dňa a zanechal za sebou tento záznam v DB)
-        freeSlotModalTitle.textContent = 'Spravovať presunutý slot'; // Upravený text
+        freeSlotModalTitle.textContent = 'Spravovať voľný interval'; // UPRAVENÝ TEXT
         console.log("openFreeSlotModal: Typ slotu: Fantómový slot (dočasný).");
         
         if (blockButton) {
@@ -1941,15 +1933,15 @@ async function openFreeSlotModal(date, location, startTime, endTime, blockedSlot
 
         if (deleteButton) { // Zmenené z deletePhantomButton na deleteButton
             deleteButton.style.display = 'inline-block';
-            deleteButton.textContent = 'Vymazať'; // Odstráni záznam v DB pre fantóm
-            deleteButton.classList.add('delete-button');
+            deleteButton.textContent = 'Vymazať slot'; // UPRAVENÝ TEXT: odstráni záznam v DB pre fantóm
+            deleteButton.classList.add('delete-button'); // Pridaná trieda pre červené tlačidlo
             const deleteHandler = () => {
-                console.log(`openFreeSlotModal: Kliknuté na 'Vymazať' pre fantómový interval ID: ${blockedSlotId}. Spúšťam handleDeleteSlot.`);
+                console.log(`openFreeSlotModal: Kliknuté na 'Vymazať slot' pre fantómový interval ID: ${blockedSlotId}. Spúšťam handleDeleteSlot.`);
                 handleDeleteSlot(blockedSlotId, date, location);
             };
             deleteButton.addEventListener('click', deleteHandler); // Zmenené z deletePhantomButton na deleteButton
             deleteButton._currentHandler = deleteHandler; // Zmenené z deletePhantomButton na deleteButton
-            console.log("openFreeSlotModal: Pridaný posluchovač a zobrazené tlačidlo 'Vymazať' pre fantómový slot.");
+            console.log("openFreeSlotModal: Pridaný posluchovač a zobrazené tlačidlo 'Vymazať slot' pre fantómový slot.");
         }
         if (unblockButton) { unblockButton.style.display = 'none'; } // Toto tlačidlo nie je pre fantómy
 
@@ -2390,7 +2382,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const placeTypeSelect = document.getElementById('placeTypeSelect');
     const placeNameInput = document.getElementById('placeName');
     const placeAddressInput = document.getElementById('placeAddress');
-    const placeGoogleMapsUrlInput = document.getElementById('placeGoogleMapsUrl');
+    const googleMapsUrlInput = document.getElementById('placeGoogleMapsUrl');
     const deletePlaceButtonModal = document.getElementById('deletePlaceButtonModal');
 
     const freeSlotModal = document.getElementById('freeSlotModal');
