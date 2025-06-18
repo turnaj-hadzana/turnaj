@@ -499,10 +499,11 @@ function calculateNextAvailableTime(prevStartTime, duration, bufferTime) {
  * @param {string} location Miesto, pre ktoré sa má prepočítať rozvrh.
  * @param {string|null} [triggeringMatchId=null] ID zápasu, ktorý vyvolal prepočet (napr. presunutý zápas). Ak je zadaný, použije sa na inteligentné posúvanie.
  * @param {string|null} [targetStartTime=null] Nový čas začiatku `triggeringMatchId`. Používa sa s `triggeringMatchId` na definovanie bodu vloženia.
+ * @param {string|null} [excludedBlockedSlotId=null] ID zablokovaného slotu, ktorý sa má explicitne vylúčiť z výpočtov.
  */
-async function recalculateAndSaveScheduleForDateAndLocation(date, location, triggeringMatchId = null, targetStartTime = null) {
+async function recalculateAndSaveScheduleForDateAndLocation(date, location, triggeringMatchId = null, targetStartTime = null, excludedBlockedSlotId = null) {
     console.log(`recalculateAndSaveScheduleForDateAndLocation: Spustené pre Dátum: ${date}, Miesto: ${location}. ` +
-                `Triggering Match ID: ${triggeringMatchId}, Target Start Time: ${targetStartTime}.`);
+                `Triggering Match ID: ${triggeringMatchId}, Target Start Time: ${targetStartTime}, Excluded Blocked Slot ID: ${excludedBlockedSlotId}.`);
     try {
         const batch1 = writeBatch(db); // Batch pre aktualizáciu zápasov a odstránenie starých placeholderov
 
@@ -517,8 +518,13 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, trig
         );
         const dynamicPlaceholdersToCleanupSnapshot = await getDocs(dynamicPlaceholdersToCleanupQuery);
         dynamicPlaceholdersToCleanupSnapshot.docs.forEach(docToDelete => {
-            batch1.delete(doc(blockedSlotsCollectionRef, docToDelete.id));
-            console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 1): Pridané do batchu na vymazanie dynamického placeholder slotu ID: ${docToDelete.id}`);
+            // Ak tento placeholder nie je ten, ktorý bol práve vymazaný používateľom
+            if (docToDelete.id !== excludedBlockedSlotId) {
+                batch1.delete(doc(blockedSlotsCollectionRef, docToDelete.id));
+                console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 1): Pridané do batchu na vymazanie dynamického placeholder slotu ID: ${docToDelete.id}`);
+            } else {
+                console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 1): Preskočené vymazanie excludedBlockedSlotId: ${excludedBlockedSlotId} (už ho tam nemá byť).`);
+            }
         });
 
         // 1b. Načítajte všetky udalosti pre aktuálny rozvrh
@@ -536,14 +542,18 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, trig
 
         const blockedSlotsQuery = query(blockedSlotsCollectionRef, where("date", "==", date), where("location", "==", location));
         const blockedSlotsSnapshot = await getDocs(blockedSlotsQuery);
-        let allBlockedSlots = blockedSlotsSnapshot.docs.map(doc => ({
-            id: doc.id,
-            type: 'blocked_slot',
-            docRef: doc.ref,
-            ...doc.data(),
-            startInMinutes: (parseInt(doc.data().startTime.split(':')[0]) * 60 + parseInt(doc.data().startTime.split(':')[1])),
-            endInMinutes: (parseInt(doc.data().endTime.split(':')[0]) * 60 + parseInt(doc.data().endTime.split(':')[1]))
-        }));
+        let allBlockedSlots = blockedSlotsSnapshot.docs
+            .map(doc => ({
+                id: doc.id,
+                type: 'blocked_slot',
+                docRef: doc.ref,
+                ...doc.data(),
+                startInMinutes: (parseInt(doc.data().startTime.split(':')[0]) * 60 + parseInt(doc.data().startTime.split(':')[1])),
+                endInMinutes: (parseInt(doc.data().endTime.split(':')[0]) * 60 + parseInt(doc.data().endTime.split(':')[1]))
+            }))
+            .filter(slot => slot.id !== excludedBlockedSlotId); // Filtrujte explicitne vylúčený slot
+        console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 1): Načítané a filtrované allBlockedSlots (bez ${excludedBlockedSlotId}):`, allBlockedSlots.map(e => e.id));
+
 
         let eventsForTimeline = [];
         let matchesToShift = [];
@@ -629,15 +639,17 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, trig
             endInMinutes: (parseInt(doc.data().startTime.split(':')[0]) * 60 + parseInt(doc.data().startTime.split(':')[1])) + (Number(doc.data().duration) || 0) + (Number(doc.data().bufferTime) || 0)
         }));
 
-        const allBlockedSlotsForFinalTimeline = (await getDocs(query(blockedSlotsCollectionRef, where("date", "==", date), where("location", "==", location)))).docs.map(doc => ({
-            id: doc.id,
-            type: 'blocked_slot',
-            isBlocked: doc.data().isBlocked === true,
-            isPhantom: doc.data().isPhantom === true,
-            ...doc.data(),
-            startInMinutes: (parseInt(doc.data().startTime.split(':')[0]) * 60 + parseInt(doc.data().startTime.split(':')[1])),
-            endInMinutes: (parseInt(doc.data().endTime.split(':')[0]) * 60 + parseInt(doc.data().endTime.split(':')[1]))
-        })).filter(slot => slot.isBlocked === true || slot.isPhantom === true); // Zahrňte len aktívne zablokované a fantómy pre časovú os
+        const allBlockedSlotsForFinalTimeline = (await getDocs(query(blockedSlotsCollectionRef, where("date", "==", date), where("location", "==", location)))).docs
+            .map(doc => ({
+                id: doc.id,
+                type: 'blocked_slot',
+                isBlocked: doc.data().isBlocked === true,
+                isPhantom: doc.data().isPhantom === true,
+                ...doc.data(),
+                startInMinutes: (parseInt(doc.data().startTime.split(':')[0]) * 60 + parseInt(doc.data().startTime.split(':')[1])),
+                endInMinutes: (parseInt(doc.data().endTime.split(':')[0]) * 60 + parseInt(doc.data().endTime.split(':')[1]))
+            }))
+            .filter(slot => (slot.isBlocked === true || slot.isPhantom === true) && slot.id !== excludedBlockedSlotId); // Zahrňte len aktívne zablokované a fantómy pre časovú os, a vylúčte explicitne zadaný slot
 
         // Vytvoríme "pevnú" timeline pre generovanie medzier
         let finalTimelineEvents = [
@@ -2227,7 +2239,7 @@ async function handleDeleteSlot(slotId, date, location) {
         await showMessage('Úspech', 'Slot bol úspešne vymazaný z databázy!');
         closeModal(freeSlotModal);
         // Po akomkoľvek vymazaní alebo posunutí prepočítajte rozvrh, aby sa správne prekreslil
-        await recalculateAndSaveScheduleForDateAndLocation(date, location);
+        await recalculateAndSaveScheduleForDateAndLocation(date, location, null, null, slotId); // Odovzdávame ID vymazaného slotu
         console.log("handleDeleteSlot: Prepočet rozvrhu dokončený.");
 
     } catch (error) {
