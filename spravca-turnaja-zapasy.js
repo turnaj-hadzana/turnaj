@@ -552,7 +552,6 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, trig
             .map(doc => ({
                 id: doc.id,
                 type: 'blocked_slot',
-                docRef: doc.ref,
                 isBlocked: doc.data().isBlocked === true, // Získať aj isBlocked stav
                 isPhantom: doc.data().isPhantom === true, // Získať aj isPhantom stav
                 ...doc.data(),
@@ -729,46 +728,8 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, trig
             console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 2): Aktuálny currentTimePointer po spracovaní udalosti: ${currentTimePointer}`);
         }
 
-        // Manažujte poslednú medzeru na konci dňa
-        const endOfDayMinutes = 24 * 60;
-        if (currentTimePointer < endOfDayMinutes) {
-            const gapStart = currentTimePointer;
-            const gapEnd = endOfDayMinutes;
-
-            // Skontrolujte, či sa táto koncová medzera *presne zhoduje* s explicitne vymazaným voľným placeholderom
-            const isThisTheDeletedFreePlaceholderTrailingGap = (
-                wasDeletedFreePlaceholder &&
-                gapStart === deletedFreePlaceholderStartMinutes &&
-                gapEnd === deletedFreePlaceholderEndMinutes
-            );
-
-            if (isThisTheDeletedFreePlaceholderTrailingGap) {
-                console.log(`Fáza 2: Preskakujem opätovné vytvorenie explicitne vymazaného voľného placeholderu na koncovej medzere [${gapStart}-${gapEnd}].`);
-            } else {
-                // Pôvodná kontrola prekrývania
-                const isGapCoveredAtEnd = finalTimelineEvents.some(e => {
-                    return (gapStart < e.endInMinutes && gapEnd > e.startInMinutes);
-                });
-
-                if (!isGapCoveredAtEnd) {
-                    const newPlaceholderData = {
-                        date: date,
-                        location: location,
-                        startTime: `${String(Math.floor(gapStart / 60)).padStart(2, '0')}:${String(gapStart % 60).padStart(2, '0')}`,
-                        endTime: `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(gapEnd % 60).padStart(2, '0')}`,
-                        startInMinutes: gapStart,
-                        endInMinutes: gapEnd,
-                        isBlocked: false,
-                        isPhantom: false,
-                        createdAt: new Date()
-                    };
-                    batch2.set(doc(blockedSlotsCollectionRef), newPlaceholderData);
-                    console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 2): Vytvorený koncový placeholder slot: Čas: ${newPlaceholderData.startTime}-${newPlaceholderData.endTime}`);
-                } else {
-                     console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 2): Preskočená tvorba koncového placeholderu, medzera už je pokrytá iným eventom.`);
-                }
-            }
-        }
+        // ZMENA: Odstránená logika pre generovanie koncového "Voľný slot dostupný" placeholderu
+        // Predpokladáme, že používateľ si želá, aby na konci dňa neboli žiadne placeholdery.
 
         await batch2.commit();
         console.log("recalculateAndSaveScheduleForDateAndLocation (Fáza 2): Druhý batch commit úspešný (nové placeholdery).");
@@ -1167,6 +1128,23 @@ async function displayMatchesAsSchedule() {
                             const currentEventDisplayString = getEventDisplayString(event, allSettings, categoryColorsMap); 
                             
                             // Pridajte udalosť len ak jej zobrazovací reťazec je odlišný od predchádzajúceho,
+                            // alebo ak ide o prvú udalosť, A NESMIE BYŤ TRAILING FREE/PHANTOM SLOT.
+                            // Tu je kľúčová zmena: filter pre koncové "Voľné sloty" a "Fantómové sloty"
+                            const isTrailingFreeOrPhantom = (
+                                event.type === 'blocked_slot' &&
+                                (event.isBlocked === false || event.isPhantom === true) &&
+                                // Kontrola, či je to posledná udalosť pre tento deň/miesto
+                                // Ak je to posledná udalosť a je to voľný/fantómový slot, preskoč ju.
+                                currentEventsForRendering.indexOf(event) === currentEventsForRendering.length -1
+                            );
+
+
+                            if (isTrailingFreeOrPhantom) {
+                                console.log(`displayMatchesAsSchedule: Preskakujem koncový voľný/fantómový slot: ${currentEventDisplayString}`);
+                                continue; 
+                            }
+                            
+                            // Pridajte udalosť len ak jej zobrazovací reťazec je odlišný od predchádzajúceho,
                             // alebo ak ide o prvú udalosť.
                             if (currentEventDisplayString !== lastEventDisplayString) {
                                 finalEventsToRender.push(event);
@@ -1175,7 +1153,7 @@ async function displayMatchesAsSchedule() {
                                 console.log(`displayMatchesAsSchedule: Preskakujem duplicitný po sebe idúci riadok pre zobrazenie: ${currentEventDisplayString}`);
                             }
                         }
-                        console.log(`displayMatchesAsSchedule: FinalEventsToRender (po odstránení duplicitných po sebe idúcich riadkov):`, JSON.stringify(finalEventsToRender.map(e => ({id: e.id, type: e.type, startTime: e.startTime || e.startInMinutes, endTime: e.endTime || e.endInMinutes, isPhantom: e.isPhantom, isBlocked: e.isBlocked}))));
+                        console.log(`displayMatchesAsSchedule: FinalEventsToRender (po odstránení duplicitných po sebe idúcich riadkov a koncových voľných/fantómových):`, JSON.stringify(finalEventsToRender.map(e => ({id: e.id, type: e.type, startTime: e.startTime || e.startInMinutes, endTime: e.endTime || e.endInMinutes, isPhantom: e.isPhantom, isBlocked: e.isBlocked}))));
 
 
                         // Použite funkciu getInitialScheduleStartMinutes na určenie správneho počiatočného času začiatku.
