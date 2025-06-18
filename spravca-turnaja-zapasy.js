@@ -504,7 +504,7 @@ function calculateNextAvailableTime(prevStartTime, duration, bufferTime) {
  * @param {boolean} [wasDeletedFreePlaceholder=false] True, ak bol excludedBlockedSlotId práve vymazaný voľný placeholder.
  * @param {string|null} [deletedPlaceholderStartTime=null] Čas začiatku vymazaného voľného placeholderu.
  * @param {string|null} [deletedPlaceholderEndTime=null] Čas konca vymazaného voľného placeholderu.
- * @param {object|null} [originalMatchTimeRange=null] Objekt s `start` a `end` (v minútach) pôvodného časového rozsahu presunutého zápasu. Používa sa na vytvorenie fantómového slotu.
+ * @param {object|null} [originalMatchTimeRange=null] Objekt s `date`, `location`, `start` a `end` (v minútach) pôvodného časového rozsahu presunutého zápasu. Používa sa na vytvorenie fantómového slotu.
  */
 async function recalculateAndSaveScheduleForDateAndLocation(date, location, triggeringMatchId = null, targetStartTime = null, excludedBlockedSlotId = null, wasDeletedFreePlaceholder = false, deletedPlaceholderStartTime = null, deletedPlaceholderEndTime = null, originalMatchTimeRange = null) {
     console.log(`recalculateAndSaveScheduleForDateAndLocation: Spustené pre Dátum: ${date}, Miesto: ${location}. ` +
@@ -1605,13 +1605,13 @@ async function editPlayingDay(dateToEdit) {
             playingDayModalTitle.textContent = 'Upraviť hrací deň';
             deletePlayingDayButtonModal.style.display = 'inline-block';
             // Odstráňte starý posluchovač pred pridaním nového
-            if (deletePlayingDayButtonModal && deletePlayingDayButtonModal._currentHandler) {
+            if (deletePlayingDayButtonModal && deletePlayingDayButtonModal._currentHandler) { 
                 deletePlayingDayButtonModal.removeEventListener('click', deletePlayingDayButtonModal._currentHandler); 
-                delete deletePlayingDayButtonModal._currentHandler; // Vyčistite referenciu
+                delete deletePlayingDayButtonModal._currentHandler; 
             }
             const handler = () => deletePlayingDay(playingDayData.date);
             deletePlayingDayButtonModal.addEventListener('click', handler);
-            deletePlayingDayButtonModal._currentHandler = handler; // Uložte referenciu
+            deletePlayingDayButtonModal._currentHandler = handler; 
             openModal(playingDayModal);
         } else {
             await showMessage('Informácia', "Hrací deň sa nenašiel.");
@@ -1656,11 +1656,11 @@ async function editPlace(placeName, placeType) {
             // Odstráňte starý posluchovač pred pridaním nového
             if (deletePlaceButtonModal && deletePlaceButtonModal._currentHandler) {
                 deletePlaceButtonModal.removeEventListener('click', deletePlaceButtonModal._currentHandler);
-                delete deletePlaceButtonModal._currentHandler; // Vyčistite referenciu
+                delete deletePlaceButtonModal._currentHandler; 
             }
             const handler = () => deletePlace(placeData.name, placeData.type);
             deletePlaceButtonModal.addEventListener('click', handler);
-            deletePlaceButtonModal._currentHandler = handler; // Uložte referenciu
+            deletePlaceButtonModal._currentHandler = handler; 
             openModal(placeModal);
         } else {
             await showMessage('Informácia', "Miesto sa nenašlo.");
@@ -2254,7 +2254,6 @@ async function handleDeleteSlot(slotId, date, location) {
 
         if (slotDoc.exists()) {
             const slotData = slotDoc.data();
-            // Skontrolujte, či vymazaný slot bol 'Voľný slot dostupný' (nie zablokovaný, nie fantóm)
             if (slotData.isBlocked === false && slotData.isPhantom === false) {
                 deletedSlotWasFreePlaceholder = true;
                 deletedSlotStartTime = slotData.startTime;
@@ -2273,6 +2272,7 @@ async function handleDeleteSlot(slotId, date, location) {
         await showMessage('Úspech', 'Slot bol úspešne vymazaný z databázy!');
         closeModal(freeSlotModal);
         
+        // Ensure to pass date and location correctly to recalculateAndSaveScheduleForDateAndLocation
         await recalculateAndSaveScheduleForDateAndLocation(
             date, 
             location, 
@@ -2439,7 +2439,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             matchGroupSelect.disabled = true;
             team1NumberInput.value = '';
             team1NumberInput.disabled = true;
-            team2NumberInput.value = '';
             team2NumberInput.disabled = true;
             matchDurationInput.value = 60; 
             matchBufferTimeInput.value = 5; 
