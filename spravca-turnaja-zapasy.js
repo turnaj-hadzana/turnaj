@@ -605,8 +605,8 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, trig
         for (const event of eventsForTimeline) {
             let proposedStartTimeInMinutes;
             if (event.type === 'match' && event.id === triggeringMatchId && movedMatch) {
-                // Toto je presunutý zápas, použite jeho cieľový čas, ale uistite sa, že nezačína pred currentTimePointer
-                proposedStartTimeInMinutes = Math.max(currentTimePointer, movedMatch.startInMinutes);
+                // FIXED: Direct placement of the moved match at its target time.
+                proposedStartTimeInMinutes = movedMatch.startInMinutes; 
             } else if (event.type === 'match') {
                 // Ostatné zápasy sa posúvajú, aby vyplnili medzery
                 proposedStartTimeInMinutes = currentTimePointer;
