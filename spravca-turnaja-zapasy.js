@@ -799,8 +799,10 @@ async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation
         // --- NOVINKA: Vytvorenie nového prázdneho slotu na pôvodnom mieste ---
         // Ak sa zápas presúva z pôvodnej pozície, vytvoríme prázdny slot na pôvodnom mieste.
         // Toto sa vždy vykoná, aby sa zabezpečilo, že pôvodná pozícia bude "voľná".
+        const originalMatchDuration = Number(draggedMatchData.duration) || 0;
+        const originalMatchBufferTime = Number(draggedMatchData.bufferTime) || 0;
         const originalMatchStartInMinutes = (parseInt(draggedMatchData.startTime.split(':')[0]) * 60 + parseInt(draggedMatchData.startTime.split(':')[1]));
-        const originalMatchEndInMinutes = originalMatchStartInMinutes + (Number(draggedMatchData.duration) || 0) + (Number(draggedMatchData.bufferTime) || 0);
+        const originalMatchEndInMinutes = originalMatchStartInMinutes + originalMatchDuration + originalMatchBufferTime;
 
         const newFreeSlotAtOriginalPosition = {
             date: originalDate,
@@ -2188,7 +2190,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         placeTypeSelect.value = '';
         placeNameInput.value = '';
         placeAddressInput.value = '';
-        placeGoogleMapsUrlInput.value = '';
+        googleMapsUrlInput.value = '';
         deletePlaceButtonModal.style.display = 'none';
         if (deletePlaceButtonModal && deletePlaceButtonButtonModal._currentHandler) { 
             deletePlaceButtonModal.removeEventListener('click', deletePlaceButtonModal._currentHandler);
@@ -2242,6 +2244,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             matchGroupSelect.disabled = true;
             team1NumberInput.value = '';
             team1NumberInput.disabled = true;
+            team2NumberInput.value = '';
             team2NumberInput.disabled = true;
             matchDurationInput.value = 60; // Reset na predvolené, ak nie je kategória
             matchBufferTimeInput.value = 5; // Reset na predvolené, ak nie je kategória
