@@ -565,7 +565,8 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, trig
         }
 
         // Zoradte všetky udalosti na časovej osi
-        eventsForTimeline.push(...currentBlockedSlots.filter(s => s.id !== excludedBlockedSlotId)); // Include ALL blocked slots here for sorting
+        // Zmena: Zoradte všetky udalosti vrátane zablokovaných slotov, ale len tie, ktoré ovplyvňujú ukazovateľ času.
+        // `currentBlockedSlots` už boli predtým filtrované podľa `excludedBlockedSlotId`.
         eventsForTimeline.sort((a, b) => a.startInMinutes - b.startInMinutes);
         console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 2): Zoradené udalosti pre časovú os (vrátane presunutého zápasu na novom mieste a pevne zablokovaných slotov):`, JSON.stringify(eventsForTimeline.map(e => ({id: e.id, type: e.type, startInMinutes: e.startInMinutes, isBlocked: e.isBlocked}))));
 
@@ -641,28 +642,31 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, trig
         let generatedPlaceholderCount = 0;
         let reusedPlaceholderCount = 0;
 
-        // Prechádzajte časovou osou a identifikujte medzery, ktoré by mali byť voľné sloty
+        // Fáza 4.1: Identifikujte a pridajte/aktualizujte voľné sloty
+        let updatedOrCreatedFreeSlotIds = new Set(); // Sledujte ID slotov, ktoré boli aktualizované alebo vytvorené
+
         for (const event of finalTimelineEvents) {
             if (currentTimePointer < event.startInMinutes) {
                 const potentialGapStart = currentTimePointer;
                 const potentialGapEnd = event.startInMinutes;
                 
-                // Skontrolujte, či už existuje voľný slot, ktorý pokrýva túto medzeru
+                // Skontrolujte, či už existuje voľný slot, ktorý pokrýva túto presnú medzeru
                 const existingFreeSlotInGap = existingFreeSlots.find(s => 
                     s.startInMinutes === potentialGapStart && s.endInMinutes === potentialGapEnd
                 );
 
                 if (existingFreeSlotInGap) {
-                    // Ak existuje, neprikladajte ho znova, jednoducho preskočte
+                    // Ak existuje a presne sa zhoduje, označte ho ako "opätovne použitý"
+                    updatedOrCreatedFreeSlotIds.add(existingFreeSlotInGap.id);
                     console.log(`Fáza 4: Opätovne použitý existujúci voľný slot ID: ${existingFreeSlotInGap.id} pre medzeru [${potentialGapStart}-${potentialGapEnd}]`);
                     reusedPlaceholderCount++;
                 } else {
-                    // Ak neexistuje, vytvorte nový
+                    // Ak neexistuje alebo sa nezhoduje presne, vytvorte nový
                     const newPlaceholderData = {
                         date: date,
                         location: location,
                         startTime: `${String(Math.floor(potentialGapStart / 60)).padStart(2, '0')}:${String(potentialGapStart % 60).padStart(2, '0')}`,
-                        endTime: `${String(Math.floor(potentialGapEnd / 60)).padStart(2, '0')}:${String(potentialGapEnd % 60).padStart(2, '0')}`,
+                        endTime: `${String(Math.floor(potentialGapEnd / 60)).padStart(2, '0')}:${String(Math.floor(potentialGapEnd % 60)).padStart(2, '0')}`,
                         startInMinutes: potentialGapStart,
                         endInMinutes: potentialGapEnd,
                         isBlocked: false, // Je to voľný slot
@@ -670,6 +674,7 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, trig
                     };
                     const newPlaceholderDocRef = doc(blockedSlotsCollectionRef); // Získajte novú referenciu dokumentu s automaticky generovaným ID
                     batch.set(newPlaceholderDocRef, newPlaceholderData); // Použite batch.set s novou referenciou dokumentu
+                    updatedOrCreatedFreeSlotIds.add(newPlaceholderDocRef.id);
                     console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 4): Pridaný nový voľný placeholder do batchu: Čas: ${newPlaceholderData.startTime}-${newPlaceholderData.endTime}`);
                     generatedPlaceholderCount++;
                 }
@@ -679,42 +684,12 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, trig
             console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 4): Aktuálny currentTimePointer po spracovaní udalosti: ${currentTimePointer}`);
         }
 
-        // Fáza 5: Vymazanie nadbytočných voľných slotov
-        // Ak existujúce voľné sloty neboli "pokryté" novými zápasmi/zablokovanými slotmi, mali by byť zachované.
-        // Avšak, ak sa nejaký existujúci voľný slot teraz prekrýva so zápasom alebo zablokovaným slotom,
-        // mal by byť vymazaný.
-        const allCurrentEventsIncludingFreeSlots = [
-            ...allMatchesForFinalTimeline,
-            ...allActiveBlockedSlotsForFinalTimeline,
-            ...existingFreeSlots // Zahrňte existujúce voľné sloty
-        ];
-        allCurrentEventsIncludingFreeSlots.sort((a,b) => a.startInMinutes - b.startInMinutes);
-
-        // Skontrolujte, či niektorý z existujúcich voľných slotov už nie je platný (prekrýva sa s niečím)
+        // Fáza 4.2: Vymažte existujúce voľné sloty, ktoré neboli aktualizované alebo opätovne použité
         for (const existingSlot of existingFreeSlots) {
-            // Preskočte, ak je to slot, ktorý sme práve vymazali pri presune
-            if (existingSlot.id === excludedBlockedSlotId) continue;
-
-            const slotStart = existingSlot.startInMinutes;
-            const slotEnd = existingSlot.endInMinutes;
-            let shouldDeleteExisting = false;
-
-            // Skontrolujte prekrývanie so všetkými zápasmi a aktívnymi zablokovanými slotmi
-            for (const event of finalTimelineEvents) { // finalTimelineEvents obsahuje zápasy a aktívne zablokované sloty
-                if (existingSlot.id === event.id) continue; // Neporovnávajte slot sám so sebou
-
-                const eventStart = event.startInMinutes;
-                const eventEnd = event.endInMinutes;
-                
-                if (slotStart < eventEnd && slotEnd > eventStart) {
-                    shouldDeleteExisting = true;
-                    console.log(`Fáza 5: Existujúci voľný slot ${existingSlot.id} (${existingSlot.startTime}-${existingSlot.endTime}) sa prekrýva s udalosťou ${event.id} (${event.startTime || event.startInMinutes}-${event.endTime || event.endInMinutes}, typ: ${event.type}). Označený na vymazanie.`);
-                    break;
-                }
-            }
-            if (shouldDeleteExisting) {
+            if (!updatedOrCreatedFreeSlotIds.has(existingSlot.id)) {
+                // Tento slot nebol presne "pokrytý" novou medzerou, vymažte ho.
                 batch.delete(doc(blockedSlotsCollectionRef, existingSlot.id));
-                console.log(`Fáza 5: Pridané do batchu na vymazanie existujúceho prekrývajúceho sa voľného slotu ID: ${existingSlot.id}`);
+                console.log(`Fáza 5: Pridané do batchu na vymazanie existujúceho nadbytočného voľného slotu ID: ${existingSlot.id} (${existingSlot.startTime}-${existingSlot.endTime})`);
             }
         }
 
