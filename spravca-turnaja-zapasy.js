@@ -837,6 +837,45 @@ async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation
 
 
 /**
+ * Helper to generate a comparable display string for an event row.
+ * @param {object} event The event object (match or blocked slot).
+ * @param {object} allSettings All global settings, including categoryMatchSettings.
+ * @param {Map<string, string>} categoryColorsMap Map of category IDs to colors.
+ * @returns {string} A string representation of the event's displayed content.
+ */
+function getEventDisplayString(event, allSettings, categoryColorsMap) {
+    if (event.type === 'match') {
+        const matchDuration = event.duration || (allSettings.categoryMatchSettings?.[event.categoryId]?.duration || 60);
+        // Note: displayedMatchEndTimeInMinutes should NOT include buffer time for display purposes
+        const displayedMatchEndTimeInMinutes = (parseInt(event.startTime.split(':')[0]) * 60 + parseInt(event.startTime.split(':')[1])) + matchDuration;
+        const formattedDisplayedEndTime = `${String(Math.floor(displayedMatchEndTimeInMinutes / 60)).padStart(2, '0')}:${String(displayedMatchEndTimeInMinutes % 60).padStart(2, '0')}`;
+        
+        // This string represents the visible text content of a match row
+        return `${event.startTime} - ${formattedDisplayedEndTime}|${event.team1ClubName || 'N/A'}|${event.team2ClubName || 'N/A'}|${event.team1ShortDisplayName || 'N/A'}|${event.team2ShortDisplayName || 'N/A'}`;
+    } else if (event.type === 'blocked_slot') {
+        const blockedSlotStartHour = String(Math.floor(event.startInMinutes / 60)).padStart(2, '0');
+        const blockedSlotStartMinute = String(event.startInMinutes % 60).padStart(2, '0');
+        const blockedSlotEndHour = String(Math.floor(event.endInMinutes / 60)).padStart(2, '0');
+        const blockedSlotEndMinute = String(event.endInMinutes % 60).padStart(2, '0');
+
+        let displayText = '';
+        if (event.isBlocked === true) {
+            displayText = 'Zablokovaný slot';
+        } else if (event.isPhantom === true) {
+            // For phantom slots, the time range is part of the display text, so include it for uniqueness
+            displayText = `Slot po presunutom zápase (${blockedSlotStartHour}:${blockedSlotStartMinute} - ${blockedSlotEndHour}:${blockedSlotEndMinute})`;
+        } else {
+            // This is the "Voľný slot dostupný" placeholder
+            displayText = 'Voľný slot dostupný';
+        }
+        // Include time range for comparison for all blocked slot types
+        return `${blockedSlotStartHour}:${blockedSlotStartMinute} - ${blockedSlotEndHour}:${blockedSlotEndMinute}|${displayText}`;
+    }
+    return '';
+}
+
+
+/**
  * Zobrazí kompletný rozvrh zápasov.
 */
 async function displayMatchesAsSchedule() {
@@ -1023,6 +1062,25 @@ async function displayMatchesAsSchedule() {
                         currentEventsForRendering.sort((a, b) => a.startInMinutes - b.startInMinutes);
                         console.log(`displayMatchesAsSchedule: Udalosti pre render pre ${location} na ${date} (zoradené):`, JSON.stringify(currentEventsForRendering.map(e => ({id: e.id, type: e.type, startTime: e.startTime || e.startInMinutes, endTime: e.endTime || e.endInMinutes, isPhantom: e.isPhantom, isBlocked: e.isBlocked}))));
 
+                        // NOVINKA: Proces pre odstránenie po sebe idúcich identických záznamov
+                        const finalEventsToRender = [];
+                        let lastEventDisplayString = null;
+
+                        for (const event of currentEventsForRendering) {
+                            const currentEventDisplayString = getEventDisplayString(event, allSettings, categoryColorsMap); 
+                            
+                            // Pridajte udalosť len ak jej zobrazovací reťazec je odlišný od predchádzajúceho,
+                            // alebo ak ide o prvú udalosť.
+                            if (currentEventDisplayString !== lastEventDisplayString) {
+                                finalEventsToRender.push(event);
+                                lastEventDisplayString = currentEventDisplayString;
+                            } else {
+                                console.log(`displayMatchesAsSchedule: Preskakujem duplicitný po sebe idúci riadok pre zobrazenie: ${currentEventDisplayString}`);
+                            }
+                        }
+                        console.log(`displayMatchesAsSchedule: FinalEventsToRender (po odstránení duplicitných po sebe idúcich riadkov):`, JSON.stringify(finalEventsToRender.map(e => ({id: e.id, type: e.type, startTime: e.startTime || e.startInMinutes, endTime: e.endTime || e.endInMinutes, isPhantom: e.isPhantom, isBlocked: e.isBlocked}))));
+
+
                         // Použite funkciu getInitialScheduleStartMinutes na určenie správneho počiatočného času začiatku.
                         const initialScheduleStartMinutes = await getInitialScheduleStartMinutes(date); 
                         let currentTimePointerInMinutes = initialScheduleStartMinutes;
@@ -1040,7 +1098,7 @@ async function displayMatchesAsSchedule() {
                         scheduleHtml += `<th>ID Hostia</th></tr></thead><tbody>`;
 
 
-                        for (const event of currentEventsForRendering) {
+                        for (const event of finalEventsToRender) { // Iterujeme cez finalEventsToRender
                             // Aktuálna udalosť
                             if (event.type === 'match') {
                                 const match = event;
