@@ -707,7 +707,7 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, trig
         await batch2.commit();
         console.log("recalculateAndSaveScheduleForDateAndLocation (Fáza 2): Druhý batch commit úspešný (nové placeholdery).");
 
-        await displayMatchesAsSchedule(); // Obnovte zobrazenie
+        // await displayMatchesAsSchedule(); // Obnovte zobrazenie - toto sa presunie do DOMContentLoaded
     } catch (error) {
         console.error("recalculateAndSaveScheduleForDateAndLocation: Chyba pri prepočítavaní a ukladaní rozvrhu:", error);
         await showMessage('Chyba', `Chyba pri prepočítavaní rozvrhu: ${error.message}`);
@@ -2378,7 +2378,23 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Počiatočné zobrazenie rozvrhu po načítaní stránky
     await cleanupTrailingBlockedSlotsOnLoad(); // Najprv vyčistite staré fantómové sloty
-    await displayMatchesAsSchedule();
+
+    // KROK NAVIAC: Zabezpečte, aby sa free sloty vygenerovali pre VŠETKY dátumy a miesta pri načítaní
+    const playingDaysSnapshot = await getDocs(query(playingDaysCollectionRef, orderBy("date", "asc")));
+    const allDates = playingDaysSnapshot.docs.map(doc => doc.data().date);
+
+    const sportHallsSnapshot = await getDocs(query(placesCollectionRef, where("type", "==", "Športová hala"), orderBy("name", "asc")));
+    const allLocations = sportHallsSnapshot.docs.map(doc => doc.data().name);
+
+    console.log("DOMContentLoaded: Spúšťam prepočet pre všetky kombinácie dátumov a miest pri načítaní.");
+    for (const date of allDates) {
+        for (const location of allLocations) {
+            await recalculateAndSaveScheduleForDateAndLocation(date, location);
+        }
+    }
+    console.log("DOMContentLoaded: Všetky kombinácie dátumov a miest prepočítané.");
+    
+    await displayMatchesAsSchedule(); // Teraz zobrazte aktualizovaný rozvrh
 
 
     // Poslucháči udalostí pre tlačidlo "Pridať" a jeho možnosti
