@@ -501,10 +501,14 @@ function calculateNextAvailableTime(prevStartTime, duration, bufferTime) {
  * @param {string|null} [triggeringMatchId=null] ID zápasu, ktorý vyvolal prepočet (napr. presunutý zápas). Ak je zadaný, použije sa na inteligentné posúvanie.
  * @param {string|null} [targetStartTime=null] Nový čas začiatku `triggeringMatchId`. Používa sa s `triggeringMatchId` na definovanie bodu vloženia.
  * @param {string|null} [excludedBlockedSlotId=null] ID zablokovaného slotu, ktorý sa má explicitne vylúčiť z výpočtov.
+ * @param {boolean} [wasDeletedFreePlaceholder=false] NOVÉ: True, ak bol excludedBlockedSlotId práve vymazaný voľný placeholder.
+ * @param {string|null} [deletedPlaceholderStartTime=null] NOVÉ: Čas začiatku vymazaného voľného placeholderu.
+ * @param {string|null} [deletedPlaceholderEndTime=null] NOVÉ: Čas konca vymazaného voľného placeholderu.
  */
-async function recalculateAndSaveScheduleForDateAndLocation(date, location, triggeringMatchId = null, targetStartTime = null, excludedBlockedSlotId = null) {
+async function recalculateAndSaveScheduleForDateAndLocation(date, location, triggeringMatchId = null, targetStartTime = null, excludedBlockedSlotId = null, wasDeletedFreePlaceholder = false, deletedPlaceholderStartTime = null, deletedPlaceholderEndTime = null) {
     console.log(`recalculateAndSaveScheduleForDateAndLocation: Spustené pre Dátum: ${date}, Miesto: ${location}. ` +
-                `Triggering Match ID: ${triggeringMatchId}, Target Start Time: ${targetStartTime}, Excluded Blocked Slot ID: ${excludedBlockedSlotId}.`);
+                `Triggering Match ID: ${triggeringMatchId}, Target Start Time: ${targetStartTime}, Excluded Blocked Slot ID: ${excludedBlockedSlotId}. ` +
+                `Was Deleted Free Placeholder: ${wasDeletedFreePlaceholder}, Deleted Placeholder Time: ${deletedPlaceholderStartTime}-${deletedPlaceholderEndTime}.`);
     try {
         const batch1 = writeBatch(db); // Batch pre aktualizáciu zápasov a odstránenie starých placeholderov
 
@@ -662,43 +666,62 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, trig
 
         currentTimePointer = initialScheduleStartMinutes;
 
+        // NOVÁ LOGIKA: Definujte rozsah explicitne vymazaného voľného placeholderu
+        let deletedFreePlaceholderStartMinutes = -1;
+        let deletedFreePlaceholderEndMinutes = -1;
+
+        if (wasDeletedFreePlaceholder && deletedPlaceholderStartTime && deletedPlaceholderEndTime) {
+            deletedFreePlaceholderStartMinutes = (parseInt(deletedPlaceholderStartTime.split(':')[0]) * 60 + parseInt(deletedPlaceholderStartTime.split(':')[1]));
+            deletedFreePlaceholderEndMinutes = (parseInt(deletedPlaceholderEndTime.split(':')[0]) * 60 + parseInt(deletedPlaceholderEndTime.split(':')[1]));
+            console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 2): Definovaný rozsah vymazaného voľného placeholderu: [${deletedFreePlaceholderStartMinutes}-${deletedFreePlaceholderEndMinutes}]`);
+        }
+
         for (const event of finalTimelineEvents) {
             if (currentTimePointer < event.startInMinutes) {
                 const potentialGapStart = currentTimePointer;
                 const potentialGapEnd = event.startInMinutes;
-                console.log(`Phase 2: Checking gap [${potentialGapStart}-${potentialGapEnd}] before event ${event.id || event.type}.`);
+                console.log(`Fáza 2: Kontrola medzery [${potentialGapStart}-${potentialGapEnd}] pred udalosťou ${event.id || event.type}.`);
 
+                // Skontrolujte, či sa táto potenciálna medzera *presne zhoduje* s explicitne vymazaným voľným placeholderom
+                const isThisTheDeletedFreePlaceholder = (
+                    wasDeletedFreePlaceholder &&
+                    potentialGapStart === deletedFreePlaceholderStartMinutes &&
+                    potentialGapEnd === deletedFreePlaceholderEndMinutes
+                );
 
-                // Skontrolujte, či sa prekrýva s nejakým iným pevným eventom v tomto rozsahu
-                const isGapCovered = finalTimelineEvents.some(e => {
-                    // Don't check against the current event itself.
-                    if (e.id === event.id && e.type === event.type) {
-                        console.log(`  Skipping self-check for event ${e.id || e.type}.`);
-                        return false;
-                    }
-                    const overlaps = (potentialGapStart < e.endInMinutes && potentialGapEnd > e.startInMinutes);
-                    if (overlaps) {
-                        console.log(`  Overlap found with existing event ${e.id || e.type} [${e.startInMinutes}-${e.endInMinutes}]. Type: ${e.type}, isBlocked: ${e.isBlocked}, isPhantom: ${e.isPhantom}.`);
-                    }
-                    return overlaps;
-                });
-
-                if (!isGapCovered) {
-                    const newPlaceholderData = {
-                        date: date,
-                        location: location,
-                        startTime: `${String(Math.floor(potentialGapStart / 60)).padStart(2, '0')}:${String(potentialGapStart % 60).padStart(2, '0')}`,
-                        endTime: `${String(Math.floor(potentialGapEnd / 60)).padStart(2, '0')}:${String(potentialGapEnd % 60).padStart(2, '0')}`,
-                        startInMinutes: potentialGapStart,
-                        endInMinutes: potentialGapEnd,
-                        isBlocked: false,
-                        isPhantom: false,
-                        createdAt: new Date()
-                    };
-                    batch2.set(doc(blockedSlotsCollectionRef), newPlaceholderData);
-                    console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 2): Vytvorený placeholder: Čas: ${newPlaceholderData.startTime}-${newPlaceholderData.endTime}`);
+                // Ak ide o explicitne vymazaný voľný placeholder, NEVYTVÁRAJTE ho znova
+                if (isThisTheDeletedFreePlaceholder) {
+                    console.log(`Fáza 2: Preskakujem opätovné vytvorenie explicitne vymazaného voľného placeholderu na [${potentialGapStart}-${potentialGapEnd}].`);
                 } else {
-                    console.log(`Phase 2: Gap [${potentialGapStart}-${potentialGapEnd}] IS covered. Skipping placeholder creation.`);
+                    // Pôvodná kontrola prekrývania (zabezpečte, aby sa tento nový placeholder neprekrýval s aktívnymi udalosťami)
+                    const isGapCovered = finalTimelineEvents.some(e => {
+                        if (e.id === event.id && e.type === event.type) {
+                            return false; // Nekontrolujte proti samotnej aktuálnej udalosti.
+                        }
+                        const overlaps = (potentialGapStart < e.endInMinutes && potentialGapEnd > e.startInMinutes);
+                        if (overlaps) {
+                            console.log(`  Nájdené prekrývanie s existujúcou udalosťou ${e.id || e.type} [${e.startInMinutes}-${e.endInMinutes}]. Typ: ${e.type}, isBlocked: ${e.isBlocked}, isPhantom: ${e.isPhantom}.`);
+                        }
+                        return overlaps;
+                    });
+
+                    if (!isGapCovered) {
+                        const newPlaceholderData = {
+                            date: date,
+                            location: location,
+                            startTime: `${String(Math.floor(potentialGapStart / 60)).padStart(2, '0')}:${String(potentialGapStart % 60).padStart(2, '0')}`,
+                            endTime: `${String(Math.floor(potentialGapEnd / 60)).padStart(2, '0')}:${String(potentialGapEnd % 60).padStart(2, '0')}`,
+                            startInMinutes: potentialGapStart,
+                            endInMinutes: potentialGapEnd,
+                            isBlocked: false,
+                            isPhantom: false,
+                            createdAt: new Date()
+                        };
+                        batch2.set(doc(blockedSlotsCollectionRef), newPlaceholderData);
+                        console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 2): Vytvorený placeholder: Čas: ${newPlaceholderData.startTime}-${newPlaceholderData.endTime}`);
+                    } else {
+                        console.log(`Fáza 2: Medzera [${potentialGapStart}-${potentialGapEnd}] JE pokrytá. Preskakujem vytvorenie placeholderu.`);
+                    }
                 }
             }
 
@@ -712,30 +735,40 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, trig
             const gapStart = currentTimePointer;
             const gapEnd = endOfDayMinutes;
 
-            // Uistite sa, že tento koncový slot nie je už pokrytý existujúcim fantómom (ak napr. bol zápas na konci dňa presunutý)
-            const isGapCoveredAtEnd = finalTimelineEvents.some(e => {
-                return (gapStart < e.endInMinutes && gapEnd > e.startInMinutes);
-            });
+            // Skontrolujte, či sa táto koncová medzera *presne zhoduje* s explicitne vymazaným voľným placeholderom
+            const isThisTheDeletedFreePlaceholderTrailingGap = (
+                wasDeletedFreePlaceholder &&
+                gapStart === deletedFreePlaceholderStartMinutes &&
+                gapEnd === deletedFreePlaceholderEndMinutes
+            );
 
-            if (!isGapCoveredAtEnd) {
-                const newPlaceholderData = {
-                    date: date,
-                    location: location,
-                    startTime: `${String(Math.floor(gapStart / 60)).padStart(2, '0')}:${String(gapStart % 60).padStart(2, '0')}`,
-                    endTime: `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(gapEnd % 60).padStart(2, '0')}`,
-                    startInMinutes: gapStart,
-                    endInMinutes: gapEnd,
-                    isBlocked: false,
-                    isPhantom: false,
-                    createdAt: new Date()
-                };
-                batch2.set(doc(blockedSlotsCollectionRef), newPlaceholderData);
-                console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 2): Vytvorený koncový placeholder slot: Čas: ${newPlaceholderData.startTime}-${newPlaceholderData.endTime}`);
+            if (isThisTheDeletedFreePlaceholderTrailingGap) {
+                console.log(`Fáza 2: Preskakujem opätovné vytvorenie explicitne vymazaného voľného placeholderu na koncovej medzere [${gapStart}-${gapEnd}].`);
             } else {
-                 console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 2): Preskočená tvorba koncového placeholderu, medzera už je pokrytá iným eventom.`);
+                // Pôvodná kontrola prekrývania
+                const isGapCoveredAtEnd = finalTimelineEvents.some(e => {
+                    return (gapStart < e.endInMinutes && gapEnd > e.startInMinutes);
+                });
+
+                if (!isGapCoveredAtEnd) {
+                    const newPlaceholderData = {
+                        date: date,
+                        location: location,
+                        startTime: `${String(Math.floor(gapStart / 60)).padStart(2, '0')}:${String(gapStart % 60).padStart(2, '0')}`,
+                        endTime: `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(gapEnd % 60).padStart(2, '0')}`,
+                        startInMinutes: gapStart,
+                        endInMinutes: gapEnd,
+                        isBlocked: false,
+                        isPhantom: false,
+                        createdAt: new Date()
+                    };
+                    batch2.set(doc(blockedSlotsCollectionRef), newPlaceholderData);
+                    console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 2): Vytvorený koncový placeholder slot: Čas: ${newPlaceholderData.startTime}-${newPlaceholderData.endTime}`);
+                } else {
+                     console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 2): Preskočená tvorba koncového placeholderu, medzera už je pokrytá iným eventom.`);
+                }
             }
         }
-
 
         await batch2.commit();
         console.log("recalculateAndSaveScheduleForDateAndLocation (Fáza 2): Druhý batch commit úspešný (nové placeholdery).");
@@ -2280,18 +2313,45 @@ async function handleDeleteSlot(slotId, date, location) {
     }
 
     try {
+        const slotDocRef = doc(blockedSlotsCollectionRef, slotId);
+        const slotDoc = await getDoc(slotDocRef);
+        let deletedSlotWasFreePlaceholder = false;
+        let deletedSlotStartTime = null;
+        let deletedSlotEndTime = null;
+
+        if (slotDoc.exists()) {
+            const slotData = slotDoc.data();
+            // Skontrolujte, či vymazaný slot bol 'Voľný slot dostupný' (nie zablokovaný, nie fantóm)
+            if (slotData.isBlocked === false && slotData.isPhantom === false) {
+                deletedSlotWasFreePlaceholder = true;
+                deletedSlotStartTime = slotData.startTime;
+                deletedSlotEndTime = slotData.endTime;
+            }
+        }
+
         const batch = writeBatch(db); // Použite batch pre potenciálne viaceré operácie
 
         console.log(`handleDeleteSlot: Pokúšam sa vymazať dokument blockedSlot ID: ${slotId}`);
-        batch.delete(doc(blockedSlotsCollectionRef, slotId));
+        batch.delete(slotDocRef);
         
         await batch.commit();
         console.log("handleDeleteSlot: Batch commit successful.");
 
         await showMessage('Úspech', 'Slot bol úspešne vymazaný z databázy!');
         closeModal(freeSlotModal);
+        
         // Po akomkoľvek vymazaní alebo posunutí prepočítajte rozvrh, aby sa správne prekreslil
-        await recalculateAndSaveScheduleForDateAndLocation(date, location, null, null, slotId); // Odovzdávame ID vymazaného slotu
+        // Odovzdávame ID vymazaného slotu a informácie o tom, či to bol voľný placeholder
+        await recalculateAndSaveScheduleForDateAndLocation(
+            date, 
+            location, 
+            null, 
+            null, 
+            slotId, // excludedBlockedSlotId
+            deletedSlotWasFreePlaceholder, // NOVÉ: wasDeletedFreePlaceholder
+            deletedSlotStartTime, // NOVÉ: deletedPlaceholderStartTime
+            deletedSlotEndTime // NOVÉ: deletedPlaceholderEndTime
+        );
         console.log("handleDeleteSlot: Prepočet rozvrhu dokončený.");
 
     } catch (error) {
