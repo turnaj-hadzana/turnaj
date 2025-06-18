@@ -543,17 +543,17 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location) {
         let allEvents = [
             ...currentMatches.map(m => {
                 const [h, mVal] = m.startTime.split(':').map(Number);
-                const startMin = h * 60 + mVal;
+                const startInMinutes = h * 60 + mVal;
                 const duration = Number(m.duration) || 0;
                 const bufferTime = Number(m.bufferTime) || 0;
-                return { ...m, startInMinutes: startMin, originalStartInMinutes: startMin, endInMinutes: startMin + duration + bufferTime }; // Uložte pôvodný čas začiatku pre triedenie
+                return { ...m, startInMinutes: startInMinutes, originalStartInMinutes: startInMinutes, endInMinutes: startInMinutes + duration + bufferTime }; // Uložte pôvodný čas začiatku pre triedenie
             }),
             ...userBlockedSlots.map(s => {
                 const [startH, startM] = s.startTime.split(':').map(Number);
-                const startMin = startH * 60 + startM;
+                const startInMinutes = startH * 60 + startM;
                 const [endH, endM] = s.endTime.split(':').map(Number);
-                const endMin = endH * 60 + endM;
-                return { ...s, startInMinutes: startMin, endInMinutes: endMin };
+                const endInMinutes = endH * 60 + endM;
+                return { ...s, startInMinutes: startInMinutes, endInMinutes: endInMinutes };
             })
         ];
 
@@ -1259,12 +1259,13 @@ async function displayMatchesAsSchedule() {
                                 droppedProposedStartTime = `${String(Math.floor(endInMinutes / 60)).padStart(2, '0')}:${String(endInMinutes % 60).padStart(2, '0')}`;
                                 console.log(`Presunuté za riadok zápasu. Navrhovaný čas začiatku: ${droppedProposedStartTime}`);
                             } else if (targetRow.classList.contains('empty-slot-row')) {
-                                droppedProposedStartTime = targetRow.dataset.endTime;
+                                // KEĎ SA PRESÚVA NA PRÁZDNY SLOT, VŽDY SA POUŽIJE JEHO ČAS ZAČIATKU
+                                droppedProposedStartTime = targetRow.dataset.startTime; 
                                 if (targetRow.dataset.id) {
                                     targetBlockedSlotId = targetRow.dataset.id;
-                                    console.log(`Cieľový prázdny slot ID: ${targetBlockedSlotId} (vkladanie za a vyplnenie).`);
+                                    console.log(`Cieľový prázdny slot ID: ${targetBlockedSlotId} (vkladanie do prázdneho slotu).`);
                                 }
-                                console.log(`Presunuté za prázdny riadok slotu. Navrhovaný čas začiatku: ${droppedProposedStartTime}`);
+                                console.log(`Presunuté do prázdneho slotu. Navrhovaný čas začiatku: ${droppedProposedStartTime}`);
                             }
                         }
                     } else {
@@ -2169,7 +2170,7 @@ async function deleteMatch(matchId) {
             await showMessage('Úspech', 'Zápas vymazaný!');
             closeModal(document.getElementById('matchModal'));
             
-            // Prepočítať iba ak sú známe dátum a miesto, čo by mali byť
+            // Prepočítajťe iba ak sú známe dátum a miesto, čo by mali byť
             if (date && location) {
                 console.log(`deleteMatch: Spúšťam prepočet rozvrhu pre dátum: ${date}, miesto: ${location}`);
                 await recalculateAndSaveScheduleForDateAndLocation(date, location);
