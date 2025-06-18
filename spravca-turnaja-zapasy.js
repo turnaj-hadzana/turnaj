@@ -508,20 +508,20 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, trig
         const batch1 = writeBatch(db); // Batch pre aktualizáciu zápasov a odstránenie starých placeholderov
 
         // Fáza 1: Vyčistite staré dynamické sloty
-        // 1a. Vymažte VŠETKY dynamické sloty (placeholdery), ktoré NIE SÚ fantómy, pre toto miesto/dátum.
+        // 1a. Vymažte VŠETKY dynamické sloty (placeholdery), ktoré NIE SÚ POUŽÍVATEĽOM ZABLOKOVANÉ (`isBlocked: true`).
+        // To zahŕňa aj fantómy (`isPhantom: true, isBlocked: false`)
         const dynamicPlaceholdersToCleanupQuery = query(
             blockedSlotsCollectionRef,
             where("date", "==", date),
             where("location", "==", location),
-            where("isBlocked", "==", false),
-            where("isPhantom", "==", false)
+            where("isBlocked", "==", false) // Filtruje všetko, čo nie je používateľom blokované
         );
         const dynamicPlaceholdersToCleanupSnapshot = await getDocs(dynamicPlaceholdersToCleanupQuery);
         dynamicPlaceholdersToCleanupSnapshot.docs.forEach(docToDelete => {
             // Ak tento placeholder nie je ten, ktorý bol práve vymazaný používateľom
             if (docToDelete.id !== excludedBlockedSlotId) {
                 batch1.delete(doc(blockedSlotsCollectionRef, docToDelete.id));
-                console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 1): Pridané do batchu na vymazanie dynamického placeholder slotu ID: ${docToDelete.id}`);
+                console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 1): Pridané do batchu na vymazanie dynamického placeholder/phantom slotu ID: ${docToDelete.id}`);
             } else {
                 console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 1): Preskočené vymazanie excludedBlockedSlotId: ${excludedBlockedSlotId} (už ho tam nemá byť).`);
             }
@@ -2247,47 +2247,6 @@ async function handleDeleteSlot(slotId, date, location) {
 
 
 /**
- * Zmaže zápas z Firestore.
- * @param {string} matchId ID zápasu na zmazanie.
-*/
-async function deleteMatch(matchId) {
-    const confirmed = await showConfirmation('Potvrdenie vymazania', 'Naozaj chcete vymazať tento zápas?');
-    if (confirmed) {
-        try {
-            const matchDocRef = doc(matchesCollectionRef, matchId);
-            const matchDoc = await getDoc(matchDocRef);
-            let date = null;
-            let location = null;
-            if (matchDoc.exists()) {
-                date = matchDoc.data().date;
-                location = matchDoc.data().location;
-            }
-
-            console.log(`deleteMatch: Pokúšam sa vymazať dokument zápasu ID: ${matchId}`);
-            await deleteDoc(matchDocRef);
-            console.log(`deleteMatch: Dokument zápasu ID: ${matchId} úspešne vymazaný.`);
-            await showMessage('Úspech', 'Zápas vymazaný!');
-            closeModal(document.getElementById('matchModal'));
-            
-            // Prepočítajťe iba ak sú známe dátum a miesto, čo by mali byť
-            if (date && location) {
-                console.log(`deleteMatch: Spúšťam prepočet rozvrhu pre dátum: ${date}, miesto: ${location}`);
-                await recalculateAndSaveScheduleForDateAndLocation(date, location);
-            } else {
-                console.warn('deleteMatch: Chýbajú dáta o dátume alebo mieste zápasu, len obnovujem zobrazenie rozvrhu.');
-                // Záložné riešenie, ak chýbajú detaily zápasu z nejakého dôvodu
-                displayMatchesAsSchedule(); 
-            }
-
-        }
-        catch (error) {
-            console.error("Chyba pri mazaní zápasu:", error);
-            await showMessage('Chyba', `Chyba pri mazaní zápasu. Detail: ${error.message}`);
-        }
-    }
-}
-
-/**
  * Vyčistí (vymaže) všetky Zvyšné fantómové sloty (`isPhantom: true`)
  * a placeholder sloty (`isBlocked: false, isPhantom: false`) na konci každého dňa a miesta pri načítaní stránky.
  * Táto funkcia je teraz zjednodušená, keďže recalculateAndSaveScheduleForDateAndLocation by mala manažovať väčšinu.
@@ -2386,7 +2345,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Počiatočné zobrazenie rozvrhu po načítaní stránky
-    await cleanupTrailingBlockedSlotsOnLoad(); // Najprv vyčistite staré fantómové sloty
+    // ODSTRÁNENÉ: await cleanupTrailingBlockedSlotsOnLoad(); // Najprv vyčistite staré fantómové sloty
     await displayMatchesAsSchedule();
 
 
