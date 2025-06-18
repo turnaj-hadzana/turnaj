@@ -508,20 +508,21 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, trig
         const batch1 = writeBatch(db); // Batch pre aktualizáciu zápasov a odstránenie starých placeholderov
 
         // Fáza 1: Vyčistite staré dynamické sloty
-        // 1a. Vymažte VŠETKY dynamické sloty (placeholdery), ktoré NIE SÚ fantómy, pre toto miesto/dátum.
-        const dynamicPlaceholdersToCleanupQuery = query(
+        // 1a. Vymažte VŠETKY dynamické sloty (placeholdery), ktoré NIE SÚ POUŽÍVATEĽOM ZABLOKOVANÉ (isBlocked: true)
+        // A zároveň NIE SÚ FANTÓMAMI (isPhantom: true). Teda vymazávame len staré "Voľný slot dostupný" placeholdery.
+        const oldFreePlaceholdersToCleanupQuery = query(
             blockedSlotsCollectionRef,
             where("date", "==", date),
             where("location", "==", location),
-            where("isBlocked", "==", false),
-            where("isPhantom", "==", false)
+            where("isBlocked", "==", false), // Cieľom sú len voľné sloty
+            where("isPhantom", "==", false)  // Explicitne vylúčte fantómové sloty z tohto čistenia
         );
-        const dynamicPlaceholdersToCleanupSnapshot = await getDocs(dynamicPlaceholdersToCleanupQuery);
-        dynamicPlaceholdersToCleanupSnapshot.docs.forEach(docToDelete => {
+        const oldFreePlaceholdersToCleanupSnapshot = await getDocs(oldFreePlaceholdersToCleanupQuery);
+        oldFreePlaceholdersToCleanupSnapshot.docs.forEach(docToDelete => {
             // Ak tento placeholder nie je ten, ktorý bol práve vymazaný používateľom
-            if (docToDelete.id !== excludedBlockedSlotId) {
+            if (docToDelete.id !== excludedBlockedSlotId) { // excludedBlockedSlotId je ID target slotu, ak sa naň presúva
                 batch1.delete(doc(blockedSlotsCollectionRef, docToDelete.id));
-                console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 1): Pridané do batchu na vymazanie dynamického placeholder slotu ID: ${docToDelete.id}`);
+                console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 1): Pridané do batchu na vymazanie starého voľného placeholder slotu ID: ${docToDelete.id}`);
             } else {
                 console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 1): Preskočené vymazanie excludedBlockedSlotId: ${excludedBlockedSlotId} (už ho tam nemá byť).`);
             }
@@ -547,12 +548,14 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, trig
                 id: doc.id,
                 type: 'blocked_slot',
                 docRef: doc.ref,
+                isBlocked: doc.data().isBlocked === true, // Získať aj isBlocked stav
+                isPhantom: doc.data().isPhantom === true, // Získať aj isPhantom stav
                 ...doc.data(),
                 startInMinutes: (parseInt(doc.data().startTime.split(':')[0]) * 60 + parseInt(doc.data().startTime.split(':')[1])),
                 endInMinutes: (parseInt(doc.data().endTime.split(':')[0]) * 60 + parseInt(doc.data().endTime.split(':')[1]))
             }))
             .filter(slot => slot.id !== excludedBlockedSlotId); // Filtrujte explicitne vylúčený slot
-        console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 1): Načítané a filtrované allBlockedSlots (bez ${excludedBlockedSlotId}):`, allBlockedSlots.map(e => e.id));
+        console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 1): Načítané a filtrované allBlockedSlots (bez ${excludedBlockedSlotId}):`, allBlockedSlots.map(e => ({id: e.id, isBlocked: e.isBlocked, isPhantom: e.isPhantom})));
 
 
         let eventsForTimeline = [];
@@ -574,7 +577,7 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, trig
         // Zlúčte všetky udalosti do jednej timeline
         // Pridajte všetky zápasy, ktoré neboli presunuté (alebo boli presunuté, ale stále sú v currentMatches, ak nedošlo k splice)
         eventsForTimeline.push(...currentMatches);
-        // Pridajte všetky zablokované sloty (užívateľom zablokované a fantómy)
+        // Pridajte všetky ZABLOKOVANÉ a FANTÓMOVÉ sloty ako "pevné" pre posúvanie zápasov
         for (const slot of allBlockedSlots) {
             if (slot.isBlocked === true || slot.isPhantom === true) {
                 eventsForTimeline.push(slot);
@@ -625,7 +628,8 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, trig
         // Fáza 2: Generovanie placeholderov
         const batch2 = writeBatch(db); // Nový batch pre pridanie placeholderov
 
-        // Načítajte VŠETKY (už posunuté) zápasy, všetky POUŽÍVATEĽOM ZABLOKOVANÉ sloty a perzistentné fantómy
+        // Načítajte VŠETKY (už posunuté) zápasy a všetky AKTÍVNE ZABLOKOVANÉ sloty (vrátane fantómov).
+        // Tieto budú slúžiť ako "prekážky" pri generovaní nových "Voľný slot dostupný" placeholderov.
         const allMatchesForFinalTimeline = (await getDocs(query(matchesCollectionRef, where("date", "==", date), where("location", "==", location)))).docs.map(doc => ({
             id: doc.id,
             type: 'match',
@@ -634,7 +638,7 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, trig
             endInMinutes: (parseInt(doc.data().startTime.split(':')[0]) * 60 + parseInt(doc.data().startTime.split(':')[1])) + (Number(doc.data().duration) || 0) + (Number(doc.data().bufferTime) || 0)
         }));
 
-        const allBlockedSlotsForFinalTimeline = (await getDocs(query(blockedSlotsCollectionRef, where("date", "==", date), where("location", "==", location)))).docs
+        const allActiveBlockedSlotsForFinalTimeline = (await getDocs(query(blockedSlotsCollectionRef, where("date", "==", date), where("location", "==", location)))).docs
             .map(doc => ({
                 id: doc.id,
                 type: 'blocked_slot',
@@ -644,12 +648,12 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, trig
                 startInMinutes: (parseInt(doc.data().startTime.split(':')[0]) * 60 + parseInt(doc.data().startTime.split(':')[1])),
                 endInMinutes: (parseInt(doc.data().endTime.split(':')[0]) * 60 + parseInt(doc.data().endTime.split(':')[1]))
             }))
-            .filter(slot => slot.id !== excludedBlockedSlotId); // Zahrňte len aktívne zablokované a fantómy pre časovú os, a vylúčte explicitne zadaný slot
+            .filter(slot => (slot.isBlocked === true || slot.isPhantom === true) && slot.id !== excludedBlockedSlotId); // Zahrňte len aktívne zablokované a fantómy, a vylúčte explicitne zadaný slot
 
         // Vytvoríme "pevnú" timeline pre generovanie medzier
         let finalTimelineEvents = [
             ...allMatchesForFinalTimeline,
-            ...allBlockedSlotsForFinalTimeline
+            ...allActiveBlockedSlotsForFinalTimeline
         ];
 
         finalTimelineEvents.sort((a, b) => a.startInMinutes - b.startInMinutes);
@@ -666,6 +670,7 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, trig
                 const isGapCovered = finalTimelineEvents.some(e => {
                     // Upravená podmienka: Skontrolujte, či sa prekrýva s akýmkoľvek iným existujúcim eventom (zápas, zablokovaný alebo fantóm)
                     // a uistite sa, že to nie je ten istý event, ktorý práve spracovávame
+                    // Tiež, ak je event "fantóm" alebo "zablokovaný", považujte ho za obsadený pre generovanie voľných slotov.
                     if (e.id === event.id && e.type === event.type) return false;
                     return (potentialGapStart < e.endInMinutes && potentialGapEnd > e.startInMinutes);
                 });
@@ -2246,78 +2251,9 @@ async function handleDeleteSlot(slotId, date, location) {
 }
 
 
-/**
- * Zmaže zápas z Firestore.
- * @param {string} matchId ID zápasu na zmazanie.
-*/
-async function deleteMatch(matchId) {
-    const confirmed = await showConfirmation('Potvrdenie vymazania', 'Naozaj chcete vymazať tento zápas?');
-    if (confirmed) {
-        try {
-            const matchDocRef = doc(matchesCollectionRef, matchId);
-            const matchDoc = await getDoc(matchDocRef);
-            let date = null;
-            let location = null;
-            if (matchDoc.exists()) {
-                date = matchDoc.data().date;
-                location = matchDoc.data().location;
-            }
-
-            console.log(`deleteMatch: Pokúšam sa vymazať dokument zápasu ID: ${matchId}`);
-            await deleteDoc(matchDocRef);
-            console.log(`deleteMatch: Dokument zápasu ID: ${matchId} úspešne vymazaný.`);
-            await showMessage('Úspech', 'Zápas vymazaný!');
-            closeModal(document.getElementById('matchModal'));
-            
-            // Prepočítajťe iba ak sú známe dátum a miesto, čo by mali byť
-            if (date && location) {
-                console.log(`deleteMatch: Spúšťam prepočet rozvrhu pre dátum: ${date}, miesto: ${location}`);
-                await recalculateAndSaveScheduleForDateAndLocation(date, location);
-            } else {
-                console.warn('deleteMatch: Chýbajú dáta o dátume alebo mieste zápasu, len obnovujem zobrazenie rozvrhu.');
-                // Záložné riešenie, ak chýbajú detaily zápasu z nejakého dôvodu
-                displayMatchesAsSchedule(); 
-            }
-
-        }
-        catch (error) {
-            console.error("Chyba pri mazaní zápasu:", error);
-            await showMessage('Chyba', `Chyba pri mazaní zápasu. Detail: ${error.message}`);
-        }
-    }
-}
-
-/**
- * Vyčistí (vymaže) všetky Zvyšné fantómové sloty (`isPhantom: true`)
- * a placeholder sloty (`isBlocked: false, isPhantom: false`) na konci každého dňa a miesta pri načítaní stránky.
- * Táto funkcia je teraz zjednodušená, keďže recalculateAndSaveScheduleForDateAndLocation by mala manažovať väčšinu.
-*/
-async function cleanupTrailingBlockedSlotsOnLoad() {
-    console.log("cleanupTrailingBlockedSlotsOnLoad: Spustená funkcia pre čistenie koncových slotov.");
-    try {
-        const cleanupBatch = writeBatch(db);
-        let cleanedCount = 0;
-
-        // Iba vyčistiť VŠETKY fantómové sloty pri načítaní, pretože by nemali pretrvávať
-        const phantomSlotsQuery = query(blockedSlotsCollectionRef, where("isPhantom", "==", true));
-        const phantomSlotsSnapshot = await getDocs(phantomSlotsQuery);
-
-        phantomSlotsSnapshot.docs.forEach(docSnap => {
-            cleanupBatch.delete(doc(blockedSlotsCollectionRef, docSnap.id));
-            cleanedCount++;
-        });
-        
-        if (cleanedCount > 0) {
-            await cleanupBatch.commit();
-            console.log(`cleanupTrailingBlockedSlotsOnLoad: Úspešne vymazaných ${cleanedCount} fantómových slotov.`);
-        } else {
-            console.log("cleanupTrailingBlockedSlotsOnLoad: Žiadne fantómové sloty na vymazanie.");
-        }
-
-    } catch (error) {
-        console.error("cleanupTrailingBlockedSlotsOnLoad: Chyba pri čistení koncových slotov:", error);
-    }
-}
+// ODSTRÁNENÁ FUNKCIA: cleanupTrailingBlockedSlotsOnLoad()
+// Dôvod: Logika čistenia dynamických slotov je teraz plne integrovaná
+// do recalculateAndSaveScheduleForDateAndLocation (Fáza 1a).
 
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -2386,7 +2322,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Počiatočné zobrazenie rozvrhu po načítaní stránky
-    await cleanupTrailingBlockedSlotsOnLoad(); // Najprv vyčistite staré fantómové sloty
+    // ODSTRÁNENÉ: await cleanupTrailingBlockedSlotsOnLoad(); // Najprv vyčistite staré fantómové sloty
     await displayMatchesAsSchedule();
 
 
