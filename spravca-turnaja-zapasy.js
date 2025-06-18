@@ -677,8 +677,27 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, trig
             console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 4): Aktuálny currentTimePointer po spracovaní udalosti: ${currentTimePointer}`);
         }
 
-        // Zmena: Odstránená logika pre generovanie koncového "Voľný slot dostupný" placeholderu
-        // Predpokladáme, že používateľ si želá, aby na konci dňa neboli žiadne placeholdery.
+        // ZMENA: ODSTRÁNENÁ LOGIKA pre generovanie koncového "Voľný slot dostupný" placeholderu
+        // const endOfDayMinutes = 24 * 60; // Reprezentuje 24:00 alebo 00:00 nasledujúceho dňa
+        // if (currentTimePointer < endOfDayMinutes) {
+        //     const potentialGapStart = currentTimePointer;
+        //     const potentialGapEnd = endOfDayMinutes; // Ísť až do konca dňa
+
+        //     const newPlaceholderData = {
+        //         date: date,
+        //         location: location,
+        //         startTime: `${String(Math.floor(potentialGapStart / 60)).padStart(2, '0')}:${String(potentialGapStart % 60).padStart(2, '0')}`,
+        //         endTime: `${String(Math.floor(potentialGapEnd / 60)).padStart(2, '0')}:${String(potentialGapEnd % 60).padStart(2, '0')}`,
+        //         startInMinutes: potentialGapStart,
+        //         endInMinutes: potentialGapEnd,
+        //         isBlocked: false,
+        //         isPhantom: false,
+        //         createdAt: new Date()
+        //     };
+        //     const newPlaceholderDocRef = doc(blockedSlotsCollectionRef);
+        //     batch.set(newPlaceholderDocRef, newPlaceholderData);
+        //     console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 4): Vytvorený koncový placeholder: Čas: ${newPlaceholderData.startTime}-${newPlaceholderData.endTime}`);
+        // }
 
 
         await batch.commit(); 
@@ -1023,17 +1042,17 @@ async function displayMatchesAsSchedule() {
                         for (const event of currentEventsForRendering) {
                             const currentEventDisplayString = getEventDisplayString(event, allSettings, categoryColorsMap); 
                             
-                            // ZMENA: Filter pre koncové "Voľné sloty"
-                            const isTrailingFreeSlot = (
-                                event.type === 'blocked_slot' &&
-                                event.isBlocked === false &&
-                                currentEventsForRendering.indexOf(event) === currentEventsForRendering.length -1
-                            );
-
-                            if (isTrailingFreeSlot) {
-                                console.log(`displayMatchesAsSchedule: Preskakujem koncový voľný slot: ${currentEventDisplayString}`);
-                                continue; 
-                            }
+                            // ZMENA: Filter pre koncové "Voľné sloty" - odstránené, lebo ich chceme.
+                            // Pôvodný kód:
+                            // const isTrailingFreeSlot = (
+                            //     event.type === 'blocked_slot' &&
+                            //     event.isBlocked === false &&
+                            //     currentEventsForRendering.indexOf(event) === currentEventsForRendering.length -1
+                            // );
+                            // if (isTrailingFreeSlot) {
+                            //     console.log(`displayMatchesAsSchedule: Preskakujem koncový voľný slot: ${currentEventDisplayString}`);
+                            //     continue; 
+                            // }
                             
                             // ZMENA: Konsolidácia po sebe idúcich voľných slotov
                             const isCurrentFreeSlot = event.type === 'blocked_slot' && event.isBlocked === false;
@@ -2140,7 +2159,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         placeAddressInput.value = '';
         placeGoogleMapsUrlInput.value = '';
         deletePlaceButtonModal.style.display = 'none';
-        if (deletePlaceButtonModal && deletePlaceButtonModal._currentHandler) { 
+        if (deletePlaceButtonModal && deletePlaceButtonButtonModal._currentHandler) { 
             deletePlaceButtonModal.removeEventListener('click', deletePlaceButtonModal._currentHandler);
             delete deletePlaceButtonModal._currentHandler;
         }
@@ -2192,6 +2211,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             matchGroupSelect.disabled = true;
             team1NumberInput.value = '';
             team1NumberInput.disabled = true;
+            team2NumberInput.value = '';
             team2NumberInput.disabled = true;
             matchDurationInput.value = 60; // Reset na predvolené, ak nie je kategória
             matchBufferTimeInput.value = 5; // Reset na predvolené, ak nie je kategória
