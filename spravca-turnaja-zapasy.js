@@ -2230,7 +2230,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const placeModal = document.getElementById('placeModal');
     const closePlaceModalButton = document.getElementById('closePlaceModal');
-    const placeForm = document = document.getElementById('placeForm'); // Fix: Should be document.getElementById
+    const placeForm = document.getElementById('placeForm'); // Fix: Should be document.getElementById
     const placeIdInput = document.getElementById('placeId');
     const placeTypeSelect = document.getElementById('placeTypeSelect');
     const placeNameInput = document.getElementById('placeName');
