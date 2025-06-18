@@ -680,7 +680,7 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, trig
                 }
             }
 
-            currentTimePointer = Math.max(currentTimePointer, event.endInMinutes);
+            currentTimePointer = event.endInMinutes; // HLAVNÁ OPRAVA: Posuňte ukazovateľ na koniec aktuálnej udalosti (vrátane rezervy/dĺžky)
             console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 4): Aktuálny currentTimePointer po spracovaní udalosti: ${currentTimePointer}`);
         }
 
