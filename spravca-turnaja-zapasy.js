@@ -502,19 +502,21 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location) {
     try {
         const batch = writeBatch(db);
 
-        // Krok 1: Vymažte len existujúce fantómové sloty (isPhantom: true)
-        // Regulárne voľné sloty (isBlocked: false, isPhantom: false) by mali zostať.
-        const allPhantomSlotsQuery = query(
+        // Krok 1: Vymažte existujúce fantómové sloty (isPhantom: true) a existujúce neblokované sloty (isBlocked: false, isPhantom: false)
+        const slotsToCleanupQuery = query(
             blockedSlotsCollectionRef,
             where("date", "==", date),
             where("location", "==", location),
-            where("isPhantom", "==", true) // Len fantómové sloty
+            // Vymažte buď fantómy, alebo akékoľkoľvek neblokované a nefantómové sloty (naše placeholdery)
+            // Filtrujeme tak, aby sme vymazali všetky, ktoré NIE SÚ užívateľom pevne zablokované
+            where("isBlocked", "==", false) 
         );
-        const allPhantomSlotsSnapshot = await getDocs(allPhantomSlotsQuery);
-        allPhantomSlotsSnapshot.docs.forEach(docToDelete => {
+        const slotsToCleanupSnapshot = await getDocs(slotsToCleanupQuery);
+        slotsToCleanupSnapshot.docs.forEach(docToDelete => {
             batch.delete(doc(blockedSlotsCollectionRef, docToDelete.id));
-            console.log(`recalculateAndSaveScheduleForDateAndLocation: Pridané do batchu na vymazanie starého FANTÓMOVÉHO slotu ID: ${docToDelete.id}, isPhantom: ${docToDelete.data().isPhantom}, isBlocked: ${docToDelete.data().isBlocked}`); // Debugging
+            console.log(`recalculateAndSaveScheduleForDateAndLocation: Pridané do batchu na vymazanie starého slotu ID: ${docToDelete.id}, isPhantom: ${docToDelete.data().isPhantom}, isBlocked: ${docToDelete.data().isBlocked}`); // Debugging
         });
+
 
         // Krok 2: Načítajte VŠETKY aktívne udalosti pre dané miesto a dátum (zápasy a používateľom zablokované sloty)
         const matchesQuery = query(matchesCollectionRef, where("date", "==", date), where("location", "==", location));
@@ -572,12 +574,31 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location) {
             let newEventEndInMinutes;
 
             if (event.type === 'match') {
-                // Zápas: Mal by sa posunúť, aby vyplnil medzeru
-                newEventStartInMinutes = currentTimePointer; // Nový začiatok je tam, kde je ukazovateľ
+                // Ak existuje medzera medzi aktuálnym ukazovateľom a začiatkom zápasu, vytvorte placeholder
+                if (currentTimePointer < event.startInMinutes) {
+                    const gapStart = currentTimePointer;
+                    const gapEnd = event.startInMinutes;
+                    const newPlaceholderData = {
+                        date: date,
+                        location: location,
+                        startTime: `${String(Math.floor(gapStart / 60)).padStart(2, '0')}:${String(gapStart % 60).padStart(2, '0')}`,
+                        endTime: `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(gapEnd % 60).padStart(2, '0')}`,
+                        startInMinutes: gapStart,
+                        endInMinutes: gapEnd,
+                        isBlocked: false,
+                        isPhantom: false,
+                        createdAt: new Date()
+                    };
+                    batch.set(doc(blockedSlotsCollectionRef), newPlaceholderData);
+                    console.log(`recalculateAndSaveScheduleForDateAndLocation: Vytvorený placeholder pred zápasom: Čas: ${newPlaceholderData.startTime}-${newPlaceholderData.endTime}`); // Debugging
+                }
+
+                // Zápas: Mal by si zachovať svoj pôvodný čas
+                newEventStartInMinutes = event.originalStartInMinutes; // Použijeme pôvodný čas zápasu
                 const duration = Number(event.duration) || 0;
                 const bufferTime = Number(event.bufferTime) || 0;
                 newEventEndInMinutes = newEventStartInMinutes + duration + bufferTime;
-
+                
                 const newStartTimeStr = `${String(Math.floor(newEventStartInMinutes / 60)).padStart(2, '0')}:${String(newEventStartInMinutes % 60).padStart(2, '0')}`;
                 if (event.startTime !== newStartTimeStr) {
                     batch.update(doc(matchesCollectionRef, event.id), { startTime: newStartTimeStr });
