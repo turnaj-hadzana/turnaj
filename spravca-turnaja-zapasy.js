@@ -556,70 +556,65 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, trig
 
 
         let eventsForTimeline = [];
-        let matchesToShift = [];
-        let fixedPoints = []; // Sem patria užívateľom zablokované, fantómové a zápasy, ktoré sa nebudú posúvať
+        let movedMatch = null;
 
         // Ak je daný spúšťací zápas a čas, spracujte ho špeciálne
         if (triggeringMatchId && targetStartTime) {
             const targetStartMinutes = (parseInt(targetStartTime.split(':')[0]) * 60 + parseInt(targetStartTime.split(':')[1]));
-            let movedMatch = null;
-
-            // Rozdeľte zápasy na tie pred bodom vloženia a tie, ktoré sa majú posunúť
-            for (const match of currentMatches) {
-                if (match.id === triggeringMatchId) {
-                    movedMatch = { ...match, startTime: targetStartTime, startInMinutes: targetStartMinutes, endInMinutes: targetStartMinutes + (Number(match.duration) || 0) + (Number(match.bufferTime) || 0) };
-                    // Presunutý zápas je pevný bod na svojej novej pozícii
-                    fixedPoints.push(movedMatch);
-                } else if (match.endInMinutes <= targetStartMinutes) {
-                    // Zápasy, ktoré končia pred bodom vloženia, sú pevné
-                    fixedPoints.push(match);
-                } else {
-                    // Zápasy, ktoré začínajú za bodom vloženia, sa majú posunúť
-                    matchesToShift.push(match);
-                }
-            }
-
-            // Pridajte všetky zablokované sloty (užívateľom zablokované a fantómy) k pevným bodom
-            for (const slot of allBlockedSlots) {
-                if (slot.isBlocked === true || slot.isPhantom === true) {
-                    fixedPoints.push(slot);
-                }
-            }
-        } else {
-            // Ak nie je špecifický spúšťací zápas, všetky zápasy sú posunuteľné
-            matchesToShift = currentMatches;
-            // Všetky užívateľom zablokované a fantómové sloty sú pevné
-            for (const slot of allBlockedSlots) {
-                if (slot.isBlocked === true || slot.isPhantom === true) {
-                    fixedPoints.push(slot);
-                }
+            
+            // Nájdite presunutý zápas a aktualizujte jeho čas začiatku pre účely logiky posúvania
+            const originalMovedMatchIndex = currentMatches.findIndex(m => m.id === triggeringMatchId);
+            if (originalMovedMatchIndex !== -1) {
+                movedMatch = { ...currentMatches[originalMovedMatchIndex], startTime: targetStartTime, startInMinutes: targetStartMinutes, endInMinutes: targetStartMinutes + (Number(currentMatches[originalMovedMatchIndex].duration) || 0) + (Number(currentMatches[originalMovedMatchIndex].bufferTime) || 0) };
+                // Odstráňte ho z `currentMatches`, aby sa spracoval ako špeciálny prípad
+                currentMatches.splice(originalMovedMatchIndex, 1);
             }
         }
 
-        // Zlúčte všetky udalosti pre celkovú časovú os
-        eventsForTimeline = [...fixedPoints, ...matchesToShift];
+        // Zlúčte všetky udalosti do jednej timeline
+        // Pridajte všetky zápasy, ktoré neboli presunuté (alebo boli presunuté, ale stále sú v currentMatches, ak nedošlo k splice)
+        eventsForTimeline.push(...currentMatches);
+        // Pridajte všetky zablokované sloty (užívateľom zablokované a fantómy)
+        for (const slot of allBlockedSlots) {
+            if (slot.isBlocked === true || slot.isPhantom === true) {
+                eventsForTimeline.push(slot);
+            }
+        }
+        // Ak bol zápas presunutý, pridajte ho na časovú os s jeho novým časom
+        if (movedMatch) {
+            eventsForTimeline.push(movedMatch);
+        }
+
+        // Zoradte všetky udalosti na časovej osi
         eventsForTimeline.sort((a, b) => a.startInMinutes - b.startInMinutes);
-        console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 1): Zoradené udalosti pre časovú os:`, JSON.stringify(eventsForTimeline.map(e => ({id: e.id, type: e.type, startInMinutes: e.startInMinutes, isPhantom: e.isPhantom, isBlocked: e.isBlocked}))));
+        console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 1): Zoradené udalosti pre časovú os (vrátane presunutého zápasu na novom mieste):`, JSON.stringify(eventsForTimeline.map(e => ({id: e.id, type: e.type, startInMinutes: e.startInMinutes, isPhantom: e.isPhantom, isBlocked: e.isBlocked}))));
 
         const initialScheduleStartMinutes = await getInitialScheduleStartMinutes(date);
         let currentTimePointer = initialScheduleStartMinutes;
         console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 1): Počiatočný ukazovateľ času pre posun: ${currentTimePointer} minút.`);
 
         for (const event of eventsForTimeline) {
-            const originalEventStartInMinutes = (parseInt(event.startTime.split(':')[0]) * 60 + parseInt(event.startTime.split(':')[1]));
+            let proposedStartTimeInMinutes;
+            if (event.type === 'match' && event.id === triggeringMatchId && movedMatch) {
+                // Toto je presunutý zápas, použite jeho cieľový čas, ale uistite sa, že nezačína pred currentTimePointer
+                proposedStartTimeInMinutes = Math.max(currentTimePointer, movedMatch.startInMinutes);
+            } else if (event.type === 'match') {
+                // Ostatné zápasy sa posúvajú, aby vyplnili medzery
+                proposedStartTimeInMinutes = currentTimePointer;
+            } else { // Zablokované alebo fantómové sloty sú "pevné"
+                proposedStartTimeInMinutes = Math.max(currentTimePointer, event.startInMinutes);
+            }
 
-            if (event.type === 'match' && matchesToShift.some(m => m.id === event.id)) { // Ak je to zápas, ktorý sa má posunúť
-                const proposedStartTimeInMinutes = currentTimePointer;
-                const proposedStartTimeStr = `${String(Math.floor(proposedStartTimeInMinutes / 60)).padStart(2, '0')}:${String(proposedStartTimeInMinutes % 60).padStart(2, '0')}`;
-                
+            const proposedStartTimeStr = `${String(Math.floor(proposedStartTimeInMinutes / 60)).padStart(2, '0')}:${String(proposedStartTimeInMinutes % 60).padStart(2, '0')}`;
+            
+            if (event.type === 'match') {
                 if (event.startTime !== proposedStartTimeStr) {
                     batch1.update(event.docRef, { startTime: proposedStartTimeStr });
-                    console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 1): Aktualizujem posunuteľný zápas ${event.id} z ${event.startTime} na ${proposedStartTimeStr}`);
+                    console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 1): Aktualizujem zápas ${event.id} z ${event.startTime} na ${proposedStartTimeStr}`);
                 }
                 currentTimePointer = proposedStartTimeInMinutes + (Number(event.duration) || 0) + (Number(event.bufferTime) || 0);
-            } else { // Ak je to pevný bod (užívateľom zablokovaný, fantóm, alebo zápas, ktorý sa neposúva)
-                // Len posuňte ukazovateľ času za neho, ak už nie je ďalej
-                currentTimePointer = Math.max(currentTimePointer, event.endInMinutes);
+            } else { // Zablokované alebo fantómové sloty
+                currentTimePointer = proposedStartTimeInMinutes + (event.endInMinutes - event.startInMinutes); // Dĺžka blokovaného slotu
                 console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 1): Spracovaný pevný bod ${event.id} (typ: ${event.type}). currentTimePointer posunutý na ${currentTimePointer}`);
             }
         }
