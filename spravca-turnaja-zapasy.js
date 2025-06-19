@@ -450,10 +450,11 @@ function calculateNextAvailableTime(prevStartTime, duration, bufferTime) {
  * @param {string|null} [originalDate=null] Pôvodný dátum presunutého zápasu (YYYY-MM-DD).
  * @param {string|null} [originalLocation=null] Pôvodné miesto presunutého zápasu (názov).
  * @param {string|null} [originalMatchStartTime=null] Pôvodný čas začiatku presunutého zápasu (HH:MM).
+ * @param {string|null} [newMatchDroppedStartTime=null] Nový čas začiatku presunutého zápasu (HH:MM) - používa sa na vyhodnotenie, či bol presun na skorší/neskorší čas.
  */
-async function recalculateAndSaveScheduleForDateAndLocation(date, location, draggedMatchId = null, originalDate = null, originalLocation = null, originalMatchStartTime = null) {
+async function recalculateAndSaveScheduleForDateAndLocation(date, location, draggedMatchId = null, originalDate = null, originalLocation = null, originalMatchStartTime = null, newMatchDroppedStartTime = null) {
     console.log(`recalculateAndSaveScheduleForDateAndLocation: === SPUSTENÉ pre Dátum: ${date}, Miesto: ${location}. ` +
-                `Presunutý zápas ID: ${draggedMatchId || 'žiadny'}, Pôvodný dátum: ${originalDate || 'N/A'}, Pôvodné miesto: ${originalLocation || 'N/A'}, Pôvodný čas: ${originalMatchStartTime || 'N/A'}. ===`);
+                `Presunutý zápas ID: ${draggedMatchId || 'žiadny'}, Pôvodný dátum: ${originalDate || 'N/A'}, Pôvodné miesto: ${originalLocation || 'N/A'}, Pôvodný čas: ${originalMatchStartTime || 'N/A'}, Nový čas dropnutia: ${newMatchDroppedStartTime || 'N/A'}. ===`);
     try {
         const batch = writeBatch(db); 
 
@@ -510,6 +511,81 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, drag
             ...allCurrentBlockedSlots
         ];
 
+        // --- NOVÁ LOGIKA PRE GENERovanie VOĽNÉHO SLOTU ---
+        let shouldCreateFreeSlotAtOriginalPosition = false;
+        let freeSlotDataToCreate = null;
+
+        // Tento blok sa vykoná, ak bol zápas presunutý A momentálne spracovávame jeho *pôvodnú* polohu.
+        if (draggedMatchId && date === originalDate && location === originalLocation) {
+            const originalMatchData = await getMatchData(draggedMatchId);
+            if (originalMatchData && originalMatchStartTime && newMatchDroppedStartTime) {
+                const [originalH, originalM] = originalMatchStartTime.split(':').map(Number);
+                const originalStartInMinutes = originalH * 60 + originalM;
+
+                const [newDroppedH, newDroppedM] = newMatchDroppedStartTime.split(':').map(Number);
+                const newDroppedStartInMinutes = newDroppedH * 60 + newDroppedM;
+
+                const originalDuration = Number(originalMatchData.duration) || 0;
+                const originalBufferTime = Number(originalMatchData.bufferTime) || 0;
+                const originalEndInMinutes = originalStartInMinutes + originalDuration + originalBufferTime;
+
+                // Podmienka pre generovanie voľného slotu:
+                // 1. Ak sa presunul na NESKORŠÍ čas v ten istý deň a na tom istom mieste
+                if (newDroppedStartInMinutes > originalStartInMinutes) {
+                    shouldCreateFreeSlotAtOriginalPosition = true;
+                    freeSlotDataToCreate = {
+                        date: originalDate,
+                        location: originalLocation,
+                        startTime: originalMatchStartTime,
+                        endTime: `${String(Math.floor(originalEndInMinutes / 60)).padStart(2, '0')}:${String(originalEndInMinutes % 60).padStart(2, '0')}`,
+                        startInMinutes: originalStartInMinutes,
+                        endInMinutes: originalEndInMinutes,
+                        isBlocked: false,
+                        createdAt: new Date(),
+                        originalMatchId: draggedMatchId
+                    };
+                    console.log(`recalculateAndSaveScheduleForDateAndLocation (Logika voľného slotu): Generujem voľný slot na pôvodnom mieste (${originalDate}, ${originalLocation}) pretože zápas bol presunutý na NESKORŠÍ čas.`);
+                } else {
+                    console.log(`recalculateAndSaveScheduleForDateAndLocation (Logika voľného slotu): NEGENERUJEM voľný slot na pôvodnom mieste (${originalDate}, ${originalLocation}) pretože zápas bol presunutý na SKORŠÍ alebo rovnaký čas.`);
+                }
+            } else {
+                 // Tento prípad nastane, ak `originalMatchData`, `originalMatchStartTime` alebo `newMatchDroppedStartTime` chýbajú,
+                 // čo by sa nemalo stať pri správnom volaní z `moveAndRescheduleMatch`.
+                 console.warn(`recalculateAndSaveScheduleForDateAndLocation (Logika voľného slotu): Chýbajú dáta pre rozhodovanie o voľnom slote.`);
+            }
+        } else if (draggedMatchId && (date !== originalDate || location !== originalLocation)) {
+            // Toto spracováva prípad, keď bol zápas presunutý na INÝ dátum alebo miesto.
+            // V tomto scenári by sa voľný slot na pôvodnom mieste *vždy* mal vytvoriť.
+            const originalMatchData = await getMatchData(draggedMatchId);
+            if (originalMatchData && originalMatchStartTime) {
+                const originalDuration = Number(originalMatchData.duration) || 0;
+                const originalBufferTime = Number(originalMatchData.bufferTime) || 0;
+                const [originalH, originalM] = originalMatchStartTime.split(':').map(Number);
+                const originalStartInMinutes = originalH * 60 + originalM;
+                const originalEndInMinutes = originalStartInMinutes + originalDuration + originalBufferTime;
+
+                shouldCreateFreeSlotAtOriginalPosition = true;
+                freeSlotDataToCreate = {
+                    date: originalDate,
+                    location: originalLocation,
+                    startTime: originalMatchStartTime,
+                    endTime: `${String(Math.floor(originalEndInMinutes / 60)).padStart(2, '0')}:${String(originalEndInMinutes % 60).padStart(2, '0')}`,
+                    startInMinutes: originalStartInMinutes,
+                    endInMinutes: originalEndInMinutes,
+                    isBlocked: false,
+                    createdAt: new Date(),
+                    originalMatchId: draggedMatchId
+                };
+                console.log(`recalculateAndSaveScheduleForDateAndLocation (Logika voľného slotu): Generujem voľný slot na pôvodnom mieste (${originalDate}, ${originalLocation}) pretože zápas bol presunutý na INÝ DÁTUM alebo MIESTO.`);
+            }
+        }
+
+        // Ak je potrebné vytvoriť voľný slot, pridajte ho do časových udalostí pre zoradenie a zobrazenie
+        if (shouldCreateFreeSlotAtOriginalPosition && freeSlotDataToCreate) {
+            allTimelineEvents.push({ ...freeSlotDataToCreate, type: 'blocked_slot', id: 'new-free-slot-' + draggedMatchId }); // Dočasné ID pre spracovanie
+        }
+        // --- KONIEC NOVEJ LOGIKY PRE GENERovanie VOĽNÉHO SLOTU ---
+
         // Zoradíme všetky udalosti, aby sme ich spracovali chronologicky.
         // Pridajte sekundárny kľúč pre stabilné zoradenie, napr. ID, ak sú startInMinutes rovnaké.
         allTimelineEvents.sort((a, b) => {
@@ -524,48 +600,12 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, drag
         });
 
         console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 2): Initial allTimelineEvents before loop (sorted for ${date}, ${location}):`, allTimelineEvents.map(e => ({id: e.id, type: e.type, startInMinutes: e.startInMinutes, isBlocked: e.isBlocked || 'N/A', duration: e.duration || 'N/A', bufferTime: e.bufferTime || 'N/A'})));
-
-
-        // Logika na vytvorenie nového "voľného slotu dostupného" na pôvodnom mieste presunutého zápasu
-        if (draggedMatchId && date === originalDate && location === originalLocation) {
-            const originalMatchData = await getMatchData(draggedMatchId);
-            if (originalMatchData) {
-                const [originalH, originalM] = originalMatchStartTime.split(':').map(Number);
-                const originalStartInMinutes = originalH * 60 + originalM;
-                const originalDuration = Number(originalMatchData.duration) || 0;
-                const originalBufferTime = Number(originalMatchData.bufferTime) || 0;
-                const originalEndInMinutes = originalStartInMinutes + originalDuration + originalBufferTime;
-
-                const newFreeSlot = {
-                    date: originalDate,
-                    location: originalLocation,
-                    startTime: originalMatchStartTime,
-                    endTime: `${String(Math.floor(originalEndInMinutes / 60)).padStart(2, '0')}:${String(originalEndInMinutes % 60).padStart(2, '0')}`,
-                    startInMinutes: originalStartInMinutes,
-                    endInMinutes: originalEndInMinutes,
-                    isBlocked: false, // Explicitne ako "voľný"
-                    createdAt: new Date(),
-                    originalMatchId: draggedMatchId // Uložiť odkaz na pôvodný zápas
-                };
-                // Pridáme tento nový voľný slot do timeline, aby bol zobrazený a nebol prepočítaný
-                allTimelineEvents.push({ ...newFreeSlot, type: 'blocked_slot', id: 'new-free-slot-' + draggedMatchId }); // Dočasné ID
-                console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 2): Pridaný nový VOĽNÝ SLOT po presunutí zápasu (${draggedMatchId}) na pôvodnom mieste.`);
-                allTimelineEvents.sort((a, b) => { // Znova zoradiť po pridaní
-                    if (a.startInMinutes !== b.startInMinutes) {
-                        return a.startInMinutes - b.startInMinutes;
-                    }
-                    if (a.type === 'match' && b.type !== 'match') return -1;
-                    if (a.type !== 'match' && b.type === 'match') return 1;
-                    return a.id.localeCompare(b.id);
-                });
-            }
-        }
         
         // Fáza 3: Iterácia a aktualizácia
         // Najprv vymažeme všetky existujúce placeholdery (isBlocked: false) pre tento dátum a miesto,
-        // okrem toho, ktorý bol práve vytvorený ako "voľný slot" po presunutí.
-        const existingPlaceholdersToDelete = allCurrentBlockedSlots.filter(slot => 
-            slot.isBlocked === false && !(draggedMatchId && slot.originalMatchId === draggedMatchId)
+        // ktoré *nie sú* novým voľným slotom práve vytvoreným v tomto volaní.
+        const existingPlaceholdersToDelete = allCurrentBlockedSlots.filter(slot =>
+            slot.isBlocked === false && !(shouldCreateFreeSlotAtOriginalPosition && slot.originalMatchId === draggedMatchId && slot.startTime === originalMatchStartTime)
         );
         console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): Placeholders to DELETE:`, existingPlaceholdersToDelete.map(s => s.id));
         for (const slotToDelete of existingPlaceholdersToDelete) {
@@ -576,21 +616,17 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, drag
         let updatedMatchTimes = new Map(); // Uloží ID zápasu -> nový čas
 
         for (const event of allTimelineEvents) {
-            // Ak je to zápas, ktorý bol presunutý A sme na JEHO PÔVODNOM mieste, tak ho ignorujeme
-            // a len posunieme currentTimePointer za jeho pôvodný footprint.
+            // Ak je to zápas, ktorý bol presunutý A sme na JEHO PÔVODNOM mieste,
+            // preskočíme jeho spracovanie, pretože jeho časové okno buď zostane prázdne,
+            // alebo ho obsadí novovytvorený voľný slot (ak bol vygenerovaný).
             if (event.type === 'match' && event.id === draggedMatchId && date === originalDate && location === originalLocation) {
-                const originalMatchData = await getMatchData(draggedMatchId);
-                const originalDuration = originalMatchData ? (Number(originalMatchData.duration) || 0) : 0;
-                const originalBuffer = originalMatchData ? (Number(originalMatchData.bufferTime) || 0) : 0;
-                const originalStartMinutes = (parseInt(originalMatchStartTime.split(':')[0]) * 60 + parseInt(originalMatchStartTime.split(':')[1]));
-                currentTimePointer = Math.max(currentTimePointer, originalStartMinutes + originalDuration + originalBuffer);
-                console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): Zápas ID: ${event.id} je presunutý zápas na PÔVODNOM mieste. Ukazovateľ času posunutý na: ${currentTimePointer}. Pokračujem.`);
+                console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): Presúvaný zápas ID: ${event.id} je na pôvodnom mieste. Jeho čas sa NESMIE POUŽIŤ pre currentTimePointer.`);
                 continue; // Pokračujeme na ďalšiu udalosť
             }
 
             // Ak je udalosť zablokovaný slot (vrátane nových "voľných slotov dostupných"), rešpektujeme jej časy
             if (event.type === 'blocked_slot') {
-                // Ak je to nový voľný slot vytvorený po presune, ulož ho
+                // Ak je to novo vygenerovaný voľný slot, uložíme ho do Firestore
                 if (event.id && event.id.startsWith('new-free-slot-')) {
                     const newPlaceholderDocRef = doc(blockedSlotsCollectionRef);
                     batch.set(newPlaceholderDocRef, {
@@ -605,6 +641,9 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, drag
                         originalMatchId: event.originalMatchId || deleteField()
                     });
                     console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): Ukladám NOVÝ voľný slot po presune: ${event.startTime}-${event.endTime}.`);
+                } else if (event.docRef) { // Ak je to existujúci (možno zablokovaný) slot, len ho aktualizujeme, ak sú zmeny
+                    // No need to explicitly update if nothing changed, just ensure it stays in the timeline logic.
+                    // If properties were mutable in the loop, this is where you'd batch.update(event.docRef, { ...eventData });
                 }
                 
                 currentTimePointer = Math.max(currentTimePointer, event.endInMinutes);
@@ -612,19 +651,23 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, drag
                 continue; // Pokračujeme na ďalšiu udalosť, zápasy pred ním ani za ním sa neovplyvnia.
             }
 
-            // Ak je to zápas, ktorý bol presunutý NA TOTO miesto, aktualizujeme jeho čas na cieľový čas
-            // Ak je to iný zápas, tak ho posunieme na aktuálny currentTimePointer.
+            // Ak je to zápas (a nie je to presúvaný zápas na jeho pôvodnom mieste, ktorý sme preskočili)
             if (event.type === 'match') {
                 const newMatchStartTimeForEvent = `${String(Math.floor(currentTimePointer / 60)).padStart(2, '0')}:${String(currentTimePointer % 60).padStart(2, '0')}`;
                 
+                // Vypočítajte koniec časovej stopy tohto zápasu
                 const newMatchEndInMinutes = (parseInt(newMatchStartTimeForEvent.split(':')[0]) * 60 + parseInt(newMatchStartTimeForEvent.split(':')[1])) + event.duration + event.bufferTime;
 
-                // Aktualizujte čas zápasu
-                batch.update(event.docRef, {
-                    startTime: newMatchStartTimeForEvent,
-                });
-                updatedMatchTimes.set(event.id, newMatchStartTimeForEvent); // Uložte aktualizovaný čas
-                console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): Zápas ID: ${event.id} aktualizovaný v batchi na nový čas: ${newMatchStartTimeForEvent}.`);
+                // Aktualizujte len vtedy, ak sa čas skutočne zmenil, aby ste predišli zbytočným zápisom
+                if (event.startTime !== newMatchStartTimeForEvent) {
+                    batch.update(event.docRef, {
+                        startTime: newMatchStartTimeForEvent,
+                    });
+                    updatedMatchTimes.set(event.id, newMatchStartTimeForEvent); // Uložte aktualizovaný čas
+                    console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): Zápas ID: ${event.id} aktualizovaný v batchi na nový čas: ${newMatchStartTimeForEvent}.`);
+                } else {
+                    console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): Zápas ID: ${event.id} už má správny čas (${newMatchStartTimeForEvent}). Nebude aktualizovaný.`);
+                }
 
                 // Posuňte ukazovateľ času na koniec tohto zápasu (vrátane rezervy)
                 currentTimePointer = newMatchEndInMinutes;
@@ -689,7 +732,7 @@ async function getMatchData(matchId) {
 /**
  * Prepočítava a preplánuje zápasy pre konkrétny dátum a miesto po operácii drag & drop.
  * Táto funkcia spracováva vloženie zápasu a posunutie časov následných zápasov,
- * pričom rešpektuje zablokované sloty a zachováva relatívne poradie presunutých zápasov.
+ * pričím rešpektuje zablokované sloty a zachováva relatívne poradie presunutých zápasov.
  * @param {string} draggedMatchId ID presunutého zápasu.
  * @param {string} targetDate Dátum cieľového miesta.
  * @param {string} targetLocation Miesto cieľového miesta (názov).
@@ -751,17 +794,35 @@ async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation
         await batch.commit();
         console.log("moveAndRescheduleMatch: Batch commit úspešný pre presun zápasu a prípadné vymazanie cieľového slotu.");
 
-        // Prepočítajte rozvrh pre pôvodné miesta/dátumy (len ak sa zápas presunul inam)
-        if (originalDate !== targetDate || originalLocation !== targetLocation) {
-            await recalculateAndSaveScheduleForDateAndLocation(originalDate, originalLocation, draggedMatchId, originalDate, originalLocation, originalMatchStartTime); 
+        // Dôležité: Určite, či sa zápas presunul na iný dátum/miesto ALEBO či ide o zmenu času v rámci toho istého dňa/miesta
+        const isMovedToDifferentLocationOrDate = (originalDate !== targetDate || originalLocation !== targetLocation);
+
+        // Prepočítať rozvrh pre pôvodné miesta/dátumy (ak sa zápas presunul inam alebo ak sa zmenil čas v rámci pôvodného miesta)
+        // Toto volanie slúži na vygenerovanie "voľného slotu" na pôvodnom mieste, ak sú splnené podmienky.
+        if (isMovedToDifferentLocationOrDate) {
+            await recalculateAndSaveScheduleForDateAndLocation(
+                originalDate,
+                originalLocation,
+                draggedMatchId,         // ID zápasu, ktorý *opustil* túto polohu
+                originalDate,           // Pôvodný dátum zápasu, ktorý opustil
+                originalLocation,       // Pôvodná poloha zápasu, ktorý opustil
+                originalMatchStartTime, // Pôvodný čas začiatku zápasu, ktorý opustil
+                droppedProposedStartTime // Nový cieľový čas, pre vyhodnotenie podmienky "neskorší čas"
+            );
             console.log(`moveAndRescheduleMatch: Prepočítanie pre pôvodnú lokáciu (${originalDate}, ${originalLocation}) dokončené.`);
         }
-        // Prepočítajte rozvrh pre cieľové miesto/dátum
+        
+        // Prepočítať rozvrh pre cieľové miesto/dátum
+        // Ak je to rovnaké miesto/dátum, toto je jediné prepočítanie.
+        // Ak je to iné, toto spracuje vloženie zápasu do nového rozvrhu.
+        // Pri spracovaní *cieľového* rozvrhu nepotrebujeme generovať 'voľný slot' z pôvodnej pozície,
+        // preto pre pôvodné detaily zápasu odovzdávame null.
         await recalculateAndSaveScheduleForDateAndLocation(
-            targetDate, 
-            targetLocation, 
-            null // Žiadne ID vylúčeného zablokovaného slotu
-        ); 
+            targetDate,
+            targetLocation,
+            null, // Žiadny kontext 'draggedMatchId' pre toto prepočítanie (je pre cieľový rozvrh)
+            null, null, null, null // Vyčistite pôvodné detaily zápasu pre prepočítanie cieľového rozvrhu
+        );
         console.log(`moveAndRescheduleMatch: Prepočítanie pre cieľovú lokáciu (${targetDate}, ${targetLocation}) dokončené.`);
 
         await showMessage('Úspech', 'Zápas úspešne presunutý a rozvrh prepočítaný!');
