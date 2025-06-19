@@ -599,7 +599,7 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, drag
             }
 
             // NOVÁ LOGIKA: Identifikácia a vytvorenie voľných slotov pre medzery
-            const eventActualStartInMinutes = event.type === 'match' ? event.startInMinutes : event.startInMinutes; // Use actual start for gap calculation
+            const eventActualStartInMinutes = event.type === 'match' ? event.startInMinutes : event.startInMinutes; 
             
             if (eventActualStartInMinutes > currentTimePointer) {
                 // Medzera nájdená! Vytvoríme nový voľný slot.
@@ -886,7 +886,7 @@ function getEventDisplayString(event, allSettings, categoryColorsMap) {
             const blockedSlotStartHour = String(Math.floor(event.startInMinutes / 60)).padStart(2, '0');
             const blockedSlotStartMinute = String(Math.floor(event.startInMinutes % 60)).padStart(2, '0');
             const blockedSlotEndHour = String(Math.floor(event.endInMinutes / 60)).padStart(2, '0');
-            const blockedSlotEndMinute = String(Math.floor(event.endInMinutes % 60)).padStart(2, '0');
+            const blockedSlotEndMinute = String(Math.floor(event.endInMinutes % 60).padStart(2, '0');
             return `${blockedSlotStartHour}:${blockedSlotStartMinute} - ${blockedSlotEndHour}:${blockedSlotEndMinute}|${displayText}`;
         } else {
             // Zmena: Použite uložené startTime a endTime pre voľné sloty
@@ -1226,7 +1226,7 @@ async function displayMatchesAsSchedule() {
                                 const blockedSlotStartHour = String(Math.floor(blockedSlot.startInMinutes / 60)).padStart(2, '0');
                                 const blockedSlotStartMinute = String(Math.floor(blockedSlot.startInMinutes % 60)).padStart(2, '0');
                                 const blockedSlotEndHour = String(Math.floor(blockedSlot.endInMinutes / 60)).padStart(2, '0');
-                                const blockedSlotEndMinute = String(Math.floor(blockedSlot.endInMinutes % 60)).padStart(2, '0');
+                                const blockedSlotEndMinute = String(Math.floor(blockedSlot.endInMinutes % 60).padStart(2, '0');
                                 
                                 const isUserBlocked = blockedSlot.isBlocked === true; 
 
