@@ -1042,40 +1042,52 @@ async function displayMatchesAsSchedule() {
                                 let formattedGapStartTime = `${String(Math.floor(gapStart / 60)).padStart(2, '0')}:${String(gapStart % 60).padStart(2, '0')}`;
                                 let formattedGapEndTime = `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(gapEnd % 60).padStart(2, '0')}`; 
 
-                                // NOVÁ LOGIKA: Upravte zobrazovaný koncový čas voľného slotu, ak po ňom nasleduje zápas
+                                // NOVÁ LOGIKA OPRAVY: Upravte zobrazovaný koncový čas voľného slotu, ak po ňom nasleduje zápas
+                                // Voľný slot by mal končiť PRED začiatkom rezervy nasledujúceho zápasu.
                                 if (event.type === 'match') {
                                     const nextMatchBufferTime = Number(event.bufferTime) || 0;
                                     const nextMatchStartTimeInMinutes = event.startInMinutes;
                                     
-                                    const adjustedEndInMinutes = nextMatchStartTimeInMinutes - nextMatchBufferTime;
+                                    const adjustedEndInMinutes = nextMatchStartTimeInMinutes;
+                                    // Ak je buffer > 0, potom skutočný koniec voľného slotu by mal byť pred bufferom
+                                    if (nextMatchBufferTime > 0) {
+                                        adjustedEndInMinutes = nextMatchStartTimeInMinutes - nextMatchBufferTime;
+                                    }
                                     
-                                    if (adjustedEndInMinutes > gapStart && adjustedEndInMinutes <= nextMatchStartTimeInMinutes) {
+                                    if (adjustedEndInMinutes > gapStart) {
                                         formattedGapEndTime = `${String(Math.floor(adjustedEndInMinutes / 60)).padStart(2, '0')}:${String(adjustedEndInMinutes % 60).padStart(2, '0')}`;
+                                    } else {
+                                        // Ak je adjustedEndInMinutes <= gapStart, znamená to, že medzera je buď príliš malá
+                                        // alebo neexistuje zmysluplný voľný slot pred zápasom s rezervou.
+                                        // V takom prípade by sa nemal zobrazovať voľný slot.
+                                        formattedGapEndTime = formattedGapStartTime; // Nastavte end time na start time, aby sa zabránilo zobrazeniu
                                     }
                                 }
 
-                                // Ak existuje existujúci voľný slot pre túto medzeru, použite jeho ID
-                                const existingFreeSlot = allBlockedSlots.find(s => 
-                                    s.date === date && 
-                                    s.location === location && 
-                                    s.isBlocked === false && 
-                                    s.startInMinutes === gapStart && 
-                                    s.endInMinutes === gapEnd // Použite pôvodné, neupravené endInMinutes pre hľadanie
-                                );
-                                const freeSlotId = existingFreeSlot ? existingFreeSlot.id : 'generated-slot-' + Math.random().toString(36).substr(2, 9); // Fallback pre ID
+                                if (formattedGapStartTime !== formattedGapEndTime) { // Zobrazte len ak je skutočná medzera
+                                    // Ak existuje existujúci voľný slot pre túto medzeru, použite jeho ID
+                                    const existingFreeSlot = allBlockedSlots.find(s => 
+                                        s.date === date && 
+                                        s.location === location && 
+                                        s.isBlocked === false && 
+                                        s.startInMinutes === gapStart && 
+                                        s.endInMinutes === gapEnd // Použite pôvodné, neupravené endInMinutes pre hľadanie
+                                    );
+                                    const freeSlotId = existingFreeSlot ? existingFreeSlot.id : 'generated-slot-' + Math.random().toString(36).substr(2, 9); // Fallback pre ID
 
-                                scheduleHtml += `
-                                    <tr class="empty-slot-row free-slot-available-row" 
-                                        data-id="${freeSlotId}" 
-                                        data-date="${date}" 
-                                        data-location="${location}" 
-                                        data-start-time="${formattedGapStartTime}" 
-                                        data-end-time="${formattedGapEndTime}" 
-                                        data-is-blocked="false">
-                                        <td>${formattedGapStartTime} - ${formattedGapEndTime}</td>
-                                        <td colspan="4" style="text-align: center; color: #888; font-style: italic; background-color: #f0f0f0;">Voľný slot dostupný</td>
-                                    </tr>
-                                `;
+                                    scheduleHtml += `
+                                        <tr class="empty-slot-row free-slot-available-row" 
+                                            data-id="${freeSlotId}" 
+                                            data-date="${date}" 
+                                            data-location="${location}" 
+                                            data-start-time="${formattedGapStartTime}" 
+                                            data-end-time="${formattedGapEndTime}" 
+                                            data-is-blocked="false">
+                                            <td>${formattedGapStartTime} - ${formattedGapEndTime}</td>
+                                            <td colspan="4" style="text-align: center; color: #888; font-style: italic; background-color: #f0f0f0;">Voľný slot dostupný</td>
+                                        </tr>
+                                    `;
+                                }
                             }
 
                             // Aktuálna udalosť
@@ -2111,6 +2123,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const closeMatchModalButton = document.getElementById('closeMatchModal');
     const matchForm = document.getElementById('matchForm');
     const matchIdInput = document.getElementById('matchId');
+    const matchModalTitle = document.getElementById('matchModalTitle');
     const matchDateSelect = document.getElementById('matchDateSelect');
     const matchLocationSelect = document.getElementById('matchLocationSelect'); 
     const matchStartTimeInput = document.getElementById('matchStartTime');
