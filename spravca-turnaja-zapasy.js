@@ -614,8 +614,8 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, drag
                 );
 
                 if (!isDuplicateGap) {
-                    const newGapDocRef = doc(blockedSlotsCollectionRef); // Firestore automaticky vygeneruje ID
-                    batch.set(newGapDocRef, {
+                    // ZMENA: Použitie addDoc pre nové placeholdery
+                    batch.add(blockedSlotsCollectionRef, { // Firestore automaticky vygeneruje ID
                         date: date,
                         location: location,
                         startTime: gapStartTime,
@@ -624,7 +624,7 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, drag
                         endInMinutes: eventActualStartInMinutes,
                         isBlocked: false, // Je to voľný slot, nie zablokovaný
                         createdAt: new Date(),
-                        originalMatchId: deleteField() // Nebolo vytvorené presunom zápasu
+                        // originalMatchId: deleteField() // Pre novo pridaný slot netreba dávať deleteField, jednoducho ho nepridávajte ak nemá zmysel
                     });
                     console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): NOVÁ MEDZERA - Vytvorený voľný slot: ${gapStartTime}-${gapEndTime}.`);
                 } else {
@@ -650,11 +650,8 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, drag
             if (event.type === 'blocked_slot') {
                 // Ak je to novo vygenerovaný voľný slot PO PRESUNUTOM ZÁPASE, uložíme ho do Firestore
                 if (event.id && event.id.startsWith('new-free-slot-')) {
-                    const newPlaceholderDocRef = doc(blockedSlotsCollectionRef);
-                    // Dôležitá ZMENA: Použite set s merge: true, ak by dokument mohol existovať (aj keď by nemal pre nové ID),
-                    // alebo explicitne odstráňte originalMatchId ak sa prenáša z freeSlotDataToCreate
-                    // V tomto prípade ideme s addDoc, lebo je to novy dokument
-                    await addDoc(blockedSlotsCollectionRef, { // Použitie addDoc
+                    // ZMENA: Použitie addDoc pre nový slot
+                    batch.add(blockedSlotsCollectionRef, { 
                         date: event.date,
                         location: event.location,
                         startTime: event.startTime,
@@ -663,7 +660,7 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, drag
                         endInMinutes: event.endInMinutes,
                         isBlocked: event.isBlocked,
                         createdAt: new Date(),
-                        originalMatchId: event.originalMatchId ? event.originalMatchId : deleteField() // Použite deleteField, ak hodnota nie je prítomná
+                        ...(event.originalMatchId && { originalMatchId: event.originalMatchId }) // Pridať len ak existuje
                     });
                     console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): Ukladám NOVÝ voľný slot po presune zápasu: ${event.startTime}-${event.endTime}.`);
                 } else if (event.docRef && event.isBlocked === true) { // Ak je to existujúci, používateľom zablokovaný slot (isBlocked: true)
@@ -1251,8 +1248,6 @@ async function displayMatchesAsSchedule() {
                         // Pre jednoduchosť a vzhľadom na povahu rozvrhu, môžeme nastaviť "koniec dňa" na nejaký zmysluplný čas, napr. 23:59
                         // Ak je však posledná udalosť zápas a za ňou by mal byť buffer, alebo ak by mal byť nejaký "konečný" čas
                         // pre rozvrh, potom môžeme explicitne pridať záverečný voľný slot.
-                        // Pre účely tohto problému sa zameriame na medzery *medzi* existujúcimi zápasmi a zablokovanými slotmi.
-                        // Ak by mal byť voľný slot až do "konca dňa", museli by sme si ho definovať.
                         // Zatiaľ to pre koncový slot vynechávam, zameriam sa na to, aby sa voľné sloty zobrazovali medzi položkami.
 
                         if (!contentAddedForThisDate) {
