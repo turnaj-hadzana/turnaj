@@ -448,13 +448,15 @@ function calculateNextAvailableTime(prevStartTime, duration, bufferTime) {
  * @param {string} location Miesto, pre ktoré sa má prepočítať rozvrh.
  * @param {string|null} [excludedBlockedSlotId=null] ID zablokovaného slotu, ktorý sa má explicitne vylúčiť z výpočtov (napr. ten, ktorý bol práve presunutý a zmazaný).
  * @param {string|null} [movedMatchOriginalId=null] ID zápasu, ktorý bol presunutý (ak sa nejaký presunul).
+ * @param {string|null} [movedMatchOriginalDate=null] Pôvodný dátum presunutého zápasu (YYYY-MM-DD).
+ * @param {string|null} [movedMatchOriginalLocation=null] Pôvodné miesto presunutého zápasu (názov).
  * @param {string|null} [movedMatchOriginalStartTime=null] Pôvodný čas začiatku presunutého zápasu (HH:MM).
  * @param {string|null} [movedMatchNewStartTime=null] Nový čas začiatku presunutého zápasu (HH:MM).
  */
-async function recalculateAndSaveScheduleForDateAndLocation(date, location, excludedBlockedSlotId = null, movedMatchOriginalId = null, movedMatchOriginalStartTime = null, movedMatchNewStartTime = null) {
+async function recalculateAndSaveScheduleForDateAndLocation(date, location, excludedBlockedSlotId = null, movedMatchOriginalId = null, movedMatchOriginalDate = null, movedMatchOriginalLocation = null, movedMatchOriginalStartTime = null, movedMatchNewStartTime = null) {
     console.log(`recalculateAndSaveScheduleForDateAndLocation: === SPUSTENÉ pre Dátum: ${date}, Miesto: ${location}. ` +
                 `Vylúčený zablokovaný slot ID: ${excludedBlockedSlotId || 'žiadny'}. ` +
-                `Presunutý zápas ID: ${movedMatchOriginalId || 'žiadny'}, Pôvodný čas: ${movedMatchOriginalStartTime || 'N/A'}, Nový čas: ${movedMatchNewStartTime || 'N/A'}. ===`);
+                `Presunutý zápas ID: ${movedMatchOriginalId || 'žiadny'}, Pôvodný dátum: ${movedMatchOriginalDate || 'N/A'}, Pôvodné miesto: ${movedMatchOriginalLocation || 'N/A'}, Pôvodný čas: ${movedMatchOriginalStartTime || 'N/A'}, Nový čas: ${movedMatchNewStartTime || 'N/A'}. ===`);
     try {
         const batch = writeBatch(db); 
 
@@ -592,15 +594,21 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, excl
                 // NOVÁ LOGIKA: Kontrola pre "Voľný slot dostupný" po presunutí zápasu
                 let shouldCreateFreeSlot = true;
                 if (movedMatchOriginalId && event.id === movedMatchOriginalId) {
-                    // Prevod časových reťazcov na minúty pre porovnanie
-                    const originalStartMinutes = (parseInt(movedMatchOriginalStartTime.split(':')[0]) * 60 + parseInt(movedMatchOriginalStartTime.split(':')[1]));
-                    const newStartMinutes = (parseInt(movedMatchNewStartTime.split(':')[0]) * 60 + parseInt(movedMatchNewStartTime.split(':')[1]));
+                    const isMovedWithinSameDayAndLocation = 
+                        (date === movedMatchOriginalDate && location === movedMatchOriginalLocation);
 
-                    if (newStartMinutes < originalStartMinutes) {
-                        // Zápas bol presunutý do minulosti (skorší čas), NEMAJÚ po ňom ostať voľné sloty na pôvodnom mieste.
-                        console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): Zápas ${movedMatchOriginalId} bol presunutý z ${movedMatchOriginalStartTime} na ${movedMatchNewStartTime} (do minulosti). NEGENERUJEM voľný slot na pôvodnom mieste.`);
-                        shouldCreateFreeSlot = false;
-                    }
+                    if (isMovedWithinSameDayAndLocation) {
+                        const originalStartMinutes = (parseInt(movedMatchOriginalStartTime.split(':')[0]) * 60 + parseInt(movedMatchOriginalStartTime.split(':')[1]));
+                        const newStartMinutes = (parseInt(movedMatchNewStartTime.split(':')[0]) * 60 + parseInt(movedMatchNewStartTime.split(':')[1]));
+
+                        if (newStartMinutes < originalStartMinutes) {
+                            // Zápas bol presunutý do minulosti v rámci tej istej haly a dňa
+                            console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): Zápas ${movedMatchOriginalId} bol presunutý z ${movedMatchOriginalStartTime} na ${movedMatchNewStartTime} (do minulosti) v rámci rovnakej haly a dňa. NEGENERUJEM voľný slot na pôvodnom mieste.`);
+                            shouldCreateFreeSlot = false;
+                        }
+                    } 
+                    // Ak sa presunul mimo haly/dňa, shouldCreateFreeSlot zostáva true,
+                    // čo znamená, že na pôvodnom mieste voľný slot VŽDY ostane.
                 }
 
                 if (shouldCreateFreeSlot) {
@@ -758,6 +766,8 @@ async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation
             targetLocation, 
             excludedBlockedSlotIdFromRecalculation,
             draggedMatchId, // ID presunutého zápasu
+            originalDate, // Pôvodný dátum
+            originalLocation, // Pôvodné miesto
             originalMatchStartTime, // Pôvodný čas presunutého zápasu
             droppedProposedStartTime // Nový čas presunutého zápasu
         ); 
