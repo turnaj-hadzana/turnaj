@@ -258,7 +258,7 @@ async function findFirstAvailableTime() {
         console.log("Existing Matches for selected Location and Date (sorted by start time):", matchesForLocationAndDate); // Debugging
 
         // Fetch blocked slots for the selected date and location
-        // Zmena: Už nezahrňujeme `isPhantom: true` do zablokovaných slotov, len `isBlocked: true`
+        // Zmena: Už nezahrnujeme `isPhantom: true` do zablokovaných slotov, len `isBlocked: true`
         const blockedSlotsQuery = query(
             blockedSlotsCollectionRef,
             where("date", "==", selectedDate),
