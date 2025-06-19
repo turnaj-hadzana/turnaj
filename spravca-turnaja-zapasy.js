@@ -718,7 +718,7 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, trig
                         date: date,
                         location: location,
                         startTime: `${String(Math.floor(potentialGapStart / 60)).padStart(2, '0')}:${String(potentialGapStart % 60).padStart(2, '0')}`,
-                        endTime: `${String(Math.floor(potentialGapEnd / 60)).padStart(2, '0')}:${String(potentialGapEnd % 60)).padStart(2, '0')}`, // OPRAVA: Pôvodne tu bolo `String(Math.floor(potentialGapEnd % 60).padStart(2, '0'))`
+                        endTime: `${String(Math.floor(potentialGapEnd / 60)).padStart(2, '0')}:${String(potentialGapEnd % 60).padStart(2, '0')}`, // OPRAVA: Pôvodne tu bolo `String(Math.floor(potentialGapEnd % 60).padStart(2, '0'))`
                         startInMinutes: potentialGapStart,
                         endInMinutes: potentialGapEnd,
                         isBlocked: false, // Je to voľný slot
