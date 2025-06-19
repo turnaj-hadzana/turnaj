@@ -631,8 +631,8 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, trig
                     batch.update(event.docRef, { startTime: proposedStartTimeStr });
                     console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): Aktualizujem zápas ${event.id} z ${event.startTime} na ${proposedStartTimeStr}`);
                 }
-                // ZMENA: currentTimePointer teraz používa footprintEndInMinutes
-                currentTimePointer = event.footprintEndInMinutes;
+                // DÔLEŽITÁ ZMENA: Aktualizujte currentTimePointer na základe NOVÉHO navrhovaného času začiatku
+                currentTimePointer = proposedStartTimeInMinutes + (Number(event.duration) || 0) + (Number(event.bufferTime) || 0);
             } else { // Zablokované sloty
                 currentTimePointer = proposedStartTimeInMinutes + (event.endInMinutes - event.startInMinutes); // Dĺžka blokovaného slotu
                 console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): Spracovaný pevný bod ${event.id} (typ: ${event.type}, isBlocked: ${event.isBlocked}). currentTimePointer posunutý na ${currentTimePointer}`);
