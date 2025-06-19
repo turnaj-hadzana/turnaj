@@ -2090,7 +2090,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const addOptions = document.getElementById('addOptions');
     const addPlayingDayButton = document.getElementById('addPlayingDayButton');
     const addPlaceButton = document.getElementById('addPlaceButton');
-    const addMatchButton = document.getElementById('addMatchButton');
+    const addMatchButton = document = document.getElementById('addMatchButton'); // Zmena: Opravený preklep 'document = document' na 'document.getElementById'
 
     const matchModal = document.getElementById('matchModal');
     const closeMatchModalButton = document.getElementById('closeMatchModal');
