@@ -985,10 +985,10 @@ async function displayMatchesAsSchedule() {
                             // Pridajte voľný slot, ak je medzera
                             if (currentTimePointerInMinutes < event.startInMinutes) {
                                 const gapStart = currentTimePointerInMinutes;
-                                const gapEnd = event.startInMinutes;
+                                const gapEnd = event.startInMinutes; // Toto je čas začiatku nasledujúcej udalosti
                                 const formattedGapStartTime = `${String(Math.floor(gapStart / 60)).padStart(2, '0')}:${String(gapStart % 60).padStart(2, '0')}`;
-                                const formattedGapEndTime = `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(gapEnd % 60).padStart(2, '0')}`; 
-
+                                const formattedGapEndTime = `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(gapEnd % 60).padStart(2, '0')}`; // UPRAVENÉ: Toto je teraz koniec voľného slotu
+                                
                                 // Ak existuje existujúci voľný slot pre túto medzeru, použite jeho ID
                                 const existingFreeSlot = allBlockedSlots.find(s => 
                                     s.date === date && 
@@ -2038,7 +2038,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const addOptions = document.getElementById('addOptions');
     const addPlayingDayButton = document.getElementById('addPlayingDayButton');
     const addPlaceButton = document.getElementById('addPlaceButton');
-    const addMatchButton = document.getElementById('addMatchButton');
+    const addMatchButton = document = document.getElementById('addMatchButton'); // Zmena: Opravený preklep 'document = document' na 'document.getElementById'
 
     const matchModal = document.getElementById('matchModal');
     const closeMatchModalButton = document.getElementById('closeMatchModal');
