@@ -704,11 +704,11 @@ async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation
             }
         }
 
-
         // AK je pôvodná a cieľová lokácia RÔZNA, vytvorte voľný slot na pôvodnom mieste.
         // AK je to rovnaká lokalita a dátum, nechajte recalculateAndSaveScheduleForDateAndLocation to spracovať.
+        // ZMENA: Odstránená explicitná tvorba placeholderu. Všetky placeholdery sa generujú cez recalculateAndSaveScheduleForDateAndLocation.
+        /*
         if (originalDate !== targetDate || originalLocation !== targetLocation) {
-            // Vytvorenie nového voľného slotu (placeholder) na pôvodnom mieste zápasu
             const [originalStartH, originalStartM] = draggedMatchData.startTime.split(':').map(Number);
             const originalStartInMinutes = originalStartH * 60 + originalStartM;
             const originalDuration = Number(draggedMatchData.duration) || 0;
@@ -724,12 +724,12 @@ async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation
                 endInMinutes: originalEndInMinutes,
                 isBlocked: false, // Je to voľný slot
                 createdAt: new Date(),
-                //originalMatchId: draggedMatchId // Voliteľné: prepojenie na pôvodný zápas
             };
-            const newFreeSlotDocRef = doc(blockedSlotsCollectionRef); // Auto-ID
+            const newFreeSlotDocRef = doc(blockedSlotsCollectionRef);
             batch.set(newFreeSlotDocRef, newFreeSlotData);
             console.log(`moveAndRescheduleMatch: Pridaný nový voľný slot na pôvodné miesto do batchu:`, newFreeSlotData);
         }
+        */
 
 
         // Aktualizujte dokument pôvodného zápasu na jeho nové miesto/čas
@@ -1048,24 +1048,18 @@ async function displayMatchesAsSchedule() {
                                     const nextMatchBufferTime = Number(event.bufferTime) || 0;
                                     const nextMatchStartTimeInMinutes = event.startInMinutes;
                                     
-                                    const adjustedEndInMinutes = nextMatchStartTimeInMinutes;
-                                    // Ak je buffer > 0, potom skutočný koniec voľného slotu by mal byť pred bufferom
-                                    if (nextMatchBufferTime > 0) {
-                                        adjustedEndInMinutes = nextMatchStartTimeInMinutes - nextMatchBufferTime;
-                                    }
+                                    let adjustedEndInMinutes = nextMatchStartTimeInMinutes - nextMatchBufferTime; // Koniec voľného slotu by mal byť pred bufferom
                                     
-                                    if (adjustedEndInMinutes > gapStart) {
-                                        formattedGapEndTime = `${String(Math.floor(adjustedEndInMinutes / 60)).padStart(2, '0')}:${String(adjustedEndInMinutes % 60).padStart(2, '0')}`;
-                                    } else {
-                                        // Ak je adjustedEndInMinutes <= gapStart, znamená to, že medzera je buď príliš malá
-                                        // alebo neexistuje zmysluplný voľný slot pred zápasom s rezervou.
-                                        // V takom prípade by sa nemal zobrazovať voľný slot.
-                                        formattedGapEndTime = formattedGapStartTime; // Nastavte end time na start time, aby sa zabránilo zobrazeniu
+                                    if (adjustedEndInMinutes < gapStart) { // Ak by to posunulo koniec pred začiatok, zrušte zobrazenie
+                                        adjustedEndInMinutes = gapStart; // Alebo môžete úplne preskočiť zobrazenie tohto slotu
                                     }
+                                    formattedGapEndTime = `${String(Math.floor(adjustedEndInMinutes / 60)).padStart(2, '0')}:${String(adjustedEndInMinutes % 60).padStart(2, '0')}`;
                                 }
-
-                                if (formattedGapStartTime !== formattedGapEndTime) { // Zobrazte len ak je skutočná medzera
+                                // Vytvorí voľný slot len, ak má reálnu dĺžku
+                                if (formattedGapStartTime !== formattedGapEndTime) { 
                                     // Ak existuje existujúci voľný slot pre túto medzeru, použite jeho ID
+                                    // Toto je dôležité, aby sa voľné sloty, ktoré už existujú vo Firestore,
+                                    // používali namiesto generovania nových ID pre tie isté časové intervaly.
                                     const existingFreeSlot = allBlockedSlots.find(s => 
                                         s.date === date && 
                                         s.location === location && 
@@ -1073,7 +1067,9 @@ async function displayMatchesAsSchedule() {
                                         s.startInMinutes === gapStart && 
                                         s.endInMinutes === gapEnd // Použite pôvodné, neupravené endInMinutes pre hľadanie
                                     );
-                                    const freeSlotId = existingFreeSlot ? existingFreeSlot.id : 'generated-slot-' + Math.random().toString(36).substr(2, 9); // Fallback pre ID
+                                    // Ak sa nenašiel existujúci slot, použite dočasné ID pre DOM element.
+                                    // Tieto dočasné ID sa nikdy neuložia do Firestore, namiesto toho sa vygenerujú nové ID pri batch.set.
+                                    const freeSlotId = existingFreeSlot ? existingFreeSlot.id : 'generated-slot-' + Math.random().toString(36).substr(2, 9); 
 
                                     scheduleHtml += `
                                         <tr class="empty-slot-row free-slot-available-row" 
@@ -1172,20 +1168,23 @@ async function displayMatchesAsSchedule() {
                                 s.endInMinutes === gapEnd
                             );
                             const freeSlotId = existingFreeSlot ? existingFreeSlot.id : 'generated-slot-' + Math.random().toString(36).substr(2, 9); // Fallback pre ID
-
-                            scheduleHtml += `
-                                <tr class="empty-slot-row free-slot-available-row" 
-                                    data-id="${freeSlotId}" 
-                                    data-date="${date}" 
-                                    data-location="${location}" 
-                                    data-start-time="${formattedGapStartTime}" 
-                                    data-end-time="${formattedGapEndTime}" 
-                                    data-is-blocked="false">
-                                    <td>${formattedGapStartTime} - ${formattedGapEndTime}</td>
-                                    <td colspan="4" style="text-align: center; color: #888; font-style: italic; background-color: #f0f0f0;">Voľný slot dostupný</td>
-                                </tr>
-                            `;
-                            contentAddedForThisDate = true;
+                            
+                            // Vytvorí voľný slot len, ak má reálnu dĺžku
+                            if (formattedGapStartTime !== formattedGapEndTime) { 
+                                scheduleHtml += `
+                                    <tr class="empty-slot-row free-slot-available-row" 
+                                        data-id="${freeSlotId}" 
+                                        data-date="${date}" 
+                                        data-location="${location}" 
+                                        data-start-time="${formattedGapStartTime}" 
+                                        data-end-time="${formattedGapEndTime}" 
+                                        data-is-blocked="false">
+                                        <td>${formattedGapStartTime} - ${formattedGapEndTime}</td>
+                                        <td colspan="4" style="text-align: center; color: #888; font-style: italic; background-color: #f0f0f0;">Voľný slot dostupný</td>
+                                    </tr>
+                                `;
+                                contentAddedForThisDate = true;
+                            }
                         }
 
 
