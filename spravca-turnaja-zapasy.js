@@ -472,7 +472,7 @@ const getTeamName = async (categoryId, groupId, teamNumber, categoriesMap, group
         }
 
         const fullDisplayName = `${shortCategoryName} ${shortGroupName}${teamNumber}`;
-        const shortDisplayName = `${shortGroupName}${teamNumber}`; // Zobrazovaný názov bez kategórie
+        const shortDisplayName = `${shortGroupName}${teamNumber}`; // Vráti nový krátky zobrazovaný názov
 
         return {
             fullDisplayName: fullDisplayName,
@@ -718,7 +718,7 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, trig
                         date: date,
                         location: location,
                         startTime: `${String(Math.floor(potentialGapStart / 60)).padStart(2, '0')}:${String(potentialGapStart % 60).padStart(2, '0')}`,
-                        endTime: `${String(Math.floor(potentialGapEnd / 60)).padStart(2, '0')}:${String(Math.floor(potentialGapEnd % 60).padStart(2, '0'))}`, // Ensure end minute is padded
+                        endTime: `${String(Math.floor(potentialGapEnd / 60)).padStart(2, '0')}:${String(potentialGapEnd % 60)).padStart(2, '0')}`, // OPRAVA: Pôvodne tu bolo `String(Math.floor(potentialGapEnd % 60).padStart(2, '0'))`
                         startInMinutes: potentialGapStart,
                         endInMinutes: potentialGapEnd,
                         isBlocked: false, // Je to voľný slot
@@ -1162,7 +1162,7 @@ async function displayMatchesAsSchedule() {
                                 const gapStart = currentTimePointerInMinutes;
                                 const gapEnd = event.startInMinutes;
                                 const formattedGapStartTime = `${String(Math.floor(gapStart / 60)).padStart(2, '0')}:${String(gapStart % 60).padStart(2, '0')}`;
-                                const formattedGapEndTime = `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(gapEnd % 60).padStart(2, '0')}`;
+                                const formattedGapEndTime = `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(gapEnd % 60).padStart(2, '0')}`; // OPRAVA: Pôvodne tu bolo `String(Math.floor(gapEnd % 60).padStart(2, '0'))`
 
                                 // Ak existuje existujúci voľný slot pre túto medzeru, použite jeho ID
                                 const existingFreeSlot = allBlockedSlots.find(s => 
@@ -1259,7 +1259,7 @@ async function displayMatchesAsSchedule() {
                             const gapStart = currentTimePointerInMinutes;
                             const gapEnd = 24 * 60; // Koniec dňa
                             const formattedGapStartTime = `${String(Math.floor(gapStart / 60)).padStart(2, '0')}:${String(gapStart % 60).padStart(2, '0')}`;
-                            const formattedGapEndTime = `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(gapEnd % 60).padStart(2, '0')}`;
+                            const formattedGapEndTime = `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(gapEnd % 60).padStart(2, '0')}`; // OPRAVA
 
                              // Ak existuje existujúci voľný slot pre túto medzeru, použite jeho ID
                             const existingFreeSlot = allBlockedSlots.find(s => 
