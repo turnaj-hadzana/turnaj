@@ -542,7 +542,7 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, excl
                 // Skontrolujte poslednú medzeru až do konca dňa
                 if (currentTimePointer < 24 * 60) {
                     const gapStart = currentTimePointer;
-                    const gapEnd = 24 * 60;
+                    const gapEnd = 24 * 60; // Koniec dňa (polnoc)
                     const formattedGapStartTime = `${String(Math.floor(gapStart / 60)).padStart(2, '0')}:${String(gapStart % 60).padStart(2, '0')}`;
                     const formattedGapEndTime = `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(gapEnd % 60).padStart(2, '0')}`;
 
@@ -1008,7 +1008,7 @@ async function displayMatchesAsSchedule() {
                             // Pridajte voľný slot, ak je medzera
                             if (currentTimePointerInMinutes < event.startInMinutes) {
                                 const gapStart = currentTimePointerInMinutes;
-                                const gapEnd = event.startInMinutes;
+                                const gapEnd = event.startInMinutes; // Koniec medzery je začiatok ďalšej udalosti
                                 const formattedGapStartTime = `${String(Math.floor(gapStart / 60)).padStart(2, '0')}:${String(gapStart % 60).padStart(2, '0')}`;
                                 const formattedGapEndTime = `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(gapEnd % 60).padStart(2, '0')}`; 
 
@@ -1105,7 +1105,7 @@ async function displayMatchesAsSchedule() {
                         // Po spracovaní všetkých udalostí skontrolujte, či existuje voľný slot až do konca dňa (24:00)
                         if (currentTimePointerInMinutes < 24 * 60) {
                             const gapStart = currentTimePointerInMinutes;
-                            const gapEnd = 24 * 60; // Koniec dňa
+                            const gapEnd = 24 * 60; // Koniec dňa (polnoc)
                             const formattedGapStartTime = `${String(Math.floor(gapStart / 60)).padStart(2, '0')}:${String(gapStart % 60).padStart(2, '0')}`;
                             const formattedGapEndTime = `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(gapEnd % 60).padStart(2, '0')}`; 
 
@@ -2149,8 +2149,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         googleMapsUrlInput.value = '';
         deletePlaceButtonModal.style.display = 'none';
         if (deletePlaceButtonModal && deletePlaceButtonButtonModal._currentHandler) { // Check for _currentHandler
-            deletePlaceButtonModal.removeEventListener('click', deletePlaceButtonModal._currentHandler);
-            delete deletePlaceButtonModal._currentHandler;
+            deletePlaceButtonModal.removeEventListener('click', deletePlaceButtonButtonModal._currentHandler);
+            delete deletePlaceButtonButtonModal._currentHandler;
         }
         openModal(placeModal);
         addOptions.classList.remove('show');
