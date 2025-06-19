@@ -587,7 +587,15 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, excl
             // Najprv spracujeme akúkoľvek medzeru pred aktuálnou udalosťou
             if (currentTimePointer < event.startInMinutes) {
                 const gapStart = currentTimePointer;
-                const gapEnd = event.startInMinutes; // Koniec medzery je začiatok ďalšej udalosti
+                let gapEnd = event.startInMinutes; // Koniec medzery je začiatok ďalšej udalosti
+                
+                // AK JE NAĎALŠIA UDALOSŤ ZÁPAS, POTREBUJEME OD JEJ STARTINMINUTES ODPOČÍTAŤ BUFFER TIME
+                if (event.type === 'match') {
+                    const nextMatchBufferTime = Number(event.bufferTime) || 0;
+                    gapEnd = Math.max(gapStart, event.startInMinutes - nextMatchBufferTime);
+                    console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): Následná udalosť je zápas (${event.id}), upravujem gapEnd na ${gapEnd} (pôvodný ${event.startInMinutes} - buffer ${nextMatchBufferTime}).`);
+                }
+
                 const formattedGapStartTime = `${String(Math.floor(gapStart / 60)).padStart(2, '0')}:${String(gapStart % 60).padStart(2, '0')}`;
                 const formattedGapEndTime = `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(gapEnd % 60).padStart(2, '0')}`;
 
@@ -611,7 +619,7 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, excl
                     // čo znamená, že na pôvodnom mieste voľný slot VŽDY ostane.
                 }
 
-                if (shouldCreateFreeSlot) {
+                if (shouldCreateFreeSlot && gapStart < gapEnd) { // Vytvorí voľný slot len, ak má reálnu dĺžku
                     console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): GENERUJEM placeholder pred udalosťou ${event.id}: Start: ${formattedGapStartTime}, End: ${formattedGapEndTime}.`);
 
                     const newPlaceholderDocRef = doc(blockedSlotsCollectionRef);
@@ -806,7 +814,7 @@ function getEventDisplayString(event, allSettings, categoryColorsMap) {
             const blockedSlotStartHour = String(Math.floor(event.startInMinutes / 60)).padStart(2, '0');
             const blockedSlotStartMinute = String(event.startInMinutes % 60).padStart(2, '0');
             const blockedSlotEndHour = String(Math.floor(event.endInMinutes / 60)).padStart(2, '0');
-            const blockedSlotEndMinute = String(event.endInMinutes % 60).padStart(2, '0');
+            const blockedSlotEndMinute = String(Math.floor(event.endInMinutes % 60)).padStart(2, '0'); // Oprava: použitie Math.floor
             return `${blockedSlotStartHour}:${blockedSlotStartMinute} - ${blockedSlotEndHour}:${blockedSlotEndMinute}|${displayText}`;
         } else {
             // Zmena: Použite uložené startTime a endTime pre voľné sloty
@@ -1055,27 +1063,23 @@ async function displayMatchesAsSchedule() {
                             const event = finalEventsToRender[i];
 
                             // Pridajte voľný slot, ak je medzera
+                            // ZMENA: currentTimPoitnerInMinutes už musí byť posunutý za footprint predchádzajúceho zápasu.
+                            // Tu kontrolujeme, či je medzera pred aktuálnym eventom.
                             if (currentTimePointerInMinutes < event.startInMinutes) {
                                 const gapStart = currentTimePointerInMinutes;
-                                const gapEnd = event.startInMinutes; // Koniec medzery je začiatok ďalšej udalosti
-                                let formattedGapStartTime = `${String(Math.floor(gapStart / 60)).padStart(2, '0')}:${String(gapStart % 60).padStart(2, '0')}`;
-                                let formattedGapEndTime = `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(gapEnd % 60).padStart(2, '0')}`; 
+                                let gapEnd = event.startInMinutes; // Koniec medzery je začiatok ďalšej udalosti
 
-                                // NOVÁ LOGIKA OPRAVY: Upravte zobrazovaný koncový čas voľného slotu, ak po ňom nasleduje zápas
-                                // Voľný slot by mal končiť PRED začiatkom rezervy nasledujúceho zápasu.
+                                // Ak je ďalšia udalosť zápas, voľný slot končí PRED JEJ BUFFEROM
                                 if (event.type === 'match') {
                                     const nextMatchBufferTime = Number(event.bufferTime) || 0;
-                                    const nextMatchStartTimeInMinutes = event.startInMinutes;
-                                    
-                                    let adjustedEndInMinutes = nextMatchStartTimeInMinutes - nextMatchBufferTime; // Koniec voľného slotu by mal byť pred bufferom
-                                    
-                                    if (adjustedEndInMinutes < gapStart) { // Ak by to posunulo koniec pred začiatok, zrušte zobrazenie
-                                        adjustedEndInMinutes = gapStart; // Alebo môžete úplne preskočiť zobrazenie tohto slotu
-                                    }
-                                    formattedGapEndTime = `${String(Math.floor(adjustedEndInMinutes / 60)).padStart(2, '0')}:${String(adjustedEndInMinutes % 60).padStart(2, '0')}`;
+                                    gapEnd = Math.max(gapStart, event.startInMinutes - nextMatchBufferTime);
                                 }
-                                // Vytvorí voľný slot len, ak má reálnu dĺžku
-                                if (formattedGapStartTime !== formattedGapEndTime) { 
+                                
+                                const formattedGapStartTime = `${String(Math.floor(gapStart / 60)).padStart(2, '0')}:${String(gapStart % 60).padStart(2, '0')}`;
+                                const formattedGapEndTime = `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(gapEnd % 60).padStart(2, '0')}`; 
+
+                                // Vytvorí voľný slot len, ak má reálnu dĺžku (gapEnd > gapStart)
+                                if (gapStart < gapEnd) { 
                                     // Ak existuje existujúci voľný slot pre túto medzeru, použite jeho ID
                                     // Toto je dôležité, aby sa voľné sloty, ktoré už existujú vo Firestore,
                                     // používali namiesto generovania nových ID pre tie isté časové intervaly.
@@ -1102,6 +1106,7 @@ async function displayMatchesAsSchedule() {
                                             <td colspan="4" style="text-align: center; color: #888; font-style: italic; background-color: #f0f0f0;">Voľný slot dostupný</td>
                                         </tr>
                                     `;
+                                    contentAddedForThisDate = true;
                                 }
                             }
 
@@ -1132,13 +1137,14 @@ async function displayMatchesAsSchedule() {
                                 `;
                                 // Posuňte ukazovateľ na koniec tohto zápasu (vrátane rezervy)
                                 currentTimePointerInMinutes = match.footprintEndInMinutes;
+                                contentAddedForThisDate = true;
 
                             } else if (event.type === 'blocked_slot') {
                                 const blockedSlot = event;
                                 const blockedSlotStartHour = String(Math.floor(blockedSlot.startInMinutes / 60)).padStart(2, '0');
                                 const blockedSlotStartMinute = String(blockedSlot.startInMinutes % 60).padStart(2, '0');
                                 const blockedSlotEndHour = String(Math.floor(blockedSlot.endInMinutes / 60)).padStart(2, '0');
-                                const blockedSlotEndMinute = String(blockedSlot.endInMinutes % 60).padStart(2, '0');
+                                const blockedSlotEndMinute = String(Math.floor(blockedSlot.endInMinutes % 60)).padStart(2, '0');
                                 
                                 const isUserBlocked = blockedSlot.isBlocked === true; 
 
@@ -1167,8 +1173,8 @@ async function displayMatchesAsSchedule() {
                                 `;
                                 // Posuňte ukazovateľ na koniec zablokovaného slotu
                                 currentTimePointerInMinutes = blockedSlot.endInMinutes;
+                                contentAddedForThisDate = true;
                             }
-                            contentAddedForThisDate = true;
                         }
                         
                         // Po spracovaní všetkých udalostí skontrolujte, či existuje voľný slot až do konca dňa (24:00)
@@ -2226,9 +2232,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         placeAddressInput.value = '';
         googleMapsUrlInput.value = '';
         deletePlaceButtonModal.style.display = 'none';
-        if (deletePlaceButtonModal && deletePlaceButtonButtonModal._currentHandler) { // Check for _currentHandler
-            deletePlaceButtonModal.removeEventListener('click', deletePlaceButtonButtonModal._currentHandler);
-            delete deletePlaceButtonButtonModal._currentHandler;
+        if (deletePlaceButtonModal && deletePlaceButtonModal._currentHandler) { // Check for _currentHandler
+            deletePlaceButtonModal.removeEventListener('click', deletePlaceButtonModal._currentHandler);
+            delete deletePlaceButtonModal._currentHandler;
         }
         openModal(placeModal);
         addOptions.classList.remove('show');
