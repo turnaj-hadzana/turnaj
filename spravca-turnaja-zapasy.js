@@ -1418,27 +1418,26 @@ async function displayMatchesAsSchedule() {
                     const initialScheduleStartMinutes = await getInitialScheduleStartMinutes(newDate);
                     const initialScheduleStartTimeStr = `${String(Math.floor(initialScheduleStartMinutes / 60)).padStart(2, '0')}:${String(initialScheduleStartMinutes % 60).padStart(2, '0')}`;
 
-                    // Načítajte aktuálne zápasy pre tento dátum a miesto, aby ste dynamicky určili "prvý" zápas
-                    const currentMatchesQuery = query(
-                        matchesCollectionRef,
-                        where("date", "==", newDate),
-                        where("location", "==", newLocation),
-                        orderBy("startTime", "asc")
-                    );
-                    const currentMatchesSnapshot = await getDocs(currentMatchesQuery);
-                    const currentMatches = currentMatchesSnapshot.docs.map(d => d.data());
-
                     if (targetRow && targetRow.classList.contains('match-row')) {
-                        // Pustené priamo na riadok zápasu. Určite, či je to prvý zápas, pred ktorý sa má vložiť.
-                        const targetMatchStartTime = targetRow.dataset.startTime;
-                        // Skontrolujte, či čas začiatku cieľového riadku je skutočne časom začiatku prvého zápasu
-                        if (currentMatches.length > 0 && currentMatches[0].startTime === targetMatchStartTime) {
-                            droppedProposedStartTime = initialScheduleStartTimeStr; // Vložiť na samý začiatok
-                            console.log(`Pustené na prvý zápas (${targetMatchStartTime}). Navrhujem počiatočný čas rozvrhu: ${droppedProposedStartTime}`);
+                        // Načítajte aktuálne zápasy pre tento dátum a miesto, aby ste dynamicky určili "prvý" zápas
+                        const currentMatchesQuery = query(
+                            matchesCollectionRef,
+                            where("date", "==", newDate),
+                            where("location", "==", newLocation),
+                            orderBy("startTime", "asc"),
+                            limit(1) // Only fetch the first match
+                        );
+                        const firstMatchSnapshot = await getDocs(currentMatchesQuery);
+                        const isTargetFirstMatch = !firstMatchSnapshot.empty && firstMatchSnapshot.docs[0].data().startTime === targetRow.dataset.startTime;
+
+                        if (isTargetFirstMatch) {
+                            // Ak sa presúva PRED prvý zápas, nastavte navrhovaný čas začiatku na počiatočný čas rozvrhu dňa.
+                            droppedProposedStartTime = initialScheduleStartTimeStr; // Použite absolútny začiatok dňa pre túto lokalitu
+                            console.log(`Pustené na PRVÝ zápas (${targetRow.dataset.startTime}). Nastavujem navrhovaný čas začiatku na POČIATOČNÝ ČAS ROZVRHU DŇA (${droppedProposedStartTime}).`);
                         } else {
-                            // Pustené na iný zápas, vložiť *na* jeho čas začiatku (čo ho posunie a následné)
-                            droppedProposedStartTime = targetMatchStartTime;
-                            console.log(`Pustené na existujúci zápas (${targetMatchStartTime}). Navrhujem jeho čas začiatku.`);
+                            // Ak sa presúva na iný zápas, vložte ho NA čas začiatku tohto zápasu (čo ho posunie a následné).
+                            droppedProposedStartTime = targetRow.dataset.startTime;
+                            console.log(`Pustené na existujúci zápas (nie prvý, ${targetRow.dataset.startTime}). Navrhujem jeho čas začiatku.`);
                         }
                         targetBlockedSlotId = null; // Žiadny zablokovaný slot na vymazanie pri pustení na riadok zápasu (nie je to placeholder)
 
@@ -1452,8 +1451,16 @@ async function displayMatchesAsSchedule() {
                         // Pustené na pozadie divu skupiny dátumov (znamená pripojenie na koniec, alebo na začiatok, ak nie sú žiadne zápasy)
                         // Tento prípad spracováva pustenie do "prázdneho priestoru", nie priamo na riadok.
                         let nextAvailableTimeAfterLastMatch = initialScheduleStartTimeStr; // Predvolené na začiatok dňa
-                        if (currentMatches.length > 0) {
-                            const lastMatch = currentMatches[currentMatches.length - 1];
+                        const currentMatchesQuery = query(
+                            matchesCollectionRef,
+                            where("date", "==", newDate),
+                            where("location", "==", newLocation),
+                            orderBy("startTime", "desc"), // Order by desc to get the last match
+                            limit(1)
+                        );
+                        const lastMatchSnapshot = await getDocs(currentMatchesQuery);
+                        if (!lastMatchSnapshot.empty) {
+                            const lastMatch = lastMatchSnapshot.docs[0].data();
                             const lastMatchStartInMinutes = (parseInt(lastMatch.startTime.split(':')[0]) * 60 + parseInt(lastMatch.startTime.split(':')[1]));
                             const lastMatchFootprintEndInMinutes = lastMatchStartInMinutes + (lastMatch.duration || 0) + (lastMatch.bufferTime || 0);
                             nextAvailableTimeAfterLastMatch = `${String(Math.floor(lastMatchFootprintEndInMinutes / 60)).padStart(2, '0')}:${String(lastMatchFootprintEndInMinutes % 60).padStart(2, '0')}`;
@@ -1474,7 +1481,7 @@ async function displayMatchesAsSchedule() {
                             console.log(`Pustené na pozadie skupiny dátumov. Nájdený prázdny slot na zacielenie: ${droppedProposedStartTime}, ID: ${targetBlockedSlotId}`);
                         } else {
                             droppedProposedStartTime = nextAvailableTimeAfterLastMatch;
-                            targetBlockedSlotId = null; // Žiadny špecifický slot na vymazanie
+                            targetBlockedSlotId = null; // No specific slot to delete
                             console.log(`Pustené na pozadie skupiny dátumov. Nenašiel sa žiadny konkrétny prázdny slot na konci, používam: ${droppedProposedStartTime}`);
                         }
                     }
