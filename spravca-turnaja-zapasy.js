@@ -252,13 +252,13 @@ async function findFirstAvailableTime() {
                 fullFootprintEnd: fullFootprintEndInMinutes, 
                 id: doc.id, 
                 duration: duration, 
-                bufferTime: bufferTime 
+                bufferTime: bufferTime,
+                type: 'match' // Pridaný typ pre konsolidáciu
             };
         });
         console.log("Existing Matches for selected Location and Date (sorted by start time):", matchesForLocationAndDate); // Debugging
 
-        // Fetch blocked slots for the selected date and location
-        // Zmena: Už nezahrnujeme `isPhantom: true` do zablokovaných slotov, len `isBlocked: true`
+        // Fetch only active blocked slots for the selected date and location
         const blockedSlotsQuery = query(
             blockedSlotsCollectionRef,
             where("date", "==", selectedDate),
@@ -273,152 +273,85 @@ async function findFirstAvailableTime() {
             const startInMinutes = startH * 60 + endM;
             const [endH, startM] = data.endTime.split(':').map(Number);
             const endInMinutes = endH * 60 + startM;
-            return { start: startInMinutes, end: endInMinutes, id: doc.id, ...data };
+            return { start: startInMinutes, end: endInMinutes, id: doc.id, type: 'blocked_slot', ...data }; // Pridaný typ pre konsolidáciu
         });
         console.log("Blocked Slots for selected Location and Date (filtered for isBlocked === true):", blockedSlotsForLocationAndDate); // Debugging
 
+        // Consolidate all 'hard' events that occupy time and should not be filled by new matches automatically
+        let occupiedEvents = [];
+        occupiedEvents.push(...matchesForLocationAndDate); // These include duration and buffer
+        occupiedEvents.push(...blockedSlotsForLocationAndDate); // These are already filtered for isBlocked: true
 
-        let exactMatchDurationFound = false;
-        let bestCandidateStartTimeInMinutes = -1;
+        // Sort all occupied events by their start time
+        occupiedEvents.sort((a, b) => a.start - b.start);
+        console.log("Occupied events for calculating next available time:", occupiedEvents);
 
-        // Function to check if a time slot overlaps with any existing match or *active* blocked slot
-        const isSlotAvailable = (candidateStart, candidateEnd) => {
-            // Check against existing matches
-            for (const match of matchesForLocationAndDate) {
-                // ZMENA: Použite fullFootprintEnd pre kontrolu prekrývania zápasov
-                if (candidateStart < match.fullFootprintEnd && candidateEnd > match.start) { 
-                    console.log(`Slot ${candidateStart}-${candidateEnd} overlaps with existing match ${match.start}-${match.fullFootprintEnd}`); // Debugging
-                    return false; // Overlaps with an existing match
-                }
-            }
-            // Check against active blocked slots (isBlocked === true)
-            for (const blockedSlot of blockedSlotsForLocationAndDate) { // This array is already filtered
-                if (candidateStart < blockedSlot.end && candidateEnd > blockedSlot.start) {
-                    console.log(`Slot ${candidateStart}-${candidateEnd} overlaps with active blocked slot ${blockedSlot.start}-${blockedSlot.end}`); // Debugging
-                    return false; // Overlaps with an active blocked slot
-                }
-            }
-            return true;
-        };
+        let nextAvailableTimeInMinutes = initialPointerMinutes; // Default to initial day start time
 
-        // --- Krok 1: Uprednostnite presné prispôsobenie pre 'requiredMatchDuration' (samotný zápas) ---
-        // Skontrolujte medzeru pred prvým zápasom (ak existuje) alebo ak nie sú žiadne zápasy
-        if (matchesForLocationAndDate.length === 0) {
-            // Ak nie sú žiadne existujúce zápasy, počiatočný čas dňa je prvý dostupný.
-            // Skontrolujte, či je tento slot dostupný (nie je zablokovaný)
-            if (isSlotAvailable(initialPointerMinutes, initialPointerMinutes + newMatchFullFootprint)) {
-                bestCandidateStartTimeInMinutes = initialPointerMinutes;
-                exactMatchDurationFound = true; 
-                console.log("Žiadne existujúce zápasy. Nastavujem čas začiatku na počiatočný čas dňa ako kandidáta na presné prispôsobenie (dostupný)."); // Debugging
-            } else {
-                console.log("Žiadne existujúce zápasy, ale počiatočný slot je zablokovaný."); // Debugging
+        for (const event of occupiedEvents) {
+            // Determine the end of the current event's 'footprint'
+            let eventFootprintEnd;
+            if (event.type === 'match') {
+                eventFootprintEnd = event.fullFootprintEnd; // Match footprint includes duration + buffer
+            } else { // blocked_slot (isBlocked: true)
+                eventFootprintEnd = event.end; // Blocked slot end time
             }
-        } else {
-            const firstMatch = matchesForLocationAndDate[0];
-            const gapBeforeFirstMatchDuration = firstMatch.start - initialPointerMinutes;
-            console.log("Medzera pred prvým zápasom: Trvanie =", gapBeforeFirstMatchDuration, "minút."); // Debugging
-
-            // Skontrolujte, či táto medzera dokáže presne prispôsobiť požadované trvanie zápasu
-            if (gapBeforeFirstMatchDuration >= requiredMatchDuration) {
-                // A uistite sa, že sa rezerva tiež zmestí pred prvý skutočný zápas a nie je zablokovaný
-                const candidateStartTime = initialPointerMinutes;
-                const candidateEndTime = candidateStartTime + newMatchFullFootprint;
-                if (candidateEndTime <= firstMatch.start && isSlotAvailable(candidateStartTime, candidateEndTime)) {
-                    bestCandidateStartTimeInMinutes = candidateStartTime;
-                    exactMatchDurationFound = true;
-                    console.log("Našiel som presné prispôsobenie pre trvanie zápasu pred prvým zápasom:", bestCandidateStartTimeInMinutes); // Debugging
-                }
-            }
+            
+            // The next available time must be at least after the current event's footprint
+            // If the current event starts *after* our pointer, then the gap *before* it is available
+            // but we want the *next* available time, so we take the maximum of current pointer and event's footprint end
+            nextAvailableTimeInMinutes = Math.max(nextAvailableTimeInMinutes, eventFootprintEnd);
         }
-        
-        // Hľadajte presné prispôsobenie v medzerách medzi existujúcimi zápasmi
-        if (!exactMatchDurationFound) { 
-            console.log("Hľadám presné prispôsobenie pre trvanie zápasu medzi existujúcimi zápasmi."); // Debugging
-            for (let i = 0; i < matchesForLocationAndDate.length - 1; i++) {
-                const currentMatch = matchesForLocationAndDate[i];
-                // ZMENA: fullFootprintEnd
-                const gapStartInMinutes = currentMatch.fullFootprintEnd; // Koniec aktuálneho zápasu (vrátane jeho rezervy)
-                const nextMatch = matchesForLocationAndDate[i + 1];
 
-                const gapDuration = nextMatch.start - gapStartInMinutes; // Trvanie samotnej medzery
-                console.log(`Kontrola medzery medzi zápasom ${currentMatch.id} (končí ${currentMatch.fullFootprintEnd}) a ${nextMatch.id} (začína ${nextMatch.start}): Trvanie = ${gapDuration}`); // Debugging
-
-                // Skontrolujte, či táto medzera dokáže presne prispôsobiť požadované trvanie zápasu
-                if (gapDuration >= requiredMatchDuration) {
-                    // A uistite sa, že sa rezerva tiež zmestí pred ďalší skutočný zápas a nie je zablokovaný
-                    const candidateStartTime = gapStartInMinutes;
-                    const candidateEndTime = candidateStartTime + newMatchFullFootprint;
-                    if (candidateEndTime <= nextMatch.start && isSlotAvailable(candidateStartTime, candidateEndTime)) {
-                        bestCandidateStartTimeInMinutes = candidateStartTime;
-                        exactMatchDurationFound = true;
-                        console.log("Našiel som presné prispôsobenie pre trvanie zápasu medzi zápasmi:", bestCandidateStartTimeInMinutes); // Debugging
-                        break; // Našiel sa prvý presný prispôsobenie, ukončite cyklus
-                    }
-                }
-            }
+        // Now, nextAvailableTimeInMinutes is the earliest possible start time
+        // Check if the proposed new match (with its duration and buffer) actually fits from this point.
+        // This implicitly checks against any *future* existing matches/blocked slots that might start too soon.
+        if (!isSlotAvailable(nextAvailableTimeInMinutes, nextAvailableTimeInMinutes + newMatchFullFootprint, matchesForLocationAndDate, blockedSlotsForLocationAndDate)) {
+             // If the slot calculated as 'next available' still overlaps with something, it means
+             // the logic for finding 'nextAvailableTimeInMinutes' might have a flaw for complex scenarios,
+             // or there's genuinely no space left.
+            matchStartTimeInput.value = '';
+            await showMessage('Informácia', 'Na vybranom mieste a dátume nie je dostatok priestoru pre zápas v dostupnom čase. Skúste iné nastavenia.');
+            return;
         }
-        
-        if (exactMatchDurationFound && bestCandidateStartTimeInMinutes !== -1) {
-            const formattedHour = String(Math.floor(bestCandidateStartTimeInMinutes / 60)).padStart(2, '0');
-            const formattedMinute = String(bestCandidateStartTimeInMinutes % 60).padStart(2, '0');
-            matchStartTimeInput.value = `${formattedHour}:${formattedMinute}`;
-            console.log("Nastavený čas začiatku zápasu na presné prispôsobenie (Priorita 1):", matchStartTimeInput.value); // Debugging
-        } else {
-            // --- Krok 2: Náhradné umiestnenie po poslednom zápase, ak sa nenájde presné prispôsobenie ---
-            let nextAvailableTimeInMinutes = initialPointerMinutes; // Default to initial day start time
-            if (matchesForLocationAndDate.length > 0) {
-                const lastMatch = matchesForLocationAndDate[matchesForLocationAndDate.length - 1];
-                console.log("Fallback: Posledný existujúci zápas:", lastMatch); // Debugging
-                // Calculate time after the last match, and convert to minutes for checks
-                // ZMENA: fullFootprintEnd
-                const lastMatchEndTimeInMinutes = lastMatch.fullFootprintEnd; // This already includes its duration + bufferTime
 
-                // Find the first available time *after* the last match, skipping any blocked slots
-                let potentialStartTime = lastMatchEndTimeInMinutes;
-                let foundNextAvailable = false;
-                // Loop up to 24:00 (1440 minutes) to find the next available slot
-                while (potentialStartTime < 1440) { 
-                    const candidateEndTime = potentialStartTime + newMatchFullFootprint;
-                    if (isSlotAvailable(potentialStartTime, candidateEndTime)) {
-                        nextAvailableTimeInMinutes = potentialStartTime;
-                        foundNextAvailable = true;
-                        break;
-                    }
-                    // Move to the next minute if current slot is blocked or occupied
-                    potentialStartTime++; 
-                }
-
-                if (!foundNextAvailable) {
-                    // If no available slot is found until end of day, revert to initial day start for the field
-                    // (though this means the user might need to pick a different day/location)
-                    nextAvailableTimeInMinutes = initialPointerMinutes; 
-                    console.log("No available time after last match, reverting to initial day start."); // Debugging
-                }
-
-            } else { // No existing matches, just check if initial time is available
-                if (!isSlotAvailable(initialPointerMinutes, initialPointerMinutes + newMatchFullFootprint)) {
-                    // If initial slot is blocked and no matches, no automatic time can be set
-                    nextAvailableTimeInMinutes = -1; // Indicate no available time
-                    console.log("No existing matches, and initial day start slot is blocked."); // Debugging
-                }
-            }
-
-            if (nextAvailableTimeInMinutes === -1) {
-                matchStartTimeInput.value = '';
-                await showMessage('Informácia', 'Na vybranom mieste a dátume nie sú k dispozícii žiadne voľné sloty na vloženie zápasu, dokonca ani po poslednom zápase alebo od začiatku dňa.');
-            } else {
-                const formattedHour = String(Math.floor(nextAvailableTimeInMinutes / 60)).padStart(2, '0');
-                const formattedMinute = String(nextAvailableTimeInMinutes % 60).padStart(2, '0');
-                matchStartTimeInput.value = `${formattedHour}:${formattedMinute}`;
-                console.log("Nenašlo sa presné prispôsobenie. Nastavujem čas začiatku zápasu na náhradný (po poslednom zápase alebo začiatku dňa):", matchStartTimeInput.value); // Debugging
-            }
-        }
+        const formattedHour = String(Math.floor(nextAvailableTimeInMinutes / 60)).padStart(2, '0');
+        const formattedMinute = String(nextAvailableTimeInMinutes % 60).padStart(2, '0');
+        matchStartTimeInput.value = `${formattedHour}:${formattedMinute}`;
+        console.log("Nastavený čas začiatku zápasu (po všetkých obsadených udalostiach):", matchStartTimeInput.value);
 
     } catch (error) {
         console.error("Chyba pri hľadaní prvého dostupného času:", error);
         matchStartTimeInput.value = '';
     }
 }
+
+/**
+ * Function to check if a time slot overlaps with any existing match or *active* blocked slot.
+ * This is a helper for findFirstAvailableTime to ensure proposed times are truly free.
+ * @param {number} candidateStart Start time of the candidate slot in minutes.
+ * @param {number} candidateEnd End time of the candidate slot in minutes.
+ * @param {Array<Object>} matches Array of existing match objects.
+ * @param {Array<Object>} blockedSlots Array of existing *active* blocked slot objects (isBlocked: true).
+ * @returns {boolean} True if the slot is available (no overlap), false otherwise.
+*/
+const isSlotAvailable = (candidateStart, candidateEnd, matches, blockedSlots) => {
+    // Check against existing matches
+    for (const match of matches) {
+        if (candidateStart < match.fullFootprintEnd && candidateEnd > match.start) { 
+            console.log(`Slot ${candidateStart}-${candidateEnd} overlaps with existing match ${match.start}-${match.fullFootprintEnd}`); // Debugging
+            return false; // Overlaps with an existing match
+        }
+    }
+    // Check against active blocked slots (isBlocked === true)
+    for (const blockedSlot of blockedSlots) { // This array is already filtered
+        if (candidateStart < blockedSlot.end && candidateEnd > blockedSlot.start) {
+            console.log(`Slot ${candidateStart}-${candidateEnd} overlaps with active blocked slot ${blockedSlot.start}-${blockedSlot.end}`); // Debugging
+            return false; // Overlaps with an active blocked slot
+        }
+    }
+    return true;
+};
 
 
 /**
@@ -2302,7 +2235,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         placeAddressInput.value = '';
         googleMapsUrlInput.value = '';
         deletePlaceButtonModal.style.display = 'none';
-        if (deletePlaceButtonModal && deletePlaceButtonModal._currentHandler) { // Check for _currentHandler
+        if (deletePlaceButtonModal && deletePlaceButtonButtonModal._currentHandler) { // Check for _currentHandler
             deletePlaceButtonModal.removeEventListener('click', deletePlaceButtonModal._currentHandler);
             delete deletePlaceButtonModal._currentHandler;
         }
