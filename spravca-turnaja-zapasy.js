@@ -489,7 +489,7 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, excl
             }))
             .filter(slot => slot.id !== excludedBlockedSlotId); // Vylúčte slot, ktorý bol presunutý (ak existuje)
 
-        console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 1): Načítané a filtrované allCurrentBlockedSlots (bez ${excludedBlockedId}):`, allCurrentBlockedSlots.map(e => ({id: e.id, isBlocked: e.isBlocked, startTime: e.startTime})));
+        console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 1): Načítané a filtrované allCurrentBlockedSlots (bez ${excludedBlockedSlotId}):`, allCurrentBlockedSlots.map(e => ({id: e.id, isBlocked: e.isBlocked, startTime: e.startTime})));
 
         // Fáza 2: Identifikujte "pevné" udalosti (používateľom zablokované sloty) a "pohyblivé" udalosti (zápasy).
         // Zároveň pridajte všetky existujúce placeholdery na vymazanie.
@@ -1339,7 +1339,7 @@ async function displayMatchesAsSchedule() {
                         if (!lastMatchSnapshot.empty) {
                             const lastMatch = lastMatchSnapshot.docs[0].data();
                             const lastMatchStartInMinutes = (parseInt(lastMatch.startTime.split(':')[0]) * 60 + parseInt(lastMatch.startTime.split(':')[1]));
-                            const lastMatchFootprintEndInMinutes = lastMatchStartInMinutes + (lastMatch.duration || 0) + (lastMatch.bufferTime || 0);
+                            const lastMatchFootprintEndInMinutes = lastMatchStartInMinutes + (Number(lastMatch.duration) || 0) + (Number(lastMatch.bufferTime) || 0); // Ensure numbers
                             nextAvailableTimeAfterLastMatch = `${String(Math.floor(lastMatchFootprintEndInMinutes / 60)).padStart(2, '0')}:${String(lastMatchFootprintEndInMinutes % 60).padStart(2, '0')}`;
                             console.log(`Nájdený posledný zápas o ${lastMatch.startTime}, navrhujem čas: ${nextAvailableTimeAfterLastMatch}`);
                         } else {
@@ -1925,8 +1925,8 @@ async function blockFreeSlot(slotId, date, location) {
                 const matchData = matchDoc.data();
                 const [matchStartH, matchStartM] = matchData.startTime.split(':').map(Number);
                 const matchStartInMinutes = matchStartH * 60 + matchStartM;
-                const matchDuration = matchData.duration || 0;
-                const matchBufferTime = matchData.bufferTime || 0;
+                const matchDuration = Number(matchData.duration) || 0; // Ensure number
+                const matchBufferTime = Number(matchData.bufferTime) || 0; // Ensure number
                 // ZMENA: Použite match.fullFootprintEnd pre kontrolu prekrývania
                 const matchFootprintEndInMinutes = matchStartInMinutes + matchDuration + matchBufferTime; 
                 return (startInMinutes < matchFootprintEndInMinutes && endInMinutes > matchStartInMinutes);
@@ -1939,8 +1939,8 @@ async function blockFreeSlot(slotId, date, location) {
                     return `${h}:${m}`;
                 };
                 const matchStartTime = overlappingMatch.data().startTime;
-                const matchDuration = overlappingMatch.data().duration || 0;
-                const matchBufferTime = overlappingMatch.data().bufferTime || 0;
+                const matchDuration = Number(overlappingMatch.data().duration) || 0; // Ensure number
+                const matchBufferTime = Number(overlappingMatch.data().bufferTime) || 0; // Ensure number
                 const [msh,msm] = matchStartTime.split(':').map(Number);
                 // ZMENA: fullFootprintEnd
                 const matchFootprintEndInMinutes = (msh * 60) + msm + matchDuration + matchBufferTime;
@@ -2366,7 +2366,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const [existingStartHour, existingStartMinute] = existingMatch.startTime.split(':').map(Number);
                 const existingMatchStartInMinutes = existingStartHour * 60 + existingStartMinute;
                 // ZMENA: Použite fullFootprintEnd pre kontrolu prekrývania
-                const existingMatchFootprintEndInMinutes = existingMatchStartInMinutes + (existingMatch.duration || 0) + (existingMatch.bufferTime || 0);
+                const existingMatchFootprintEndInMinutes = existingMatchStartInMinutes + (Number(existingMatch.duration) || 0) + (Number(existingMatch.bufferTime) || 0);
 
                 if (newMatchStartInMinutes < existingMatchFootprintEndInMinutes && newMatchEndInMinutesWithBuffer > existingMatchStartInMinutes) {
                     overlapFound = true;
@@ -2410,7 +2410,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // ZMENA: Pre prekrývajúci sa zápas použite fullFootprintEndInMinutes pre správny zobrazený čas
                 const existingMatchEndTimeInMinutes = (overlappingMatchDetails.type === 'blocked_slot') 
                     ? (parseInt(overlappingMatchDetails.endTime.split(':')[0]) * 60 + parseInt(overlappingMatchDetails.endTime.split(':')[1]))
-                    : (existingStartHour * 60 + existingStartMinute + (overlappingMatchDetails.duration || 0) + (overlappingMatchDetails.bufferTime || 0));
+                    : (existingStartHour * 60 + existingStartMinute + (Number(overlappingMatchDetails.duration) || 0) + (Number(overlappingMatchDetails.bufferTime) || 0));
 
                 const formattedExistingEndTime = `${String(Math.floor(existingMatchEndTimeInMinutes / 60)).padStart(2, '0')}:${String(existingMatchEndTimeInMinutes % 60).padStart(2, '0')}`;
 
