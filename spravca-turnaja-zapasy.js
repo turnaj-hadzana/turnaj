@@ -794,7 +794,7 @@ async function getMatchData(matchId) {
  * @param {string|null} [targetMatchIdToDisplace=null] ID zápasu, na ktorý bol presunutý, a ktorý je potrebné posunúť.
  */
 async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation, droppedProposedStartTime = null, targetBlockedSlotId = null, targetMatchIdToDisplace = null) {
-    console.log(`moveAndRescheduleMatch: === SPUSTENÉ pre zápas ID: ${draggedMatchId}, cieľ: ${targetDate}, ${targetLocation}, navrhovaný čas: ${droppedProposedStartTime}, cieľový zablokovaný slot ID: ${targetBlockedSlotId}, cieľový zápas na posunutie ID: ${targetMatchIdToDislpace} ===`);
+    console.log(`moveAndRescheduleMatch: === SPUSTENÉ pre zápas ID: ${draggedMatchId}, cieľ: ${targetDate}, ${targetLocation}, navrhovaný čas: ${droppedProposedStartTime}, cieľový zablokovaný slot ID: ${targetBlockedSlotId}, cieľový zápas na posunutie ID: ${targetMatchIdToDisplace} ===`);
     try {
         const batch = writeBatch(db);
 
