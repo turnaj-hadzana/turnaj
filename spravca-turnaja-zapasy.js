@@ -452,11 +452,13 @@ function calculateNextAvailableTime(prevStartTime, duration, bufferTime) {
  * @param {string|null} [movedMatchOriginalLocation=null] Pôvodné miesto presunutého zápasu (názov).
  * @param {string|null} [movedMatchOriginalStartTime=null] Pôvodný čas začiatku presunutého zápasu (HH:MM).
  * @param {string|null} [movedMatchNewStartTime=null] Nový čas začiatku presunutého zápasu (HH:MM).
+ * @param {boolean} [wasDeletedPlaceholder=false] NOVÉ: True, ak slot, ktorý spustil prepočet, bol placeholder, ktorý bol vymazaný.
  */
-async function recalculateAndSaveScheduleForDateAndLocation(date, location, excludedBlockedSlotId = null, movedMatchOriginalId = null, movedMatchOriginalDate = null, movedMatchOriginalLocation = null, movedMatchOriginalStartTime = null, movedMatchNewStartTime = null) {
+async function recalculateAndSaveScheduleForDateAndLocation(date, location, excludedBlockedSlotId = null, movedMatchOriginalId = null, movedMatchOriginalDate = null, movedMatchOriginalLocation = null, movedMatchOriginalStartTime = null, movedMatchNewStartTime = null, wasDeletedPlaceholder = false) {
     console.log(`recalculateAndSaveScheduleForDateAndLocation: === SPUSTENÉ pre Dátum: ${date}, Miesto: ${location}. ` +
                 `Vylúčený zablokovaný slot ID: ${excludedBlockedSlotId || 'žiadny'}. ` +
-                `Presunutý zápas ID: ${movedMatchOriginalId || 'žiadny'}, Pôvodný dátum: ${movedMatchOriginalDate || 'N/A'}, Pôvodné miesto: ${movedMatchOriginalLocation || 'N/A'}, Pôvodný čas: ${movedMatchOriginalStartTime || 'N/A'}, Nový čas: ${movedMatchNewStartTime || 'N/A'}. ===`);
+                `Presunutý zápas ID: ${movedMatchOriginalId || 'žiadny'}, Pôvodný dátum: ${movedMatchOriginalDate || 'N/A'}, Pôvodné miesto: ${movedMatchOriginalLocation || 'N/A'}, Pôvodný čas: ${movedMatchOriginalStartTime || 'N/A'}, Nový čas: ${movedMatchNewStartTime || 'N/A'}. ` +
+                `Bol vymazaný placeholder: ${wasDeletedPlaceholder}. ===`);
     try {
         const batch = writeBatch(db); 
 
@@ -527,8 +529,9 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, excl
         // Fáza 3: Konštrukcia timeline, aktualizácia časov zápasov a generovanie nových placeholderov
         const initialScheduleStartMinutes = await getInitialScheduleStartMinutes(date);
         let currentTimePointer = initialScheduleStartMinutes;
-        let isSubsequentPushRequired = false; // NEW FLAG for forcing subsequent pushes
-        console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): Počiatočný ukazovateľ času (currentTimePointer): ${currentTimePointer} minút.`);
+        // Ak bol vymazaný placeholder, nastavíme isSubsequentPushRequired na true, aby sa zápasy posunuli.
+        let isSubsequentPushRequired = wasDeletedPlaceholder; 
+        console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): Počiatočný ukazovateľ času (currentTimePointer): ${currentTimePointer} minút. isSubsequentPushRequired inicializované na: ${isSubsequentPushRequired}`);
 
         // Zlúčenie pevnych udalostí (blokované sloty) a zápasov pre účely iterácie, ale s vedomím,
         // že len zápasy sa posúvať.
@@ -558,43 +561,33 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, excl
         });
 
         for (const event of allTimelineEvents) {
-            console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): SPRACÚVAM udalosť: ID: ${event.id || 'N/A'}, Typ: ${event.type}, Start (min): ${event.startInMinutes}, Aktuálny currentTimePointer: ${currentTimePointer}`);
+            console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): SPRACÚVAM udalosť: ID: ${event.id || 'N/A'}, Typ: ${event.type}, Start (min): ${event.startInMinutes}, Aktuálny currentTimePointer: ${currentTimePointer}, isSubsequentPushRequired: ${isSubsequentPushRequired}`);
 
             if (event.type === 'end_of_day') {
-                // Skontrolujte poslednú medzeru až do konca dňa
-                if (currentTimePointer < 24 * 60) {
+                // Ak bola vymazaná prázdna medzera, na konci dňa by sa nemala vytvárať nová,
+                // ak by to bránilo posunutiu zápasov.
+                if (wasDeletedPlaceholder && !movedMatchOriginalId) {
+                    console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): WasDeletedPlaceholder je true a nie je movedMatch. Preskakujem generovanie koncového placeholderu.`);
+                }
+                else if (currentTimePointer < 24 * 60) {
                     const gapStart = currentTimePointer;
                     const gapEnd = 24 * 60; // Koniec dňa (polnoc)
                     const formattedGapStartTime = `${String(Math.floor(gapStart / 60)).padStart(2, '0')}:${String(gapStart % 60).padStart(2, '0')}`;
                     const formattedGapEndTime = `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(gapEnd % 60).padStart(2, '0')}`;
 
-                    // NOVÁ LOGIKA: Generujte voľný slot na konci len ak nie je presunutý zápas
-                    // alebo ak presunutý zápas nepokrýva túto oblasť
-                    let shouldCreateEndGapSlot = true;
-                    if (movedMatchOriginalId) {
-                        const originalMatchFootprintEnd = (parseInt(movedMatchOriginalStartTime.split(':')[0]) * 60 + parseInt(movedMatchOriginalStartTime.split(':')[1])) +
-                                                        (Number(event.duration) || 0) + (Number(event.bufferTime) || 0);
-                        if (date === movedMatchOriginalDate && location === movedMatchOriginalLocation && 
-                            originalMatchFootprintEnd > currentTimePointer) {
-                            shouldCreateEndGapSlot = false; // Ak sa zápas presunul späť a pokrýva túto medzeru
-                        }
-                    }
+                    console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): GENERUJEM koncový placeholder: Start: ${formattedGapStartTime}, End: ${formattedGapEndTime}.`);
 
-                    if (shouldCreateEndGapSlot && gapStart < gapEnd) {
-                        console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): GENERUJEM koncový placeholder: Start: ${formattedGapStartTime}, End: ${formattedGapEndTime}.`);
-
-                        const newPlaceholderDocRef = doc(blockedSlotsCollectionRef);
-                        batch.set(newPlaceholderDocRef, {
-                            date: date,
-                            location: location,
-                            startTime: formattedGapStartTime,
-                            endTime: formattedGapEndTime,
-                            startInMinutes: gapStart,
-                            endInMinutes: gapEnd,
-                            isBlocked: false,
-                            createdAt: new Date()
-                        });
-                    }
+                    const newPlaceholderDocRef = doc(blockedSlotsCollectionRef);
+                    batch.set(newPlaceholderDocRef, {
+                        date: date,
+                        location: location,
+                        startTime: formattedGapStartTime,
+                        endTime: formattedGapEndTime,
+                        startInMinutes: gapStart,
+                        endInMinutes: gapEnd,
+                        isBlocked: false,
+                        createdAt: new Date()
+                    });
                 }
                 break; // Koniec dňa, ukončite slučku
             }
@@ -616,8 +609,12 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, excl
 
                 let shouldCreateFreeSlot = true;
 
-                // NOVÁ LOGIKA: Iba ak bol zápas presunutý a vznikla medzera po ňom
-                if (movedMatchOriginalId && 
+                // NOVÁ LOGIKA: Ak bola vymazaná placeholder medzera a nie je to výsledok drag & drop,
+                // NEgenerujeme nový placeholder, aby sa zápasy mohli posunúť dopredu.
+                if (wasDeletedPlaceholder && !movedMatchOriginalId) {
+                    shouldCreateFreeSlot = false;
+                    console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): WasDeletedPlaceholder je true a nie je movedMatch. NEGENERUJEM voľný slot pre medzeru ${formattedGapStartTime}-${formattedGapEndTime}.`);
+                } else if (movedMatchOriginalId && 
                     date === movedMatchOriginalDate && 
                     location === movedMatchOriginalLocation) {
                     
@@ -654,8 +651,10 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, excl
                         shouldCreateFreeSlot = true; // Zabezpečíme, že sa vytvorí na pôvodnom mieste
                         console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): Zápas ${movedMatchOriginalId} bol presunutý mimo pôvodného miesta/dňa. Generujem voľný slot na pôvodnom mieste.`);
                     } else {
-                        shouldCreateFreeSlot = false; // Predvolene sa voľné sloty negenerujú (len tie, ktoré sú explicitne isBlocked: false)
-                        console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): Nie je aktívny presunutý zápas alebo nie je v pôvodnom mieste/dňa. NEGENERUJEM voľný slot pred udalosťou ${event.id}.`);
+                        // Ak je isSubsequentPushRequired true (t.j. zápasy sa posúvajú), nemali by sme generovať voľné sloty.
+                        // Inak, generujeme voľné sloty ako zvyčajne.
+                        shouldCreateFreeSlot = !isSubsequentPushRequired; 
+                        console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): Nie je aktívny presunutý zápas alebo nie je v pôvodnom mieste/dňa. shouldCreateFreeSlot set to: ${shouldCreateFreeSlot} (based on isSubsequentPushRequired).`);
                     }
                 }
 
@@ -694,7 +693,7 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, excl
                 } else if (isSubsequentPushRequired) {
                     // If the flag is active, and this is a subsequent match, force its start time to currentTimePointer.
                     // Ensure the new start time is not *before* the current pointer
-                    newMatchStartTimeMinutes = Math.max(currentTimePointer, event.startInMinutes); // Still take max to avoid going backwards in case of very early original slot
+                    newMatchStartTimeMinutes = currentTimePointer; // Still take max to avoid going backwards in case of very early original slot
                     console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): Pushing subsequent match ${event.id} to ${newMatchStartTimeMinutes} (from current pointer ${currentTimePointer}).`);
                 } else {
                     // Normal behavior for other matches not affected by the "push" mode
@@ -795,7 +794,7 @@ async function getMatchData(matchId) {
  * @param {string|null} [targetMatchIdToDisplace=null] ID zápasu, na ktorý bol presunutý, a ktorý je potrebné posunúť.
  */
 async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation, droppedProposedStartTime = null, targetBlockedSlotId = null, targetMatchIdToDisplace = null) {
-    console.log(`moveAndRescheduleMatch: === SPUSTENÉ pre zápas ID: ${draggedMatchId}, cieľ: ${targetDate}, ${targetLocation}, navrhovaný čas: ${droppedProposedStartTime}, cieľový zablokovaný slot ID: ${targetBlockedSlotId}, cieľový zápas na posunutie ID: ${targetMatchIdToDisplace} ===`);
+    console.log(`moveAndRescheduleMatch: === SPUSTENÉ pre zápas ID: ${draggedMatchId}, cieľ: ${targetDate}, ${targetLocation}, navrhovaný čas: ${droppedProposedStartTime}, cieľový zablokovaný slot ID: ${targetBlockedSlotId}, cieľový zápas na posunutie ID: ${targetMatchIdToDislpace} ===`);
     try {
         const batch = writeBatch(db);
 
@@ -902,7 +901,7 @@ function getEventDisplayString(event, allSettings, categoryColorsMap) {
             const blockedSlotStartHour = String(Math.floor(event.startInMinutes / 60)).padStart(2, '0');
             const blockedSlotStartMinute = String(event.startInMinutes % 60).padStart(2, '0');
             const blockedSlotEndHour = String(Math.floor(event.endInMinutes / 60)).padStart(2, '0');
-            const blockedSlotEndMinute = String(Math.floor(event.endInMinutes % 60)).padStart(2, '0');
+            const blockedSlotEndMinute = String(Math.floor(event.endInMinutes % 60).padStart(2, '0');
             return `${blockedSlotStartHour}:${blockedSlotStartMinute} - ${blockedSlotEndHour}:${blockedSlotEndMinute}|${displayText}`;
         } else {
             // Zmena: Použite uložené startTime a endTime pre voľné sloty
@@ -1233,7 +1232,7 @@ async function displayMatchesAsSchedule() {
                                 const blockedSlotStartHour = String(Math.floor(blockedSlot.startInMinutes / 60)).padStart(2, '0');
                                 const blockedSlotStartMinute = String(blockedSlot.startInMinutes % 60).padStart(2, '0');
                                 const blockedSlotEndHour = String(Math.floor(blockedSlot.endInMinutes / 60)).padStart(2, '0');
-                                const blockedSlotEndMinute = String(Math.floor(blockedSlot.endInMinutes % 60)).padStart(2, '0');
+                                const blockedSlotEndMinute = String(Math.floor(blockedSlot.endInMinutes % 60).padStart(2, '0');
                                 
                                 const isUserBlocked = blockedSlot.isBlocked === true; 
 
@@ -1614,7 +1613,7 @@ async function deletePlayingDay(dateToDelete) {
 
             // Zmažte súvisiace zablokované sloty
             const blockedSlotsQuery = query(blockedSlotsCollectionRef, where("date", "==", dateToDelete));
-            const blockedSlotsSnapshot = await getDocs(blockedSlotsQuery);
+            const blockedSlotsSnapshot = await getDocs(blockedSlotsCollectionRef);
             blockedSlotsSnapshot.docs.forEach(blockedSlotDoc => {
                 batch.delete(doc(blockedSlotsCollectionRef, blockedSlotDoc.id));
             });
@@ -2184,6 +2183,12 @@ async function handleDeleteSlot(slotId, date, location) {
 
     try {
         const slotDocRef = doc(blockedSlotsCollectionRef, slotId);
+        // Získajte dáta slotu pred vymazaním, aby ste zistili, či to bol placeholder
+        const slotDoc = await getDoc(slotDocRef);
+        let wasPlaceholder = false;
+        if (slotDoc.exists()) {
+            wasPlaceholder = (slotDoc.data().isBlocked === false);
+        }
         
         const batch = writeBatch(db); 
 
@@ -2197,11 +2202,13 @@ async function handleDeleteSlot(slotId, date, location) {
         closeModal(freeSlotModal);
         
         // Po akomkoľvek vymazaní alebo posunutí prepočítajte rozvrh, aby sa správne prekreslil
-        // Odovzdávame ID vymazaného slotu
+        // Odovzdávame ID vymazaného slotu a informáciu, či to bol placeholder
         await recalculateAndSaveScheduleForDateAndLocation(
             date, 
             location, 
-            slotId // excludedBlockedSlotId
+            slotId, // excludedBlockedSlotId
+            null, null, null, null, null, // movedMatch original/new details (not relevant here)
+            wasPlaceholder // NEW: Indicate if deleted slot was a placeholder
         );
         console.log("handleDeleteSlot: Prepočet rozvrhu dokončený.");
 
@@ -2306,7 +2313,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         deletePlayingDayButtonModal.style.display = 'none';
         // Zabezpečte, aby nebol prítomný žiadny starý handler pred otvorením pre pridanie
         if (deletePlayingDayButtonModal && deletePlayingDayButtonModal._currentHandler) { 
-            deletePlayingDayButtonButtonModal.removeEventListener('click', deletePlayingDayButtonModal._currentHandler);
+            deletePlayingDayButtonModal.removeEventListener('click', deletePlayingDayButtonModal._currentHandler);
             delete deletePlayingDayButtonModal._currentHandler;
         }
         openModal(playingDayModal);
