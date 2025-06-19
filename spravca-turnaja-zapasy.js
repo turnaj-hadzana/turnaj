@@ -724,6 +724,73 @@ async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation
         const originalLocation = draggedMatchData.location;
         const originalMatchStartTime = draggedMatchData.startTime; // Uložiť pôvodný čas zápasu
 
+        // Najprv vygenerujeme "Voľný slot dostupný" na pôvodnom mieste zápasu, ak sa zápas presúva inam
+        if (originalDate !== targetDate || originalLocation !== targetLocation) {
+            const originalStartMinutes = (parseInt(originalMatchStartTime.split(':')[0]) * 60 + parseInt(originalMatchStartTime.split(':')[1]));
+            const originalDuration = Number(draggedMatchData.duration) || 0;
+            const originalBuffer = Number(draggedMatchData.bufferTime) || 0;
+            const originalFootprintEnd = originalStartMinutes + originalDuration + originalBuffer;
+
+            const formattedOriginalStartTime = `${String(Math.floor(originalStartMinutes / 60)).padStart(2, '0')}:${String(originalStartMinutes % 60).padStart(2, '0')}`;
+            const formattedOriginalEndTime = `${String(Math.floor(originalFootprintEnd / 60)).padStart(2, '0')}:${String(originalFootprintEnd % 60).padStart(2, '0')}`;
+
+            // Skontrolujte, či na pôvodnom mieste nie je už iný zápas alebo zablokovaný slot
+            const matchesAtOriginalLocationQuery = query(
+                matchesCollectionRef,
+                where("date", "==", originalDate),
+                where("location", "==", originalLocation)
+            );
+            const matchesAtOriginalLocationSnapshot = await getDocs(matchesAtOriginalLocationQuery);
+            const matchesAtOriginalLocation = matchesAtOriginalLocationSnapshot.docs.map(d => ({id: d.id, ...d.data(), 
+                startInMinutes: (parseInt(d.data().startTime.split(':')[0]) * 60 + parseInt(d.data().startTime.split(':')[1])),
+                fullFootprintEnd: (parseInt(d.data().startTime.split(':')[0]) * 60 + parseInt(d.data().startTime.split(':')[1])) + (Number(d.data().duration) || 0) + (Number(d.data().bufferTime) || 0)
+            }));
+            
+            const blockedSlotsAtOriginalLocationQuery = query(
+                blockedSlotsCollectionRef,
+                where("date", "==", originalDate),
+                where("location", "==", originalLocation),
+                where("isBlocked", "==", true)
+            );
+            const blockedSlotsAtOriginalLocationSnapshot = await getDocs(blockedSlotsAtOriginalLocationQuery);
+            const blockedSlotsAtOriginalLocation = blockedSlotsAtOriginalLocationSnapshot.docs.map(d => ({id: d.id, ...d.data(),
+                startInMinutes: (parseInt(d.data().startTime.split(':')[0]) * 60 + parseInt(d.data().startTime.split(':')[1])),
+                endInMinutes: (parseInt(d.data().endTime.split(':')[0]) * 60 + parseInt(d.data().endTime.split(':')[1]))
+            }));
+
+            let overlapAtOriginalLocation = false;
+            for (const existingMatch of matchesAtOriginalLocation) {
+                if (existingMatch.id !== draggedMatchId && originalStartMinutes < existingMatch.fullFootprintEnd && originalFootprintEnd > existingMatch.startInMinutes) {
+                    overlapAtOriginalLocation = true;
+                    break;
+                }
+            }
+            for (const existingBlockedSlot of blockedSlotsAtOriginalLocation) {
+                if (originalStartMinutes < existingBlockedSlot.endInMinutes && originalFootprintEnd > existingBlockedSlot.startInMinutes) {
+                    overlapAtOriginalLocation = true;
+                    break;
+                }
+            }
+
+            if (!overlapAtOriginalLocation) {
+                const newPlaceholderDocRef = doc(blockedSlotsCollectionRef);
+                batch.set(newPlaceholderDocRef, {
+                    date: originalDate,
+                    location: originalLocation,
+                    startTime: formattedOriginalStartTime,
+                    endTime: formattedOriginalEndTime,
+                    startInMinutes: originalStartMinutes,
+                    endInMinutes: originalFootprintEnd,
+                    isBlocked: false,
+                    createdAt: new Date()
+                });
+                console.log(`moveAndRescheduleMatch: Pridané do batchu na vytvorenie VOĽNÉHO SLOTU na pôvodnom mieste (${originalDate}, ${originalLocation}) od ${formattedOriginalStartTime} do ${formattedOriginalEndTime}.`);
+            } else {
+                console.log(`moveAndRescheduleMatch: Nenačítal sa voľný slot na pôvodnom mieste, pretože by sa prekrýval s inou udalosťou.`);
+            }
+        }
+
+
         // Handle target slot if it's a placeholder to be removed
         if (targetBlockedSlotId) {
             // Fetch the targetBlockedSlot to ensure it's a placeholder (isBlocked: false) before deleting
