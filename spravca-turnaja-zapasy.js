@@ -651,7 +651,10 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, drag
                 // Ak je to novo vygenerovaný voľný slot PO PRESUNUTOM ZÁPASE, uložíme ho do Firestore
                 if (event.id && event.id.startsWith('new-free-slot-')) {
                     const newPlaceholderDocRef = doc(blockedSlotsCollectionRef);
-                    batch.set(newPlaceholderDocRef, {
+                    // Dôležitá ZMENA: Použite set s merge: true, ak by dokument mohol existovať (aj keď by nemal pre nové ID),
+                    // alebo explicitne odstráňte originalMatchId ak sa prenáša z freeSlotDataToCreate
+                    // V tomto prípade ideme s addDoc, lebo je to novy dokument
+                    await addDoc(blockedSlotsCollectionRef, { // Použitie addDoc
                         date: event.date,
                         location: event.location,
                         startTime: event.startTime,
@@ -660,7 +663,7 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, drag
                         endInMinutes: event.endInMinutes,
                         isBlocked: event.isBlocked,
                         createdAt: new Date(),
-                        originalMatchId: event.originalMatchId || deleteField()
+                        originalMatchId: event.originalMatchId ? event.originalMatchId : deleteField() // Použite deleteField, ak hodnota nie je prítomná
                     });
                     console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): Ukladám NOVÝ voľný slot po presune zápasu: ${event.startTime}-${event.endTime}.`);
                 } else if (event.docRef && event.isBlocked === true) { // Ak je to existujúci, používateľom zablokovaný slot (isBlocked: true)
