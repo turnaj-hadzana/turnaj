@@ -527,6 +527,7 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, excl
         // Fáza 3: Konštrukcia timeline, aktualizácia časov zápasov a generovanie nových placeholderov
         const initialScheduleStartMinutes = await getInitialScheduleStartMinutes(date);
         let currentTimePointer = initialScheduleStartMinutes;
+        let isSubsequentPushRequired = false; // NEW FLAG for forcing subsequent pushes
         console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): Počiatočný ukazovateľ času (currentTimePointer): ${currentTimePointer} minút.`);
 
         // Zlúčenie pevnych udalostí (blokované sloty) a zápasov pre účely iterácie, ale s vedomím,
@@ -677,20 +678,51 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, excl
 
             // Teraz spracujeme samotnú udalosť
             if (event.type === 'match') {
-                const newMatchStartTime = `${String(Math.floor(currentTimePointer / 60)).padStart(2, '0')}:${String(currentTimePointer % 60).padStart(2, '0')}`;
-                const newMatchEndInMinutes = currentTimePointer + event.duration + event.bufferTime;
+                let newMatchStartTimeMinutes;
 
-                // Aktualizujte čas zápasu
-                batch.update(event.docRef, {
-                    startTime: newMatchStartTime,
-                    // location, date by sa nemali meniť, len startTime
-                });
-                console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): Zápas ID: ${event.id} aktualizovaný v batchi na nový čas: ${newMatchStartTime}.`);
+                // Check if this is the dragged match being placed in its new spot
+                const isTheDraggedMatch = movedMatchOriginalId && event.id === movedMatchOriginalId && date === movedMatchOriginalDate && location === movedMatchOriginalLocation;
 
-                // Posuňte ukazovateľ času na koniec tohto zápasu (vrátane rezervy)
+                if (isTheDraggedMatch) {
+                    // This is the newly placed (dragged) match.
+                    // We force its start time to the droppedProposedStartTime.
+                    const [newH, newM] = movedMatchNewStartTime.split(':').map(Number);
+                    newMatchStartTimeMinutes = newH * 60 + newM;
+                    // Activate the flag to push subsequent matches
+                    isSubsequentPushRequired = true;
+                    console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): Activated isSubsequentPushRequired for moved match ${event.id} at new time ${movedMatchNewStartTime}.`);
+                } else if (isSubsequentPushRequired) {
+                    // If the flag is active, and this is a subsequent match, force its start time to currentTimePointer.
+                    // Ensure the new start time is not *before* the current pointer
+                    newMatchStartTimeMinutes = Math.max(currentTimePointer, event.startInMinutes); // Still take max to avoid going backwards in case of very early original slot
+                    console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): Pushing subsequent match ${event.id} to ${newMatchStartTimeMinutes} (from current pointer ${currentTimePointer}).`);
+                } else {
+                    // Normal behavior for other matches not affected by the "push" mode
+                    newMatchStartTimeMinutes = Math.max(currentTimePointer, event.startInMinutes);
+                }
+
+                const newMatchStartTime = `${String(Math.floor(newMatchStartTimeMinutes / 60)).padStart(2, '0')}:${String(newMatchStartTimeMinutes % 60).padStart(2, '0')}`;
+                const newMatchEndInMinutes = newMatchStartTimeMinutes + event.duration + event.bufferTime;
+
+                // Only update if the time has actually changed to avoid unnecessary writes
+                if (event.startTime !== newMatchStartTime) {
+                    batch.update(event.docRef, { startTime: newMatchStartTime });
+                    console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): Zápas ID: ${event.id} aktualizovaný v batchi na nový čas: ${newMatchStartTime}.`);
+                } else {
+                    console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): Zápas ID: ${event.id} čas sa nezmenil, preskakujem update.`);
+                }
+                
                 currentTimePointer = newMatchEndInMinutes;
+
             } else if (event.type === 'blocked_slot') {
                 // Používateľom zablokované sloty sú pevné, ich časy nemenia
+                // If isSubsequentPushRequired is active, but we hit a blocked slot, we stop pushing.
+                // This condition makes sure we only stop pushing if the fixed event is actually *after* the current pointer,
+                // meaning it's a barrier for things *we are about to place*.
+                if (isSubsequentPushRequired && event.startInMinutes > currentTimePointer) {
+                     isSubsequentPushRequired = false;
+                     console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): Deactivated isSubsequentPushRequired due to fixed blocked slot ${event.id} starting at ${event.startInMinutes} (after current pointer ${currentTimePointer}).`);
+                }
                 currentTimePointer = Math.max(currentTimePointer, event.endInMinutes); // Uistite sa, že ukazovateľ prešiel za zablokovaný slot
                 console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): Zablokovaný slot ID: ${event.id} je pevný, ukazovateľ posunutý na: ${currentTimePointer}.`);
             }
@@ -870,7 +902,7 @@ function getEventDisplayString(event, allSettings, categoryColorsMap) {
             const blockedSlotStartHour = String(Math.floor(event.startInMinutes / 60)).padStart(2, '0');
             const blockedSlotStartMinute = String(event.startInMinutes % 60).padStart(2, '0');
             const blockedSlotEndHour = String(Math.floor(event.endInMinutes / 60)).padStart(2, '0');
-            const blockedSlotEndMinute = String(Math.floor(event.endInMinutes % 60)).padStart(2, '0');
+            const blockedSlotEndMinute = String(Math.floor(event.endInMinutes % 60).padStart(2, '0');
             return `${blockedSlotStartHour}:${blockedSlotStartMinute} - ${blockedSlotEndHour}:${blockedSlotEndMinute}|${displayText}`;
         } else {
             // Zmena: Použite uložené startTime a endTime pre voľné sloty
@@ -2274,7 +2306,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         deletePlayingDayButtonModal.style.display = 'none';
         // Zabezpečte, aby nebol prítomný žiadny starý handler pred otvorením pre pridanie
         if (deletePlayingDayButtonModal && deletePlayingDayButtonModal._currentHandler) { 
-            deletePlayingDayButtonModal.removeEventListener('click', deletePlayingDayButtonModal._currentHandler);
+            deletePlayingDayButtonButtonModal.removeEventListener('click', deletePlayingDayButtonModal._currentHandler);
             delete deletePlayingDayButtonModal._currentHandler;
         }
         openModal(playingDayModal);
