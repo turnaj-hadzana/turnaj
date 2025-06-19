@@ -566,7 +566,7 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, excl
             // Najprv spracujeme akúkoľvek medzeru pred aktuálnou udalosťou
             if (currentTimePointer < event.startInMinutes) {
                 const gapStart = currentTimePointer;
-                const gapEnd = event.startInMinutes;
+                const gapEnd = event.startInMinutes; // Koniec medzery je začiatok ďalšej udalosti
                 const formattedGapStartTime = `${String(Math.floor(gapStart / 60)).padStart(2, '0')}:${String(gapStart % 60).padStart(2, '0')}`;
                 const formattedGapEndTime = `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(gapEnd % 60).padStart(2, '0')}`;
 
@@ -956,7 +956,8 @@ async function displayMatchesAsSchedule() {
                                     type: 'match',
                                     startInMinutes: startInMinutes,
                                     endOfPlayInMinutes: startInMinutes + duration, // Koniec hracieho času
-                                    footprintEndInMinutes: startInMinutes + duration + bufferTime // Koniec obsadeného slotu
+                                    footprintEndInMinutes: startInMinutes + duration + bufferTime, // Koniec obsadeného slotu
+                                    bufferTime: bufferTime // Pridajte bufferTime sem pre logiku zobrazenia voľných slotov
                                 };
                             }),
                             ...allBlockedSlots.filter(bs => bs.date === date && bs.location === location) // Zahrňte VŠETKY typy blocked_slot pre renderovanie, aj neblokované placeholdery
@@ -1004,13 +1005,27 @@ async function displayMatchesAsSchedule() {
                         scheduleHtml += `<th>ID Hostia</th></tr></thead><tbody>`;
 
 
-                        for (const event of finalEventsToRender) { // Iterujeme cez finalEventsToRender
+                        for (let i = 0; i < finalEventsToRender.length; i++) { // Iterujeme cez finalEventsToRender
+                            const event = finalEventsToRender[i];
+
                             // Pridajte voľný slot, ak je medzera
                             if (currentTimePointerInMinutes < event.startInMinutes) {
                                 const gapStart = currentTimePointerInMinutes;
                                 const gapEnd = event.startInMinutes; // Koniec medzery je začiatok ďalšej udalosti
-                                const formattedGapStartTime = `${String(Math.floor(gapStart / 60)).padStart(2, '0')}:${String(gapStart % 60).padStart(2, '0')}`;
-                                const formattedGapEndTime = `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(gapEnd % 60).padStart(2, '0')}`; 
+                                let formattedGapStartTime = `${String(Math.floor(gapStart / 60)).padStart(2, '0')}:${String(gapStart % 60).padStart(2, '0')}`;
+                                let formattedGapEndTime = `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(gapEnd % 60).padStart(2, '0')}`; 
+
+                                // NOVÁ LOGIKA: Upravte zobrazovaný koncový čas voľného slotu, ak po ňom nasleduje zápas
+                                if (event.type === 'match') {
+                                    const nextMatchBufferTime = Number(event.bufferTime) || 0;
+                                    const nextMatchStartTimeInMinutes = event.startInMinutes;
+                                    
+                                    const adjustedEndInMinutes = nextMatchStartTimeInMinutes - nextMatchBufferTime;
+                                    
+                                    if (adjustedEndInMinutes > gapStart && adjustedEndInMinutes <= nextMatchStartTimeInMinutes) {
+                                        formattedGapEndTime = `${String(Math.floor(adjustedEndInMinutes / 60)).padStart(2, '0')}:${String(adjustedEndInMinutes % 60).padStart(2, '0')}`;
+                                    }
+                                }
 
                                 // Ak existuje existujúci voľný slot pre túto medzeru, použite jeho ID
                                 const existingFreeSlot = allBlockedSlots.find(s => 
@@ -1018,7 +1033,7 @@ async function displayMatchesAsSchedule() {
                                     s.location === location && 
                                     s.isBlocked === false && 
                                     s.startInMinutes === gapStart && 
-                                    s.endInMinutes === gapEnd
+                                    s.endInMinutes === gapEnd // Použite pôvodné, neupravené endInMinutes pre hľadanie
                                 );
                                 const freeSlotId = existingFreeSlot ? existingFreeSlot.id : 'generated-slot-' + Math.random().toString(36).substr(2, 9); // Fallback pre ID
 
@@ -1177,7 +1192,8 @@ async function displayMatchesAsSchedule() {
             row.addEventListener('click', (event) => {
                 const date = event.currentTarget.dataset.date;
                 const location = event.currentTarget.dataset.location;
-                const startTime = event.currentTarget.dataset.startTime;
+                // Pre free slot modal použite pôvodné start/end z dátových atribútov, nie z upraveného zobrazenia
+                const startTime = event.currentTarget.dataset.startTime; 
                 const endTime = event.currentTarget.dataset.endTime; 
                 const blockedSlotId = event.currentTarget.dataset.id; // Teraz má vždy ID
 
@@ -2200,7 +2216,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             matchGroupSelect.disabled = true;
             team1NumberInput.value = '';
             team1NumberInput.disabled = true;
-            team2NumberInput.value = '';
             team2NumberInput.disabled = true;
             matchDurationInput.value = 60; // Reset na predvolené, ak nie je kategória
             matchBufferTimeInput.value = 5; // Reset na predvolené, ak nie je kategória
