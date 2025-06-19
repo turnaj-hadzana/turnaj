@@ -1485,10 +1485,10 @@ async function displayMatchesAsSchedule() {
             });
         });
     } catch (error) {
-        console.error("Chyba pri načítaní rozvrhu zápasov (zachytená chyba):", error);
+        console.error("Chyba pri načítaní zoznamu zápasov (zachytená chyba):", error);
         matchesContainer.innerHTML = `
             <div class="error-message">
-                <h3>Chyba pri načítaní rozvrhu zápasov!</h3>
+                <h3>Chyba pri načítaní zoznamu zápasov!</h3>
                 <p>Prosím, skontrolujte konzolu prehliadača (F12 > Konzola) pre detaily.</p>
                 <p>Možné príčiny:</p>
                 <ul>
