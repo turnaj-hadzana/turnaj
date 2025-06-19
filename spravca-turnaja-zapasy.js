@@ -2081,7 +2081,7 @@ async function blockFreeSlot(slotId, date, location) {
                 const matchBufferTime = Number(matchData.bufferTime) || 0; // Ensure number
                 // ZMENA: Použite match.fullFootprintEnd pre kontrolu prekrývania
                 const matchFootprintEndInMinutes = matchStartInMinutes + matchDuration + matchBufferTime; 
-                return (startInMinutes < matchFoot footprintEndInMinutes && endInMinutes > matchStartInMinutes);
+                return (startInMinutes < matchFootprintEndInMinutes && endInMinutes > matchStartInMinutes);
             });
 
             if (overlappingMatch) {
