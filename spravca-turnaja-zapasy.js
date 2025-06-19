@@ -1259,7 +1259,7 @@ async function displayMatchesAsSchedule() {
                             const gapStart = currentTimePointerInMinutes;
                             const gapEnd = 24 * 60; // Koniec dňa
                             const formattedGapStartTime = `${String(Math.floor(gapStart / 60)).padStart(2, '0')}:${String(gapStart % 60).padStart(2, '0')}`;
-                            const formattedGapEndTime = `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(gapEnd % 60).padStart(2, '0')}`; // OPRAVA
+                            const formattedGapEndTime = `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(Math.floor(gapEnd % 60)).padStart(2, '0')}`; // OPRAVA
 
                              // Ak existuje existujúci voľný slot pre túto medzeru, použite jeho ID
                             const existingFreeSlot = allBlockedSlots.find(s => 
@@ -2241,7 +2241,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const placeModal = document.getElementById('placeModal');
     const closePlaceModalButton = document.getElementById('closePlaceModal');
-    const placeForm = document.getElementById('placeForm'); 
+    const placeForm = document = document.getElementById('placeForm'); 
     const placeIdInput = document.getElementById('placeId');
     const placeTypeSelect = document.getElementById('placeTypeSelect');
     const placeNameInput = document.getElementById('placeName');
@@ -2303,7 +2303,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         placeAddressInput.value = '';
         googleMapsUrlInput.value = '';
         deletePlaceButtonModal.style.display = 'none';
-        if (deletePlaceButtonModal && deletePlaceButtonModal._currentHandler) { // Check for _currentHandler
+        if (deletePlaceButtonModal && deletePlaceButtonButton._currentHandler) { // Check for _currentHandler
             deletePlaceButtonModal.removeEventListener('click', deletePlaceButtonModal._currentHandler);
             delete deletePlaceButtonModal._currentHandler;
         }
