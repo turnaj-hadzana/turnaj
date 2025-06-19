@@ -890,11 +890,11 @@ async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation
 
 
 /**
- * Helper to generate a comparable display string for an event row.
- * @param {object} event The event object (match or blocked slot).
- * @param {object} allSettings All global settings, including categoryMatchSettings.
- * @param {Map<string, string>} categoryColorsMap Map of category IDs to colors.
- * @returns {string} A string representation of the event's displayed content.
+ * Pomocná funkcia na generovanie porovnateľného reťazca pre zobrazenie riadku udalosti.
+ * @param {object} event Objekt udalosti (zápas alebo zablokovaný slot).
+ * @param {object} allSettings Všetky globálne nastavenia, vrátane nastavení zápasov pre kategórie.
+ * @param {Map<string, string>} categoryColorsMap Mapa ID kategórií na farby.
+ * @returns {string} Reťazcová reprezentácia zobrazeného obsahu udalosti.
  */
 function getEventDisplayString(event, allSettings, categoryColorsMap) {
     if (event.type === 'match') {
@@ -903,7 +903,7 @@ function getEventDisplayString(event, allSettings, categoryColorsMap) {
         const displayedMatchEndTimeInMinutes = event.endOfPlayInMinutes; 
         const formattedDisplayedEndTime = `${String(Math.floor(displayedMatchEndTimeInMinutes / 60)).padStart(2, '0')}:${String(displayedMatchEndTimeInMinutes % 60).padStart(2, '0')}`;
         
-        // This string represents the visible text content of a match row
+        // Tento reťazec predstavuje viditeľný textový obsah riadku zápasu
         return `${event.startTime} - ${formattedDisplayedEndTime}|${event.team1ClubName || 'N/A'}|${event.team2ClubName || 'N/A'}|${event.team1ShortDisplayName || 'N/A'}|${event.team2ShortDisplayName || 'N/A'}`;
     } else if (event.type === 'blocked_slot') {
         let displayText = '';
