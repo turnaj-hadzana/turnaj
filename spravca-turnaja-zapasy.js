@@ -724,72 +724,32 @@ async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation
         const originalLocation = draggedMatchData.location;
         const originalMatchStartTime = draggedMatchData.startTime; // Uložiť pôvodný čas zápasu
 
-        // Najprv vygenerujeme "Voľný slot dostupný" na pôvodnom mieste zápasu, ak sa zápas presúva inam
-        if (originalDate !== targetDate || originalLocation !== targetLocation) {
-            const originalStartMinutes = (parseInt(originalMatchStartTime.split(':')[0]) * 60 + parseInt(originalMatchStartTime.split(':')[1]));
-            const originalDuration = Number(draggedMatchData.duration) || 0;
-            const originalBuffer = Number(draggedMatchData.bufferTime) || 0;
-            const originalFootprintEnd = originalStartMinutes + originalDuration + originalBuffer;
+        const originalMatchStartInMinutes = (parseInt(originalMatchStartTime.split(':')[0]) * 60 + parseInt(originalMatchStartTime.split(':')[1]));
+        const draggedMatchDuration = Number(draggedMatchData.duration) || 0;
+        const draggedMatchBufferTime = Number(draggedMatchData.bufferTime) || 0;
+        const originalMatchFootprintEndInMinutes = originalMatchStartInMinutes + draggedMatchDuration + draggedMatchBufferTime;
 
-            const formattedOriginalStartTime = `${String(Math.floor(originalStartMinutes / 60)).padStart(2, '0')}:${String(originalStartMinutes % 60).padStart(2, '0')}`;
-            const formattedOriginalEndTime = `${String(Math.floor(originalFootprintEnd / 60)).padStart(2, '0')}:${String(originalFootprintEnd % 60).padStart(2, '0')}`;
+        const [targetStartH, targetStartM] = droppedProposedStartTime.split(':').map(Number);
+        const targetMatchStartInMinutes = targetStartH * 60 + targetStartM;
 
-            // Skontrolujte, či na pôvodnom mieste nie je už iný zápas alebo zablokovaný slot
-            const matchesAtOriginalLocationQuery = query(
-                matchesCollectionRef,
-                where("date", "==", originalDate),
-                where("location", "==", originalLocation)
-            );
-            const matchesAtOriginalLocationSnapshot = await getDocs(matchesAtOriginalLocationQuery);
-            const matchesAtOriginalLocation = matchesAtOriginalLocationSnapshot.docs.map(d => ({id: d.id, ...d.data(), 
-                startInMinutes: (parseInt(d.data().startTime.split(':')[0]) * 60 + parseInt(d.data().startTime.split(':')[1])),
-                fullFootprintEnd: (parseInt(d.data().startTime.split(':')[0]) * 60 + parseInt(d.data().startTime.split(':')[1])) + (Number(d.data().duration) || 0) + (Number(d.data().bufferTime) || 0)
-            }));
-            
-            const blockedSlotsAtOriginalLocationQuery = query(
-                blockedSlotsCollectionRef,
-                where("date", "==", originalDate),
-                where("location", "==", originalLocation),
-                where("isBlocked", "==", true)
-            );
-            const blockedSlotsAtOriginalLocationSnapshot = await getDocs(blockedSlotsAtOriginalLocationQuery);
-            const blockedSlotsAtOriginalLocation = blockedSlotsAtOriginalLocationSnapshot.docs.map(d => ({id: d.id, ...d.data(),
-                startInMinutes: (parseInt(d.data().startTime.split(':')[0]) * 60 + parseInt(d.data().startTime.split(':')[1])),
-                endInMinutes: (parseInt(d.data().endTime.split(':')[0]) * 60 + parseInt(d.data().endTime.split(':')[1]))
-            }));
+        // Vždy vytvoríme placeholder pre pôvodné miesto, ak sa zápas skutočne presúva
+        if (originalDate !== targetDate || originalLocation !== targetLocation || originalMatchStartInMinutes !== targetMatchStartInMinutes) {
+            const formattedOriginalStartTime = `${String(Math.floor(originalMatchStartInMinutes / 60)).padStart(2, '0')}:${String(originalMatchStartInMinutes % 60).padStart(2, '0')}`;
+            const formattedOriginalEndTime = `${String(Math.floor(originalMatchFootprintEndInMinutes / 60)).padStart(2, '0')}:${String(originalMatchFootprintEndInMinutes % 60).padStart(2, '0')}`;
 
-            let overlapAtOriginalLocation = false;
-            for (const existingMatch of matchesAtOriginalLocation) {
-                if (existingMatch.id !== draggedMatchId && originalStartMinutes < existingMatch.fullFootprintEnd && originalFootprintEnd > existingMatch.startInMinutes) {
-                    overlapAtOriginalLocation = true;
-                    break;
-                }
-            }
-            for (const existingBlockedSlot of blockedSlotsAtOriginalLocation) {
-                if (originalStartMinutes < existingBlockedSlot.endInMinutes && originalFootprintEnd > existingBlockedSlot.startInMinutes) {
-                    overlapAtOriginalLocation = true;
-                    break;
-                }
-            }
-
-            if (!overlapAtOriginalLocation) {
-                const newPlaceholderDocRef = doc(blockedSlotsCollectionRef);
-                batch.set(newPlaceholderDocRef, {
-                    date: originalDate,
-                    location: originalLocation,
-                    startTime: formattedOriginalStartTime,
-                    endTime: formattedOriginalEndTime,
-                    startInMinutes: originalStartMinutes,
-                    endInMinutes: originalFootprintEnd,
-                    isBlocked: false,
-                    createdAt: new Date()
-                });
-                console.log(`moveAndRescheduleMatch: Pridané do batchu na vytvorenie VOĽNÉHO SLOTU na pôvodnom mieste (${originalDate}, ${originalLocation}) od ${formattedOriginalStartTime} do ${formattedOriginalEndTime}.`);
-            } else {
-                console.log(`moveAndRescheduleMatch: Nenačítal sa voľný slot na pôvodnom mieste, pretože by sa prekrýval s inou udalosťou.`);
-            }
+            const newPlaceholderDocRef = doc(blockedSlotsCollectionRef);
+            batch.set(newPlaceholderDocRef, {
+                date: originalDate,
+                location: originalLocation,
+                startTime: formattedOriginalStartTime,
+                endTime: formattedOriginalEndTime,
+                startInMinutes: originalMatchStartInMinutes,
+                endInMinutes: originalMatchFootprintEndInMinutes,
+                isBlocked: false,
+                createdAt: new Date()
+            });
+            console.log(`moveAndRescheduleMatch: Pridané do batchu na vytvorenie VOĽNÉHO SLOTU na pôvodnom mieste (ID presunutého zápasu: ${draggedMatchId}) od ${formattedOriginalStartTime} do ${formattedOriginalEndTime}.`);
         }
-
 
         // Handle target slot if it's a placeholder to be removed
         if (targetBlockedSlotId) {
@@ -806,8 +766,6 @@ async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation
             const displacedMatchDoc = await getDoc(displacedMatchDocRef);
             if (displacedMatchDoc.exists()) {
                 const displacedMatchData = displacedMatchDoc.data();
-                const draggedMatchDuration = Number(draggedMatchData.duration) || 0;
-                const draggedMatchBufferTime = Number(draggedMatchData.bufferTime) || 0;
                 
                 const [displacedH, displacedM] = displacedMatchData.startTime.split(':').map(Number);
                 const displacedStartInMinutes = displacedH * 60 + displacedM;
@@ -833,21 +791,12 @@ async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation
         await batch.commit();
         console.log("moveAndRescheduleMatch: Batch commit úspešný pre presun zápasu a prípadné vymazanie cieľového slotu.");
 
-        // Prepočítajte rozvrh pre pôvodné miesta/dátumy (len ak sa zápas presunul inam)
-        if (originalDate !== targetDate || originalLocation !== targetLocation) {
-            await recalculateAndSaveScheduleForDateAndLocation(
-                originalDate, 
-                originalLocation, 
-                draggedMatchId // Exclude the moved match itself from recalculation of its original location
-            ); 
-            console.log(`moveAndRescheduleMatch: Prepočítanie pre pôvodnú lokáciu (${originalDate}, ${originalLocation}) dokončené.`);
-        }
-        // Prepočítajte rozvrh pre cieľové miesto/dátum
-        await recalculateAndSaveScheduleForDateAndLocation(
-            targetDate, 
-            targetLocation, 
-            null // No excluded event for the target location, as the match is now there.
-        ); 
+        // Vždy prepočítajte rozvrh pre pôvodné miesta/dátumy (s vylúčením presunutého zápasu, aby sa vytvoril voľný slot)
+        await recalculateAndSaveScheduleForDateAndLocation(originalDate, originalLocation, draggedMatchId); 
+        console.log(`moveAndRescheduleMatch: Prepočítanie pre pôvodnú lokáciu (${originalDate}, ${originalLocation}) dokončené.`);
+        
+        // Vždy prepočítajte rozvrh pre cieľové miesto/dátum (už bez vylúčenia, zápas je už tam)
+        await recalculateAndSaveScheduleForDateAndLocation(targetDate, targetLocation, null); 
         console.log(`moveAndRescheduleMatch: Prepočítanie pre cieľovú lokáciu (${targetDate}, ${targetLocation}) dokončené.`);
 
         await showMessage('Úspech', 'Zápas úspešne presunutý a rozvrh prepočítaný!');
@@ -883,7 +832,7 @@ function getEventDisplayString(event, allSettings, categoryColorsMap) {
             const blockedSlotStartHour = String(Math.floor(event.startInMinutes / 60)).padStart(2, '0');
             const blockedSlotStartMinute = String(event.startInMinutes % 60).padStart(2, '0');
             const blockedSlotEndHour = String(Math.floor(event.endInMinutes / 60)).padStart(2, '0');
-            const blockedSlotEndMinute = String(Math.floor(event.endInMinutes % 60)).padStart(2, '0');
+            const blockedSlotEndMinute = String(Math.floor(event.endInMinutes % 60).padStart(2, '0');
             return `${blockedSlotStartHour}:${blockedSlotStartMinute} - ${blockedSlotEndHour}:${blockedSlotEndMinute}|${displayText}`;
         } else {
             // Zmena: Použite uložené startTime a endTime pre voľné sloty
@@ -1178,7 +1127,7 @@ async function displayMatchesAsSchedule() {
                                 const blockedSlotStartHour = String(Math.floor(blockedSlot.startInMinutes / 60)).padStart(2, '0');
                                 const blockedSlotStartMinute = String(blockedSlot.startInMinutes % 60).padStart(2, '0');
                                 const blockedSlotEndHour = String(Math.floor(blockedSlot.endInMinutes / 60)).padStart(2, '0');
-                                const blockedSlotEndMinute = String(Math.floor(blockedSlot.endInMinutes % 60)).padStart(2, '0');
+                                const blockedSlotEndMinute = String(Math.floor(blockedSlot.endInMinutes % 60).padStart(2, '0');
 
                                 scheduleHtml += `
                                     <tr class="blocked-slot-row" data-id="${blockedSlot.id}" data-date="${date}" data-location="${location}" data-start-time="${blockedSlotStartHour}:${blockedSlotStartMinute}" data-end-time="${blockedSlotEndHour}:${blockedSlotEndMinute}" data-is-blocked="true">
