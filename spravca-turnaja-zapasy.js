@@ -571,7 +571,7 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, drag
         
         // Fáza 3: Iterácia a aktualizácia
         // Najprv vymažeme všetky existujúce placeholdery (isBlocked: false) pre tento dátum a miesto.
-        // VYJADRENÁ PRIORITA: Novo vytvorený "Voľný slot dostupný" po presunutom zápase má prednosť.
+        // VYJADRENÁ PRIORITA: Novo vytvorený "Voľný slot dostupný" po presunutom zápase má predsebnosť.
         // Ak existuje starý placeholder, ktorý reprezentoval ten istý časový slot po predošlom presune (podľa originalMatchId a startTime),
         // tento starý placeholder sa vymaže, aby sa predišlo duplicitám pri opätovnom vytvorení nového.
         const existingPlaceholdersToDelete = allCurrentBlockedSlots.filter(slot =>
@@ -614,8 +614,10 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, drag
                 );
 
                 if (!isDuplicateGap) {
-                    // ZMENA: Použitie addDoc pre nové placeholdery
-                    batch.add(blockedSlotsCollectionRef, { // Firestore automaticky vygeneruje ID
+                    // ZMENA: Použitie doc(collectionRef) a batch.set() pre nové placeholdery
+                    // Toto generuje nové ID a nastavuje dokument
+                    const newBlockedSlotRef = doc(blockedSlotsCollectionRef); // Získajte referenciu na nový dokument s automaticky generovaným ID
+                    batch.set(newBlockedSlotRef, { 
                         date: date,
                         location: location,
                         startTime: gapStartTime,
@@ -650,8 +652,9 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, drag
             if (event.type === 'blocked_slot') {
                 // Ak je to novo vygenerovaný voľný slot PO PRESUNUTOM ZÁPASE, uložíme ho do Firestore
                 if (event.id && event.id.startsWith('new-free-slot-')) {
-                    // ZMENA: Použitie addDoc pre nový slot
-                    batch.add(blockedSlotsCollectionRef, { 
+                    // ZMENA: Použitie doc(collectionRef) a batch.set() pre nový slot
+                    const newBlockedSlotRef = doc(blockedSlotsCollectionRef); // Získajte referenciu na nový dokument s automaticky generovaným ID
+                    batch.set(newBlockedSlotRef, { 
                         date: event.date,
                         location: event.location,
                         startTime: event.startTime,
@@ -971,7 +974,7 @@ async function displayMatchesAsSchedule() {
         const settingsDoc = await getDoc(settingsDocRef);
         let globalFirstDayStartTime = '08:00';
         let globalOtherDaysStartTime = '08:00';
-        let allSettings = {}; // Uložte všetky nastavenia pre ľahší prístup, vrátane špecifických pre kategórie
+        let allSettings = {}; // Uložte všetky nastavenia pre ľahší prístup, vrátane nastavení zápasov pre kategórie
         if (settingsDoc.exists()) {
             const data = settingsDoc.data();
             globalFirstDayStartTime = data.firstDayStartTime || '08:00';
@@ -1167,8 +1170,19 @@ async function displayMatchesAsSchedule() {
                                 const gapStartTime = `${String(Math.floor(currentTimePointerInMinutes / 60)).padStart(2, '0')}:${String(currentTimePointerInMinutes % 60).padStart(2, '0')}`;
                                 const gapEndTime = `${String(Math.floor(eventDisplayStartMinutes / 60)).padStart(2, '0')}:${String(eventDisplayStartMinutes % 60).padStart(2, '0')}`;
                                 
+                                // Použite dočasné ID pre renderovanie voľného slotu, ktoré bolo nájdené pri prepočte rozvrhu
+                                // a má byť už v db, len sa prekresľuje
+                                const matchingFreeSlot = allBlockedSlots.find(s => 
+                                    s.isBlocked === false && 
+                                    s.date === date && 
+                                    s.location === location && 
+                                    s.startTime === gapStartTime && 
+                                    s.endTime === gapEndTime
+                                );
+                                const freeSlotIdForRendering = matchingFreeSlot ? matchingFreeSlot.id : `auto-generated-free-slot-render-only-${gapStartTime}-${gapEndTime}-${Date.now()}`;
+
                                 scheduleHtml += `
-                                    <tr class="empty-slot-row free-slot-available-row" data-id="auto-generated-free-slot-${currentTimePointerInMinutes}-${eventDisplayStartMinutes}" data-date="${date}" data-location="${location}" data-start-time="${gapStartTime}" data-end-time="${gapEndTime}" data-is-blocked="false">
+                                    <tr class="empty-slot-row free-slot-available-row" data-id="${freeSlotIdForRendering}" data-date="${date}" data-location="${location}" data-start-time="${gapStartTime}" data-end-time="${gapEndTime}" data-is-blocked="false">
                                         <td>${gapStartTime} - ${gapEndTime}</td>
                                         <td colspan="4" style="text-align: center; color: #888; font-style: italic; background-color: #f0f0f0;">Voľný slot dostupný</td>
                                     </tr>
