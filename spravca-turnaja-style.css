@@ -1030,7 +1030,6 @@ td:last-child {
     border-radius: 8px; /* Jemne zaoblené rohy */
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
     display: none; /* Predvolene skryté, JS ho zmení na 'flex' */
-    position: absolute; /* Umiestnenie vzhľadom na #controlsContainer */
     bottom: 20px; /* Posunuté bližšie k spodnému okraju */
     right: 0; /* Zarovnané s pravým okrajom #addButton */
     width: 220px; /* Pevná šírka pre rozbaľovaciu ponuku */
