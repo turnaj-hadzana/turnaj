@@ -1022,7 +1022,7 @@ td:last-child {
 
 #addOptions {
     position: fixed;
-    bottom: 20px;
+    bottom: 50px;
     right: 50px;
     
     background-color: white;
