@@ -950,7 +950,7 @@ td:last-child {
 }
 
 #addOptions button {
-    background-color: #3a8d41; /* Svetlejšie pozadie pre tlačidlá */
+    background-color: #007bff; /* Svetlejšie pozadie pre tlačidlá */
     color: #ffffff;
     border: 1px solid #ced4da; /* Jemný okraj */
     padding: 15px !important; /* Rovnaký padding zo všetkých strán pre konzistentný vnútorný priestor s !important */
@@ -966,5 +966,5 @@ td:last-child {
 }
 
 #addOptions button:hover {
-    background-color: #c46f50; /* Tmavšie pozadie pri prechode myšou */
+    background-color: #0056b3; /* Tmavšie pozadie pri prechode myšou */
 }
