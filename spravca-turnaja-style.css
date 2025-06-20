@@ -1000,3 +1000,19 @@ td:last-child {
     overflow-wrap: break-word;
     white-space: normal;
 }
+
+
+
+.loading-char {
+    opacity: 0;
+    display: inline-block; 
+    transition: opacity 0.1s ease-in-out, font-weight 0.2s ease-in-out;
+}
+
+.loading-char.visible {
+    opacity: 1;
+}
+
+.loading-char.bold {
+    font-weight: bold;
+}
