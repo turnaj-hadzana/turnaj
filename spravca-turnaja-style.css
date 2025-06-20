@@ -206,6 +206,7 @@ td:last-child {
 .action-button.delete-button:active {
     background-color: #bd2130;
     border-color: #a71d2a;
+    width: calc(100% - 22px);
 }
 .section-block h2 {
     text-align: center;
