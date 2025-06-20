@@ -1025,31 +1025,30 @@ td:last-child {
     border: 1px solid #ddd;
     border-radius: 8px; /* Jemne zaoblené rohy */
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    display: none; /* Predvolene skryté, JS ho zmení na 'block' */
+    display: none; /* Predvolene skryté, JS ho zmení na 'flex' */
     position: absolute; /* Umiestnenie vzhľadom na #controlsContainer */
-    bottom: 50px; /* Nad "+" tlačidlom */
+    bottom: 20px; /* Posunuté bližšie k spodnému okraju */
     right: 0; /* Zarovnané s pravým okrajom #addButton */
     width: 220px; /* Pevná šírka pre rozbaľovaciu ponuku */
     overflow: hidden; /* Zabezpečí, že zaoblené rohy fungujú aj na obsahu */
-    padding: 15px !important; /* Zvýšený okraj okolo obsahu vo vnútri bieleho obdĺžnika (nad, pod, vľavo, vpravo) */
-    display: flex !important;
-    flex-direction: column !important; /* Tlačidlá pod sebou */
-    gap: 15px !important; /* Zvýšená medzera medzi tlačidlami */
+    padding: 15px !important; /* Zvýšený okraj okolo obsahu vo vnútri bieleho obdĺžnika (nad, pod, vľavo, vpravo) s !important */
+    flex-direction: column !important; /* Tlačidlá pod sebou s !important */
+    gap: 15px !important; /* Zvýšená medzera medzi tlačidlami s !important */
 }
 
 #addOptions button {
-    background-color: #3a8d41;
+    background-color: #3a8d41; /* Svetlejšie pozadie pre tlačidlá */
     color: #ffffff;
     border: 1px solid #ced4da; /* Jemný okraj */
-    padding: 15px !important; /* Rovnaký padding zo všetkých strán pre konzistentný vnútorný priestor */
+    padding: 15px !important; /* Rovnaký padding zo všetkých strán pre konzistentný vnútorný priestor s !important */
     text-align: center;
     text-decoration: none;
-    display: block; /* Zabezpečí, že zaberie celú šírku */
+    display: block !important; /* Zabezpečí, že zaberie celú šírku */
     font-size: 1em;
     cursor: pointer;
     border-radius: 5px; /* Zaoblené rohy tlačidiel */
-    width: 100% !important; /* Rozšírenie na celú šírku rodičovského kontajnera (s paddingom) */
-    box-sizing: border-box !important; /* Padding zahrnutý v šírke */
+    width: 100% !important; /* Rozšírenie na celú šírku rodičovského kontajnera (s paddingom) s !important */
+    box-sizing: border-box !important; /* Padding zahrnutý v šírke s !important */
     transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
