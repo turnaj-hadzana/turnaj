@@ -795,7 +795,7 @@ async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation
             droppedProposedStartTime
         ); 
 
-        await showMessage('Úspech', 'Zápas úspešne presunutý a rozvrh prepočítaný!');
+        await showMessage('Oznámenie', 'Zápas úspešne presunutý a rozvrh prepočítaný!');
         closeModal(document.getElementById('messageModal'));
     } catch (error) {
         console.error("moveAndRescheduleMatch: Chyba pri presúvaní a prepočítavaní rozvrhu:", error);
@@ -1532,7 +1532,7 @@ async function deletePlayingDay(dateToDelete) {
 
 
             await batch.commit();
-            await showMessage('Úspech', `Hrací deň ${dateToDelete} a všetky súvisiace zápasy/intervaly boli vymazané!`);
+            await showMessage('Oznámenie', `Hrací deň ${dateToDelete} a všetky súvisiace zápasy/intervaly boli vymazané!`);
             closeModal(document.getElementById('playingDayModal'));
             await displayMatchesAsSchedule();
         } catch (error) {
@@ -1582,7 +1582,7 @@ async function deletePlace(placeNameToDelete, placeTypeToDelete) {
 
 
             await batch.commit();
-            await showMessage('Úspech', `Miesto ${placeNameToDelete} (${placeTypeToDelete}) a všetky súvisiace zápasy boli vymazané!`);
+            await showMessage('Oznámenie', `Miesto ${placeNameToDelete} (${placeTypeToDelete}) a všetky súvisiace zápasy boli vymazané!`);
             closeModal(document.getElementById('placeModal'));
             await displayMatchesAsSchedule();
         } catch (error) {
@@ -2071,7 +2071,7 @@ async function saveMatchTimeSettings() {
         batch.set(settingsDocRef, newSettings, { merge: true });
         await batch.commit();
 
-        await showMessage('Úspech', 'Nastavenia času zápasu úspešne uložené!');
+        await showMessage('Oznámenie', 'Nastavenia času zápasu úspešne uložené!');
         closeModal(document.getElementById('settingsModal'));
         await displayMatchesAsSchedule(); // Aktualizujte zobrazenie rozvrhu
     } catch (error) {
@@ -2327,7 +2327,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 
                 await batch.commit();
 
-                await showMessage('Úspech', `Zápas úspešne ${isNewMatch ? 'pridaný' : 'upravený'}!`);
+                await showMessage('Oznámenie', `Zápas úspešne ${isNewMatch ? 'pridaný' : 'upravený'}!`);
                 closeModal(document.getElementById('matchModal'));
                 
                 // Prepočítajte rozvrh len pre príslušné lokality/dny
@@ -2466,11 +2466,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (id) {
                     console.log(`Ukladám existujúci hrací deň ID: ${id}`, playingDayData);
                     await setDoc(doc(playingDaysCollectionRef, id), playingDayData, { merge: true });
-                    await showMessage('Úspech', 'Hrací deň úspešne upravený!');
+                    await showMessage('Oznámenie', 'Hrací deň úspešne upravený!');
                 } else {
                     console.log(`Pridávam nový hrací deň:`, playingDayData);
                     await addDoc(playingDaysCollectionRef, { ...playingDayData, createdAt: new Date() });
-                    await showMessage('Úspech', 'Hrací deň úspešne pridaný!');
+                    await showMessage('Oznámenie', 'Hrací deň úspešne pridaný!');
                 }
                 closeModal(playingDayModal);
                 await displayMatchesAsSchedule();
@@ -2533,11 +2533,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (id) {
                     console.log(`Ukladám existujúce miesto ID: ${id}`, placeData);
                     await setDoc(doc(placesCollectionRef, id), placeData, { merge: true });
-                    await showMessage('Úspech', 'Miesto úspešne upravené!');
+                    await showMessage('Oznámenie', 'Miesto úspešne upravené!');
                 } else {
                     console.log(`Pridávam nové miesto:`, placeData);
                     await addDoc(placesCollectionRef, { ...placeData, createdAt: new Date() });
-                    await showMessage('Úspech', 'Miesto úspešne pridané!');
+                    await showMessage('Oznámenie', 'Miesto úspešne pridané!');
                 }
                 closeModal(placeModal);
                 await displayMatchesAsSchedule(); // Aktualizovať rozvrh po zmene miest
@@ -2600,7 +2600,7 @@ async function deleteMatch(matchId) {
                 const originalLocation = matchData.location;
 
                 await deleteDoc(matchDocRef);
-                await showMessage('Úspech', 'Zápas bol úspešne vymazaný.');
+                await showMessage('Oznámenie', 'Zápas bol úspešne vymazaný.');
                 closeModal(document.getElementById('matchModal'));
 
                 // Prepočítajte rozvrh pre miesto a dátum, odkiaľ bol zápas vymazaný
