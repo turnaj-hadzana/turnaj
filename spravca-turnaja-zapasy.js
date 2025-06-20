@@ -1051,7 +1051,7 @@ function getEventDisplayString(event, allSettings, categoryColorsMap) {
             const blockedSlotStartHour = String(Math.floor(event.startInMinutes / 60)).padStart(2, '0');
             const blockedSlotStartMinute = String(event.startInMinutes % 60).padStart(2, '0');
             const blockedSlotEndHour = String(Math.floor(event.endInMinutes / 60)).padStart(2, '0');
-            const blockedSlotEndMinute = String(Math.floor(event.endInMinutes % 60)).padStart(2, '0');
+            const blockedSlotEndMinute = String(Math.floor(event.endInMinutes % 60).padStart(2, '0');
             return `${blockedSlotStartHour}:${blockedSlotStartMinute} - ${blockedSlotEndHour}:${blockedSlotEndMinute}|${displayText}`;
         } else {
             // Zmena: Použite uložené startTime a endTime pre voľné sloty
@@ -1393,7 +1393,7 @@ async function displayMatchesAsSchedule() {
                                 const blockedSlotStartHour = String(Math.floor(blockedSlot.startInMinutes / 60)).padStart(2, '0');
                                 const blockedSlotStartMinute = String(blockedSlot.startInMinutes % 60).padStart(2, '0');
                                 const blockedSlotEndHour = String(Math.floor(blockedSlot.endInMinutes / 60)).padStart(2, '0');
-                                const blockedSlotEndMinute = String(Math.floor(blockedSlot.endInMinutes % 60)).padStart(2, '0');
+                                const blockedSlotEndMinute = String(Math.floor(blockedSlot.endInMinutes % 60).padStart(2, '0');
                                 
                                 const isUserBlocked = blockedSlot.isBlocked === true; 
 
@@ -2238,6 +2238,13 @@ async function openFreeSlotModal(date, location, startTime, endTime, blockedSlot
         }
 
     } else { // Je to placeholder prázdny slot (isBlocked === false)
+        // NOVÁ KONTROLA: Ak je čas konca 24:00 (polnoc), neotvárajte modálne okno.
+        const [endH, endM] = endTime.split(':').map(Number);
+        if (endH === 24 && endM === 0) {
+            console.log("openFreeSlotModal: Slot končí o 24:00, nebudem zobrazovať modálne okno.");
+            return; 
+        }
+
         freeSlotModalTitle.textContent = 'Spravovať voľný interval'; // Neutrálnejší názov
         console.log("openFreeSlotModal: Typ slotu: Placeholder voľný interval ('Voľný slot dostupný').");
         
@@ -2858,7 +2865,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     ? (parseInt(overlappingMatchDetails.endTime.split(':')[0]) * 60 + parseInt(overlappingMatchDetails.endTime.split(':')[1]))
                     : (existingStartHour * 60 + existingStartMinute + (Number(overlappingMatchDetails.duration) || 0) + (Number(overlappingMatchDetails.bufferTime) || 0));
 
-                const formattedExistingEndTime = `${String(Math.floor(existingMatchEndTimeInMinutes / 60)).padStart(2, '0')}:${String(existingMatchEndTimeInMinutes % 60).padStart(2, '0')}`;
+                const formattedExistingEndTime = `${String(Math.floor(existingMatchEndTimeInMinutes / 60)).padStart(2, '0')}:${String(Math.floor(existingMatchEndTimeInMinutes % 60)).padStart(2, '0')}`;
 
                 errorMessage += `v mieste "${matchLocationName}" dňa ${matchDate}:\n\n` +
                       `Existujúci časový rozsah: ${overlappingMatchDetails.startTime} - ${formattedExistingEndTime}\n`;
