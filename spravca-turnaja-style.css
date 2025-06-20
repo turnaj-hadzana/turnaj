@@ -1022,16 +1022,14 @@ td:last-child {
 
 #addOptions {
     position: fixed;
-    bottom: 250px;
-    right: 250px;
+    bottom: 50px;
+    right: 50px;
     
     background-color: white;
     border: 1px solid #ddd;
     border-radius: 8px; /* Jemne zaoblené rohy */
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
     display: none; /* Predvolene skryté, JS ho zmení na 'flex' */
-    bottom: 20px; /* Posunuté bližšie k spodnému okraju */
-    right: 0; /* Zarovnané s pravým okrajom #addButton */
     width: 220px; /* Pevná šírka pre rozbaľovaciu ponuku */
     overflow: hidden; /* Zabezpečí, že zaoblené rohy fungujú aj na obsahu */
     padding: 15px !important; /* Zvýšený okraj okolo obsahu vo vnútri bieleho obdĺžnika (nad, pod, vľavo, vpravo) s !important */
