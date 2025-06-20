@@ -55,14 +55,6 @@ async function animateLoadingText(containerId, text) {
                 background-color: white !important; /* Žiadny hover efekt */
                 cursor: default; /* Žiadny kurzor ukazovateľa */
             }
-            /* Úprava pre riadok s časom 24:00 (koniec dňa) */
-            .end-of-day-free-slot-row {
-                background-color: #f0f0f0; /* Farba pozadia ako ostatné voľné sloty */
-            }
-            .end-of-day-free-slot-row:hover {
-                background-color: #f0f0f0 !important; /* Vypnutie hover efektu */
-                cursor: default !important; /* Zmena kurzora na predvolený */
-            }
         `;
         document.head.appendChild(style);
     }
@@ -1483,7 +1475,7 @@ async function displayMatchesAsSchedule() {
                                             data-end-time="${formattedGapEndTime}" 
                                             data-is-blocked="false">
                                             ${displayTimeHtml}
-                                            <td colspan="${textColspan}" style="text-align: center; color: #888; font-style: italic; background-color: #f0f0f0;"></td>
+                                            <td colspan="${textColspan}" style="text-align: center; color: #888; font-style: italic; background-color: #f0f0f0;">Voľný slot dostupný</td>
                                         </tr>
                                     `;
                                     contentAddedForThisDate = true;
