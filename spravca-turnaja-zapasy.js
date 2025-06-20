@@ -1051,7 +1051,7 @@ function getEventDisplayString(event, allSettings, categoryColorsMap) {
             const blockedSlotStartHour = String(Math.floor(event.startInMinutes / 60)).padStart(2, '0');
             const blockedSlotStartMinute = String(event.startInMinutes % 60).padStart(2, '0');
             const blockedSlotEndHour = String(Math.floor(event.endInMinutes / 60)).padStart(2, '0');
-            const blockedSlotEndMinute = String(Math.floor(event.endInMinutes % 60)).padStart(2, '0');
+            const blockedSlotEndMinute = String(Math.floor(event.endInMinutes % 60).padStart(2, '0');
             return `${blockedSlotStartHour}:${blockedSlotStartMinute} - ${blockedSlotEndHour}:${blockedSlotEndMinute}|${displayText}`;
         } else {
             // Zmena: Použite uložené startTime a endTime pre voľné sloty
@@ -1423,44 +1423,55 @@ async function displayMatchesAsSchedule() {
                         }
                         
                         // Po spracovaní všetkých udalostí skontrolujte, či existuje voľný slot až do konca dňa (24:00)
-                        if (currentTimePointerInMinutes < 24 * 60) {
-                            const gapStart = currentTimePointerInMinutes;
-                            const gapEnd = 24 * 60; // Koniec dňa (polnoc)
-                            const formattedGapStartTime = `${String(Math.floor(gapStart / 60)).padStart(2, '0')}:${String(gapStart % 60).padStart(2, '0')}`;
-                            const formattedGapEndTime = `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(gapEnd % 60).padStart(2, '0')}`; 
+                        // A LEN AK JE NEjaký VOĽNÝ SLOT DOSTUPNÝ (t.j. currentEventForRendering.length > 0
+                        // a posledný event nie je na konci dňa), potom sa ZOBRAZÍ.
+                        if (currentTimePointerInMinutes < 24 * 60 && finalEventsToRender.length > 0) {
+                            const lastEventInRenderedList = finalEventsToRender[finalEventsToRender.length - 1];
+                            const lastEventEndTime = lastEventInRenderedList.type === 'match' 
+                                ? lastEventInRenderedList.footprintEndInMinutes 
+                                : lastEventInRenderedList.endInMinutes;
 
-                             // Ak existuje existujúci voľný slot pre túto medzeru, použite jeho ID
-                            const existingFreeSlot = allBlockedSlots.find(s => 
-                                s.date === date && 
-                                s.location === location && 
-                                s.isBlocked === false && 
-                                s.startInMinutes === gapStart && 
-                                s.endInMinutes === gapEnd
-                            );
-                            const freeSlotId = existingFreeSlot ? existingFreeSlot.id : 'generated-slot-' + Math.random().toString(36).substr(2, 9); // Fallback pre ID
-                            
-                            // Vytvorí voľný slot len, ak má reálnu dĺžku
-                            // ZMENA: Ak je to posledný slot dňa (ide do 24:00), zobrazte ho bez času.
-                            const displayTimeForEndSlot = (gapEnd === 24 * 60) ? '' : `${formattedGapStartTime} - ${formattedGapEndTime}`;
-                            const timeColspan = (gapEnd === 24 * 60) ? '5' : '1'; // colspan pre čas
-                            const textColspan = (gapEnd === 24 * 60) ? '5' : '4'; // colspan pre text
+                            // Ak posledná udalosť NEKONČÍ na 24:00 a po nej ostáva nejaká medzera,
+                            // a zároveň aktuálny časový ukazovateľ je menší ako 24:00
+                            if (lastEventEndTime < 24 * 60 && currentTimePointerInMinutes < 24 * 60) {
+                                const gapStart = currentTimePointerInMinutes;
+                                const gapEnd = 24 * 60; // Koniec dňa (polnoc)
+                                const formattedGapStartTime = `${String(Math.floor(gapStart / 60)).padStart(2, '0')}:${String(gapStart % 60).padStart(2, '0')}`;
+                                const formattedGapEndTime = `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(gapEnd % 60).padStart(2, '0')}`; 
 
-                            if (formattedGapStartTime !== formattedGapEndTime) { 
-                                scheduleHtml += `
-                                    <tr class="empty-slot-row free-slot-available-row" 
-                                        data-id="${freeSlotId}" 
-                                        data-date="${date}" 
-                                        data-location="${location}" 
-                                        data-start-time="${formattedGapStartTime}" 
-                                        data-end-time="${formattedGapEndTime}" 
-                                        data-is-blocked="false">
-                                        ${(gapEnd === 24 * 60) ? '' : `<td>${displayTimeForEndSlot}</td>`}
-                                        <td colspan="${textColspan}" style="text-align: center; color: #888; font-style: italic; background-color: #f0f0f0;">Voľný slot dostupný</td>
-                                    </tr>
-                                `;
-                                contentAddedForThisDate = true;
+                                // Ak existuje existujúci voľný slot pre túto medzeru, použite jeho ID
+                                const existingFreeSlot = allBlockedSlots.find(s => 
+                                    s.date === date && 
+                                    s.location === location && 
+                                    s.isBlocked === false && 
+                                    s.startInMinutes === gapStart && 
+                                    s.endInMinutes === gapEnd
+                                );
+                                const freeSlotId = existingFreeSlot ? existingFreeSlot.id : 'generated-slot-' + Math.random().toString(36).substr(2, 9); // Fallback pre ID
+                                
+                                // ZMENA: Ak je to posledný slot dňa, zobrazte ho BEZ času.
+                                const displayTimeForEndSlot = (gapEnd === 24 * 60) ? '' : `${formattedGapStartTime} - ${formattedGapEndTime}`;
+                                const timeColspan = (gapEnd === 24 * 60) ? '5' : '1'; 
+                                const textColspan = (gapEnd === 24 * 60) ? '5' : '4'; 
+
+                                if (formattedGapStartTime !== formattedGapEndTime) { 
+                                    scheduleHtml += `
+                                        <tr class="empty-slot-row free-slot-available-row" 
+                                            data-id="${freeSlotId}" 
+                                            data-date="${date}" 
+                                            data-location="${location}" 
+                                            data-start-time="${formattedGapStartTime}" 
+                                            data-end-time="${formattedGapEndTime}" 
+                                            data-is-blocked="false">
+                                            ${(gapEnd === 24 * 60) ? '' : `<td>${displayTimeForEndSlot}</td>`}
+                                            <td colspan="${textColspan}" style="text-align: center; color: #888; font-style: italic; background-color: #f0f0f0;">Voľný slot dostupný</td>
+                                        </tr>
+                                    `;
+                                    contentAddedForThisDate = true;
+                                }
                             }
                         }
+
 
                         // PRIDANIE: Prázdny riadok za posledný riadok každého dňa (za 24:00)
                         // Tento riadok nemá mať funkciu hover a vždy musí byť biely
@@ -2488,7 +2499,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         deletePlayingDayButtonModal.style.display = 'none';
         // Zabezpečte, aby nebol prítomný žiadny starý handler pred otvorením pre pridanie
         if (deletePlayingDayButtonModal && deletePlayingDayButtonModal._currentHandler) { 
-            deletePlayingDayButtonModal.removeEventListener('click', deletePlayingDayButtonModal._currentHandler);
+            deletePlayingDayButtonButton.removeEventListener('click', deletePlayingDayButtonModal._currentHandler);
             delete deletePlayingDayButtonModal._currentHandler;
         }
         openModal(playingDayModal);
