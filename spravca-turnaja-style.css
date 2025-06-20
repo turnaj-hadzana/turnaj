@@ -1022,8 +1022,8 @@ td:last-child {
 
 #addOptions {
     position: fixed;
-    bottom: 50px;
-    right: 50px;
+    bottom: 250px;
+    right: 250px;
     
     background-color: white;
     border: 1px solid #ddd;
