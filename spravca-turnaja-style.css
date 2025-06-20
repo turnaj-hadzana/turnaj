@@ -197,7 +197,7 @@ td:last-child {
     background-color: #dc3545;
     color: white;
     border-color: #c82333;
-    width: calc(100% - 22px); /* Pravidlo vrátené späť */
+    width: calc(100% - 22px);
 }
 .action-button.delete-button:hover {
     background-color: #c82333;
@@ -206,7 +206,7 @@ td:last-child {
 .action-button.delete-button:active {
     background-color: #bd2130;
     border-color: #a71d2a;
-    width: calc(100% - 22px); /* Pravidlo vrátené späť */
+    width: calc(100% - 22px);
 }
 .section-block h2 {
     text-align: center;
@@ -521,8 +521,8 @@ td:last-child {
     background-color: #fff;
     width: 80vw; /* Tabuľka vyplní dostupnú šírku rodiča main, ktorý je flex-grow: 1 */
     margin: 20px auto 0 auto;
-    position: relative; /* Dôležité pre vytvorenie nového stacking kontextu */
-    z-index: 6; /* Nastavené na nižší z-index ako busOverlayContainer */
+    position: relative;
+    z-index: 6;
     /*min-height: fit-content;*/
     height: 70vh;
     max-height: none;
@@ -555,7 +555,7 @@ td:last-child {
 
 /* Špecifické štýly pre bunky (td) */
 .match-schedule-table td {
-    height: 140px; /* Ponechané, aby sa autobusy nerozbili */
+    height: 140px;
 }
 
 
