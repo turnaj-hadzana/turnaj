@@ -1023,7 +1023,7 @@ td:last-child {
 #addOptions {
     position: fixed;
     bottom: 75px;
-    right: 25px;    
+    right: 50px;    
     background-color: white;
     border: 1px solid #ddd;
     border-radius: 8px; /* Jemne zaoblené rohy */
