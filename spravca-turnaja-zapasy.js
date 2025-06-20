@@ -1300,6 +1300,13 @@ async function displayMatchesAsSchedule() {
                             }
                         }
 
+                        // PRIDANIE: Prázdny riadok za posledný riadok každého dňa (za 24:00)
+                        scheduleHtml += `
+                            <tr style="height: 15px;">
+                                <td colspan="5"></td>
+                            </tr>
+                        `;
+
 
                         if (!contentAddedForThisDate) {
                             scheduleHtml += `<tr><td colspan="5" style="text-align: center; color: #888; font-style: italic; padding: 15px;">Žiadne zápasy ani zablokované sloty pre tento deň.</td></tr>`;
@@ -2380,6 +2387,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             matchGroupSelect.disabled = true;
             team1NumberInput.value = '';
             team1NumberInput.disabled = true;
+            team2NumberInput.value = '';
             team2NumberInput.disabled = true;
             matchDurationInput.value = 60; // Reset na predvolené, ak nie je kategória
             matchBufferTimeInput.value = 5; // Reset na predvolené, ak nie je kategória
