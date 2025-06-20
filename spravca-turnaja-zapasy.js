@@ -52,7 +52,7 @@ async function animateLoadingText(containerId, text) {
             .modal-content button[type="submit"],
             .modal-content button.action-button,
             .modal-content button.delete-button {
-                width: 100%; /* Rozšírenie na celú šírku inputboxu */
+                width: calc(100% - 22px); /* Rozšírenie na celú šírku inputboxu */
                 box-sizing: border-box; /* Zahrnie padding a border do šírky */
                 margin-top: 15px; /* Priestor nad tlačidlom */
             }
