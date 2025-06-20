@@ -980,7 +980,7 @@ function getEventDisplayString(event, allSettings, categoryColorsMap) {
             const blockedSlotStartHour = String(Math.floor(event.startInMinutes / 60)).padStart(2, '0');
             const blockedSlotStartMinute = String(event.startInMinutes % 60).padStart(2, '0');
             const blockedSlotEndHour = String(Math.floor(event.endInMinutes / 60)).padStart(2, '0');
-            const blockedSlotEndMinute = String(Math.floor(event.endInMinutes % 60)).padStart(2, '0');
+            const blockedSlotEndMinute = String(Math.floor(event.endInMinutes % 60).padStart(2, '0');
             return `${blockedSlotStartHour}:${blockedSlotStartMinute} - ${blockedSlotEndHour}:${blockedSlotEndMinute}|${displayText}`;
         } else {
             // Zmena: Použite uložené startTime a endTime pre voľné sloty
@@ -1375,7 +1375,7 @@ async function displayMatchesAsSchedule() {
                                         data-start-time="${formattedGapStartTime}" 
                                         data-end-time="${formattedGapEndTime}" 
                                         data-is-blocked="false">
-                                        <td>${formattedGapStartTime} - ${formattedGapEndTime}</td>
+                                        <td></td> <!-- ZMENA: prázdna bunka pre časový interval -->
                                         <td colspan="4" style="text-align: center; color: #888; font-style: italic; background-color: #f0f0f0;">Voľný slot dostupný</td>
                                     </tr>
                                 `;
