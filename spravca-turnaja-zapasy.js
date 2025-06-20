@@ -6,9 +6,9 @@ const SETTINGS_DOC_ID = 'matchTimeSettings';
 export const blockedSlotsCollectionRef = collection(db, 'tournamentData', 'mainTournamentData', 'blockedSlots');
 
 /**
- * Animates the given text by progressively typing it out, bolding it, and then progressively deleting it, in an endless loop.
- * @param {string} containerId ID of the HTML element where the animated text should be displayed.
- * @param {string} text The text string to animate.
+ * Animuje daný text tak, že ho postupne vypíše, zhrubí a potom postupne vymaže, v nekonečnej slučke.
+ * @param {string} containerId ID HTML elementu, kde sa má zobraziť animovaný text.
+ * @param {string} text Reťazec textu, ktorý sa má animovať.
  */
 async function animateLoadingText(containerId, text) {
     const container = document.getElementById(containerId);
@@ -965,7 +965,7 @@ function getEventDisplayString(event, allSettings, categoryColorsMap) {
             const blockedIntervalStartHour = String(Math.floor(event.startInMinutes / 60)).padStart(2, '0');
             const blockedIntervalStartMinute = String(event.startInMinutes % 60).padStart(2, '0');
             const blockedIntervalEndHour = String(Math.floor(event.endInMinutes / 60)).padStart(2, '0');
-            const blockedIntervalEndMinute = String(Math.floor(event.endInMinutes % 60)).padStart(2, '0');
+            const blockedIntervalEndMinute = String(Math.floor(event.endInMinutes % 60).padStart(2, '0');
             return `${blockedIntervalStartHour}:${blockedIntervalStartMinute} - ${blockedIntervalEndHour}:${blockedIntervalEndMinute}|${displayText}`;
         } else {
             displayText = 'Voľný interval dostupný'; 
@@ -1179,7 +1179,7 @@ async function displayMatchesAsSchedule() {
                                 const isCurrentFreeInterval = event.type === 'blocked_interval' && event.isBlocked === false;
                                 const isLastFreeInterval = lastEvent.type === 'blocked_interval' && lastEvent.isBlocked === false;
 
-                                // If both are free intervals and have the same start and end times, skip the current one
+                                // If both are free intervals and perfect duplicates, skip the current one
                                 if (isCurrentFreeInterval && isLastFreeInterval && 
                                     event.startInMinutes === lastEvent.startInMinutes && 
                                     event.endInMinutes === lastEvent.endInMinutes) {
@@ -1308,7 +1308,7 @@ async function displayMatchesAsSchedule() {
                                 const blockedIntervalStartHour = String(Math.floor(blockedInterval.startInMinutes / 60)).padStart(2, '0');
                                 const blockedIntervalStartMinute = String(blockedInterval.startInMinutes % 60).padStart(2, '0');
                                 const blockedIntervalEndHour = String(Math.floor(blockedInterval.endInMinutes / 60)).padStart(2, '0');
-                                const blockedIntervalEndMinute = String(Math.floor(blockedInterval.endInMinutes % 60)).padStart(2, '0');
+                                const blockedIntervalEndMinute = String(Math.floor(blockedInterval.endInMinutes % 60).padStart(2, '0');
                                 
                                 const isUserBlocked = blockedInterval.isBlocked === true; 
 
@@ -2131,7 +2131,7 @@ async function openFreeIntervalModal(date, location, startTime, endTime, blocked
             };
             unblockButton.addEventListener('click', unblockHandler);
             unblockButton._currentHandler = unblockHandler;
-            console.log("openFreeIntervalModal: Listener added and 'Unblock' button displayed.");
+            console.log("openFreeIntervalModal: Listener added and 'Odblokovať' button displayed.");
         }
         if (deleteButton) { 
             deleteButton.style.display = 'inline-block';
@@ -2143,7 +2143,7 @@ async function openFreeIntervalModal(date, location, startTime, endTime, blocked
             };
             deleteButton.addEventListener('click', deleteHandler); 
             deleteButton._currentHandler = deleteHandler; 
-            console.log("openFreeIntervalModal: Listener added and 'Delete interval' button displayed.");
+            console.log("openFreeIntervalModal: Listener added and 'Vymazať interval' button displayed.");
         }
 
     } else {
@@ -2154,7 +2154,7 @@ async function openFreeIntervalModal(date, location, startTime, endTime, blocked
         }
         
         freeIntervalModalTitle.textContent = 'Spravovať voľný interval';
-        console.log("openFreeIntervalModal: Interval type: Placeholder free interval ('Free interval available').");
+        console.log("openFreeIntervalModal: Interval type: Placeholder free interval ('Voľný interval dostupný').");
         
         if (addMatchButton) {
             addMatchButton.style.display = 'inline-block';
@@ -2165,7 +2165,7 @@ async function openFreeIntervalModal(date, location, startTime, endTime, blocked
             };
             addMatchButton.addEventListener('click', addMatchHandler);
             addMatchButton._currentHandler = addMatchHandler;
-            console.log("openFreeIntervalModal: Listener added and 'Add match' button displayed.");
+            console.log("openFreeIntervalModal: Listener added and 'Pridať zápas' button displayed.");
         }
 
         if (blockButton) {
@@ -2177,7 +2177,7 @@ async function openFreeIntervalModal(date, location, startTime, endTime, blocked
             };
             blockButton.addEventListener('click', reblockHandler);
             blockButton._currentHandler = reblockHandler;
-            console.log("openFreeIntervalModal: Listener added and 'Block' button displayed for placeholder interval.");
+            console.log("openFreeIntervalModal: Listener added and 'Zablokovať' button displayed for placeholder interval.");
         }
 
         if (deleteButton) { 
@@ -2190,7 +2190,7 @@ async function openFreeIntervalModal(date, location, startTime, endTime, blocked
             };
             deleteButton.addEventListener('click', deleteHandler); 
             deleteButton._currentHandler = deleteHandler; 
-            console.log("openFreeIntervalModal: Listener added and 'Delete interval' button displayed for placeholder interval.");
+            console.log("openFreeIntervalModal: Listener added and 'Vymazať interval' button displayed for placeholder interval.");
         }
         if (unblockButton) { unblockButton.style.display = 'none'; } 
     }
@@ -2211,7 +2211,7 @@ async function blockFreeInterval(intervalId, date, location, startTime, endTime)
     console.log(`blockFreeInterval: === BLOCK FREE INTERVAL FUNCTION STARTED ===`);
     console.log(`blockFreeInterval: Interval ID: ${intervalId}, Date: ${date}, Location: ${location}, Start: ${startTime}, End: ${endTime}`);
     const freeIntervalModal = document.getElementById('freeSlotModal'); 
-    const confirmed = await showConfirmation('Confirmation', 'Do you really want to block this free interval?');
+    const confirmed = await showConfirmation('Potvrdenie', 'Naozaj chcete zablokovať tento voľný interval?');
     console.log(`blockFreeInterval: Confirmation received: ${confirmed}`);
 
     if (confirmed) {
@@ -2260,7 +2260,7 @@ async function blockFreeInterval(intervalId, date, location, startTime, endTime)
                 const matchFootprintEndInMinutes = (msh * 60) + msm + matchDuration + matchBufferTime;
                 const formattedMatchEndTime = formatTime(matchFootprintEndInMinutes);
 
-                await showMessage('Chyba', `Interval cannot be blocked because it overlaps with an existing match from ${matchStartTime} to ${formattedMatchEndTime}. Please move or delete this match first.`);
+                await showMessage('Chyba', `Interval nemôže byť zablokovaný, pretože sa prekrýva s existujúcim zápasom od ${matchStartTime} do ${formattedMatchEndTime}. Prosím, najprv presuňte alebo vymažte tento zápas.`);
                 return;
             }
 
@@ -2276,14 +2276,14 @@ async function blockFreeInterval(intervalId, date, location, startTime, endTime)
                 await setDoc(intervalRef, intervalDataToSave, { merge: true });
             }
             
-            await showMessage('Success', 'Interval was successfully blocked!');
+            await showMessage('Úspech', 'Interval bol úspešne zablokovaný!');
             closeModal(freeIntervalModal);
             console.log("blockFreeInterval: Modal closed.");
             await recalculateAndSaveScheduleForDateAndLocation(date, location);
             console.log("blockFreeInterval: Schedule recalculation completed.");
         } catch (error) {
-            console.error("Error blocking interval:", error);
-            await showMessage('Error', `Error blocking interval: ${error.message}`);
+            console.error("Chyba pri blokovaní intervalu:", error);
+            await showMessage('Chyba', `Chyba pri blokovaní intervalu: ${error.message}`);
         }
     }
 }
@@ -2298,21 +2298,21 @@ async function unblockBlockedInterval(intervalId, date, location) {
     console.log(`unblockBlockedInterval: === UNBLOCK INTERVAL FUNCTION STARTED ===`);
     console.log(`unblockBlockedInterval: Interval ID: ${intervalId}, Date: ${date}, Location: ${location}`);
     const freeIntervalModal = document.getElementById('freeSlotModal'); 
-    const confirmed = await showConfirmation('Confirmation', 'Do you really want to unblock this interval? Matches can now be scheduled during this time.');
+    const confirmed = await showConfirmation('Potvrdenie', 'Naozaj chcete odblokovať tento interval? Zápasy môžu byť teraz naplánované počas tohto času.');
     if (confirmed) {
         try {
             const intervalRef = doc(blockedSlotsCollectionRef, intervalId);
             console.log(`unblockBlockedInterval: Attempting to update interval ID: ${intervalId} to isBlocked: false`);
             await setDoc(intervalRef, { isBlocked: false, originalMatchId: deleteField() }, { merge: true });
             console.log(`unblockBlockedInterval: Interval ID: ${intervalId} successfully unblocked.`);
-            await showMessage('Success', 'Interval was successfully unblocked!');
+            await showMessage('Úspech', 'Interval bol úspešne odblokovaný!');
             closeModal(freeIntervalModal);
             await recalculateAndSaveScheduleForDateAndLocation(date, location); 
             console.log("unblockBlockedInterval: Schedule display refreshed and recalculated.");
         }
         catch (error) {
-            console.error("Error unblocking interval:", error);
-            await showMessage('Error', `Error unblocking interval: ${error.message}`);
+            console.error("Chyba pri odblokovaní intervalu:", error);
+            await showMessage('Chyba', `Chyba pri odblokovaní intervalu: ${error.message}`);
         }
     }
 }
@@ -2328,7 +2328,7 @@ async function handleDeleteInterval(intervalId, date, location) {
     console.log(`handleDeleteInterval: Interval ID: ${intervalId}, Date: ${date}, Location: ${location}`);
     const freeIntervalModal = document.getElementById('freeSlotModal');
 
-    const confirmed = await showConfirmation('Deletion Confirmation', 'Do you really want to delete this interval?');
+    const confirmed = await showConfirmation('Potvrdenie vymazania', 'Naozaj chcete vymazať tento interval?');
     if (!confirmed) {
         console.log(`handleDeleteInterval: Deletion cancelled by user.`);
         return;
@@ -2349,7 +2349,7 @@ async function handleDeleteInterval(intervalId, date, location) {
                 await batch.commit();
                 console.log("handleDeleteInterval: Batch commit successful.");
             } else {
-                console.log(`handleDeleteInterval: Interval with ID ${intervalId} not found in database (might have been deleted already).`);
+                console.log(`handleDeleteInterval: Interval with ID ${intervalId} not found in database (might have been removed already?). Considering it a placeholder.`);
                 wasPlaceholder = true; 
             }
         } else {
@@ -2357,7 +2357,7 @@ async function handleDeleteInterval(intervalId, date, location) {
             wasPlaceholder = true;
         }
         
-        await showMessage('Success', 'Interval was successfully deleted from the database!');
+        await showMessage('Úspech', 'Interval bol úspešne vymazaný z databázy!');
         closeModal(freeIntervalModal);
         
         await recalculateAndSaveScheduleForDateAndLocation(
@@ -2371,7 +2371,7 @@ async function handleDeleteInterval(intervalId, date, location) {
 
     } catch (error) {
         console.error("handleDeleteInterval: Error deleting/shifting interval:", error);
-        await showMessage('Error', `Error deleting/shifting interval: ${error.message}`);
+        await showMessage('Chyba', `Chyba pri vymazávaní/posúvaní intervalu: ${error.message}`);
     }
 }
 
@@ -2804,11 +2804,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (currentMatchId && !existingDuplicateMatchId) {
                 console.log(`Saving existing match ID: ${currentMatchId}`, matchData);
                 await setDoc(doc(matchesCollectionRef, currentMatchId), matchData, { merge: true });
-                await showMessage('Success', 'Match successfully updated!'); 
+                await showMessage('Úspech', 'Zápas úspešne aktualizovaný!'); 
             } else {
                 console.log(`Adding new match:`, matchData);
                 await addDoc(matchesCollectionRef, matchData);
-                await showMessage('Success', 'Match successfully added!'); 
+                await showMessage('Úspech', 'Zápas úspešne pridaný!'); 
             }
             closeModal(matchModal);
             // Recalculate only if a specific location is involved
@@ -2821,7 +2821,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         catch (error) {
             console.error("Error saving match:", error);
-            await showMessage('Error', `Error saving match. Details: ${error.message}`);
+            await showMessage('Chyba', `Chyba pri ukladaní zápasu. Detaily: ${error.message}`);
         }
     });
 
@@ -2869,17 +2869,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (id) {
                 console.log(`Saving existing place ID: ${id}`, placeData);
                 await setDoc(doc(placesCollectionRef, id), placeData, { merge: true });
-                await showMessage('Success', 'Place successfully updated!');
+                await showMessage('Úspech', 'Miesto úspešne aktualizované!');
             } else {
                 console.log(`Adding new place:`, placeData);
                 await addDoc(placesCollectionRef, placeData);
-                await showMessage('Success', 'Place successfully added!');
+                await showMessage('Úspech', 'Miesto úspešne pridané!');
             }
             closeModal(placeModal);
             await displayMatchesAsSchedule();
         } catch (error) {
             console.error("Error saving place:", error);
-            await showMessage('Error', `Error saving place. Details: ${error.message}`);
+            await showMessage('Chyba', `Chyba pri ukladaní miesta. Detaily: ${error.message}`);
         }
     });
 
@@ -2907,17 +2907,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (id) {
                 console.log(`Saving existing playing day ID: ${id}`, playingDayData);
                 await setDoc(doc(playingDaysCollectionRef, id), playingDayData, { merge: true });
-                await showMessage('Success', 'Playing day successfully updated!');
+                await showMessage('Úspech', 'Hrací deň úspešne aktualizovaný!');
             } else {
                 console.log(`Adding new playing day:`, playingDayData);
                 await addDoc(playingDaysCollectionRef, { ...playingDayData, createdAt: new Date() });
-                await showMessage('Success', 'Playing day successfully added!');
+                await showMessage('Úspech', 'Hrací deň úspešne pridaný!');
             }
             closeModal(playingDayModal);
             await displayMatchesAsSchedule();
         } catch (error) {
             console.error("Error saving playing day:", error);
-            await showMessage('Error', `Error saving playing day. Details: ${error.message}`);
+            await showMessage('Chyba', `Chyba pri ukladaní hracieho dňa. Detaily: ${error.message}`);
         }
     });
 });
