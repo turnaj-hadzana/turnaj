@@ -819,7 +819,7 @@ async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation
             console.log(`moveAndRescheduleMatch: Pridané do batchu na vymazanie cieľového zablokovaného slotu (ID: ${targetBlockedSlotId}).`);
             excludedBlockedSlotIdFromRecalculation = targetBlockedSlotId;
         } else if (targetMatchIdToDisplace && draggedMatchId !== targetMatchIdToDisplace) { // Bol pustený na existujúci zápas a nie je to ten istý zápas
-            const displacedMatchDocRef = doc(matchesCollectionRef, targetMatchIdToDisplace);
+            const displacedMatchDocRef = doc(matchesCollectionRef, targetMatchIdToDisplaced);
             const displacedMatchDoc = await getDoc(displacedMatchDocRef);
             if (displacedMatchDoc.exists()) {
                 const displacedMatchData = displacedMatchDoc.data();
@@ -901,7 +901,7 @@ function getEventDisplayString(event, allSettings, categoryColorsMap) {
             const blockedSlotStartHour = String(Math.floor(event.startInMinutes / 60)).padStart(2, '0');
             const blockedSlotStartMinute = String(event.startInMinutes % 60).padStart(2, '0');
             const blockedSlotEndHour = String(Math.floor(event.endInMinutes / 60)).padStart(2, '0');
-            const blockedSlotEndMinute = String(Math.floor(event.endInMinutes % 60)).padStart(2, '0');
+            const blockedSlotEndMinute = String(Math.floor(event.endInMinutes % 60).padStart(2, '0');
             return `${blockedSlotStartHour}:${blockedSlotStartMinute} - ${blockedSlotEndHour}:${blockedSlotEndMinute}|${displayText}`;
         } else {
             // Zmena: Použite uložené startTime a endTime pre voľné sloty
@@ -1086,6 +1086,7 @@ async function displayMatchesAsSchedule() {
                         const formattedDisplayDate = `${String(displayDateObj.getDate()).padStart(2, '0')}. ${String(displayDateObj.getMonth() + 1).padStart(2, '0')}. ${displayDateObj.getFullYear()}`;
                         const dayName = displayDateObj.toLocaleDateString('sk-SK', { weekday: 'long' });
 
+
                         // Zlúčte zápasy a VŠETKY typy zablokovaných slotov pre renderovanie.
                         const currentEventsForRendering = [
                             ...matchesForDateAndLocation.map(m => {
@@ -1136,7 +1137,8 @@ async function displayMatchesAsSchedule() {
                         let contentAddedForThisDate = false;
                         
                         scheduleHtml += `<div class="date-group" data-date="${date}" data-location="${location}" data-initial-start-time="${String(Math.floor(initialScheduleStartMinutes / 60)).padStart(2, '0')}:${String(initialScheduleStartMinutes % 60).padStart(2, '0')}">`; // Style prenesené do CSS
-                        scheduleHtml += `<h3 style="background-color: #eaeaea; padding: 15px; margin: 0; border-bottom: 1px solid #ddd;">${dayName} ${formattedDisplayDate}</h3>`;
+                        // Pridaná trieda 'playing-day-header-clickable' a kurzor: pointer
+                        scheduleHtml += `<h3 class="playing-day-header-clickable" style="background-color: #eaeaea; padding: 15px; margin: 0; border-bottom: 1px solid #ddd; cursor: pointer;">${dayName} ${formattedDisplayDate}</h3>`;
 
                         scheduleHtml += `<table class="data-table match-list-table compact-table" style="width: 100%; border-collapse: collapse;">`;
                         scheduleHtml += `<thead><tr>`;
@@ -1428,6 +1430,18 @@ async function displayMatchesAsSchedule() {
             });
         });
 
+        // NOVINKA: Poslucháč udalostí pre hlavičky hracích dní (dátumov)
+        matchesContainer.querySelectorAll('.playing-day-header-clickable').forEach(header => {
+            header.addEventListener('click', (event) => {
+                // Nájde najbližší rodičovský div s dátovým atribútom 'data-date', čo je div .date-group
+                const dateGroupDiv = event.currentTarget.closest('.date-group');
+                if (dateGroupDiv) {
+                    const dateToEdit = dateGroupDiv.dataset.date;
+                    editPlayingDay(dateToEdit);
+                }
+            });
+        });
+
         // Pridajte poslucháčov dragover a drop pre divy skupiny dátumov (obsahujúce tabuľky)
         matchesContainer.querySelectorAll('.date-group').forEach(dateGroupDiv => { // Použite matchesContainer na vyhľadanie
             dateGroupDiv.addEventListener('dragover', (event) => {
@@ -1551,21 +1565,10 @@ async function displayMatchesAsSchedule() {
         });
 
 
-        // Nasledujúce poslucháči udalostí pre hlavičky dátumu a miesta by mali stále fungovať koncepčne,
-        // ale ich ciele kliknutia môžu vyžadovať úpravu, ak sa štruktúra HTML pre hlavičky výrazne zmení.
-        // Zatiaľ ich nechávam tak, ako sú, za predpokladu, že stále existujú klikateľné prvky, ktoré ich reprezentujú.
-        // Ak sa stanú nadbytočnými alebo problematickými s novým rozložením, môžu byť odstránené alebo upravené.
-        matchesContainer.querySelectorAll('.date-header-clickable').forEach(header => {
-            header.addEventListener('click', (event) => {
-                if (event.target.tagName === 'A' || event.target.closest('.hall-address')) {
-                    return;
-                }
-                if (event.target === header || event.target.closest('.schedule-date-header-content')) {
-                    const dateToEdit = header.dataset.date;
-                    editPlayingDay(dateToEdit);
-                }
-            });
-        });
+        // STARÝ poslucháč pre date-header-clickable je odstránený z DOMContentLoaded,
+        // pretože je nahradený novým `.playing-day-header-clickable` poslucháčom vyššie.
+        // Tým sa zabezpečí, že kliknutie na hlavičku dňa funguje správne.
+
     } catch (error) {
         console.error("Chyba pri načítaní rozvrhu zápasov (zachytená chyba):", error);
         matchesContainer.innerHTML = `
