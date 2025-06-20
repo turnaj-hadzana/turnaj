@@ -1460,8 +1460,8 @@ async function displayMatchesAsSchedule() {
                                             data-id="${freeSlotId}" 
                                             data-date="${date}" 
                                             data-location="${location}" 
-                                            data-start-time="${formattedGapStartTime}" 
-                                            data-end-time="${formattedGapEndTime}" 
+//                                            data-start-time="${formattedGapStartTime}" 
+//                                            data-end-time="${formattedGapEndTime}" 
                                             data-is-blocked="false">
                                             ${(gapEnd === 24 * 60) ? '' : `<td>${displayTimeForEndSlot}</td>`}
                                             <td colspan="${textColspan}" style="text-align: center; color: #888; font-style: italic; background-color: #f0f0f0;">Voľný slot dostupný</td>
