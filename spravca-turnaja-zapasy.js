@@ -55,10 +55,6 @@ async function animateLoadingText(containerId, text) {
                 background-color: white !important; /* Žiadny hover efekt */
                 cursor: default; /* Žiadny kurzor ukazovateľa */
             }
-            /* Úprava pre riadok s časom 24:00 (koniec dňa) - odstránený hover fix */
-            .end-of-day-free-slot-row {
-                background-color: #f0f0f0; /* Farba pozadia ako ostatné voľné sloty */
-            }
         `;
         document.head.appendChild(style);
     }
@@ -1055,7 +1051,7 @@ function getEventDisplayString(event, allSettings, categoryColorsMap) {
             const blockedSlotStartHour = String(Math.floor(event.startInMinutes / 60)).padStart(2, '0');
             const blockedSlotStartMinute = String(event.startInMinutes % 60).padStart(2, '0');
             const blockedSlotEndHour = String(Math.floor(event.endInMinutes / 60)).padStart(2, '0');
-            const blockedSlotEndMinute = String(Math.floor(event.endInMinutes % 60)).padStart(2, '0');
+            const blockedSlotEndMinute = String(Math.floor(event.endInMinutes % 60).padStart(2, '0');
             return `${blockedSlotStartHour}:${blockedSlotStartMinute} - ${blockedSlotEndHour}:${blockedSlotEndMinute}|${displayText}`;
         } else {
             // Zmena: Použite uložené startTime a endTime pre voľné sloty
@@ -1397,7 +1393,7 @@ async function displayMatchesAsSchedule() {
                                 const blockedSlotStartHour = String(Math.floor(blockedSlot.startInMinutes / 60)).padStart(2, '0');
                                 const blockedSlotStartMinute = String(blockedSlot.startInMinutes % 60).padStart(2, '0');
                                 const blockedSlotEndHour = String(Math.floor(blockedSlot.endInMinutes / 60)).padStart(2, '0');
-                                const blockedSlotEndMinute = String(Math.floor(blockedSlot.endInMinutes % 60)).padStart(2, '0');
+                                const blockedSlotEndMinute = String(Math.floor(blockedSlot.endInMinutes % 60).padStart(2, '0');
                                 
                                 const isUserBlocked = blockedSlot.isBlocked === true; 
 
@@ -1410,9 +1406,8 @@ async function displayMatchesAsSchedule() {
                                 let textColspan = '4';
 
                                 if (blockedSlot.endInMinutes === 24 * 60) {
-                                    // Removed the displayTimeHtml = ''; and textColspan = '5';
-                                    // as the original request was to remove the text, not the time.
-                                    // Reverted back to the default display.
+                                    displayTimeHtml = ''; // No <td> for time
+                                    textColspan = '5'; // Text spans all columns
                                 }
 
                                 if (isUserBlocked) { 
@@ -1424,16 +1419,6 @@ async function displayMatchesAsSchedule() {
                                     cellStyle = 'text-align: center; color: #888; font-style: italic; background-color: #f0f0f0;'; 
                                     displayText = 'Voľný slot dostupný'; 
                                 }
-
-                                // Apply specific changes for 24:00 slot
-                                if (blockedSlot.endInMinutes === 24 * 60 && !isUserBlocked) {
-                                    // Only for the "free slot available" at 24:00
-                                    rowClass += ' end-of-day-free-slot-row'; // Keep the class
-                                    displayText = ''; // Remove text for this specific row
-                                    displayTimeHtml = '<td></td>'; // Keep time column empty
-                                    textColspan = '5'; // Make text column span all remaining cells
-                                }
-
 
                                 console.log(`displayMatchesAsSchedule: Vykresľujem zablokovaný slot: ID ${blockedSlot.id}, Čas: ${blockedSlotStartHour}:${blockedSlotStartMinute}-${blockedSlotEndHour}:${blockedSlotEndMinute}, Miesto: ${blockedSlot.location}, Dátum: ${blockedSlot.date}, isBlocked: ${isUserBlocked}, Display Text: "${displayText}"`);
 
@@ -1477,9 +1462,8 @@ async function displayMatchesAsSchedule() {
                                 const freeSlotId = existingFreeSlot ? existingFreeSlot.id : 'generated-slot-' + Math.random().toString(36).substr(2, 9); 
                                 
                                 // Determine how to display the time and the colspan
-                                let displayTimeHtml = '<td></td>'; // Empty for the very end-of-day slot
-                                let textColspan = '5'; // Spans all columns
-                                let displayText = ''; // No text for the very end-of-day slot
+                                let displayTimeHtml = ''; // Always empty for the very end-of-day slot
+                                let textColspan = '5'; // Always spans all columns
 
                                 if (gapStart < gapEnd) { // Still ensure it's a valid duration
                                     scheduleHtml += `
@@ -1491,7 +1475,7 @@ async function displayMatchesAsSchedule() {
                                             data-end-time="${formattedGapEndTime}" 
                                             data-is-blocked="false">
                                             ${displayTimeHtml}
-                                            <td colspan="${textColspan}" style="text-align: center; color: #888; font-style: italic; background-color: #f0f0f0;">${displayText}</td>
+                                            <td colspan="${textColspan}" style="text-align: center; color: #888; font-style: italic; background-color: #f0f0f0;">Voľný slot dostupný</td>
                                         </tr>
                                     `;
                                     contentAddedForThisDate = true;
@@ -2134,13 +2118,6 @@ async function openFreeSlotModal(date, location, startTime, endTime, blockedSlot
     // Debugging logs
     console.log(`openFreeSlotModal: Volané pre Dátum: ${date}, Miesto: ${location}, Čas: ${startTime}-${endTime}, ID slotu: ${blockedSlotId}`);
 
-    // NOVÁ KONTROLA: Ak je čas konca 24:00 (polnoc), neotvárajte modálne okno.
-    const [endH, endM] = endTime.split(':').map(Number);
-    if (endH === 24 && endM === 0) {
-        console.log("openFreeSlotModal: Slot končí o 24:00, nebudem zobrazovať modálne okno.");
-        return; 
-    }
-
     // Získajte referencie na elementy vo vnútri funkcie, aby ste zabezpečili ich dostupnosť
     const freeSlotModal = document.getElementById('freeSlotModal');
     const freeSlotModalTitle = document.getElementById('freeSlotModalTitle');
@@ -2261,8 +2238,13 @@ async function openFreeSlotModal(date, location, startTime, endTime, blockedSlot
         }
 
     } else { // Je to placeholder prázdny slot (isBlocked === false)
-        // KONTROLA PRE 24:00 už je vykonaná na začiatku funkcie.
-        
+        // NOVÁ KONTROLA: Ak je čas konca 24:00 (polnoc), neotvárajte modálne okno.
+        const [endH, endM] = endTime.split(':').map(Number);
+        if (endH === 24 && endM === 0) {
+            console.log("openFreeSlotModal: Slot končí o 24:00, nebudem zobrazovať modálne okno.");
+            return; 
+        }
+
         freeSlotModalTitle.textContent = 'Spravovať voľný interval'; // Neutrálnejší názov
         console.log("openFreeSlotModal: Typ slotu: Placeholder voľný interval ('Voľný slot dostupný').");
         
