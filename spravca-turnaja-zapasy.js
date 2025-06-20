@@ -1051,7 +1051,7 @@ function getEventDisplayString(event, allSettings, categoryColorsMap) {
             const blockedSlotStartHour = String(Math.floor(event.startInMinutes / 60)).padStart(2, '0');
             const blockedSlotStartMinute = String(event.startInMinutes % 60).padStart(2, '0');
             const blockedSlotEndHour = String(Math.floor(event.endInMinutes / 60)).padStart(2, '0');
-            const blockedSlotEndMinute = String(Math.floor(event.endInMinutes % 60)).padStart(2, '0');
+            const blockedSlotEndMinute = String(Math.floor(event.endInMinutes % 60).padStart(2, '0');
             return `${blockedSlotStartHour}:${blockedSlotStartMinute} - ${blockedSlotEndHour}:${blockedSlotEndMinute}|${displayText}`;
         } else {
             // Zmena: Použite uložené startTime a endTime pre voľné sloty
@@ -1393,7 +1393,7 @@ async function displayMatchesAsSchedule() {
                                 const blockedSlotStartHour = String(Math.floor(blockedSlot.startInMinutes / 60)).padStart(2, '0');
                                 const blockedSlotStartMinute = String(blockedSlot.startInMinutes % 60).padStart(2, '0');
                                 const blockedSlotEndHour = String(Math.floor(blockedSlot.endInMinutes / 60)).padStart(2, '0');
-                                const blockedSlotEndMinute = String(Math.floor(blockedSlot.endInMinutes % 60)).padStart(2, '0');
+                                const blockedSlotEndMinute = String(Math.floor(blockedSlot.endInMinutes % 60).padStart(2, '0');
                                 
                                 const isUserBlocked = blockedSlot.isBlocked === true; 
 
@@ -2127,11 +2127,17 @@ async function openFreeSlotModal(date, location, startTime, endTime, blockedSlot
     const freeSlotIdInput = document.getElementById('freeSlotId');
     
     // Získanie referencií na tlačidlá priamo z DOM
+    const addMatchButton = document.getElementById('addMatchFromFreeSlotButton'); // Nové tlačidlo
     const blockButton = document.getElementById('blockFreeSlotButton'); 
     const unblockButton = document.getElementById('unblockFreeSlotButton'); 
     const deleteButton = document.getElementById('phantomSlotDeleteButton'); 
 
     // Vyčistite všetky predchádzajúce poslucháče udalostí pre všetky tlačidlá
+    if (addMatchButton && addMatchButton._currentHandler) {
+        addMatchButton.removeEventListener('click', addMatchButton._currentHandler);
+        delete addMatchButton._currentHandler;
+        console.log("openFreeSlotModal: Odstránený starý posluchovač pre 'addMatchFromFreeSlotButton'.");
+    }
     if (blockButton && blockButton._currentHandler) {
         blockButton.removeEventListener('click', blockButton._currentHandler);
         delete blockButton._currentHandler;
@@ -2162,6 +2168,7 @@ async function openFreeSlotModal(date, location, startTime, endTime, blockedSlot
     freeSlotTimeRangeDisplay.textContent = `${startTime} - ${endTime}`;
 
     // Reset štýlov a zobrazenia tlačidiel na začiatku
+    if (addMatchButton) addMatchButton.style.display = 'none'; // Skryte nové tlačidlo predvolene
     if (blockButton) blockButton.style.display = 'none';
     if (unblockButton) {
         unblockButton.style.display = 'none';
@@ -2202,6 +2209,7 @@ async function openFreeSlotModal(date, location, startTime, endTime, blockedSlot
         freeSlotModalTitle.textContent = 'Upraviť zablokovaný slot';
         console.log("openFreeSlotModal: Typ slotu: Normálny zablokovaný slot (blokovaný používateľom).");
         
+        if (addMatchButton) addMatchButton.style.display = 'none'; // Zápas sa do zablokovaného slotu nepridáva
         if (blockButton) blockButton.style.display = 'none'; // Už zablokovaný
 
         if (unblockButton) {
@@ -2233,6 +2241,18 @@ async function openFreeSlotModal(date, location, startTime, endTime, blockedSlot
         freeSlotModalTitle.textContent = 'Spravovať voľný interval'; // Neutrálnejší názov
         console.log("openFreeSlotModal: Typ slotu: Placeholder voľný interval ('Voľný slot dostupný').");
         
+        if (addMatchButton) {
+            addMatchButton.style.display = 'inline-block'; // Zobrazte nové tlačidlo
+            const addMatchHandler = () => {
+                console.log(`openFreeSlotModal: Kliknuté na 'Pridať zápas' pre voľný interval. Spúšťam openMatchModal.`);
+                closeModal(freeSlotModal); // Zatvorí aktuálne modálne okno
+                openMatchModal(null, date, location, startTime); // Otvorí modálne okno zápasu s predvyplnenými údajmi
+            };
+            addMatchButton.addEventListener('click', addMatchHandler);
+            addMatchButton._currentHandler = addMatchHandler;
+            console.log("openFreeSlotModal: Pridaný posluchovač a zobrazené tlačidlo 'Pridať zápas'.");
+        }
+
         if (blockButton) {
             blockButton.style.display = 'inline-block';
             blockButton.textContent = 'Zablokovať'; // Zmení isBlocked na true
