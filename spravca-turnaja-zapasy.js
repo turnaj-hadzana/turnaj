@@ -1051,7 +1051,7 @@ function getEventDisplayString(event, allSettings, categoryColorsMap) {
             const blockedSlotStartHour = String(Math.floor(event.startInMinutes / 60)).padStart(2, '0');
             const blockedSlotStartMinute = String(event.startInMinutes % 60).padStart(2, '0');
             const blockedSlotEndHour = String(Math.floor(event.endInMinutes / 60)).padStart(2, '0');
-            const blockedSlotEndMinute = String(Math.floor(event.endInMinutes % 60)).padStart(2, '0');
+            const blockedSlotEndMinute = String(Math.floor(event.endInMinutes % 60).padStart(2, '0');
             return `${blockedSlotStartHour}:${blockedSlotStartMinute} - ${blockedSlotEndHour}:${blockedSlotEndMinute}|${displayText}`;
         } else {
             // Zmena: Použite uložené startTime a endTime pre voľné sloty
@@ -1312,7 +1312,7 @@ async function displayMatchesAsSchedule() {
                             // Tu kontrolujeme, či je medzera pred aktuálnym eventom.
                             if (currentTimePointerInMinutes < event.startInMinutes) {
                                 const gapStart = currentTimePointerInMinutes;
-                                let gapEnd = event.startInMinutes; // Koniec medzery je začiatok ďalšej udalosti
+                                let gapEnd = event.startInMinutes;
 
                                 // Ak je ďalšia udalosť zápas, voľný slot končí PRED JEJ BUFFEROM
                                 if (event.type === 'match') {
@@ -1323,20 +1323,23 @@ async function displayMatchesAsSchedule() {
                                 const formattedGapStartTime = `${String(Math.floor(gapStart / 60)).padStart(2, '0')}:${String(gapStart % 60).padStart(2, '0')}`;
                                 const formattedGapEndTime = `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(gapEnd % 60).padStart(2, '0')}`; 
 
-                                // Vytvorí voľný slot len, ak má reálnu dĺžku (gapEnd > gapStart)
+                                // Determine how to display the time and the colspan
+                                let displayTimeHtml = `<td>${formattedGapStartTime} - ${formattedGapEndTime}</td>`;
+                                let textColspan = '4'; // Default colspan for the text cell
+
+                                if (gapEnd === 24 * 60) {
+                                    displayTimeHtml = ''; // No <td> for time
+                                    textColspan = '5'; // Text spans all columns
+                                }
+
                                 if (gapStart < gapEnd) { 
-                                    // Ak existuje existujúci voľný slot pre túto medzeru, použite jeho ID
-                                    // Toto je dôležité, aby sa voľné sloty, ktoré už existujú vo Firestore,
-                                    // používali namiesto generovania nových ID pre tie isté časové intervaly.
                                     const existingFreeSlot = allBlockedSlots.find(s => 
                                         s.date === date && 
                                         s.location === location && 
                                         s.isBlocked === false && 
                                         s.startInMinutes === gapStart && 
-                                        s.endInMinutes === gapEnd // Použite pôvodné, neupravené endInMinutes pre hľadanie
+                                        s.endInMinutes === gapEnd
                                     );
-                                    // Ak sa nenašiel existujúci slot, použite dočasné ID pre DOM element.
-                                    // Tieto dočasné ID sa nikdy neuložia do Firestore, namiesto toho sa vygenerujú nové ID pri batch.set.
                                     const freeSlotId = existingFreeSlot ? existingFreeSlot.id : 'generated-slot-' + Math.random().toString(36).substr(2, 9); 
 
                                     scheduleHtml += `
@@ -1347,8 +1350,8 @@ async function displayMatchesAsSchedule() {
                                             data-start-time="${formattedGapStartTime}" 
                                             data-end-time="${formattedGapEndTime}" 
                                             data-is-blocked="false">
-                                            <td>${formattedGapStartTime} - ${formattedGapEndTime}</td>
-                                            <td colspan="4" style="text-align: center; color: #888; font-style: italic; background-color: #f0f0f0;">Voľný slot dostupný</td>
+                                            ${displayTimeHtml}
+                                            <td colspan="${textColspan}" style="text-align: center; color: #888; font-style: italic; background-color: #f0f0f0;">Voľný slot dostupný</td>
                                         </tr>
                                     `;
                                     contentAddedForThisDate = true;
@@ -1396,7 +1399,15 @@ async function displayMatchesAsSchedule() {
                                 let rowClass = '';
                                 let cellStyle = '';
                                 let displayText = ''; 
-                                let dataAttributes = `data-is-blocked="${isUserBlocked}"`; // Už žiadne data-is-phantom
+                                let dataAttributes = `data-is-blocked="${isUserBlocked}"`;
+
+                                let displayTimeHtml = `<td>${blockedSlotStartHour}:${blockedSlotStartMinute} - ${blockedSlotEndHour}:${blockedSlotEndMinute}</td>`;
+                                let textColspan = '4';
+
+                                if (blockedSlot.endInMinutes === 24 * 60) {
+                                    displayTimeHtml = ''; // No <td> for time
+                                    textColspan = '5'; // Text spans all columns
+                                }
 
                                 if (isUserBlocked) { 
                                     rowClass = 'blocked-slot-row'; 
@@ -1412,8 +1423,8 @@ async function displayMatchesAsSchedule() {
 
                                 scheduleHtml += `
                                     <tr class="${rowClass}" data-id="${blockedSlot.id}" data-date="${date}" data-location="${location}" data-start-time="${blockedSlotStartHour}:${blockedSlotStartMinute}" data-end-time="${blockedSlotEndHour}:${blockedSlotEndMinute}" ${dataAttributes}>
-                                        <td>${blockedSlotStartHour}:${blockedSlotStartMinute} - ${blockedSlotEndHour}:${blockedSlotEndMinute}</td>
-                                        <td colspan="4" style="${cellStyle}">${displayText}</td>
+                                        ${displayTimeHtml}
+                                        <td colspan="${textColspan}" style="${cellStyle}">${displayText}</td>
                                     </tr>
                                 `;
                                 // Posuňte ukazovateľ na koniec zablokovaného slotu
@@ -1439,7 +1450,6 @@ async function displayMatchesAsSchedule() {
                                 const formattedGapStartTime = `${String(Math.floor(gapStart / 60)).padStart(2, '0')}:${String(gapStart % 60).padStart(2, '0')}`;
                                 const formattedGapEndTime = `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(gapEnd % 60).padStart(2, '0')}`; 
 
-                                // Ak existuje existujúci voľný slot pre túto medzeru, použite jeho ID
                                 const existingFreeSlot = allBlockedSlots.find(s => 
                                     s.date === date && 
                                     s.location === location && 
@@ -1447,23 +1457,22 @@ async function displayMatchesAsSchedule() {
                                     s.startInMinutes === gapStart && 
                                     s.endInMinutes === gapEnd
                                 );
-                                const freeSlotId = existingFreeSlot ? existingFreeSlot.id : 'generated-slot-' + Math.random().toString(36).substr(2, 9); // Fallback pre ID
+                                const freeSlotId = existingFreeSlot ? existingFreeSlot.id : 'generated-slot-' + Math.random().toString(36).substr(2, 9); 
                                 
-                                // ZMENA: Ak je to posledný slot dňa, zobrazte ho BEZ času.
-                                const displayTimeForEndSlot = (gapEnd === 24 * 60) ? '' : `${formattedGapStartTime} - ${formattedGapEndTime}`;
-                                const timeColspan = (gapEnd === 24 * 60) ? '5' : '1'; 
-                                const textColspan = (gapEnd === 24 * 60) ? '5' : '4'; 
+                                // Determine how to display the time and the colspan
+                                let displayTimeHtml = ''; // Always empty for the very end-of-day slot
+                                let textColspan = '5'; // Always spans all columns
 
-                                if (formattedGapStartTime !== formattedGapEndTime) { 
+                                if (gapStart < gapEnd) { // Still ensure it's a valid duration
                                     scheduleHtml += `
                                         <tr class="empty-slot-row free-slot-available-row" 
                                             data-id="${freeSlotId}" 
                                             data-date="${date}" 
                                             data-location="${location}" 
-//                                            data-start-time="${formattedGapStartTime}" 
-//                                            data-end-time="${formattedGapEndTime}" 
+                                            data-start-time="${formattedGapStartTime}" 
+                                            data-end-time="${formattedGapEndTime}" 
                                             data-is-blocked="false">
-                                            ${(gapEnd === 24 * 60) ? '' : `<td>${displayTimeForEndSlot}</td>`}
+                                            ${displayTimeHtml}
                                             <td colspan="${textColspan}" style="text-align: center; color: #888; font-style: italic; background-color: #f0f0f0;">Voľný slot dostupný</td>
                                         </tr>
                                     `;
@@ -2499,7 +2508,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         deletePlayingDayButtonModal.style.display = 'none';
         // Zabezpečte, aby nebol prítomný žiadny starý handler pred otvorením pre pridanie
         if (deletePlayingDayButtonModal && deletePlayingDayButtonModal._currentHandler) { 
-            deletePlayingDayButtonButton.removeEventListener('click', deletePlayingDayButtonModal._currentHandler);
+            deletePlayingDayButtonModal.removeEventListener('click', deletePlayingDayButtonModal._currentHandler);
             delete deletePlayingDayButtonModal._currentHandler;
         }
         openModal(playingDayModal);
