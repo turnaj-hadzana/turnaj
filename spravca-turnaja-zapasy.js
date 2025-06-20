@@ -944,7 +944,7 @@ async function getMatchData(matchId) {
  * @param {string|null} [targetMatchIdToDisplace=null] ID zápasu, na ktorý bol presunutý, a ktorý je potrebné posunúť.
  */
 async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation, droppedProposedStartTime = null, targetBlockedSlotId = null, targetMatchIdToDisplace = null) {
-    console.log(`moveAndRescheduleMatch: === SPUSTENÉ pre zápas ID: ${draggedMatchId}, cieľ: ${targetDate}, ${targetLocation}, navrhovaný čas: ${droppedProposedStartTime}, cieľový zablokovaný slot ID: ${targetBlockedSlotId}, cieľový zápas na posunutie ID: ${targetMatchIdToDisplace} ===`);
+    console.log(`moveAndRescheduleMatch: === SPUSTENÉ pre zápas ID: ${draggedMatchId}, cieľ: ${targetDate}, ${targetLocation}, navrhovaný čas: ${droppedProposedStartTime}, cieľový zablokovaný slot ID: ${targetBlockedSlotId}, cieľový zápas na posunutie ID: ${targetMatchIdToDisplaced} ===`);
     try {
         const batch = writeBatch(db);
 
@@ -969,7 +969,7 @@ async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation
             console.log(`moveAndRescheduleMatch: Pridané do batchu na vymazanie cieľového zablokovaného slotu (ID: ${targetBlockedSlotId}).`);
             excludedBlockedSlotIdFromRecalculation = targetBlockedSlotId;
         } else if (targetMatchIdToDisplace && draggedMatchId !== targetMatchIdToDisplace) { // Bol pustený na existujúci zápas a nie je to ten istý zápas
-            const displacedMatchDocRef = doc(matchesCollectionRef, targetMatchIdToDisplace);
+            const displacedMatchDocRef = doc(matchesCollectionRef, targetMatchIdToDisplaced);
             const displacedMatchDoc = await getDoc(displacedMatchDocRef);
             if (displacedMatchDoc.exists()) {
                 const displacedMatchData = displacedMatchDoc.data();
@@ -1340,6 +1340,7 @@ async function displayMatchesAsSchedule() {
                                         s.startInMinutes === gapStart && 
                                         s.endInMinutes === gapEnd
                                     );
+                                    // Ponechajte pôvodné ID ak existuje, inak generujte nové pre modal
                                     const freeSlotId = existingFreeSlot ? existingFreeSlot.id : 'generated-slot-' + Math.random().toString(36).substr(2, 9); 
 
                                     scheduleHtml += `
@@ -1457,6 +1458,7 @@ async function displayMatchesAsSchedule() {
                                     s.startInMinutes === gapStart && 
                                     s.endInMinutes === gapEnd
                                 );
+                                // Ponechajte pôvodné ID ak existuje, inak generujte nové pre modal
                                 const freeSlotId = existingFreeSlot ? existingFreeSlot.id : 'generated-slot-' + Math.random().toString(36).substr(2, 9); 
                                 
                                 // Determine how to display the time and the colspan
@@ -1961,7 +1963,8 @@ async function editPlace(placeName, placeType) {
         } else {
             await showMessage('Informácia', "Miesto sa nenašlo.");
         }
-    } catch (error) {
+    }
+    catch (error) {
         console.error("Chyba pri načítavaní dát miesta:", error);
         await showMessage('Chyba', "Vyskytla sa chyba pri načítavaní dát miesta. Skúste to znova.");
     }
@@ -2165,24 +2168,27 @@ async function openFreeSlotModal(date, location, startTime, endTime, blockedSlot
 
     let isUserBlockedFromDB = false;
 
-    // Ak existuje blockedSlotId, skontroluje typ slotu
-    try {
-        const blockedSlotDoc = await getDoc(doc(blockedSlotsCollectionRef, blockedSlotId));
-        if (blockedSlotDoc.exists()) {
-            const data = blockedSlotDoc.data();
-            isUserBlockedFromDB = data.isBlocked === true;
-            console.log(`openFreeSlotModal: Načítané dáta pre blockedSlotId=${blockedSlotId}: isBlocked=${isUserBlockedFromDB}`);
-        } else {
-            console.warn(`openFreeSlotModal: Dokument blockedSlotId=${blockedSlotId} neexistuje (už bol odstránený?).`);
-            // Náhradné riešenie: Ak sa nenájde, považujte ho za placeholder na účely zobrazenia
-            isUserBlockedFromDB = false;
+    // Ak existuje blockedSlotId a nie je to "generované" ID, skontrolujte typ slotu v DB
+    if (blockedSlotId && !blockedSlotId.startsWith('generated-slot-')) {
+        try {
+            const blockedSlotDoc = await getDoc(doc(blockedSlotsCollectionRef, blockedSlotId));
+            if (blockedSlotDoc.exists()) {
+                const data = blockedSlotDoc.data();
+                isUserBlockedFromDB = data.isBlocked === true;
+                console.log(`openFreeSlotModal: Načítané dáta pre blockedSlotId=${blockedSlotId}: isBlocked=${isUserBlockedFromDB}`);
+            } else {
+                console.warn(`openFreeSlotModal: Dokument blockedSlotId=${blockedSlotId} neexistuje (už bol odstránený?). Považujem za placeholder.`);
+                isUserBlockedFromDB = false; // Ak sa nenájde, považujte ho za placeholder
+            }
+        } catch (error) {
+            console.error(`openFreeSlotModal: Chyba pri načítaní dokumentu pre blockedSlotId=${blockedSlotId}:`, error);
+            isUserBlockedFromDB = false; // Predpokladáme neblokovaný stav pri chybe
         }
-    } catch (error) {
-        console.error(`openFreeSlotModal: Chyba pri načítaní dokumentu pre blockedSlotId=${blockedSlotId}:`, error);
-        // Predpokladáme neblokovaný stav pri chybe
+    } else {
+        // Ak je to generované ID, je to automaticky placeholder
         isUserBlockedFromDB = false;
+        console.log(`openFreeSlotModal: Zistilo sa generované ID slotu (${blockedSlotId}). Považujem za placeholder.`);
     }
-
 
     // Logika zobrazenia tlačidiel a titulku na základe typu slotu
     if (isUserBlockedFromDB) {
@@ -2226,7 +2232,7 @@ async function openFreeSlotModal(date, location, startTime, endTime, blockedSlot
             blockButton.textContent = 'Zablokovať'; // Zmení isBlocked na true
             const reblockHandler = () => {
                 console.log(`openFreeSlotModal: Kliknuté na 'Zablokovať' (znovu zablokovať) pre odblokovaný interval ID: ${blockedSlotId}. Spúšťam blockFreeSlot.`);
-                blockFreeSlot(blockedSlotId, date, location);
+                blockFreeSlot(blockedSlotId, date, location, startTime, endTime); // Pass startTime, endTime
             };
             blockButton.addEventListener('click', reblockHandler);
             blockButton._currentHandler = reblockHandler;
@@ -2254,32 +2260,37 @@ async function openFreeSlotModal(date, location, startTime, endTime, blockedSlot
 
 
 /**
- * Zablokuje voľný slot (zmení isBlocked na true).
- * @param {string} slotId ID slotu na zablokovanie.
+ * Zablokuje voľný slot (zmení isBlocked na true alebo vytvorí nový, ak je to placeholder).
+ * @param {string} slotId ID slotu na zablokovanie (môže byť aj generované ID placeholderu).
  * @param {string} date Dátum slotu.
  * @param {string} location Miesto slotu.
+ * @param {string} startTime Čas začiatku slotu (HH:MM).
+ * @param {string} endTime Čas konca slotu (HH:MM).
 */
-async function blockFreeSlot(slotId, date, location) {
+async function blockFreeSlot(slotId, date, location, startTime, endTime) {
     console.log(`blockFreeSlot: === FUNKCIA ZABLOKOVAŤ VOĽNÝ INTERVAL SPUSTENÁ ===`);
-    console.log(`blockFreeSlot: ID slotu: ${slotId}, Dátum: ${date}, Miesto: ${location}`);
+    console.log(`blockFreeSlot: ID slotu: ${slotId}, Dátum: ${date}, Miesto: ${location}, Začiatok: ${startTime}, Koniec: ${endTime}`);
     const freeSlotModal = document.getElementById('freeSlotModal'); 
     const confirmed = await showConfirmation('Potvrdenie', 'Naozaj chcete tento voľný interval zablokovať?');
     console.log(`blockFreeSlot: Potvrdenie prijaté: ${confirmed}`);
 
     if (confirmed) {
         try {
-            const slotRef = doc(blockedSlotsCollectionRef, slotId);
-            // Pred opätovným zablokovaním skontrolujte prekrývanie s existujúcimi zápasmi
-            const slotDoc = await getDoc(slotRef);
-            if (!slotDoc.exists()) {
-                await showMessage('Chyba', 'Slot na zablokovanie sa nenašiel.');
-                return;
-            }
-            const slotData = slotDoc.data();
-            const [startH, startM] = slotData.startTime.split(':').map(Number);
-            const startInMinutes = startH * 60 + startM;
-            const [endH, endM] = slotData.endTime.split(':').map(Number);
-            const endInMinutes = endH * 60 + endM;
+            const isNewPlaceholder = slotId.startsWith('generated-slot-');
+            let slotDataToSave = {
+                date: date,
+                location: location,
+                startTime: startTime,
+                endTime: endTime,
+                isBlocked: true,
+                startInMinutes: (parseInt(startTime.split(':')[0]) * 60) + parseInt(startTime.split(':')[1]),
+                endInMinutes: (parseInt(endTime.split(':')[0]) * 60) + parseInt(endTime.split(':')[1]),
+                createdAt: new Date()
+            };
+
+            // Pred zablokovaním skontrolujte prekrývanie s existujúcimi zápasmi
+            const startInMinutes = slotDataToSave.startInMinutes;
+            const endInMinutes = slotDataToSave.endInMinutes;
 
             const matchesQuery = query(
                 matchesCollectionRef,
@@ -2291,9 +2302,8 @@ async function blockFreeSlot(slotId, date, location) {
                 const matchData = matchDoc.data();
                 const [matchStartH, matchStartM] = matchData.startTime.split(':').map(Number);
                 const matchStartInMinutes = matchStartH * 60 + matchStartM;
-                const matchDuration = Number(matchData.duration) || 0; // Ensure number
-                const matchBufferTime = Number(matchData.bufferTime) || 0; // Ensure number
-                // ZMENA: Použite match.fullFootprintEnd pre kontrolu prekrývania
+                const matchDuration = Number(matchData.duration) || 0; 
+                const matchBufferTime = Number(matchData.bufferTime) || 0; 
                 const matchFootprintEndInMinutes = matchStartInMinutes + matchDuration + matchBufferTime; 
                 return (startInMinutes < matchFootprintEndInMinutes && endInMinutes > matchStartInMinutes);
             });
@@ -2305,19 +2315,31 @@ async function blockFreeSlot(slotId, date, location) {
                     return `${h}:${m}`;
                 };
                 const matchStartTime = overlappingMatch.data().startTime;
-                const matchDuration = Number(overlappingMatch.data().duration) || 0; // Ensure number
-                const matchBufferTime = Number(overlappingMatch.data().bufferTime) || 0; // Ensure number
+                const matchDuration = Number(overlappingMatch.data().duration) || 0; 
+                const matchBufferTime = Number(overlappingMatch.data().bufferTime) || 0; 
                 const [msh,msm] = matchStartTime.split(':').map(Number);
-                // ZMENA: fullFootprintEnd
                 const matchFootprintEndInMinutes = (msh * 60) + msm + matchDuration + matchBufferTime;
                 const formattedMatchEndTime = formatTime(matchFootprintEndInMinutes);
 
                 await showMessage('Chyba', `Slot nemožno zablokovať, pretože sa prekrýva s existujúcim zápasom od ${matchStartTime} do ${formattedMatchEndTime}. Najprv presuňte alebo vymažte tento zápas.`);
                 return;
             }
-            console.log(`blockFreeSlot: Pokúšam sa aktualizovať interval ID: ${slotId} na isBlocked: true`);
-            await setDoc(slotRef, { isBlocked: true, originalMatchId: deleteField() }, { merge: true }); 
-            console.log(`blockFreeSlot: Interval ID: ${slotId} úspešne zablokovaný.`);
+
+            if (isNewPlaceholder) {
+                // Pridajte nový dokument do kolekcie
+                console.log(`blockFreeSlot: Pridávam nový zablokovaný slot:`, slotDataToSave);
+                await addDoc(blockedSlotsCollectionRef, slotDataToSave);
+            } else {
+                // Aktualizujte existujúci dokument
+                const slotRef = doc(blockedSlotsCollectionRef, slotId);
+                console.log(`blockFreeSlot: Aktualizujem existujúci slot ID: ${slotId} na isBlocked: true`);
+                // Odstráňte originalMatchId, ak existuje, pre existujúce sloty
+                if (slotDataToSave.originalMatchId) {
+                    slotDataToSave.originalMatchId = deleteField();
+                }
+                await setDoc(slotRef, slotDataToSave, { merge: true }); // Použite setDoc pre merge
+            }
+            
             await showMessage('Úspech', 'Slot bol úspešne zablokovaný!');
             closeModal(freeSlotModal);
             console.log("blockFreeSlot: Modálne okno zatvorené.");
@@ -2377,22 +2399,30 @@ async function handleDeleteSlot(slotId, date, location) {
     }
 
     try {
-        const slotDocRef = doc(blockedSlotsCollectionRef, slotId);
-        // Získajte dáta slotu pred vymazaním, aby ste zistili, či to bol placeholder
-        const slotDoc = await getDoc(slotDocRef);
+        const isGeneratedPlaceholder = slotId.startsWith('generated-slot-');
         let wasPlaceholder = false;
-        if (slotDoc.exists()) {
-            wasPlaceholder = (slotDoc.data().isBlocked === false);
+
+        if (!isGeneratedPlaceholder) {
+            const slotDocRef = doc(blockedSlotsCollectionRef, slotId);
+            // Získajte dáta slotu pred vymazaním, aby ste zistili, či to bol placeholder
+            const slotDoc = await getDoc(slotDocRef);
+            if (slotDoc.exists()) {
+                wasPlaceholder = (slotDoc.data().isBlocked === false);
+                const batch = writeBatch(db); 
+                console.log(`handleDeleteSlot: Pokúšam sa vymazať dokument blockedSlot ID: ${slotId}`);
+                batch.delete(slotDocRef);
+                await batch.commit();
+                console.log("handleDeleteSlot: Batch commit successful.");
+            } else {
+                console.log(`handleDeleteSlot: Slot s ID ${slotId} sa v databáze nenašiel (už mohol byť vymazaný).`);
+                // Treat as if it was a placeholder that was "deleted" (i.e., not persisted)
+                wasPlaceholder = true; 
+            }
+        } else {
+            console.log(`handleDeleteSlot: Slot s generovaným ID ${slotId} nie je v databáze, nie je potrebné ho vymazať.`);
+            wasPlaceholder = true; // It's a placeholder that was never persisted, so effectively "deleted" from view
         }
         
-        const batch = writeBatch(db); 
-
-        console.log(`handleDeleteSlot: Pokúšam sa vymazať dokument blockedSlot ID: ${slotId}`);
-        batch.delete(slotDocRef);
-        
-        await batch.commit();
-        console.log("handleDeleteSlot: Batch commit successful.");
-
         await showMessage('Úspech', 'Slot bol úspešne vymazaný z databázy!');
         closeModal(freeSlotModal);
         
