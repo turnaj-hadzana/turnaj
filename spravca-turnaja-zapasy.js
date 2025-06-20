@@ -1051,7 +1051,7 @@ function getEventDisplayString(event, allSettings, categoryColorsMap) {
             const blockedSlotStartHour = String(Math.floor(event.startInMinutes / 60)).padStart(2, '0');
             const blockedSlotStartMinute = String(event.startInMinutes % 60).padStart(2, '0');
             const blockedSlotEndHour = String(Math.floor(event.endInMinutes / 60)).padStart(2, '0');
-            const blockedSlotEndMinute = String(Math.floor(event.endInMinutes % 60)).padStart(2, '0');
+            const blockedSlotEndMinute = String(Math.floor(event.endInMinutes % 60).padStart(2, '0');
             return `${blockedSlotStartHour}:${blockedSlotStartMinute} - ${blockedSlotEndHour}:${blockedSlotEndMinute}|${displayText}`;
         } else {
             // Zmena: Použite uložené startTime a endTime pre voľné sloty
@@ -1393,7 +1393,7 @@ async function displayMatchesAsSchedule() {
                                 const blockedSlotStartHour = String(Math.floor(blockedSlot.startInMinutes / 60)).padStart(2, '0');
                                 const blockedSlotStartMinute = String(blockedSlot.startInMinutes % 60).padStart(2, '0');
                                 const blockedSlotEndHour = String(Math.floor(blockedSlot.endInMinutes / 60)).padStart(2, '0');
-                                const blockedSlotEndMinute = String(Math.floor(blockedSlot.endInMinutes % 60)).padStart(2, '0');
+                                const blockedSlotEndMinute = String(Math.floor(blockedSlot.endInMinutes % 60).padStart(2, '0');
                                 
                                 const isUserBlocked = blockedSlot.isBlocked === true; 
 
@@ -1420,7 +1420,7 @@ async function displayMatchesAsSchedule() {
                                     displayText = 'Voľný slot dostupný'; 
                                 }
 
-                                console.log(`displayMatchesAsSchedule: Vykresľujem zablokovaný slot: ID ${blockedSlot.id}, Čas: ${blockedSlotStartHour}:${blockedSlotStartMinute}-${blockedSlotEndHour}:${blockedSlot.endMinute}, Miesto: ${blockedSlot.location}, Dátum: ${blockedSlot.date}, isBlocked: ${isUserBlocked}, Display Text: "${displayText}"`);
+                                console.log(`displayMatchesAsSchedule: Vykresľujem zablokovaný slot: ID ${blockedSlot.id}, Čas: ${blockedSlotStartHour}:${blockedSlotStartMinute}-${blockedSlotEndHour}:${blockedSlotEndMinute}, Miesto: ${blockedSlot.location}, Dátum: ${blockedSlot.date}, isBlocked: ${isUserBlocked}, Display Text: "${displayText}"`);
 
                                 scheduleHtml += `
                                     <tr class="${rowClass}" data-id="${blockedSlot.id}" data-date="${date}" data-location="${location}" data-start-time="${blockedSlotStartHour}:${blockedSlotStartMinute}" data-end-time="${blockedSlotEndHour}:${blockedSlotEndMinute}" ${dataAttributes}>
@@ -2524,16 +2524,32 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Počiatočné zobrazenie rozvrhu po načítaní stránky
     await displayMatchesAsSchedule();
 
+    // Dynamicky pridajte CSS pravidlo pre triedu .show, ak ešte neexistuje
+    // Toto zabezpečuje, že rozbaľovacia ponuka bude správne zobrazená.
+    if (!document.getElementById('add-options-show-style')) {
+        const style = document.createElement('style');
+        style.id = 'add-options-show-style';
+        style.textContent = `
+            .add-options-dropdown.show {
+                display: flex !important; /* Ensure it overrides 'display: none' */
+            }
+        `;
+        document.head.appendChild(style);
+    }
+    console.log("CSS rule for .add-options-dropdown.show injected.");
+
 
     // Poslucháči udalostí pre tlačidlo "Pridať" a jeho možnosti
     addButton.addEventListener('click', (event) => {
         event.stopPropagation(); // Zabráňte okamžitému zatvoreniu možností kliknutím na dokument
         addOptions.classList.toggle('show');
+        console.log(`addButton clicked. addOptions now has class 'show': ${addOptions.classList.contains('show')}`);
     });
 
     document.addEventListener('click', (event) => {
         if (!addButton.contains(event.target) && !addOptions.contains(event.target)) {
             addOptions.classList.remove('show');
+            console.log("Clicked outside addOptions or addButton. addOptions class 'show' removed.");
         }
     });
 
@@ -2611,7 +2627,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             matchGroupSelect.disabled = true;
             team1NumberInput.value = '';
             team1NumberInput.disabled = true;
-            team2NumberInput.value = '';
             team2NumberInput.disabled = true;
             matchDurationInput.value = 60; // Reset na predvolené, ak nie je kategória
             matchBufferTimeInput.value = 5; // Reset na predvolené, ak nie je kategória
