@@ -56,6 +56,9 @@ async function animateLoadingText(containerId, text) {
                 box-sizing: border-box; /* Zahrnie padding a border do šírky */
                 margin-top: 15px; /* Priestor nad tlačidlom */
             }
+            .modal-content button.delete-button {
+                margin-left: -10px; /* Posunie tlačidlo o 10px vľavo */
+            }
         `;
         document.head.appendChild(style);
     }
