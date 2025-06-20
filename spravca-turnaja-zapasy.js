@@ -43,6 +43,14 @@ async function animateLoadingText(containerId, text) {
                 background-color: white !important;
                 cursor: default;
             }
+            /* Upravené štýly pre tlačidlá v modálnych oknách */
+            .modal-content button[type="submit"],
+            .modal-content button.action-button,
+            .modal-content button.delete-button {
+                width: 100%; /* Rozšírenie na celú šírku inputboxu */
+                box-sizing: border-box; /* Zahrnie padding a border do šírky */
+                margin-top: 15px; /* Priestor nad tlačidlom */
+            }
         `;
         document.head.appendChild(style);
     }
@@ -869,7 +877,7 @@ function getEventDisplayString(event, allSettings, categoryColorsMap) {
             const blockedIntervalStartHour = String(Math.floor(event.startInMinutes / 60)).padStart(2, '0');
             const blockedIntervalStartMinute = String(event.startInMinutes % 60).padStart(2, '0');
             const blockedIntervalEndHour = String(Math.floor(event.endInMinutes / 60)).padStart(2, '0');
-            const blockedIntervalEndMinute = String(Math.floor(event.endInMinutes % 60)).padStart(2, '0');
+            const blockedIntervalEndMinute = String(Math.floor(event.endInMinutes % 60).padStart(2, '0');
             return `${blockedIntervalStartHour}:${blockedIntervalStartMinute} - ${blockedIntervalEndHour}:${blockedIntervalEndMinute}|${displayText}`;
         } else {
             displayText = 'Voľný interval dostupný'; 
@@ -1068,11 +1076,15 @@ async function displayMatchesAsSchedule() {
                         const finalEventsToRender = [];
                         let lastEvent = null;
 
-                        for (const event of currentEventsForRendering) {
+                        for (let i = 0; i < currentEventsForRendering.length; i++) {
+                            const event = currentEventsForRendering[i];
+
+                            // Check for duplicates only if the current event is a free interval and the last one was also a free interval
                             if (lastEvent) {
                                 const isCurrentFreeInterval = event.type === 'blocked_interval' && event.isBlocked === false;
                                 const isLastFreeInterval = lastEvent.type === 'blocked_interval' && lastEvent.isBlocked === false;
 
+                                // If both are free intervals and have the same start and end times, skip the current one
                                 if (isCurrentFreeInterval && isLastFreeInterval && 
                                     event.startInMinutes === lastEvent.startInMinutes && 
                                     event.endInMinutes === lastEvent.endInMinutes) {
@@ -1084,6 +1096,25 @@ async function displayMatchesAsSchedule() {
                             lastEvent = event;
                         }
                         console.log(`displayMatchesAsSchedule: FinalEventsToRender (po odstránení duplicitných po sebe idúcich riadkov a koncových voľných):`, JSON.stringify(finalEventsToRender.map(e => ({id: e.id, type: e.type, startTime: e.startTime || e.startInMinutes, endTime: e.endTime || e.endInMinutes, isBlocked: e.isBlocked, endOfPlayInMinutes: e.endOfPlayInMinutes, footprintEndInMinutes: e.footprintEndInMinutes}))));
+
+                        // Ensure that the very last event is not a redundant "free interval available" placeholder 
+                        // if it perfectly covers till 24:00 and there's no actual content after it
+                        if (finalEventsToRender.length > 0) {
+                            const lastRenderedEvent = finalEventsToRender[finalEventsToRender.length - 1];
+                            const lastEventFootprintEnd = lastRenderedEvent.type === 'match' 
+                                ? lastRenderedEvent.footprintEndInMinutes 
+                                : lastRenderedEvent.endInMinutes;
+
+                            if (lastRenderedEvent.type === 'blocked_interval' && lastRenderedEvent.isBlocked === false && lastEventFootprintEnd >= 24 * 60) {
+                                // If the last event is a free interval and extends to or beyond end of day,
+                                // and there are no actual matches / blocked intervals after it, remove it.
+                                const hasSubsequentContent = currentEventsForRendering.some(e => e.startInMinutes > lastRenderedEvent.startInMinutes && e.id !== lastRenderedEvent.id);
+                                if (!hasSubsequentContent) {
+                                    console.log(`displayMatchesAsSchedule: Odstraňujem koncový redundantný voľný interval: ${lastRenderedEvent.id}`);
+                                    finalEventsToRender.pop();
+                                }
+                            }
+                        }
 
 
                         const initialScheduleStartMinutes = await getInitialScheduleStartMinutes(date); 
@@ -1182,7 +1213,7 @@ async function displayMatchesAsSchedule() {
                                 const blockedIntervalStartHour = String(Math.floor(blockedInterval.startInMinutes / 60)).padStart(2, '0');
                                 const blockedIntervalStartMinute = String(blockedInterval.startInMinutes % 60).padStart(2, '0');
                                 const blockedIntervalEndHour = String(Math.floor(blockedInterval.endInMinutes / 60)).padStart(2, '0');
-                                const blockedIntervalEndMinute = String(Math.floor(blockedInterval.endInMinutes % 60)).padStart(2, '0');
+                                const blockedIntervalEndMinute = String(Math.floor(blockedInterval.endInMinutes % 60).padStart(2, '0');
                                 
                                 const isUserBlocked = blockedInterval.isBlocked === true; 
 
@@ -1222,45 +1253,38 @@ async function displayMatchesAsSchedule() {
                             }
                         }
                         
-                        if (currentTimePointerInMinutes < 24 * 60 && finalEventsToRender.length > 0) {
-                            const lastEventInRenderedList = finalEventsToRender[finalEventsToRender.length - 1];
-                            const lastEventEndTime = lastEventInRenderedList.type === 'match' 
-                                ? lastEventInRenderedList.footprintEndInMinutes 
-                                : lastEventInRenderedList.endInMinutes;
+                        if (currentTimePointerInMinutes < 24 * 60) { // Only add if there's remaining time
+                            const gapStart = currentTimePointerInMinutes;
+                            const gapEnd = 24 * 60;
+                            const formattedGapStartTime = `${String(Math.floor(gapStart / 60)).padStart(2, '0')}:${String(gapStart % 60).padStart(2, '0')}`;
+                            const formattedGapEndTime = `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(gapEnd % 60).padStart(2, '0')}`; 
 
-                            if (lastEventEndTime < 24 * 60 && currentTimePointerInMinutes < 24 * 60) {
-                                const gapStart = currentTimePointerInMinutes;
-                                const gapEnd = 24 * 60;
-                                const formattedGapStartTime = `${String(Math.floor(gapStart / 60)).padStart(2, '0')}:${String(gapStart % 60).padStart(2, '0')}`;
-                                const formattedGapEndTime = `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(gapEnd % 60).padStart(2, '0')}`; 
+                            const existingFreeInterval = allBlockedIntervals.find(s => 
+                                s.date === date && 
+                                s.location === location && 
+                                s.isBlocked === false && 
+                                s.startInMinutes === gapStart && 
+                                s.endInMinutes === gapEnd
+                            );
+                            const freeIntervalId = existingFreeInterval ? existingFreeInterval.id : 'generated-interval-' + Math.random().toString(36).substr(2, 9); 
+                            
+                            let displayTimeHtml = '';
+                            let textColspan = '5';
 
-                                const existingFreeInterval = allBlockedIntervals.find(s => 
-                                    s.date === date && 
-                                    s.location === location && 
-                                    s.isBlocked === false && 
-                                    s.startInMinutes === gapStart && 
-                                    s.endInMinutes === gapEnd
-                                );
-                                const freeIntervalId = existingFreeInterval ? existingFreeInterval.id : 'generated-interval-' + Math.random().toString(36).substr(2, 9); 
-                                
-                                let displayTimeHtml = '';
-                                let textColspan = '5';
-
-                                if (gapStart < gapEnd) {
-                                    scheduleHtml += `
-                                        <tr class="empty-interval-row free-interval-available-row" 
-                                            data-id="${freeIntervalId}" 
-                                            data-date="${date}" 
-                                            data-location="${location}" 
-                                            data-start-time="${formattedGapStartTime}" 
-                                            data-end-time="${formattedGapEndTime}" 
-                                            data-is-blocked="false">
-                                            ${displayTimeHtml}
-                                            <td colspan="${textColspan}" style="text-align: center; color: #888; font-style: italic; background-color: #f0f0f0;">Voľný interval dostupný</td>
-                                        </tr>
-                                    `;
-                                    contentAddedForThisDate = true;
-                                }
+                            if (gapStart < gapEnd) {
+                                scheduleHtml += `
+                                    <tr class="empty-interval-row free-interval-available-row" 
+                                        data-id="${freeIntervalId}" 
+                                        data-date="${date}" 
+                                        data-location="${location}" 
+                                        data-start-time="${formattedGapStartTime}" 
+                                        data-end-time="${formattedGapEndTime}" 
+                                        data-is-blocked="false">
+                                        ${displayTimeHtml}
+                                        <td colspan="${textColspan}" style="text-align: center; color: #888; font-style: italic; background-color: #f0f0f0;">Voľný interval dostupný</td>
+                                    </tr>
+                                `;
+                                contentAddedForThisDate = true;
                             }
                         }
 
@@ -1958,7 +1982,7 @@ async function openFreeIntervalModal(date, location, startTime, endTime, blocked
     }
 
     openModal(freeIntervalModal);
-    console.log("openFreeIntervalModal: Modálne okno otvorené.");
+    console.log("openFreeIntervalModal: Modálne okno otvoreno.");
 }
 
 
