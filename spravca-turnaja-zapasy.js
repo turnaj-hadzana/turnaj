@@ -2502,6 +2502,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                 addOptions.style.display = 'none';
             }
         });
+
+        // NOVINKA: Zatvoriť menu po kliknutí na akékoľvek tlačidlo vnútri addOptions
+        addOptions.addEventListener('click', (event) => {
+            // Ak je kliknutý cieľ tlačidlo (alebo obsahuje tlačidlo)
+            if (event.target.tagName === 'BUTTON') {
+                addOptions.style.display = 'none';
+            }
+        });
     }
 
     // --- End Logika pre Hlavné "+" menu ---
