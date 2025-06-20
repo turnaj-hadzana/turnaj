@@ -7,6 +7,85 @@ const SETTINGS_DOC_ID = 'matchTimeSettings';
 // Nová referencia na kolekciu pre zablokované sloty
 export const blockedSlotsCollectionRef = collection(db, 'tournamentData', 'mainTournamentData', 'blockedSlots');
 
+/**
+ * Animuje daný text tak, že ho postupne vypíše, zhrubí a potom postupne vymaže, v nekonečnej slučke.
+ * @param {string} containerId ID HTML elementu, kde sa má zobraziť animovaný text.
+ * @param {string} text Reťazec textu, ktorý sa má animovať.
+ */
+async function animateLoadingText(containerId, text) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    // Vyčistite predchádzajúci obsah a pripravte sa na animáciu
+    container.innerHTML = '';
+
+    const characters = text.split('');
+    const charElements = characters.map(char => {
+        const span = document.createElement('span');
+        span.className = 'loading-char';
+        span.textContent = char;
+        container.appendChild(span);
+        return span;
+    });
+
+    const typingSpeed = 70; // milisekundy na znak
+    const boldingDuration = 500; // milisekundy pre efekt zhrubnutia
+    const pauseAfterBolding = 500; // milisekundy pauza pred začiatkom mazania
+    const untypingSpeed = 50; // milisekundy na znak
+    const pauseBeforeLoop = 1000; // milisekundy pauza pred reštartovaním animácie
+
+    let charIndex = 0;
+    let animationActive = true; // Vlajka na kontrolu slučky
+
+    const typeOut = () => {
+        if (!animationActive) return;
+
+        if (charIndex < charElements.length) {
+            charElements[charIndex].classList.add('visible');
+            charIndex++;
+            setTimeout(typeOut, typingSpeed);
+        } else {
+            // Všetky znaky vypísané, teraz zhrubnú
+            setTimeout(() => {
+                if (!animationActive) return;
+                charElements.forEach(span => span.classList.add('bold'));
+                setTimeout(untypeOut, boldingDuration + pauseAfterBolding); // Počkajte na zhrubnutie a pauzu
+            }, 500); // Krátka pauza pred začiatkom zhrubnutia
+        }
+    };
+
+    const untypeOut = () => {
+        if (!animationActive) return;
+
+        if (charIndex > 0) {
+            charIndex--;
+            charElements[charIndex].classList.remove('bold'); // Najprv odstráňte zhrubnutie
+            charElements[charIndex].classList.remove('visible');
+            setTimeout(untypeOut, untypingSpeed);
+        } else {
+            // Všetky znaky vymazané, resetujte pre ďalšiu slučku
+            setTimeout(() => {
+                if (!animationActive) return;
+                charElements.forEach(span => { // Zabezpečte, aby boli všetky resetované pre ďalšiu slučku
+                    span.classList.remove('bold');
+                    span.classList.remove('visible');
+                });
+                charIndex = 0;
+                typeOut(); // Reštartujte animáciu
+            }, pauseBeforeLoop);
+        }
+    };
+
+    // Spustite animáciu
+    typeOut();
+
+    // Vráťte funkciu na zastavenie animácie, ak je to potrebné externe
+    return () => {
+        animationActive = false;
+        // Ak je kontajner nahradený, všetky jeho timeouty prirodzene osirejú.
+    };
+}
+
 
 /**
  * Naplní element select hracími dňami z Firestore.
@@ -819,7 +898,7 @@ async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation
             console.log(`moveAndRescheduleMatch: Pridané do batchu na vymazanie cieľového zablokovaného slotu (ID: ${targetBlockedSlotId}).`);
             excludedBlockedSlotIdFromRecalculation = targetBlockedSlotId;
         } else if (targetMatchIdToDisplace && draggedMatchId !== targetMatchIdToDisplace) { // Bol pustený na existujúci zápas a nie je to ten istý zápas
-            const displacedMatchDocRef = doc(matchesCollectionRef, targetMatchIdToDisplaced);
+            const displacedMatchDocRef = doc(matchesCollectionRef, targetMatchIdToDisplace);
             const displacedMatchDoc = await getDoc(displacedMatchDocRef);
             if (displacedMatchDoc.exists()) {
                 const displacedMatchData = displacedMatchDoc.data();
@@ -901,7 +980,7 @@ function getEventDisplayString(event, allSettings, categoryColorsMap) {
             const blockedSlotStartHour = String(Math.floor(event.startInMinutes / 60)).padStart(2, '0');
             const blockedSlotStartMinute = String(event.startInMinutes % 60).padStart(2, '0');
             const blockedSlotEndHour = String(Math.floor(event.endInMinutes / 60)).padStart(2, '0');
-            const blockedSlotEndMinute = String(Math.floor(event.endInMinutes % 60)).padStart(2, '0');
+            const blockedSlotEndMinute = String(Math.floor(event.endInMinutes % 60).padStart(2, '0');
             return `${blockedSlotStartHour}:${blockedSlotStartMinute} - ${blockedSlotEndHour}:${blockedSlotEndMinute}|${displayText}`;
         } else {
             // Zmena: Použite uložené startTime a endTime pre voľné sloty
@@ -920,9 +999,11 @@ async function displayMatchesAsSchedule() {
     const matchesContainer = document.getElementById('matchesContainer');
     if (!matchesContainer) return;
 
-    matchesContainer.innerHTML = '';
-    matchesContainer.insertAdjacentHTML('afterbegin', '<p>Načítavam zoznam zápasov...</p>');
-    console.log('displayMatchesAsSchedule: Spustené.');
+    // Pridajte element pre animovaný načítací text
+    matchesContainer.innerHTML = `<p id="loadingAnimationText" style="text-align: center; font-size: 1.2em; color: #555;"></p>`;
+    // Spustite animáciu
+    animateLoadingText('loadingAnimationText', 'Načítavam zoznam zápasov...');
+    console.log('displayMatchesAsSchedule: Spustené načítavanie dát.');
 
     try {
         // Načítajte všetky údaje potrebné pre rozvrh
