@@ -1467,7 +1467,7 @@ async function displayMatchesAsSchedule() {
 
                                 if (gapStart < gapEnd) { // Still ensure it's a valid duration
                                     scheduleHtml += `
-                                        <tr class="empty-slot-row free-slot-available-row" 
+                                        <tr class="empty-slot-row free-slot-available-row end-of-day-free-slot-row" 
                                             data-id="${freeSlotId}" 
                                             data-date="${date}" 
                                             data-location="${location}" 
@@ -1531,7 +1531,8 @@ async function displayMatchesAsSchedule() {
         });
 
         // Pridajte poslucháčov udalostí pre prázdne riadky slotov pre kliknutie
-        matchesContainer.querySelectorAll('.empty-slot-row').forEach(row => {
+        // ZMENA: Vyberte VŠETKY .empty-slot-row, OKREM tých, ktoré majú aj .end-of-day-free-slot-row
+        matchesContainer.querySelectorAll('.empty-slot-row:not(.end-of-day-free-slot-row)').forEach(row => {
             row.addEventListener('click', (event) => {
                 const date = event.currentTarget.dataset.date;
                 const location = event.currentTarget.dataset.location;
@@ -1633,8 +1634,8 @@ async function displayMatchesAsSchedule() {
                 
                 // Vizuálna spätná väzba pre bod vloženia (napr. orámovanie)
                 const targetRow = event.target.closest('tr');
-                // ZMENA: Ak je to riadok s footer-spacer-row, nepovoliť drop efekt.
-                if (targetRow && targetRow.classList.contains('footer-spacer-row')) {
+                // ZMENA: Ak je to riadok s footer-spacer-row alebo end-of-day-free-slot-row, nepovoliť drop efekt.
+                if (targetRow && (targetRow.classList.contains('footer-spacer-row') || targetRow.classList.contains('end-of-day-free-slot-row'))) {
                     event.dataTransfer.dropEffect = 'none';
                     targetRow.classList.add('drop-over-forbidden');
                 } else if (targetRow && !targetRow.classList.contains('blocked-slot-row')) {
@@ -1677,9 +1678,9 @@ async function displayMatchesAsSchedule() {
                 let targetMatchIdToDisplace = null; // NOVÉ
 
                 if (draggedMatchId) {
-                    // ZMENA: Ak sa presunie na zablokovaný slot ALEBO na footer-spacer-row, zamedzte presunu
-                    if (targetRow && (targetRow.classList.contains('blocked-slot-row') || targetRow.classList.contains('footer-spacer-row'))) {
-                        console.log(`Pokus o presun zápasu ${draggedMatchId} na zablokovaný slot alebo spacer row. Presun ZAMITNUTÝ.`);
+                    // ZMENA: Ak sa presunie na zablokovaný slot ALEBO na footer-spacer-row ALEBO na end-of-day-free-slot-row, zamedzte presunu
+                    if (targetRow && (targetRow.classList.contains('blocked-slot-row') || targetRow.classList.contains('footer-spacer-row') || targetRow.classList.contains('end-of-day-free-slot-row'))) {
+                        console.log(`Pokus o presun zápasu ${draggedMatchId} na zablokovaný slot, spacer row alebo end-of-day free slot. Presun ZAMITNUTÝ.`);
                         await showMessage('Upozornenie', 'Na tento časový interval nie je možné presunúť zápas.');
                         return; // Zastaviť drop operáciu
                     }
