@@ -197,7 +197,7 @@ td:last-child {
     background-color: #dc3545;
     color: white;
     border-color: #c82333;
-    width: calc(100% - 22px);    
+    width: calc(100% - 22px); /* Pravidlo vrátené späť */
 }
 .action-button.delete-button:hover {
     background-color: #c82333;
@@ -206,7 +206,7 @@ td:last-child {
 .action-button.delete-button:active {
     background-color: #bd2130;
     border-color: #a71d2a;
-    width: calc(100% - 22px);
+    width: calc(100% - 22px); /* Pravidlo vrátené späť */
 }
 .section-block h2 {
     text-align: center;
@@ -634,29 +634,6 @@ td:last-child {
     border-right: 1px solid #555;
 }
 
-/* PÔVODNÉ: Štýly pre kontajner textu autobusu v hlavičke (teraz odstránené) */
-/*
-.schedule-bus-header-info {
-    padding: 5px;
-    background-color: #e0f7fa;
-    border-top: 1px solid #00bcd4;
-    font-size: 0.75em;
-    color: #333;
-    text-align: left;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    white-space: normal;
-}
-
-.schedule-bus-header-info p {
-    margin: 0;
-    padding: 0;
-    line-height: 1.2;
-}
-*/
-
-
 /* Štýly pre prázdne bunky */
 .match-schedule-table td:empty {
     background-color: #f7f7f7;
@@ -688,6 +665,7 @@ td:last-child {
     z-index: 1; /* Zápasy budú mať z-index 1 */
     cursor: pointer;
 }
+
 
 .schedule-cell-content {
     flex-grow: 1; /* Rozšíri sa a zaberie všetok dostupný priestor */
@@ -771,45 +749,41 @@ td:last-child {
 
 .add-options-dropdown {
     position: fixed;
-    bottom: 80px; /* 20px od spodku + 50px výška tlačidla + 10px medzera */
-    right: 20px;
-    background-color: #fff;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-    padding: 10px;
-    display: none; /* Predvolene skryté, JS ho zobrazí */
-    flex-direction: column;
-    gap: 10px;
-    z-index: 1001; /* Vyšší z-index ako hlavné tlačidlo */
-    width: 200px; /* Nastavená šírka menu */
+    bottom: 60px;
+    right: 60px;    
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 8px; /* Jemne zaoblené rohy */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    padding: 15px !important; /* Zvýšený okraj okolo obsahu vo vnútri bieleho obdĺžnika (nad, pod, vľavo, vpravo) s !important */
+    flex-direction: column !important; /* Tlačidlá pod sebou s !important */
+    gap: 15px !important; /* Zvýšená medzera medzi tlačidlami s !important */
 }
 
 .add-options-dropdown.show {
     display: flex !important; /* Trieda pre zobrazenie menu cez JS */
 }
 
-.add-options-dropdown button {
-    background-color: #007bff;
-    color: white;
-    padding: 10px 15px;
-    border: none;
-    border-radius: 4px;
+#addOptions button {
+    background-color: #007bff; /* Svetlejšie pozadie pre tlačidlá */
+    color: #ffffff;
+    border: 1px solid #ced4da; /* Jemný okraj */
+    padding: 15px !important; /* Rovnaký padding zo všetkých strán pre konzistentný vnútorný priestor s !important */
+    text-align: center;
+    text-decoration: none;
+    display: block !important; /* Zabezpečí, že zaberie celú šírku */
+    font-size: 1em;
     cursor: pointer;
-    font-size: 0.9em;
-    text-align: left;
-    transition: background-color 0.2s ease;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    border-radius: 5px; /* Zaoblené rohy tlačidiel */
+    width: 100% !important; /* Rozšírenie na celú šírku rodičovského kontajnera (s paddingom) s !important */
+    box-sizing: border-box !important; /* Padding zahrnutý v šírke s !important */
+    transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
-.add-options-dropdown button:hover {
-    background-color: #0056b3;
+#addOptions button:hover {
+    background-color: #0056b3; /* Tmavšie pozadie pri prechode myšou */
 }
 
-.add-options-dropdown button:active {
-    background-color: #004085;
-}
 .hall-address {
     font-size: 0.5em;
     color: white;
@@ -976,7 +950,7 @@ td:last-child {
 }
 
 #addOptions button {
-    background-color: #007bff; /* Svetlejšie pozadie pre tlačidlá */
+    background-color: #3a8d41; /* Svetlejšie pozadie pre tlačidlá */
     color: #ffffff;
     border: 1px solid #ced4da; /* Jemný okraj */
     padding: 15px !important; /* Rovnaký padding zo všetkých strán pre konzistentný vnútorný priestor s !important */
@@ -992,5 +966,5 @@ td:last-child {
 }
 
 #addOptions button:hover {
-    background-color: #0056b3; /* Tmavšie pozadie pri prechode myšou */
+    background-color: #c46f50; /* Tmavšie pozadie pri prechode myšou */
 }
