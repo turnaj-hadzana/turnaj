@@ -1044,7 +1044,7 @@ td:last-child {
     padding: 15px !important; /* Rovnaký padding zo všetkých strán pre konzistentný vnútorný priestor */
     text-align: center;
     text-decoration: none;
-    display: block !important; /* Zabezpečí, že zaberie celú šírku */
+    display: block; /* Zabezpečí, že zaberie celú šírku */
     font-size: 1em;
     cursor: pointer;
     border-radius: 5px; /* Zaoblené rohy tlačidiel */
