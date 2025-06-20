@@ -689,56 +689,6 @@ td:last-child {
     cursor: pointer;
 }
 
-/* NOVÉ: Kontajner pre SVG autobusy, ktorý bude prekrývať celú tabuľku */
-#busOverlayContainer {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none; /* Umožní kliknutie cez tento div na elementy pod ním, ale SVG polygóny môžu mať pointer-events: all; */
-    z-index: 7; /* Zmenené na 7 */
-}
-
-/* NOVÉ: Štýly pre samotný SVG element autobusu */
-.bus-svg {
-    pointer-events: all; /* Umožní kliknutie na SVG */
-    overflow: visible; /* Umožní polygónu presahovať viewBox, ak je to potrebné (napr. pre hrubé stroke) */
-    z-index: 2; /* Uistite sa, že je nad zápasmi, aj keď je v overlay kontajneri */
-}
-
-/* NOVÉ: Štýly pre samotný polygón autobusu */
-.schedule-bus-polygon {
-    fill: #d896ff; 
-    stroke: #be29ec; 
-    stroke-width: 1;
-    opacity: 0.5;
-}
-
-/* NOVÉ: Štýly pre text v SVG autobuse */
-.schedule-bus-text,
-.schedule-bus-route-text,
-.schedule-bus-time-text,
-.schedule-bus-notes-text {
-    fill: black; /* Farba textu na autobuse zmenená na čiernu */
-    font-size: 12px; /* Základné písmo */
-    font-weight: bold;
-    pointer-events: none; /* Aby text neblokoval kliknutie na polygón */
-    user-select: none; /* Zabráni označovaniu textu */
-}
-
-.schedule-bus-route-text {
-    font-size: 10px; /* Menšie pre trasu */
-}
-.schedule-bus-time-text {
-    font-size: 9px;
-    font-weight: normal;
-}
-.schedule-bus-notes-text {
-    font-size: 9px; /* Najmenšie pre poznámky */
-}
-
-
 .schedule-cell-content {
     flex-grow: 1; /* Rozšíri sa a zaberie všetok dostupný priestor */
     overflow-y: auto; /* PRIDANÉ: Posuvník len pre tento obsah, ak je príliš dlhý */
