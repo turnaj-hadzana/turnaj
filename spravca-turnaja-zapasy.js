@@ -1946,7 +1946,7 @@ async function editPlace(placeName, placeType) {
                 deletePlaceButtonModal.removeEventListener('click', deletePlaceButtonModal._currentHandler);
                 delete deletePlaceButtonModal._currentHandler; // Vyčistite referenciu
             }
-            const handler = () => deletePlace(placeData.name, placeData.type);
+            const handler = () => deletePlace(placeData.name, placeData.data);
             deletePlaceButtonModal.addEventListener('click', handler);
             deletePlaceButtonModal._currentHandler = handler; // Uložte referenciu
             openModal(placeModal);
@@ -2478,6 +2478,35 @@ async function loadMatchTimeSettings() {
 
 // Event Listeners for Match Management
 document.addEventListener('DOMContentLoaded', async () => {
+    // --- Logika pre Hlavné "+" menu ---
+    const addButton = document.getElementById('addButton');
+    const addOptions = document.getElementById('addOptions');
+
+    if (addButton && addOptions) {
+        // Skryť menu na začiatku
+        addOptions.style.display = 'none'; 
+
+        addButton.addEventListener('click', (event) => {
+            event.stopPropagation(); // Zabrániť propagácii kliknutia na document
+            // Prepína zobrazenie ponuky
+            if (addOptions.style.display === 'none') {
+                addOptions.style.display = 'block';
+            } else {
+                addOptions.style.display = 'none';
+            }
+        });
+
+        // Zatvoriť menu, ak kliknete kdekoľvek mimo neho
+        document.addEventListener('click', (event) => {
+            if (addOptions.style.display === 'block' && !addButton.contains(event.target) && !addOptions.contains(event.target)) {
+                addOptions.style.display = 'none';
+            }
+        });
+    }
+
+    // --- End Logika pre Hlavné "+" menu ---
+
+
     // Buttons for Match Management (Add new match, Open Settings)
     const addMatchButton = document.getElementById('addMatchButton');
     if (addMatchButton) {
