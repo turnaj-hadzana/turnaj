@@ -929,7 +929,7 @@ async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation
             console.log(`moveAndRescheduleMatch: Pridané do batchu na vymazanie cieľového zablokovaného slotu (ID: ${targetBlockedSlotId}).`);
             excludedBlockedSlotIdFromRecalculation = targetBlockedSlotId;
         } else if (targetMatchIdToDisplace && draggedMatchId !== targetMatchIdToDisplace) { // Bol pustený na existujúci zápas a nie je to ten istý zápas
-            const displacedMatchDocRef = doc(matchesCollectionRef, targetMatchIdToDisplace);
+            const displacedMatchDocRef = doc(matchesCollectionRef, targetMatchIdToDisplaced);
             const displacedMatchDoc = await getDoc(displacedMatchDocRef);
             if (displacedMatchDoc.exists()) {
                 const displacedMatchData = displacedMatchDoc.data();
@@ -1011,7 +1011,7 @@ function getEventDisplayString(event, allSettings, categoryColorsMap) {
             const blockedSlotStartHour = String(Math.floor(event.startInMinutes / 60)).padStart(2, '0');
             const blockedSlotStartMinute = String(event.startInMinutes % 60).padStart(2, '0');
             const blockedSlotEndHour = String(Math.floor(event.endInMinutes / 60)).padStart(2, '0');
-            const blockedSlotEndMinute = String(Math.floor(event.endInMinutes % 60)).padStart(2, '0');
+            const blockedSlotEndMinute = String(Math.floor(event.endInMinutes % 60).padStart(2, '0');
             return `${blockedSlotStartHour}:${blockedSlotStartMinute} - ${blockedSlotEndHour}:${blockedSlotEndMinute}|${displayText}`;
         } else {
             // Zmena: Použite uložené startTime a endTime pre voľné sloty
@@ -1145,6 +1145,7 @@ async function displayMatchesAsSchedule() {
 
         if (allSportHalls.length === 0) {
             scheduleHtml += '<p>Žiadne športové haly na zobrazenie. Pridajte nové miesta typu "Športová hala" pomocou tlačidla "+".</p>';
+        Html += '<p style="margin: 20px; text-align: center; color: #888;">Žiadne hracie dni boli definované.</p>';
         } else {
             const isOddNumberOfLocations = allSportHalls.length % 2 !== 0;
 
@@ -1406,7 +1407,7 @@ async function displayMatchesAsSchedule() {
                                         data-start-time="${formattedGapStartTime}" 
                                         data-end-time="${formattedGapEndTime}" 
                                         data-is-blocked="false">
-                                        <td></td> <!-- ZMENA: prázdna bunka pre časový interval -->
+                                        <td>${formattedGapStartTime} - ${formattedGapEndTime}</td>
                                         <td colspan="4" style="text-align: center; color: #888; font-style: italic; background-color: #f0f0f0;">Voľný slot dostupný</td>
                                     </tr>
                                 `;
