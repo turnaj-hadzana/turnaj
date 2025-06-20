@@ -55,6 +55,14 @@ async function animateLoadingText(containerId, text) {
                 background-color: white !important; /* Žiadny hover efekt */
                 cursor: default; /* Žiadny kurzor ukazovateľa */
             }
+            /* Úprava pre riadok s časom 24:00 (koniec dňa) */
+            .end-of-day-free-slot-row {
+                background-color: #f0f0f0; /* Farba pozadia ako ostatné voľné sloty */
+            }
+            .end-of-day-free-slot-row:hover {
+                background-color: #f0f0f0 !important; /* Vypnutie hover efektu */
+                cursor: default !important; /* Zmena kurzora na predvolený */
+            }
         `;
         document.head.appendChild(style);
     }
@@ -1051,7 +1059,7 @@ function getEventDisplayString(event, allSettings, categoryColorsMap) {
             const blockedSlotStartHour = String(Math.floor(event.startInMinutes / 60)).padStart(2, '0');
             const blockedSlotStartMinute = String(event.startInMinutes % 60).padStart(2, '0');
             const blockedSlotEndHour = String(Math.floor(event.endInMinutes / 60)).padStart(2, '0');
-            const blockedSlotEndMinute = String(Math.floor(event.endInMinutes % 60)).padStart(2, '0');
+            const blockedSlotEndMinute = String(Math.floor(event.endInMinutes % 60).padStart(2, '0');
             return `${blockedSlotStartHour}:${blockedSlotStartMinute} - ${blockedSlotEndHour}:${blockedSlotEndMinute}|${displayText}`;
         } else {
             // Zmena: Použite uložené startTime a endTime pre voľné sloty
@@ -1393,7 +1401,7 @@ async function displayMatchesAsSchedule() {
                                 const blockedSlotStartHour = String(Math.floor(blockedSlot.startInMinutes / 60)).padStart(2, '0');
                                 const blockedSlotStartMinute = String(blockedSlot.startInMinutes % 60).padStart(2, '0');
                                 const blockedSlotEndHour = String(Math.floor(blockedSlot.endInMinutes / 60)).padStart(2, '0');
-                                const blockedSlotEndMinute = String(Math.floor(blockedSlot.endInMinutes % 60)).padStart(2, '0');
+                                const blockedSlotEndMinute = String(Math.floor(blockedSlot.endInMinutes % 60).padStart(2, '0');
                                 
                                 const isUserBlocked = blockedSlot.isBlocked === true; 
 
@@ -1475,7 +1483,7 @@ async function displayMatchesAsSchedule() {
                                             data-end-time="${formattedGapEndTime}" 
                                             data-is-blocked="false">
                                             ${displayTimeHtml}
-                                            <td colspan="${textColspan}" style="text-align: center; color: #888; font-style: italic; background-color: #f0f0f0;">Voľný slot dostupný</td>
+                                            <td colspan="${textColspan}" style="text-align: center; color: #888; font-style: italic; background-color: #f0f0f0;"></td>
                                         </tr>
                                     `;
                                     contentAddedForThisDate = true;
