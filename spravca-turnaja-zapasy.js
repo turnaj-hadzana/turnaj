@@ -1051,7 +1051,7 @@ function getEventDisplayString(event, allSettings, categoryColorsMap) {
             const blockedSlotStartHour = String(Math.floor(event.startInMinutes / 60)).padStart(2, '0');
             const blockedSlotStartMinute = String(event.startInMinutes % 60).padStart(2, '0');
             const blockedSlotEndHour = String(Math.floor(event.endInMinutes / 60)).padStart(2, '0');
-            const blockedSlotEndMinute = String(Math.floor(event.endInMinutes % 60)).padStart(2, '0');
+            const blockedSlotEndMinute = String(Math.floor(event.endInMinutes % 60).padStart(2, '0');
             return `${blockedSlotStartHour}:${blockedSlotStartMinute} - ${blockedSlotEndHour}:${blockedSlotEndMinute}|${displayText}`;
         } else {
             // Zmena: Použite uložené startTime a endTime pre voľné sloty
@@ -1440,6 +1440,11 @@ async function displayMatchesAsSchedule() {
                             const freeSlotId = existingFreeSlot ? existingFreeSlot.id : 'generated-slot-' + Math.random().toString(36).substr(2, 9); // Fallback pre ID
                             
                             // Vytvorí voľný slot len, ak má reálnu dĺžku
+                            // ZMENA: Ak je to posledný slot dňa (ide do 24:00), zobrazte ho bez času.
+                            const displayTimeForEndSlot = (gapEnd === 24 * 60) ? '' : `${formattedGapStartTime} - ${formattedGapEndTime}`;
+                            const timeColspan = (gapEnd === 24 * 60) ? '5' : '1'; // colspan pre čas
+                            const textColspan = (gapEnd === 24 * 60) ? '5' : '4'; // colspan pre text
+
                             if (formattedGapStartTime !== formattedGapEndTime) { 
                                 scheduleHtml += `
                                     <tr class="empty-slot-row free-slot-available-row" 
@@ -1449,7 +1454,8 @@ async function displayMatchesAsSchedule() {
                                         data-start-time="${formattedGapStartTime}" 
                                         data-end-time="${formattedGapEndTime}" 
                                         data-is-blocked="false">
-                                        <td colspan="5" style="text-align: center; color: #888; font-style: italic; background-color: #f0f0f0;">Voľný slot dostupný</td>
+                                        ${(gapEnd === 24 * 60) ? '' : `<td>${displayTimeForEndSlot}</td>`}
+                                        <td colspan="${textColspan}" style="text-align: center; color: #888; font-style: italic; background-color: #f0f0f0;">Voľný slot dostupný</td>
                                     </tr>
                                 `;
                                 contentAddedForThisDate = true;
