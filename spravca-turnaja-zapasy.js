@@ -47,6 +47,14 @@ async function animateLoadingText(containerId, text) {
             .loading-char.bold {
                 font-weight: bold;
             }
+            /* Nové pravidlo pre posledný riadok v tabuľke */
+            .footer-spacer-row {
+                background-color: white !important; /* Vždy biely, prepíše všetko */
+            }
+            .footer-spacer-row:hover {
+                background-color: white !important; /* Žiadny hover efekt */
+                cursor: default; /* Žiadny kurzor ukazovateľa */
+            }
         `;
         document.head.appendChild(style);
     }
@@ -1003,7 +1011,7 @@ function getEventDisplayString(event, allSettings, categoryColorsMap) {
             const blockedSlotStartHour = String(Math.floor(event.startInMinutes / 60)).padStart(2, '0');
             const blockedSlotStartMinute = String(event.startInMinutes % 60).padStart(2, '0');
             const blockedSlotEndHour = String(Math.floor(event.endInMinutes / 60)).padStart(2, '0');
-            const blockedSlotEndMinute = String(Math.floor(event.endInMinutes % 60)).padStart(2, '0');
+            const blockedSlotEndMinute = String(Math.floor(event.endInMinutes % 60).padStart(2, '0');
             return `${blockedSlotStartHour}:${blockedSlotStartMinute} - ${blockedSlotEndHour}:${blockedSlotEndMinute}|${displayText}`;
         } else {
             // Zmena: Použite uložené startTime a endTime pre voľné sloty
@@ -1407,8 +1415,9 @@ async function displayMatchesAsSchedule() {
                         }
 
                         // PRIDANIE: Prázdny riadok za posledný riadok každého dňa (za 24:00)
+                        // Tento riadok nemá mať funkciu hover a vždy musí byť biely
                         scheduleHtml += `
-                            <tr style="height: 15px;">
+                            <tr class="footer-spacer-row" style="height: 15px; background-color: white;">
                                 <td colspan="5"></td>
                             </tr>
                         `;
@@ -1554,7 +1563,11 @@ async function displayMatchesAsSchedule() {
                 
                 // Vizuálna spätná väzba pre bod vloženia (napr. orámovanie)
                 const targetRow = event.target.closest('tr');
-                if (targetRow && !targetRow.classList.contains('blocked-slot-row')) {
+                // ZMENA: Ak je to riadok s footer-spacer-row, nepovoliť drop efekt.
+                if (targetRow && targetRow.classList.contains('footer-spacer-row')) {
+                    event.dataTransfer.dropEffect = 'none';
+                    targetRow.classList.add('drop-over-forbidden');
+                } else if (targetRow && !targetRow.classList.contains('blocked-slot-row')) {
                     // Ak je nad platným riadkom (zápas alebo prázdny), zvýraznite riadok
                     targetRow.classList.add('drop-over-row');
                 } else if (targetRow && targetRow.classList.contains('blocked-slot-row')) {
@@ -1594,10 +1607,10 @@ async function displayMatchesAsSchedule() {
                 let targetMatchIdToDisplace = null; // NOVÉ
 
                 if (draggedMatchId) {
-                    // Ak sa presunie na zablokovaný slot, zamedzte presunu
-                    if (targetRow && targetRow.classList.contains('blocked-slot-row')) {
-                        console.log(`Pokus o presun zápasu ${draggedMatchId} na zablokovaný slot. Presun ZAMITNUTÝ.`);
-                        await showMessage('Upozornenie', 'Tento časový interval je zablokovaný. Zápas naň nie je možné presunúť.');
+                    // ZMENA: Ak sa presunie na zablokovaný slot ALEBO na footer-spacer-row, zamedzte presunu
+                    if (targetRow && (targetRow.classList.contains('blocked-slot-row') || targetRow.classList.contains('footer-spacer-row'))) {
+                        console.log(`Pokus o presun zápasu ${draggedMatchId} na zablokovaný slot alebo spacer row. Presun ZAMITNUTÝ.`);
+                        await showMessage('Upozornenie', 'Na tento časový interval nie je možné presunúť zápas.');
                         return; // Zastaviť drop operáciu
                     }
 
