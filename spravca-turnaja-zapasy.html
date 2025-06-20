@@ -95,6 +95,22 @@
             <form id="matchForm">
                 <input type="hidden" id="matchId">
                 <div>
+                    <label for="matchDateSelect">Dátum zápasu:</label>
+                    <select id="matchDateSelect" required>
+                        <option value="">-- Vyberte dátum --</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="matchLocationSelect">Miesto (športová hala):</label>
+                    <select id="matchLocationSelect" required>
+                        <option value="">-- Vyberte miesto --</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="matchStartTime">Čas začiatku zápasu:</label>
+                    <input type="time" id="matchStartTime" required>
+                </div>
+                <div>
                     <label for="matchCategory">Kategória:</label>
                     <select id="matchCategory" required>
                         <option value="">-- Vyberte kategóriu --</option>
@@ -113,22 +129,6 @@
                 <div>
                     <label for="team2NumberInput">Poradové číslo tímu 2 (hostia):</label>
                     <input type="number" id="team2NumberInput" min="1" required disabled>
-                </div>
-                <div>
-                    <label for="matchDateSelect">Dátum zápasu:</label>
-                    <select id="matchDateSelect" required>
-                        <option value="">-- Vyberte dátum --</option>
-                    </select>
-                </div>
-                <div>
-                    <label for="matchLocationSelect">Miesto (športová hala):</label>
-                    <select id="matchLocationSelect" required>
-                        <option value="">-- Vyberte miesto --</option>
-                    </select>
-                </div>
-                <div>
-                    <label for="matchStartTime">Čas začiatku zápasu:</label>
-                    <input type="time" id="matchStartTime" required>
                 </div>
                 <div>
                     <label for="matchDuration">Trvanie zápasu (minúty):</label>
