@@ -1027,7 +1027,7 @@ td:last-child {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
     display: none; /* Predvolene skryté, JS ho zmení na 'block' */
     position: absolute; /* Umiestnenie vzhľadom na #controlsContainer */
-    bottom: 75px; /* Nad "+" tlačidlom */
+    bottom: 50px; /* Nad "+" tlačidlom */
     right: 0; /* Zarovnané s pravým okrajom #addButton */
     width: 220px; /* Pevná šírka pre rozbaľovaciu ponuku */
     overflow: hidden; /* Zabezpečí, že zaoblené rohy fungujú aj na obsahu */
