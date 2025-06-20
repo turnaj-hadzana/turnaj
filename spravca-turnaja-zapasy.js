@@ -423,17 +423,17 @@ async function findFirstAvailableTime() {
         console.log("Existing Free Slots (isBlocked: false):", freeSlots);
 
         for (const freeSlot of freeSlots) {
-            if (freeSlot.end - freeSlot.start >= newMatchFullFootprint) {
-                // Tento voľný slot je dostatočne veľký. Je skutočne dostupný? (Neprekrýva sa s pevne obsadeným obdobím?)
-                // To zaisťuje, že nenavrhujeme fiktívny voľný slot, ktorý sa náhodou prekrýva s novou umiestnenou zhodou/blokovaným slotom.
-
+            // ZMENA 1: Skontrolujte, či sa zápas zmestí len na základe requiredMatchDuration (bez bufferTime)
+            if (freeSlot.end - freeSlot.start >= requiredMatchDuration) {
                 let isFreeSlotTrulyAvailable = true;
-                // Skontrolujte, či sa prekrýva s akýmkoľvek zlúčeným obsadeným obdobím
+                // ZMENA 2: Pri kontrole prekrývania použite celú stopu nového zápasu (duration + buffer)
+                const potentialMatchEndWithBuffer = freeSlot.start + newMatchFullFootprint; 
+
+                // Skontrolujte, či sa potenciálny nový zápas (s buffrom) prekrýva s akýmkoľvek zlúčeným obsadeným obdobím.
                 for(const occupied of mergedOccupiedPeriods) {
-                    // Ak sa voľný slot prekrýva s obsadeným obdobím
-                    if (freeSlot.start < occupied.end && freeSlot.end > occupied.start) {
+                    if (freeSlot.start < occupied.end && potentialMatchEndWithBuffer > occupied.start) {
                         isFreeSlotTrulyAvailable = false;
-                        console.log(`Free slot ${freeSlot.start}-${freeSlot.end} overlaps with occupied ${occupied.start}-${occupied.end}. Not truly available.`);
+                        console.log(`Free slot ${freeSlot.start}-${freeSlot.end} is too small or overlaps with occupied ${occupied.start}-${occupied.end} for a match ending at ${potentialMatchEndWithBuffer}. Not truly available.`);
                         break;
                     }
                 }
@@ -450,6 +450,7 @@ async function findFirstAvailableTime() {
         // Ak sa nenašiel žiadny vhodný existujúci voľný slot, nájdite prvý dostupný interval z vypočítaných medzier
         if (proposedStartTimeInMinutes === -1) {
             for (const interval of availableIntervals) {
+                // Tu vždy kontrolujeme celú stopu zápasu, pretože ide o "čisté" medzery, nie o placeholdery
                 if (interval.end - interval.start >= newMatchFullFootprint) {
                     proposedStartTimeInMinutes = interval.start;
                     console.log(`No existing free slot, using first available calculated interval at: ${proposedStartTimeInMinutes}`);
@@ -968,7 +969,7 @@ async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation
             console.log(`moveAndRescheduleMatch: Pridané do batchu na vymazanie cieľového zablokovaného slotu (ID: ${targetBlockedSlotId}).`);
             excludedBlockedSlotIdFromRecalculation = targetBlockedSlotId;
         } else if (targetMatchIdToDisplace && draggedMatchId !== targetMatchIdToDisplace) { // Bol pustený na existujúci zápas a nie je to ten istý zápas
-            const displacedMatchDocRef = doc(matchesCollectionRef, targetMatchIdToDisplaced);
+            const displacedMatchDocRef = doc(matchesCollectionRef, targetMatchIdToDisplace);
             const displacedMatchDoc = await getDoc(displacedMatchDocRef);
             if (displacedMatchDoc.exists()) {
                 const displacedMatchData = displacedMatchDoc.data();
@@ -1050,7 +1051,7 @@ function getEventDisplayString(event, allSettings, categoryColorsMap) {
             const blockedSlotStartHour = String(Math.floor(event.startInMinutes / 60)).padStart(2, '0');
             const blockedSlotStartMinute = String(event.startInMinutes % 60).padStart(2, '0');
             const blockedSlotEndHour = String(Math.floor(event.endInMinutes / 60)).padStart(2, '0');
-            const blockedSlotEndMinute = String(Math.floor(event.endInMinutes % 60)).padStart(2, '0');
+            const blockedSlotEndMinute = String(Math.floor(event.endInMinutes % 60).padStart(2, '0');
             return `${blockedSlotStartHour}:${blockedSlotStartMinute} - ${blockedSlotEndHour}:${blockedSlotEndMinute}|${displayText}`;
         } else {
             // Zmena: Použite uložené startTime a endTime pre voľné sloty
