@@ -846,7 +846,7 @@ td:last-child {
 }
 
 .add-options-dropdown.show {
-    display: flex; /* Trieda pre zobrazenie menu cez JS */
+    display: flex !important; /* Trieda pre zobrazenie menu cez JS */
 }
 
 .add-options-dropdown button {
