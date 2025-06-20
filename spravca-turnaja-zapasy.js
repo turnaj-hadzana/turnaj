@@ -57,7 +57,7 @@ async function animateLoadingText(containerId, text) {
                 margin-top: 15px; /* Priestor nad tlačidlom */
             }
             .modal-content button.delete-button {
-                margin-left: -2px; /* Posunie tlačidlo o 10px vľavo */
+                margin-left: -1px;
             }
         `;
         document.head.appendChild(style);
