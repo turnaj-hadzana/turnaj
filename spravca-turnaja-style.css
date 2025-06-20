@@ -193,25 +193,11 @@ td:last-child {
     transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
-/*
-.action-button:not(.delete-button) {
-    background-color: #007bff;
-    color: white;
-}
-.action-button:not(.delete-button):hover {
-    background-color: #0056b3;
-    border-color: #004085;
-}
-.action-button:not(.delete-button):active {
-    background-color: #004085;
-    border-color: #002752;
-}
-*/
-
 .action-button.delete-button {
     background-color: #dc3545;
     color: white;
     border-color: #c82333;
+    width: calc(100% - 22px);    
 }
 .action-button.delete-button:hover {
     background-color: #c82333;
@@ -829,6 +815,7 @@ td:last-child {
 .schedule-cell-actions .delete-btn {
     background-color: #dc3545;
     color: white;
+    width: calc(100% - 22px);
 }
 
 .add-options-dropdown {
