@@ -1031,25 +1031,25 @@ td:last-child {
     right: 0; /* Zarovnané s pravým okrajom #addButton */
     width: 220px; /* Pevná šírka pre rozbaľovaciu ponuku */
     overflow: hidden; /* Zabezpečí, že zaoblené rohy fungujú aj na obsahu */
-    padding: 15px; /* Zvýšený okraj okolo obsahu vo vnútri bieleho obdĺžnika (nad, pod, vľavo, vpravo) */
-    display: flex;
-    flex-direction: column; /* Tlačidlá pod sebou */
-    gap: 15px; /* Zvýšená medzera medzi tlačidlami */
+    padding: 15px !important; /* Zvýšený okraj okolo obsahu vo vnútri bieleho obdĺžnika (nad, pod, vľavo, vpravo) */
+    display: flex !important;
+    flex-direction: column !important; /* Tlačidlá pod sebou */
+    gap: 15px !important; /* Zvýšená medzera medzi tlačidlami */
 }
 
 #addOptions button {
     background-color: #3a8d41; /* Svetlejšie pozadie pre tlačidlá */
     color: #333;
     border: 1px solid #ced4da; /* Jemný okraj */
-    padding: 15px; /* Rovnaký padding zo všetkých strán pre konzistentný vnútorný priestor */
+    padding: 15px !important; /* Rovnaký padding zo všetkých strán pre konzistentný vnútorný priestor */
     text-align: center;
     text-decoration: none;
-    display: block; /* Zabezpečí, že zaberie celú šírku */
+    display: block !important; /* Zabezpečí, že zaberie celú šírku */
     font-size: 1em;
     cursor: pointer;
     border-radius: 5px; /* Zaoblené rohy tlačidiel */
-    width: 100%; /* Rozšírenie na celú šírku rodičovského kontajnera (s paddingom) */
-    box-sizing: border-box; /* Padding zahrnutý v šírke */
+    width: 100% !important; /* Rozšírenie na celú šírku rodičovského kontajnera (s paddingom) */
+    box-sizing: border-box !important; /* Padding zahrnutý v šírke */
     transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
