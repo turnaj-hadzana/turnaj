@@ -6,9 +6,9 @@ const SETTINGS_DOC_ID = 'matchTimeSettings';
 export const blockedSlotsCollectionRef = collection(db, 'tournamentData', 'mainTournamentData', 'blockedSlots');
 
 /**
- * Animuje daný text tak, že ho postupne vypíše, zhrubí a potom postupne vymaže, v nekonečnej slučke.
- * @param {string} containerId ID HTML elementu, kde sa má zobraziť animovaný text.
- * @param {string} text Reťazec textu, ktorý sa má animovať.
+ * Animates the given text by gradually typing it out, bolding it, and then gradually deleting it, in an infinite loop.
+ * @param {string} containerId ID of the HTML element where the animated text should be displayed.
+ * @param {string} text The string of text to animate.
  */
 async function animateLoadingText(containerId, text) {
     const container = document.getElementById(containerId);
@@ -48,13 +48,13 @@ async function animateLoadingText(containerId, text) {
                 background-color: white !important;
                 cursor: default;
             }
-            /* Upravené štýly pre tlačidlá v modálnych oknách */
+            /* Updated styles for buttons in modals */
             .modal-content button[type="submit"],
             .modal-content button.action-button,
             .modal-content button.delete-button {
-                width: calc(100% - 22px); /* Rozšírenie na celú šírku inputboxu */
-                box-sizing: border-box; /* Zahrnie padding a border do šírky */
-                margin-top: 15px; /* Priestor nad tlačidlom */
+                width: calc(100% - 22px); /* Extends to full width of input box */
+                box-sizing: border-box; /* Includes padding and border in width */
+                margin-top: 15px; /* Space above button */
             }
             .modal-content button.delete-button {
                 margin-left: -1px;
@@ -738,10 +738,10 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, excl
                 const isTheDraggedMatch = movedMatchOriginalId && event.id === movedMatchOriginalId && date === movedMatchOriginalDate && location === movedMatchOriginalLocation;
                 
                 // If it's a dragged match and a new start time is provided, use that
-                if (isTheDraggedMatch && droppedProposedStartTime) {
-                    const [newH, newM] = droppedProposedStartTime.split(':').map(Number);
+                if (isTheDraggedMatch && movedMatchNewStartTime) {
+                    const [newH, newM] = movedMatchNewStartTime.split(':').map(Number);
                     newMatchStartTimeMinutes = newH * 60 + newM;
-                    console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): Presunutý zápas ${event.id} má nový čas: ${droppedProposedStartTime}.`);
+                    console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): Presunutý zápas ${event.id} má nový čas: ${movedMatchNewStartTime}.`);
                 } else if (event.startInMinutes < currentTimePointer) {
                     // This means the match *would* overlap, so we push it to the current pointer
                     newMatchStartTimeMinutes = currentTimePointer;
@@ -2492,6 +2492,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
+    // Corrected function call: displayMatchesAsSchedule instead of displayMatchesSchedule
     await displayMatchesAsSchedule();
 
     if (!document.getElementById('add-options-show-style')) {
