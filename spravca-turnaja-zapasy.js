@@ -690,9 +690,9 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, excl
                         location: location,
                         startTime: formattedGapStartTime,
                         endTime: formattedGapEndTime,
+                        isBlocked: false,
                         startInMinutes: gapStart,
                         endInMinutes: gapEnd,
-                        isBlocked: false,
                         createdAt: new Date()
                     });
                 }
@@ -722,9 +722,9 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, excl
                         location: location,
                         startTime: formattedGapStartTime,
                         endTime: formattedGapEndTime,
+                        isBlocked: false,
                         startInMinutes: gapStart,
                         endInMinutes: gapEnd,
-                        isBlocked: false,
                         createdAt: new Date()
                     });
                 }
@@ -1223,31 +1223,9 @@ async function displayMatchesAsSchedule() {
                         const initialScheduleStartMinutes = await getInitialScheduleStartMinutes(date); // Deklarácia a inicializácia
                         let currentTimePointerInMinutes = initialScheduleStartMinutes;
                         
-                        // Add an initial placeholder if the schedule doesn't start at 00:00 or initial time.
-                        if (currentTimePointerInMinutes > 0) {
-                            const formattedGapStartTime = `${String(Math.floor(0 / 60)).padStart(2, '0')}:${String(0 % 60).padStart(2, '0')}`;
-                            const formattedGapEndTime = `${String(Math.floor(currentTimePointerInMinutes / 60)).padStart(2, '0')}:${String(currentTimePointerInMinutes % 60).padStart(2, '0')}`;
-                            // Find if an existing placeholder covers this initial gap
-                            const existingInitialPlaceholder = allBlockedIntervals.find(s => 
-                                s.date === date && 
-                                s.location === location && 
-                                s.isBlocked === false && 
-                                s.startInMinutes === 0 && 
-                                s.endInMinutes === currentTimePointerInMinutes
-                            );
-                            finalEventsToRender.push({
-                                type: 'blocked_interval',
-                                id: existingInitialPlaceholder ? existingInitialPlaceholder.id : 'generated-initial-interval-' + Math.random().toString(36).substr(2, 9),
-                                date: date,
-                                location: location,
-                                startTime: formattedGapStartTime,
-                                endTime: formattedGapEndTime,
-                                isBlocked: false,
-                                startInMinutes: 0,
-                                endInMinutes: currentTimePointerInMinutes,
-                                originalMatchId: null // This is a true initial placeholder
-                            });
-                        }
+                        // NOTE: Removed the block that adds an initial placeholder from 00:00 to initialScheduleStartMinutes
+                        // based on user request to not generate rows with "Začiatok dňa".
+                        // The currentTimePointerInMinutes now correctly starts from initialScheduleStartMinutes.
 
 
                         for (let i = 0; i < currentEventsForRendering.length; i++) {
@@ -1379,13 +1357,13 @@ async function displayMatchesAsSchedule() {
                                 let textColspan = '4';
 
                                 if (blockedInterval.endInMinutes === 24 * 60 && blockedInterval.startInMinutes === 0) { // Full day interval
-                                    displayTimeHtml = '';
-                                    textColspan = '5';
+                                    displayTimeHtml = `<td>00:00 - Koniec dňa</td>`; // Changed to show actual time
+                                    textColspan = '4';
                                 } else if (blockedInterval.endInMinutes === 24 * 60) { // Interval till end of day
                                     displayTimeHtml = `<td>${blockedIntervalStartHour}:${blockedIntervalStartMinute} - Koniec dňa</td>`;
                                     textColspan = '4';
                                 } else if (blockedInterval.startInMinutes === 0) { // Interval from start of day
-                                     displayTimeHtml = `<td>Začiatok dňa - ${blockedIntervalEndHour}:${blockedIntervalEndMinute}</td>`;
+                                     displayTimeHtml = `<td>00:00 - ${blockedIntervalEndHour}:${blockedIntervalEndMinute}</td>`; // Changed to show actual time
                                      textColspan = '4';
                                 }
 
