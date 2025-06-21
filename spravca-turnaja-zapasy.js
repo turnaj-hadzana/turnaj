@@ -6,9 +6,9 @@ const SETTINGS_DOC_ID = 'matchTimeSettings';
 export const blockedSlotsCollectionRef = collection(db, 'tournamentData', 'mainTournamentData', 'blockedSlots');
 
 /**
- * Animuje daný text tak, že ho postupne vypíše, zhrubí a potom postupne vymaže, v nekonečnej slučke.
- * @param {string} containerId ID HTML elementu, kde sa má zobraziť animovaný text.
- * @param {string} text Reťazec textu, ktorý sa má animovať.
+ * Animates the given text by gradually typing it out, bolding it, and then gradually deleting it, in an infinite loop.
+ * @param {string} containerId ID of the HTML element where the animated text should be displayed.
+ * @param {string} text The string of text to animate.
  */
 async function animateLoadingText(containerId, text) {
     const container = document.getElementById(containerId);
@@ -1016,7 +1016,7 @@ function getEventDisplayString(event, allSettings, categoryColorsMap) {
             const blockedIntervalStartHour = String(Math.floor(event.startInMinutes / 60)).padStart(2, '0');
             const blockedIntervalStartMinute = String(event.startInMinutes % 60).padStart(2, '0');
             const blockedIntervalEndHour = String(Math.floor(event.endInMinutes / 60)).padStart(2, '0');
-            const blockedIntervalEndMinute = String(Math.floor(event.endInMinutes % 60)).padStart(2, '0');
+            const blockedIntervalEndMinute = String(Math.floor(event.endInMinutes % 60).padStart(2, '0');
             return `${blockedIntervalStartHour}:${blockedIntervalStartMinute} - ${blockedIntervalEndHour}:${blockedIntervalEndMinute}|${displayText}`;
         } else {
             displayText = 'Voľný interval dostupný'; 
@@ -1259,7 +1259,7 @@ async function displayMatchesAsSchedule() {
                                 }
 
                                 // Only add a placeholder if its duration is greater than the buffer time of the previous match
-                                if ((gapEnd - gapStart) > previousEventBufferTime) { 
+                                if ((gapEnd - gapStart) > previousEventBufferTime) { // Changed condition
                                     const existingFreeInterval = allBlockedIntervals.find(s => 
                                         s.date === date && 
                                         s.location === location && 
@@ -1337,6 +1337,8 @@ async function displayMatchesAsSchedule() {
                         scheduleHtml += `<th>ID Hostia</th></tr></thead><tbody>`;
 
                         let contentAddedForThisDate = false;
+                        let lastMatchEndOfPlay = null; // Stores minutes of the last match's actual play end (excluding its buffer)
+                        let lastMatchBuffer = 0; // Stores buffer minutes of the last match
 
                         for (const event of finalEventsToRender) {
                             if (event.type === 'match') {
@@ -1363,6 +1365,8 @@ async function displayMatchesAsSchedule() {
                                     </tr>
                                 `;
                                 contentAddedForThisDate = true;
+                                lastMatchEndOfPlay = match.endOfPlayInMinutes; // Update after rendering a match
+                                lastMatchBuffer = match.bufferTime || 0; // Update buffer after rendering a match
 
                             } else if (event.type === 'blocked_interval') {
                                 const blockedInterval = event;
@@ -1372,6 +1376,24 @@ async function displayMatchesAsSchedule() {
                                 const blockedIntervalEndMinute = String(Math.floor(blockedInterval.endInMinutes % 60)).padStart(2, '0');
                                 
                                 const isUserBlocked = blockedInterval.isBlocked === true; 
+
+                                // Determine if this "free interval" is purely the buffer of the last match
+                                const isBufferOnlyPlaceholder = (
+                                    !isUserBlocked && // Must be a free interval (isBlocked: false)
+                                    !blockedInterval.originalMatchId && // Must NOT be a placeholder from a deleted match (those should always show)
+                                    lastMatchEndOfPlay !== null && // A previous match must have been processed
+                                    blockedInterval.startInMinutes === lastMatchEndOfPlay && // This interval starts exactly where the last match's play ended
+                                    (blockedInterval.endInMinutes - blockedInterval.startInMinutes) === lastMatchBuffer && // Its duration is exactly the buffer time of the last match
+                                    lastMatchBuffer > 0 // And that buffer time must be greater than 0
+                                );
+
+                                if (isBufferOnlyPlaceholder) {
+                                    console.log(`displayMatchesAsSchedule: Skipping rendering of buffer-only placeholder: ${blockedIntervalStartHour}:${blockedIntervalStartMinute}-${blockedIntervalEndHour}:${blockedIntervalEndMinute}`);
+                                    // Reset lastMatchEndOfPlay and lastMatchBuffer as this "buffer" conceptually breaks the continuity of visible slots.
+                                    lastMatchEndOfPlay = null; 
+                                    lastMatchBuffer = 0;
+                                    continue; // Skip rendering this row
+                                }
 
                                 let rowClass = '';
                                 let cellStyle = '';
@@ -1414,6 +1436,8 @@ async function displayMatchesAsSchedule() {
                                     </tr>
                                 `;
                                 contentAddedForThisDate = true;
+                                lastMatchEndOfPlay = null; // Reset, as a non-match event breaks the chain
+                                lastMatchBuffer = 0; // Reset
                             }
                         }
                         
@@ -1661,7 +1685,7 @@ async function displayMatchesAsSchedule() {
                     }
 
                     const initialScheduleStartMinutesForDrop = await getInitialScheduleStartMinutes(newDate); // Ensure it's defined here for the drop context
-                    const initialScheduleStartTimeStr = `${String(Math.floor(initialScheduleStartMinutesForDrop / 60)).padStart(2, '0')}:${String(initialScheduleStartMinutesForDrop % 60).padStart(2, '0')}`;
+                    const initialScheduleStartTimeStr = `${String(Math.floor(initialScheduleStartMinutesForDrop / 60)).padStart(2, '0')}:${String(initialScheduleStartMinutes % 60).padStart(2, '0')}`;
 
                     if (targetRow && targetRow.classList.contains('match-row')) {
                         droppedProposedStartTime = targetRow.dataset.startTime;
