@@ -403,7 +403,8 @@ async function findFirstAvailableTime() {
         // These are preferred as they are specific marked openings.
         for (const freeInterval of existingFreeIntervals) {
             // Check if the free interval can accommodate the full footprint of the new match
-            if (freeInterval.end - freeInterval.start >= newMatchFullFootprint) {
+            // Using a small tolerance (e.g., 1 minute) for comparison due to potential floating point inaccuracies
+            if (freeInterval.end - freeInterval.start >= newMatchFullFootprint - 1) { // Tolerancia 1 minúta
                 let isFreeIntervalTrulyAvailable = true;
                 const potentialMatchEndWithBuffer = freeInterval.start + newMatchFullFootprint; 
 
@@ -735,7 +736,7 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, excl
                 }
 
                 const formattedGapStartTime = `${String(Math.floor(gapStart / 60)).padStart(2, '0')}:${String(gapStart % 60).padStart(2, '0')}`;
-                const formattedGapEndTime = `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(Math.floor(gapEnd % 60)).padStart(2, '0')}`; 
+                const formattedGapEndTime = `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(Math.floor(gapEnd % 60).padStart(2, '0'))}`; 
 
                 if (gapStart < gapEnd) {
                     // Only add a placeholder if its duration is greater than the buffer time
@@ -1061,7 +1062,7 @@ function getEventDisplayString(event, allSettings, categoryColorsMap) {
             const blockedIntervalStartHour = String(Math.floor(event.startInMinutes / 60)).padStart(2, '0');
             const blockedIntervalStartMinute = String(event.startInMinutes % 60).padStart(2, '0');
             const blockedIntervalEndHour = String(Math.floor(event.endInMinutes / 60)).padStart(2, '0');
-            const blockedIntervalEndMinute = String(Math.floor(event.endInMinutes % 60)).padStart(2, '0');
+            const blockedIntervalEndMinute = String(Math.floor(event.endInMinutes % 60).padStart(2, '0');
             return `${blockedIntervalStartHour}:${blockedIntervalStartMinute} - ${blockedIntervalEndHour}:${blockedIntervalEndMinute}|${displayText}`;
         } else {
             displayText = 'Voľný interval dostupný'; 
@@ -1310,7 +1311,7 @@ async function displayMatchesAsSchedule() {
                                     const gapStart = currentTimePointerInMinutes;
                                     const gapEnd = eventStart;
                                     const formattedGapStartTime = `${String(Math.floor(gapStart / 60)).padStart(2, '0')}:${String(gapStart % 60).padStart(2, '0')}`;
-                                    const formattedGapEndTime = `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(Math.floor(gapEnd % 60)).padStart(2, '0')}`;
+                                    const formattedGapEndTime = `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(Math.floor(gapEnd % 60).padStart(2, '0'))}`;
                                     
                                     // Get the buffer time of the *previous* match event, if any.
                                     // It is crucial to iterate backward to find the last match to get its buffer.
@@ -1364,7 +1365,7 @@ async function displayMatchesAsSchedule() {
                                 const gapStart = currentTimePointerInMinutes;
                                 const gapEnd = 24 * 60;
                                 const formattedGapStartTime = `${String(Math.floor(gapStart / 60)).padStart(2, '0')}:${String(gapStart % 60).padStart(2, '0')}`;
-                                const formattedGapEndTime = `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(Math.floor(gapEnd % 60)).padStart(2, '0')}`;
+                                const formattedGapEndTime = `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(Math.floor(gapEnd % 60).padStart(2, '0'))}`;
 
                                 if ((gapEnd - gapStart) > 0) { // Only add if duration > 0
                                     const existingFinalPlaceholder = allBlockedIntervals.find(s => 
@@ -1413,7 +1414,7 @@ async function displayMatchesAsSchedule() {
                             if (event.type === 'match') {
                                 const match = event;
                                 const displayedMatchEndTimeInMinutes = match.endOfPlayInMinutes; 
-                                const formattedDisplayedEndTime = `${String(Math.floor(displayedMatchEndTimeInMinutes / 60)).padStart(2, '0')}:${String(displayedMatchEndTimeInMinutes % 60).padStart(2, '0')}`;
+                                const formattedDisplayedEndTime = `${String(Math.floor(displayedMatchEndTimeInMinutes / 60)).padStart(2, '0')}:${String(Math.floor(displayedMatchEndTimeInMinutes % 60).padStart(2, '0'))}`;
                                 
                                 const categoryColor = categoryColorsMap.get(match.categoryId) || 'transparent';
                                 let textAlignStyle = '';
@@ -1440,7 +1441,7 @@ async function displayMatchesAsSchedule() {
                                 const blockedIntervalStartHour = String(Math.floor(blockedInterval.startInMinutes / 60)).padStart(2, '0');
                                 const blockedIntervalStartMinute = String(blockedInterval.startInMinutes % 60).padStart(2, '0');
                                 const blockedIntervalEndHour = String(Math.floor(blockedInterval.endInMinutes / 60)).padStart(2, '0');
-                                const blockedIntervalEndMinute = String(Math.floor(blockedInterval.endInMinutes % 60)).padStart(2, '0');
+                                const blockedIntervalEndMinute = String(Math.floor(blockedInterval.endInMinutes % 60).padStart(2, '0');
                                 
                                 const isUserBlocked = blockedInterval.isBlocked === true; 
 
@@ -1449,7 +1450,7 @@ async function displayMatchesAsSchedule() {
                                 // Autogenerated general gaps that are effectively 0 duration after accounting for buffer are skipped.
                                 const intervalDuration = blockedInterval.endInMinutes - blockedInterval.startInMinutes;
 
-                                if (!isUserBlocked && !blockedInterval.originalMatchId && intervalDuration === 0) { // ZMENA: zmenené z <= 0 na === 0
+                                if (!isUserBlocked && !blockedInterval.originalMatchId && intervalDuration === 0) {
                                     console.log(`displayMatchesAsSchedule: Skipping rendering of purely cosmetic/zero-duration placeholder: ${blockedIntervalStartHour}:${blockedIntervalStartMinute}-${blockedIntervalEndHour}:${blockedIntervalEndMinute}`);
                                     continue; // Skip rendering this row if it's a generated free interval with no actual duration
                                 }
