@@ -680,7 +680,7 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, excl
                     const gapStart = currentTimePointer;
                     const gapEnd = 24 * 60;
                     const formattedGapStartTime = `${String(Math.floor(gapStart / 60)).padStart(2, '0')}:${String(gapStart % 60).padStart(2, '0')}`;
-                    const formattedGapEndTime = `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(gapEnd % 60).padStart(2, '0')}`;
+                    const formattedGapEndTime = `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(Math.floor(gapEnd % 60)).padStart(2, '0')}`;
 
                     console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): GENERUJEM koncový placeholder: Start: ${formattedGapStartTime}, End: ${formattedGapEndTime}.`);
 
@@ -1016,7 +1016,7 @@ function getEventDisplayString(event, allSettings, categoryColorsMap) {
             const blockedIntervalStartHour = String(Math.floor(event.startInMinutes / 60)).padStart(2, '0');
             const blockedIntervalStartMinute = String(event.startInMinutes % 60).padStart(2, '0');
             const blockedIntervalEndHour = String(Math.floor(event.endInMinutes / 60)).padStart(2, '0');
-            const blockedIntervalEndMinute = String(Math.floor(event.endInMinutes % 60)).padStart(2, '0');
+            const blockedIntervalEndMinute = String(Math.floor(event.endInMinutes % 60).padStart(2, '0');
             return `${blockedIntervalStartHour}:${blockedIntervalStartMinute} - ${blockedIntervalEndHour}:${blockedIntervalEndMinute}|${displayText}`;
         } else {
             displayText = 'Voľný interval dostupný'; 
@@ -1034,12 +1034,17 @@ async function displayMatchesAsSchedule() {
     if (!matchesContainer) return;
 
     // Store the stop animation function from the previous call
-    if (matchesContainer._stopAnimation) {
+    if (typeof matchesContainer._stopAnimation === 'function') { // Check if it's a function
         matchesContainer._stopAnimation();
+        console.log("displayMatchesAsSchedule: Zastavujem predchádzajúcu animáciu.");
+    } else {
+        console.log("displayMatchesAsSchedule: Predchádzajúca _stopAnimation nebola funkcia alebo bola nedefinovaná:", matchesContainer._stopAnimation);
     }
     matchesContainer.innerHTML = `<p id="loadingAnimationText" style="text-align: center; font-size: 1.2em; color: #555;"></p>`;
     // Store the new stop animation function
     matchesContainer._stopAnimation = animateLoadingText('loadingAnimationText', 'Načítavam zoznam zápasov...');
+    console.log("displayMatchesAsSchedule: Nová _stopAnimation priradená:", matchesContainer._stopAnimation);
+
 
     console.log('displayMatchesAsSchedule: Spustené načítavanie dát.');
 
@@ -1289,7 +1294,7 @@ async function displayMatchesAsSchedule() {
                             const gapStart = currentTimePointerInMinutes;
                             const gapEnd = 24 * 60;
                             const formattedGapStartTime = `${String(Math.floor(gapStart / 60)).padStart(2, '0')}:${String(gapStart % 60).padStart(2, '0')}`;
-                            const formattedGapEndTime = `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(gapEnd % 60).padStart(2, '0')}`;
+                            const formattedGapEndTime = `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(Math.floor(gapEnd % 60)).padStart(2, '0')}`;
 
                             // Only add a placeholder if its duration is greater than 0
                             if ((gapEnd - gapStart) > 0) {
