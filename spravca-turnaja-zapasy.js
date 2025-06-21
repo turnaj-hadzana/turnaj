@@ -6,9 +6,9 @@ const SETTINGS_DOC_ID = 'matchTimeSettings';
 export const blockedSlotsCollectionRef = collection(db, 'tournamentData', 'mainTournamentData', 'blockedSlots');
 
 /**
- * Animates the given text by gradually typing it out, bolding it, and then gradually deleting it, in an infinite loop.
- * @param {string} containerId ID of the HTML element where the animated text should be displayed.
- * @param {string} text The string of text to animate.
+ * Animuje daný text tak, že ho postupne vypíše, zhrubí a potom postupne vymaže, v nekonečnej slučke.
+ * @param {string} containerId ID HTML elementu, kde sa má zobraziť animovaný text.
+ * @param {string} text Reťazec textu, ktorý sa má animovať.
  */
 async function animateLoadingText(containerId, text) {
     const container = document.getElementById(containerId);
@@ -286,6 +286,14 @@ async function findFirstAvailableTime() {
         console.log("Date or Location empty, clearing start time and returning.");
         return;
     }
+
+    // Skip time finding if "Nezadaná hala" is selected
+    if (selectedLocationName === 'Nezadaná hala') {
+        matchStartTimeInput.value = '00:00'; // Default to 00:00 for unassigned
+        console.log("Location is 'Nezadaná hala', skipping time finding.");
+        return;
+    }
+
 
     try {
         const settingsDocRef = doc(settingsCollectionRef, SETTINGS_DOC_ID);
@@ -1049,7 +1057,7 @@ function getEventDisplayString(event, allSettings, categoryColorsMap) {
             const blockedIntervalStartHour = String(Math.floor(event.startInMinutes / 60)).padStart(2, '0');
             const blockedIntervalStartMinute = String(event.startInMinutes % 60).padStart(2, '0');
             const blockedIntervalEndHour = String(Math.floor(event.endInMinutes / 60)).padStart(2, '0');
-            const blockedIntervalEndMinute = String(Math.floor(event.endInMinutes % 60)).padStart(2, '0');
+            const blockedIntervalEndMinute = String(Math.floor(event.endInMinutes % 60).padStart(2, '0');
             return `${blockedIntervalStartHour}:${blockedIntervalStartMinute} - ${blockedIntervalEndHour}:${blockedIntervalEndMinute}|${displayText}`;
         } else {
             displayText = 'Voľný interval dostupný'; 
@@ -1428,7 +1436,7 @@ async function displayMatchesAsSchedule() {
                                 const blockedIntervalStartHour = String(Math.floor(blockedInterval.startInMinutes / 60)).padStart(2, '0');
                                 const blockedIntervalStartMinute = String(blockedInterval.startInMinutes % 60).padStart(2, '0');
                                 const blockedIntervalEndHour = String(Math.floor(blockedInterval.endInMinutes / 60)).padStart(2, '0');
-                                const blockedIntervalEndMinute = String(Math.floor(blockedInterval.endInMinutes % 60)).padStart(2, '0');
+                                const blockedIntervalEndMinute = String(Math.floor(blockedInterval.endInMinutes % 60).padStart(2, '0');
                                 
                                 const isUserBlocked = blockedInterval.isBlocked === true; 
 
@@ -2947,8 +2955,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     // Check if the current match perfectly fits or covers the "deleted match placeholder"
                     return data.originalMatchId === currentMatchId ||
                            (data.isBlocked === false &&
-                            newMatchStartInMinutes === slotStartInMinutes &&
-                            newMatchEndInMinutesWithBuffer === slotEndInMinutes);
+                            newMatchStartInMinutes >= slotStartInMinutes &&
+                            newMatchEndInMinutesWithBuffer <= slotEndInMinutes);
                 });
 
                 if (replacedFreeInterval) {
