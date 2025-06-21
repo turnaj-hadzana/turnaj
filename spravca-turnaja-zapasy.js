@@ -1220,7 +1220,8 @@ async function displayMatchesAsSchedule() {
 
 
                         const finalEventsToRender = [];
-                        let currentTimePointerInMinutes = await getInitialScheduleStartMinutes(date);
+                        const initialScheduleStartMinutes = await getInitialScheduleStartMinutes(date); // Deklarácia a inicializácia
+                        let currentTimePointerInMinutes = initialScheduleStartMinutes;
                         
                         // Add an initial placeholder if the schedule doesn't start at 00:00 or initial time.
                         if (currentTimePointerInMinutes > 0) {
@@ -1653,8 +1654,8 @@ async function displayMatchesAsSchedule() {
                         return;
                     }
 
-                    const initialScheduleStartMinutes = await getInitialScheduleStartMinutes(newDate);
-                    const initialScheduleStartTimeStr = `${String(Math.floor(initialScheduleStartMinutes / 60)).padStart(2, '0')}:${String(initialScheduleStartMinutes % 60).padStart(2, '0')}`;
+                    const initialScheduleStartMinutesForDrop = await getInitialScheduleStartMinutes(newDate); // Ensure it's defined here for the drop context
+                    const initialScheduleStartTimeStr = `${String(Math.floor(initialScheduleStartMinutesForDrop / 60)).padStart(2, '0')}:${String(initialScheduleStartMinutesForDrop % 60).padStart(2, '0')}`;
 
                     if (targetRow && targetRow.classList.contains('match-row')) {
                         droppedProposedStartTime = targetRow.dataset.startTime;
