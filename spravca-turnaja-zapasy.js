@@ -735,8 +735,8 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, excl
                     console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): Následná udalosť je zápas (${event.id}), upravujem gapEnd na ${gapEnd} (pôvodný ${event.startInMinutes} - buffer ${nextMatchBufferTime}).`);
                 }
 
-                const formattedGapStartTime = `${String(Math.floor(gapStart / 60)).padStart(2, '0')}:${String(gapStart % 60).padStart(2, '0')}`;
-                const formattedGapEndTime = `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(Math.floor(gapEnd % 60).padStart(2, '0'))}`; 
+                const formattedGapStartTime = `${String(Math.floor(gapStart / 60)).padStart(2, '0')}:${String(Math.floor(gapStart % 60)).padStart(2, '0')}`;
+                const formattedGapEndTime = `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(Math.floor(gapEnd % 60)).padStart(2, '0')}`; 
 
                 if (gapStart < gapEnd) {
                     // Only add a placeholder if its duration is greater than the buffer time
@@ -1052,7 +1052,7 @@ function getEventDisplayString(event, allSettings, categoryColorsMap) {
     if (event.type === 'match') {
         const matchDuration = event.duration || (allSettings.categoryMatchSettings?.[event.categoryId]?.duration || 60);
         const displayedMatchEndTimeInMinutes = event.endOfPlayInMinutes; 
-        const formattedDisplayedEndTime = `${String(Math.floor(displayedMatchEndTimeInMinutes / 60)).padStart(2, '0')}:${String(displayedMatchEndTimeInMinutes % 60).padStart(2, '0')}`;
+        const formattedDisplayedEndTime = `${String(Math.floor(displayedMatchEndTimeInMinutes / 60)).padStart(2, '0')}:${String(Math.floor(displayedMatchEndTimeInMinutes % 60)).padStart(2, '0')}`;
         
         return `${event.startTime} - ${formattedDisplayedEndTime}|${event.team1ClubName || 'N/A'}|${event.team2ClubName || 'N/A'}|${event.team1ShortDisplayName || 'N/A'}|${event.team2ShortDisplayName || 'N/A'}`;
     } else if (event.type === 'blocked_interval') {
@@ -1060,9 +1060,9 @@ function getEventDisplayString(event, allSettings, categoryColorsMap) {
         if (event.isBlocked === true) {
             displayText = 'Zablokovaný interval';
             const blockedIntervalStartHour = String(Math.floor(event.startInMinutes / 60)).padStart(2, '0');
-            const blockedIntervalStartMinute = String(event.startInMinutes % 60).padStart(2, '0');
+            const blockedIntervalStartMinute = String(blockedInterval.startInMinutes % 60).padStart(2, '0');
             const blockedIntervalEndHour = String(Math.floor(event.endInMinutes / 60)).padStart(2, '0');
-            const blockedIntervalEndMinute = String(Math.floor(event.endInMinutes % 60)).padStart(2, '0');
+            const blockedIntervalEndMinute = String(Math.floor(blockedInterval.endInMinutes % 60)).padStart(2, '0');
             return `${blockedIntervalStartHour}:${blockedIntervalStartMinute} - ${blockedIntervalEndHour}:${blockedIntervalEndMinute}|${displayText}`;
         } else {
             displayText = 'Voľný interval dostupný'; 
@@ -1310,8 +1310,8 @@ async function displayMatchesAsSchedule() {
                                 if (currentTimePointerInMinutes < eventStart) {
                                     const gapStart = currentTimePointerInMinutes;
                                     const gapEnd = eventStart;
-                                    const formattedGapStartTime = `${String(Math.floor(gapStart / 60)).padStart(2, '0')}:${String(gapStart % 60).padStart(2, '0')}`;
-                                    const formattedGapEndTime = `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(Math.floor(gapEnd % 60).padStart(2, '0'))}`;
+                                    const formattedGapStartTime = `${String(Math.floor(gapStart / 60)).padStart(2, '0')}:${String(Math.floor(gapStart % 60)).padStart(2, '0')}`;
+                                    const formattedGapEndTime = `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(Math.floor(gapEnd % 60)).padStart(2, '0')}`;
                                     
                                     // Get the buffer time of the *previous* match event, if any.
                                     // It is crucial to iterate backward to find the last match to get its buffer.
@@ -1364,8 +1364,8 @@ async function displayMatchesAsSchedule() {
                             if (currentTimePointerInMinutes < 24 * 60) {
                                 const gapStart = currentTimePointerInMinutes;
                                 const gapEnd = 24 * 60;
-                                const formattedGapStartTime = `${String(Math.floor(gapStart / 60)).padStart(2, '0')}:${String(gapStart % 60).padStart(2, '0')}`;
-                                const formattedGapEndTime = `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(Math.floor(gapEnd % 60).padStart(2, '0'))}`;
+                                const formattedGapStartTime = `${String(Math.floor(gapStart / 60)).padStart(2, '0')}:${String(Math.floor(gapStart % 60)).padStart(2, '0')}`;
+                                const formattedGapEndTime = `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(Math.floor(gapEnd % 60)).padStart(2, '0')}`;
 
                                 if ((gapEnd - gapStart) > 0) { // Only add if duration > 0
                                     const existingFinalPlaceholder = allBlockedIntervals.find(s => 
@@ -1414,7 +1414,7 @@ async function displayMatchesAsSchedule() {
                             if (event.type === 'match') {
                                 const match = event;
                                 const displayedMatchEndTimeInMinutes = match.endOfPlayInMinutes; 
-                                const formattedDisplayedEndTime = `${String(Math.floor(displayedMatchEndTimeInMinutes / 60)).padStart(2, '0')}:${String(Math.floor(displayedMatchEndTimeInMinutes % 60).padStart(2, '0'))}`;
+                                const formattedDisplayedEndTime = `${String(Math.floor(displayedMatchEndTimeInMinutes / 60)).padStart(2, '0')}:${String(Math.floor(displayedMatchEndTimeInMinutes % 60)).padStart(2, '0')}`;
                                 
                                 const categoryColor = categoryColorsMap.get(match.categoryId) || 'transparent';
                                 let textAlignStyle = '';
@@ -1426,7 +1426,7 @@ async function displayMatchesAsSchedule() {
                                 console.log(`displayMatchesAsSchedule: Vykresľujem zápas: ID ${match.id}, Čas: ${match.startTime}-${formattedDisplayedEndTime} (zobrazený), Miesto: ${match.location}, Dátum: ${match.date}`);
 
                                 scheduleHtml += `
-                                    <tr draggable="true" data-id="${match.id}" class="match-row" data-start-time="${match.startTime}" data-duration="${match.duration}" data-buffer-time="${match.bufferTime}" data-footprint-end-time="${String(Math.floor(match.footprintEndInMinutes / 60)).padStart(2, '0')}:${String(match.footprintEndInMinutes % 60).padStart(2, '0')}">
+                                    <tr draggable="true" data-id="${match.id}" class="match-row" data-start-time="${match.startTime}" data-duration="${match.duration}" data-buffer-time="${match.bufferTime}" data-footprint-end-time="${String(Math.floor(match.footprintEndInMinutes / 60)).padStart(2, '0')}:${String(Math.floor(match.footprintEndInMinutes % 60)).padStart(2, '0')}">
                                         <td>${match.startTime} - ${formattedDisplayedEndTime}</td>
                                         <td style="${textAlignStyle}">${match.team1ClubName || 'N/A'}</td>
                                         <td style="${textAlignStyle}">${match.team2ClubName || 'N/A'}</td>
@@ -1561,7 +1561,7 @@ async function displayMatchesAsSchedule() {
                         matchesForDate.forEach(match => {
                             const matchDuration = match.duration || (allSettings.categoryMatchSettings?.[match.categoryId]?.duration || 60);
                             const displayedMatchEndTimeInMinutes = (parseInt(match.startTime.split(':')[0]) * 60 + parseInt(match.startTime.split(':')[1])) + matchDuration; 
-                            const formattedDisplayedEndTime = `${String(Math.floor(displayedMatchEndTimeInMinutes / 60)).padStart(2, '0')}:${String(Math.floor(displayedMatchEndTimeInMinutes % 60).padStart(2, '0'))}`;
+                            const formattedDisplayedEndTime = `${String(Math.floor(displayedMatchEndTimeInMinutes / 60)).padStart(2, '0')}:${String(Math.floor(displayedMatchEndTimeInMinutes % 60)).padStart(2, '0')}`;
                             const categoryColor = categoryColorsMap.get(match.categoryId) || 'transparent';
 
                             scheduleHtml += `
