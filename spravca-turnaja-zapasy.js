@@ -860,6 +860,81 @@ async function getMatchData(matchId) {
 }
 
 /**
+ * Deletes a match and creates a free interval in its place.
+ * @param {string} matchId The ID of the match to delete.
+ */
+async function deleteMatch(matchId) {
+    console.log(`deleteMatch: === DELETE MATCH FUNCTION STARTED ===`);
+    console.log(`deleteMatch: Attempting to delete match with ID: ${matchId}`);
+    const matchModal = document.getElementById('matchModal');
+
+    const confirmed = await showConfirmation(
+        'Potvrdenie vymazania',
+        `Naozaj chcete vymazať tento zápas?`
+    );
+
+    if (confirmed) {
+        try {
+            const matchDocRef = doc(matchesCollectionRef, matchId);
+            const matchDoc = await getDoc(matchDocRef);
+
+            if (!matchDoc.exists()) {
+                await showMessage('Informácia', 'Zápas sa nenašiel.');
+                console.warn('deleteMatch: Match document not found for ID:', matchId);
+                return;
+            }
+
+            const matchData = matchDoc.data();
+            const date = matchData.date;
+            const location = matchData.location;
+            const startTime = matchData.startTime;
+            const duration = Number(matchData.duration) || 0;
+            const bufferTime = Number(matchData.bufferTime) || 0;
+
+            const [startH, startM] = startTime.split(':').map(Number);
+            const startInMinutes = startH * 60 + startM;
+            const endInMinutes = startInMinutes + duration + bufferTime;
+            const endTime = `${String(Math.floor(endInMinutes / 60)).padStart(2, '0')}:${String(endInMinutes % 60).padStart(2, '0')}`;
+
+            const batch = writeBatch(db);
+            batch.delete(matchDocRef);
+            console.log(`deleteMatch: Added match ${matchId} to batch for deletion.`);
+
+            // Create a new free interval (placeholder) in place of the deleted match
+            const newFreeIntervalRef = doc(blockedSlotsCollectionRef);
+            const freeIntervalData = {
+                date: date,
+                location: location,
+                startTime: startTime,
+                endTime: endTime,
+                isBlocked: false, // It's a free interval now
+                originalMatchId: matchId, // Store original match ID for reference
+                startInMinutes: startInMinutes,
+                endInMinutes: endInMinutes,
+                createdAt: new Date()
+            };
+            batch.set(newFreeIntervalRef, freeIntervalData);
+            console.log(`deleteMatch: Added new free interval to batch for deleted match:`, freeIntervalData);
+
+            await batch.commit();
+            await showMessage('Úspech', 'Zápas bol úspešne vymazaný a časový interval bol označený ako voľný!');
+            closeModal(matchModal);
+            
+            // Recalculate schedule for the affected date and location
+            await recalculateAndSaveScheduleForDateAndLocation(date, location, null, null, null, null, null, null, true);
+            console.log("deleteMatch: Schedule recalculated and displayed after match deletion.");
+
+        } catch (error) {
+            console.error("deleteMatch: Chyba pri mazaní zápasu alebo vytváraní voľného intervalu:", error);
+            await showMessage('Chyba', `Chyba pri mazaní zápasu: ${error.message}`);
+        }
+    } else {
+        console.log("deleteMatch: Mazanie zápasu zrušené používateľom.");
+    }
+}
+
+
+/**
  * Moves and reschedules a match.
  * @param {string} draggedMatchId The ID of the dragged match.
  * @param {string} targetDate The target date for the match.
@@ -968,7 +1043,7 @@ function getEventDisplayString(event, allSettings, categoryColorsMap) {
             const blockedIntervalStartHour = String(Math.floor(event.startInMinutes / 60)).padStart(2, '0');
             const blockedIntervalStartMinute = String(event.startInMinutes % 60).padStart(2, '0');
             const blockedIntervalEndHour = String(Math.floor(event.endInMinutes / 60)).padStart(2, '0');
-            const blockedIntervalEndMinute = String(Math.floor(event.endInMinutes % 60)).padStart(2, '0');
+            const blockedIntervalEndMinute = String(Math.floor(event.endInMinutes % 60).padStart(2, '0');
             return `${blockedIntervalStartHour}:${blockedIntervalStartMinute} - ${blockedIntervalEndHour}:${blockedIntervalEndMinute}|${displayText}`;
         } else {
             displayText = 'Voľný interval dostupný'; 
@@ -1311,7 +1386,7 @@ async function displayMatchesAsSchedule() {
                                 const blockedIntervalStartHour = String(Math.floor(blockedInterval.startInMinutes / 60)).padStart(2, '0');
                                 const blockedIntervalStartMinute = String(blockedInterval.startInMinutes % 60).padStart(2, '0');
                                 const blockedIntervalEndHour = String(Math.floor(blockedInterval.endInMinutes / 60)).padStart(2, '0');
-                                const blockedIntervalEndMinute = String(Math.floor(blockedInterval.endInMinutes % 60)).padStart(2, '0');
+                                const blockedIntervalEndMinute = String(Math.floor(blockedInterval.endInMinutes % 60).padStart(2, '0');
                                 
                                 const isUserBlocked = blockedInterval.isBlocked === true; 
 
@@ -2540,6 +2615,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             matchGroupSelect.disabled = true;
             team1NumberInput.value = '';
             team1NumberInput.disabled = true;
+            team2NumberInput.value = '';
             team2NumberInput.disabled = true;
             matchDurationInput.value = 60;
             matchBufferTimeInput.value = 5;
