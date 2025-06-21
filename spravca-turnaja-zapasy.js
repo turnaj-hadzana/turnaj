@@ -1436,7 +1436,7 @@ async function displayMatchesAsSchedule() {
                                 const blockedIntervalStartHour = String(Math.floor(blockedInterval.startInMinutes / 60)).padStart(2, '0');
                                 const blockedIntervalStartMinute = String(blockedInterval.startInMinutes % 60).padStart(2, '0');
                                 const blockedIntervalEndHour = String(Math.floor(blockedInterval.endInMinutes / 60)).padStart(2, '0');
-                                const blockedIntervalEndMinute = String(Math.floor(blockedInterval.endInMinutes % 60).padStart(2, '0');
+                                const blockedIntervalEndMinute = String(Math.floor(blockedInterval.endInMinutes % 60)).padStart(2, '0');
                                 
                                 const isUserBlocked = blockedInterval.isBlocked === true; 
 
