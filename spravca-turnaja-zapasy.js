@@ -610,6 +610,7 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, excl
                 id: doc.id,
                 type: 'blocked_interval',
                 isBlocked: doc.data().isBlocked === true,
+                originalMatchId: doc.data().originalMatchId || null, // Ensure originalMatchId is captured
                 docRef: doc.ref,
                 ...doc.data(),
                 startInMinutes: (parseInt(doc.data().startTime.split(':')[0]) * 60 + parseInt(doc.data().startTime.split(':')[1])),
@@ -617,18 +618,15 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, excl
             }))
             .filter(interval => interval.id !== excludedBlockedIntervalId);
 
-        console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 1): ALL blocked intervals AFTER filter (for ${date}, ${location}, without excluded: ${excludedBlockedIntervalId}):`, allCurrentBlockedIntervals.map(e => ({id: e.id, isBlocked: e.isBlocked, startTime: e.startTime, endTime: e.endTime})));
+        console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 1): ALL blocked intervals AFTER filter (for ${date}, ${location}, without excluded: ${excludedBlockedIntervalId}):`, allCurrentBlockedIntervals.map(e => ({id: e.id, isBlocked: e.isBlocked, originalMatchId: e.originalMatchId, startTime: e.startTime, endTime: e.endTime})));
 
         let fixedEventsTimeline = [];
         let matchesToReschedule = [];
         let placeholderIntervalsToDelete = [];
 
-        // Separate fixed (isBlocked: true) from temporary placeholders (isBlocked: false)
+        // Separate fixed (isBlocked: true or originalMatchId) from temporary placeholders (isBlocked: false, no originalMatchId)
         for (const interval of allCurrentBlockedIntervals) {
-            if (interval.isBlocked === true) {
-                fixedEventsTimeline.push(interval);
-            } else if (interval.originalMatchId) {
-                // Keep 'free interval available' if it was created by a deleted match
+            if (interval.isBlocked === true || interval.originalMatchId) { // Keep if truly blocked or a deleted match placeholder
                 fixedEventsTimeline.push(interval);
             } else {
                 // These are old, auto-generated placeholders that should be deleted
@@ -658,8 +656,13 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, excl
                 return a.startInMinutes - b.startInMinutes;
             }
             // Secondary sort for stable order, crucial for logical flow
-            if (a.type === 'match' && b.type === 'blocked_interval' && !b.isBlocked) return -1; // Matches before free intervals
-            if (a.type === 'blocked_interval' && !a.isBlocked && b.type === 'match') return 1; // Free intervals after matches
+            // Matches before fixed intervals at the same start time
+            if (a.type === 'match' && b.type === 'blocked_interval') return -1;
+            if (a.type === 'blocked_interval' && b.type === 'match') return 1;
+            // Free intervals (originalMatchId) should appear after matches
+            if (a.type === 'blocked_interval' && a.originalMatchId && b.type === 'match') return 1;
+            if (a.type === 'match' && b.type === 'blocked_interval' && b.originalMatchId) return -1;
+            
             return a.id.localeCompare(b.id);
         });
 
@@ -693,6 +696,7 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, excl
                         startInMinutes: gapStart,
                         endInMinutes: gapEnd,
                         isBlocked: false,
+                        originalMatchId: null, // This is a general auto-generated placeholder
                         createdAt: new Date()
                     });
                 }
@@ -702,13 +706,7 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, excl
             // Handle gap before the current event
             if (currentTimePointer < event.startInMinutes) {
                 const gapStart = currentTimePointer;
-                let gapEnd = event.startInMinutes;
-
-                if (event.type === 'match') {
-                    const nextMatchBufferTime = Number(event.bufferTime) || 0;
-                    gapEnd = Math.max(gapStart, event.startInMinutes - nextMatchBufferTime);
-                    console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): Následná udalosť je zápas (${event.id}), upravujem gapEnd na ${gapEnd} (pôvodný ${event.startInMinutes} - buffer ${nextMatchBufferTime}).`);
-                }
+                const gapEnd = event.startInMinutes; // Gap ends where the current event begins
 
                 const formattedGapStartTime = `${String(Math.floor(gapStart / 60)).padStart(2, '0')}:${String(gapStart % 60).padStart(2, '0')}`;
                 const formattedGapEndTime = `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(Math.floor(gapEnd % 60)).padStart(2, '0')}`; 
@@ -725,6 +723,7 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, excl
                         startInMinutes: gapStart,
                         endInMinutes: gapEnd,
                         isBlocked: false,
+                        originalMatchId: null, // This is a general auto-generated placeholder
                         createdAt: new Date()
                     });
                 }
@@ -738,12 +737,13 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, excl
                 const isTheDraggedMatch = movedMatchOriginalId && event.id === movedMatchOriginalId && date === movedMatchOriginalDate && location === movedMatchOriginalLocation;
                 
                 // If it's a dragged match and a new start time is provided, use that
-                if (isTheDraggedMatch && droppedProposedStartTime) {
-                    const [newH, newM] = droppedProposedStartTime.split(':').map(Number);
+                if (isTheDraggedMatch && movedMatchNewStartTime) {
+                    const [newH, newM] = movedMatchNewStartTime.split(':').map(Number);
                     newMatchStartTimeMinutes = newH * 60 + newM;
-                    console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): Presunutý zápas ${event.id} má nový čas: ${droppedProposedStartTime}.`);
+                    console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): Presunutý zápas ${event.id} má nový čas: ${movedMatchNewStartTime}.`);
                 } else if (event.startInMinutes < currentTimePointer) {
-                    // This means the match *would* overlap, so we push it to the current pointer
+                    // This means the match *would* overlap with a preceding event (match, blocked interval or deleted match placeholder)
+                    // so we push it to the current pointer
                     newMatchStartTimeMinutes = currentTimePointer;
                     console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): Zápas ${event.id} koliduje, posúvam na: ${newMatchStartTimeMinutes} (z currentPointer).`);
                 } else {
@@ -766,7 +766,7 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, excl
             } else if (event.type === 'blocked_interval') {
                 // Blocked intervals (including 'deleted match' placeholders) are fixed and move the pointer
                 currentTimePointer = Math.max(currentTimePointer, event.endInMinutes);
-                console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): Zablokovaný interval ID: ${event.id} (isBlocked: ${event.isBlocked}) je pevný, ukazovateľ posunutý na: ${currentTimePointer}.`);
+                console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): Zablokovaný interval ID: ${event.id} (isBlocked: ${event.isBlocked}, originalMatchId: ${event.originalMatchId}) je pevný, ukazovateľ posunutý na: ${currentTimePointer}.`);
             }
             console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): Po spracovaní udalosti ${event.id || 'End of Day'}, currentTimePointer je teraz: ${currentTimePointer}`);
         }
@@ -1009,11 +1009,11 @@ function getEventDisplayString(event, allSettings, categoryColorsMap) {
             const blockedIntervalStartHour = String(Math.floor(event.startInMinutes / 60)).padStart(2, '0');
             const blockedIntervalStartMinute = String(event.startInMinutes % 60).padStart(2, '0');
             const blockedIntervalEndHour = String(Math.floor(event.endInMinutes / 60)).padStart(2, '0');
-            const blockedIntervalEndMinute = String(Math.floor(event.endInMinutes % 60)).padStart(2, '0');
+            const blockedIntervalEndMinute = String(Math.floor(event.endInMinutes % 60).padStart(2, '0');
             return `${blockedIntervalStartHour}:${blockedIntervalStartMinute} - ${blockedIntervalEndHour}:${blockedIntervalEndMinute}|${displayText}`;
         } else {
             displayText = 'Voľný interval dostupný'; 
-            return `${event.startTime} - ${event.endTime}|${displayText}`; 
+            return `${event.startTime} - ${displayText}`; // Only show start time for free intervals
         }
     }
     return '';
@@ -1220,7 +1220,8 @@ async function displayMatchesAsSchedule() {
 
 
                         const finalEventsToRender = [];
-                        let currentTimePointerInMinutes = await getInitialScheduleStartMinutes(date);
+                        const initialScheduleStartMinutes = await getInitialScheduleStartMinutes(date); // Correctly fetch here
+                        let currentTimePointerInMinutes = initialScheduleStartMinutes;
                         
                         // Add an initial placeholder if the schedule doesn't start at 00:00 or initial time.
                         if (currentTimePointerInMinutes > 0) {
@@ -1231,21 +1232,24 @@ async function displayMatchesAsSchedule() {
                                 s.date === date && 
                                 s.location === location && 
                                 s.isBlocked === false && 
+                                s.originalMatchId === null && // Only consider auto-generated
                                 s.startInMinutes === 0 && 
                                 s.endInMinutes === currentTimePointerInMinutes
                             );
-                            finalEventsToRender.push({
-                                type: 'blocked_interval',
-                                id: existingInitialPlaceholder ? existingInitialPlaceholder.id : 'generated-initial-interval-' + Math.random().toString(36).substr(2, 9),
-                                date: date,
-                                location: location,
-                                startTime: formattedGapStartTime,
-                                endTime: formattedGapEndTime,
-                                isBlocked: false,
-                                startInMinutes: 0,
-                                endInMinutes: currentTimePointerInMinutes,
-                                originalMatchId: null // This is a true initial placeholder
-                            });
+                            if (!existingInitialPlaceholder) { // Only add if it doesn't exist
+                                finalEventsToRender.push({
+                                    type: 'blocked_interval',
+                                    id: 'generated-initial-interval-' + Math.random().toString(36).substr(2, 9),
+                                    date: date,
+                                    location: location,
+                                    startTime: formattedGapStartTime,
+                                    endTime: formattedGapEndTime,
+                                    isBlocked: false,
+                                    startInMinutes: 0,
+                                    endInMinutes: currentTimePointerInMinutes,
+                                    originalMatchId: null // This is a true initial placeholder
+                                });
+                            }
                         }
 
 
@@ -1265,21 +1269,24 @@ async function displayMatchesAsSchedule() {
                                     s.date === date && 
                                     s.location === location && 
                                     s.isBlocked === false && 
+                                    s.originalMatchId === null && // Only consider auto-generated
                                     s.startInMinutes === gapStart && 
                                     s.endInMinutes === gapEnd
                                 );
-                                finalEventsToRender.push({
-                                    type: 'blocked_interval',
-                                    id: existingFreeInterval ? existingFreeInterval.id : 'generated-interval-' + Math.random().toString(36).substr(2, 9),
-                                    date: date,
-                                    location: location,
-                                    startTime: formattedGapStartTime,
-                                    endTime: formattedGapEndTime,
-                                    isBlocked: false,
-                                    startInMinutes: gapStart,
-                                    endInMinutes: gapEnd,
-                                    originalMatchId: null // This is an auto-generated free interval
-                                });
+                                if (!existingFreeInterval) { // Only add if it doesn't exist
+                                    finalEventsToRender.push({
+                                        type: 'blocked_interval',
+                                        id: 'generated-interval-' + Math.random().toString(36).substr(2, 9),
+                                        date: date,
+                                        location: location,
+                                        startTime: formattedGapStartTime,
+                                        endTime: formattedGapEndTime,
+                                        isBlocked: false,
+                                        startInMinutes: gapStart,
+                                        endInMinutes: gapEnd,
+                                        originalMatchId: null // This is an auto-generated free interval
+                                    });
+                                }
                             }
                             
                             // Add the actual event
@@ -1298,21 +1305,24 @@ async function displayMatchesAsSchedule() {
                                 s.date === date && 
                                 s.location === location && 
                                 s.isBlocked === false && 
+                                s.originalMatchId === null && // Only consider auto-generated
                                 s.startInMinutes === gapStart && 
                                 s.endInMinutes === gapEnd
                             );
-                            finalEventsToRender.push({
-                                type: 'blocked_interval',
-                                id: existingFinalPlaceholder ? existingFinalPlaceholder.id : 'generated-final-interval-' + Math.random().toString(36).substr(2, 9),
-                                date: date,
-                                location: location,
-                                startTime: formattedGapStartTime,
-                                endTime: formattedGapEndTime,
-                                isBlocked: false,
-                                startInMinutes: gapStart,
-                                endInMinutes: gapEnd,
-                                originalMatchId: null // This is a true final placeholder
-                            });
+                            if (!existingFinalPlaceholder) { // Only add if it doesn't exist
+                                finalEventsToRender.push({
+                                    type: 'blocked_interval',
+                                    id: 'generated-final-interval-' + Math.random().toString(36).substr(2, 9),
+                                    date: date,
+                                    location: location,
+                                    startTime: formattedGapStartTime,
+                                    endTime: formattedGapEndTime,
+                                    isBlocked: false,
+                                    startInMinutes: gapStart,
+                                    endInMinutes: gapEnd,
+                                    originalMatchId: null // This is a true final placeholder
+                                });
+                            }
                         }
 
                         console.log(`displayMatchesAsSchedule: FinalEventsToRender (po vložení medzier a placeholderov):`, JSON.stringify(finalEventsToRender.map(e => ({id: e.id, type: e.type, startTime: e.startTime || e.startInMinutes, endTime: e.endTime || e.endInMinutes, isBlocked: e.isBlocked, originalMatchId: e.originalMatchId, endOfPlayInMinutes: e.endOfPlayInMinutes, footprintEndInMinutes: e.footprintEndInMinutes}))));
@@ -1362,7 +1372,7 @@ async function displayMatchesAsSchedule() {
                                 const blockedIntervalStartHour = String(Math.floor(blockedInterval.startInMinutes / 60)).padStart(2, '0');
                                 const blockedIntervalStartMinute = String(blockedInterval.startInMinutes % 60).padStart(2, '0');
                                 const blockedIntervalEndHour = String(Math.floor(blockedInterval.endInMinutes / 60)).padStart(2, '0');
-                                const blockedIntervalEndMinute = String(Math.floor(blockedInterval.endInMinutes % 60)).padStart(2, '0');
+                                const blockedIntervalEndMinute = String(Math.floor(blockedInterval.endInMinutes % 60).padStart(2, '0');
                                 
                                 const isUserBlocked = blockedInterval.isBlocked === true; 
 
@@ -1702,6 +1712,7 @@ async function displayMatchesAsSchedule() {
                         
                         const targetEmptyInterval = allBlockedIntervalsForLocation.find(s => 
                             s.isBlocked === false && 
+                            s.originalMatchId === null && // Only consider auto-generated
                             s.startTime === nextAvailableTimeAfterLastMatch
                         );
 
@@ -1774,7 +1785,7 @@ async function deletePlayingDay(dateToDelete) {
             });
 
             const blockedIntervalsQuery = query(blockedSlotsCollectionRef, where("date", "==", dateToDelete));
-            const blockedIntervalsSnapshot = await getDocs(blockedSlotsCollectionRef);
+            const blockedIntervalsSnapshot = await getDocs(blockedIntervalsQuery);
             blockedIntervalsSnapshot.docs.forEach(blockedIntervalDoc => {
                 batch.delete(doc(blockedSlotsCollectionRef, blockedIntervalDoc.id));
             });
@@ -2880,7 +2891,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     
                     // Check if the current match perfectly fits or covers the "deleted match placeholder"
                     return data.originalMatchId === currentMatchId ||
-                           (data.isBlocked === false &&
+                           (data.isBlocked === false && data.originalMatchId && // Only if it's a deleted match placeholder
                             newMatchStartInMinutes === slotStartInMinutes &&
                             newMatchEndInMinutesWithBuffer === slotEndInMinutes);
                 });
@@ -2905,6 +2916,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const slotEndInMinutes = slotEndH * 60 + slotEndM;
 
                     return data.isBlocked === false &&
+                           (data.originalMatchId || data.originalMatchId === null) && // Match any non-blocked slot, regardless of originalMatchId
                            newMatchStartInMinutes >= slotStartInMinutes &&
                            newMatchEndInMinutesWithBuffer <= slotEndInMinutes;
                 });
