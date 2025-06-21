@@ -384,6 +384,7 @@ async function findFirstAvailableTime() {
 
 
         const availableIntervals = [];
+        // Initialize currentPointer with the initial start time of the day
         let currentPointer = initialPointerMinutes;
 
         for (const occupied of mergedOccupiedPeriods) {
@@ -392,6 +393,7 @@ async function findFirstAvailableTime() {
             }
             currentPointer = Math.max(currentPointer, occupied.end);
         }
+        // Add the remaining time till the end of the day as an available interval
         if (currentPointer < 24 * 60) {
             availableIntervals.push({ start: currentPointer, end: 24 * 60 });
         }
@@ -403,11 +405,14 @@ async function findFirstAvailableTime() {
         freeIntervals.sort((a, b) => a.start - b.start);
         console.log("Existing Free Intervals (isBlocked: false):", freeIntervals);
 
+        // First, try to fit the match into an explicitly marked "free" interval
         for (const freeInterval of freeIntervals) {
-            if (freeInterval.end - freeInterval.start >= requiredMatchDuration) {
+            // Check if the free interval can accommodate the full footprint of the new match
+            if (freeInterval.end - freeInterval.start >= newMatchFullFootprint) {
                 let isFreeIntervalTrulyAvailable = true;
                 const potentialMatchEndWithBuffer = freeInterval.start + newMatchFullFootprint; 
 
+                // Ensure this free interval doesn't overlap with any *merged occupied periods*
                 for(const occupied of mergedOccupiedPeriods) {
                     if (freeInterval.start < occupied.end && potentialMatchEndWithBuffer > occupied.start) {
                         isFreeIntervalTrulyAvailable = false;
@@ -424,6 +429,7 @@ async function findFirstAvailableTime() {
             }
         }
 
+        // If no existing "free" interval was found, try to find a gap in the dynamically calculated available intervals
         if (proposedStartTimeInMinutes === -1) {
             for (const interval of availableIntervals) {
                 if (interval.end - interval.start >= newMatchFullFootprint) {
@@ -1037,7 +1043,7 @@ function getEventDisplayString(event, allSettings, categoryColorsMap) {
             const blockedIntervalStartHour = String(Math.floor(event.startInMinutes / 60)).padStart(2, '0');
             const blockedIntervalStartMinute = String(event.startInMinutes % 60).padStart(2, '0');
             const blockedIntervalEndHour = String(Math.floor(event.endInMinutes / 60)).padStart(2, '0');
-            const blockedIntervalEndMinute = String(Math.floor(event.endInMinutes % 60)).padStart(2, '0');
+            const blockedIntervalEndMinute = String(Math.floor(event.endInMinutes % 60).padStart(2, '0');
             return `${blockedIntervalStartHour}:${blockedIntervalStartMinute} - ${blockedIntervalEndHour}:${blockedIntervalEndMinute}|${displayText}`;
         } else {
             displayText = 'Voľný interval dostupný'; 
@@ -1265,7 +1271,7 @@ async function displayMatchesAsSchedule() {
                                 const gapStart = currentTimePointerInMinutes;
                                 const gapEnd = eventStart;
                                 const formattedGapStartTime = `${String(Math.floor(gapStart / 60)).padStart(2, '0')}:${String(gapStart % 60).padStart(2, '0')}`;
-                                const formattedGapEndTime = `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(gapEnd % 60).padStart(2, '0')}`;
+                                const formattedGapEndTime = `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(Math.floor(gapEnd % 60)).padStart(2, '0')}`;
                                 
                                 // Get the buffer time of the *previous* match event, if any.
                                 // It is crucial to iterate backward to find the last match to get its buffer.
@@ -1394,7 +1400,7 @@ async function displayMatchesAsSchedule() {
                                 const blockedIntervalStartHour = String(Math.floor(blockedInterval.startInMinutes / 60)).padStart(2, '0');
                                 const blockedIntervalStartMinute = String(blockedInterval.startInMinutes % 60).padStart(2, '0');
                                 const blockedIntervalEndHour = String(Math.floor(blockedInterval.endInMinutes / 60)).padStart(2, '0');
-                                const blockedIntervalEndMinute = String(Math.floor(blockedInterval.endInMinutes % 60)).padStart(2, '0');
+                                const blockedIntervalEndMinute = String(Math.floor(blockedInterval.endInMinutes % 60).padStart(2, '0');
                                 
                                 const isUserBlocked = blockedInterval.isBlocked === true; 
 
@@ -1697,7 +1703,7 @@ async function displayMatchesAsSchedule() {
                     }
 
                     const initialScheduleStartMinutesForDrop = await getInitialScheduleStartMinutes(newDate); // Ensure it's defined here for the drop context
-                    const initialScheduleStartTimeStr = `${String(Math.floor(initialScheduleStartMinutesForDrop / 60)).padStart(2, '0')}:${String(initialScheduleStartMinutes % 60).padStart(2, '0')}`;
+                    const initialScheduleStartTimeStr = `${String(Math.floor(initialScheduleStartMinutesForDrop / 60)).padStart(2, '0')}:${String(initialScheduleStartMinutesForDrop % 60).padStart(2, '0')}`;
 
                     if (targetRow && targetRow.classList.contains('match-row')) {
                         droppedProposedStartTime = targetRow.dataset.startTime;
