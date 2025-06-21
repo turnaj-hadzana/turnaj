@@ -465,9 +465,20 @@ async function findFirstAvailableTime() {
             matchStartTimeInput.value = `${formattedHour}:${formattedMinute}`;
             console.log("Nastavený čas začiatku zápasu:", matchStartTimeInput.value);
         } else {
-            matchStartTimeInput.value = '';
-            await showMessage('Informácia', 'Na vybranom mieste a dátume nie je dostatok priestoru pre zápas v dostupnom čase. Skúste iné nastavenia.');
-            console.log("No available interval found, clearing start time and informing user.");
+            // If no perfect fit, still suggest the first possible time, let recalculation handle push
+            // This is the core change: always try to propose *something*
+            let earliestPossibleTime = initialPointerMinutes; // Start from the beginning of the day's schedule
+            if (mergedOccupiedPeriods.length > 0) {
+                earliestPossibleTime = Math.max(earliestPossibleTime, mergedOccupiedPeriods[mergedOccupiedPeriods.length - 1].end);
+            }
+            const formattedHour = String(Math.floor(earliestPossibleTime / 60)).padStart(2, '0');
+            const formattedMinute = String(earliestPossibleTime % 60).padStart(2, '0');
+            matchStartTimeInput.value = `${formattedHour}:${formattedMinute}`;
+            console.log("No ideal fit, but suggesting earliest possible time (might cause push):", matchStartTimeInput.value);
+
+            // Do NOT show message here, let the save handler and recalculation handle it.
+            // await showMessage('Informácia', 'Na vybranom mieste a dátume nie je dostatok priestoru pre zápas v dostupnom čase. Skúste iné nastavenia.');
+            // console.log("No available interval found, clearing start time and informing user.");
         }
 
     } catch (error) {
@@ -589,16 +600,18 @@ function calculateNextAvailableTime(prevStartTime, duration, bufferTime) {
  * @param {string} date The date of the schedule.
  * @param {string} location The location of the schedule.
  * @param {string|null} excludedBlockedIntervalId ID of a blocked interval to exclude from recalculation.
- * @param {string|null} movedMatchOriginalId ID of the match that was moved.
+ * @param {object|null} insertedMatchInfo Information about the newly inserted/updated match {id, startTime, duration, bufferTime}.
+ * @param {string|null} movedMatchOriginalId ID of the match that was moved (for drag and drop scenario).
  * @param {string|null} movedMatchOriginalDate Original date of the moved match.
  * @param {string|null} movedMatchOriginalLocation Original location of the moved match.
  * @param {string|null} movedMatchOriginalStartTime Original start time of the moved match.
  * @param {string|null} movedMatchNewStartTime New start time of the moved match.
  * @param {boolean} wasDeletedMatch True if a match was deleted, which means we want to insert a permanent 'free interval available'.
  */
-async function recalculateAndSaveScheduleForDateAndLocation(date, location, excludedBlockedIntervalId = null, movedMatchOriginalId = null, movedMatchOriginalDate = null, movedMatchOriginalLocation = null, movedMatchOriginalStartTime = null, movedMatchNewStartTime = null, wasDeletedMatch = false) {
+async function recalculateAndSaveScheduleForDateAndLocation(date, location, excludedBlockedIntervalId = null, insertedMatchInfo = null, movedMatchOriginalId = null, movedMatchOriginalDate = null, movedMatchOriginalLocation = null, movedMatchOriginalStartTime = null, movedMatchNewStartTime = null, wasDeletedMatch = false) {
     console.log(`recalculateAndSaveScheduleForDateAndLocation: === SPUSTENÉ pre Dátum: ${date}, Miesto: ${location}. ` +
                 `Vylúčený zablokovaný interval ID: ${excludedBlockedIntervalId || 'žiadny'}. ` +
+                `Vložený/Upravený zápas ID: ${insertedMatchInfo ? insertedMatchInfo.id : 'žiadny'}. ` +
                 `Presunutý zápas ID: ${movedMatchOriginalId || 'žiadny'}, Pôvodný dátum: ${movedMatchOriginalDate || 'N/A'}, Pôvodné miesto: ${movedMatchOriginalLocation || 'N/A'}, Pôvodný čas: ${movedMatchOriginalStartTime || 'N/A'}, Nový čas: ${movedMatchNewStartTime || 'N/A'}. ` +
                 `Bol vymazaný zápas: ${wasDeletedMatch}. ===`);
     try {
@@ -650,13 +663,18 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, excl
 
         // Separate fixed (isBlocked: true) from temporary placeholders (isBlocked: false)
         for (const interval of allCurrentBlockedIntervals) {
-            if (interval.isBlocked === true) {
+            // If this free interval was the target of a drag-and-drop, it will be deleted.
+            // If it's a "free interval available" created by a deleted match, keep it.
+            if (interval.id === excludedBlockedIntervalId) { // This is the slot where the dragged match was dropped
+                 batch.delete(interval.docRef);
+                 console.log(`Fáza 2: Pridané do batchu na vymazanie cieľového zablokovaného intervalu (z excludedBlockedIntervalId): ${interval.id}`);
+            } else if (interval.isBlocked === true) {
                 fixedEventsTimeline.push(interval);
             } else if (interval.originalMatchId) {
                 // Keep 'free interval available' if it was created by a deleted match
                 fixedEventsTimeline.push(interval);
             } else {
-                // These are old, auto-generated placeholders that should be deleted
+                // These are old, auto-generated placeholders that should be deleted if they don't represent a true gap anymore
                 placeholderIntervalsToDelete.push(interval);
             }
         }
@@ -677,6 +695,25 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, excl
             ...fixedEventsTimeline, // Includes permanently blocked and 'deleted match' placeholders
             ...matchesToReschedule
         ];
+
+        // If a new match was just inserted, ensure it's part of the timeline events
+        if (insertedMatchInfo && !allTimelineEvents.some(e => e.id === insertedMatchInfo.id)) {
+            // Find the full match data for the newly inserted match
+            const newMatchData = (await getDoc(doc(matchesCollectionRef, insertedMatchInfo.id))).data();
+            const newMatchStartInMinutes = (parseInt(newMatchData.startTime.split(':')[0]) * 60 + parseInt(newMatchData.startTime.split(':')[1]));
+            const newMatchDuration = Number(newMatchData.duration) || 0;
+            const newMatchBufferTime = Number(newMatchData.bufferTime) || 0;
+            allTimelineEvents.push({
+                id: newMatchInfo.id,
+                type: 'match',
+                docRef: doc(matchesCollectionRef, newMatchInfo.id),
+                ...newMatchData,
+                startInMinutes: newMatchStartInMinutes,
+                duration: newMatchDuration,
+                bufferTime: newMatchBufferTime
+            });
+            console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): Pridaný novo vložený zápas do timeline: ${newMatchInfo.id}.`);
+        }
 
         allTimelineEvents.sort((a, b) => {
             if (a.startInMinutes !== b.startInMinutes) {
@@ -723,104 +760,216 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, excl
                 }
                 break; // End processing events for the day
             }
+            
+            // Check if the current event is the newly inserted/updated match, and it has a fixed user-provided start time
+            const isTheInsertedMatch = insertedMatchInfo && event.id === insertedMatchInfo.id && date === insertedMatchInfo.date && location === insertedMatchInfo.location;
 
-            // Handle gap before the current event
-            if (currentTimePointer < event.startInMinutes) {
-                const gapStart = currentTimePointer;
+            // Handle gap before the current event OR if the current event is the inserted match
+            if (currentTimePointer < event.startInMinutes || isTheInsertedMatch) {
+                let gapStart = currentTimePointer;
                 let gapEnd = event.startInMinutes;
 
-                if (event.type === 'match') {
-                    const nextMatchBufferTime = Number(event.bufferTime) || 0;
-                    gapEnd = Math.max(gapStart, event.startInMinutes - nextMatchBufferTime);
-                    console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): Následná udalosť je zápas (${event.id}), upravujem gapEnd na ${gapEnd} (pôvodný ${event.startInMinutes} - buffer ${nextMatchBufferTime}).`);
+                // Handle the case where the inserted match is earlier than the currentTimePointer
+                if (isTheInsertedMatch && (insertedMatchInfo.startInMinutes < currentTimePointer)) {
+                    gapEnd = insertedMatchInfo.startInMinutes; // Gap ends just before the inserted match's start
                 }
 
+                // If the current event is a match (not the inserted one, or the original position of a moved match)
+                // and it's being pushed due to an earlier event or inserted match.
+                if (event.type === 'match' && !isTheInsertedMatch) {
+                     // Check if this match *needs* to be pushed.
+                    const originalMatchStartInMinutes = (parseInt(event.startTime.split(':')[0]) * 60 + parseInt(event.startTime.split(':')[1]));
+                    if (originalMatchStartInMinutes < currentTimePointer) {
+                        event.startInMinutes = currentTimePointer; // Push the match to current pointer
+                        const newStartTime = `${String(Math.floor(event.startInMinutes / 60)).padStart(2, '0')}:${String(event.startInMinutes % 60).padStart(2, '0')}`;
+                        batch.update(event.docRef, { startTime: newStartTime });
+                        console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): Zápas ${event.id} POSUNUTÝ na: ${newStartTime} (z dôvodu prekrývania).`);
+                    }
+                    gapEnd = event.startInMinutes; // Gap ends before this potentially pushed match
+                } else if (event.type === 'blocked_interval' && event.isBlocked === true) {
+                    // Blocked intervals are fixed, but their start time might create a gap before them
+                    if (event.startInMinutes < currentTimePointer) {
+                        // This blocked interval is being *overlapped* by previous events.
+                        // We need to decide if we shift it or create an overlap.
+                        // For now, assume it's fixed and current time pointer will skip past it.
+                        // Or, if it's already past current pointer, it creates a gap.
+                        console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): Zablokovaný interval ${event.id} začína na ${event.startInMinutes}, ale currentTimePointer je ${currentTimePointer}.`);
+                    }
+                    gapEnd = event.startInMinutes;
+                } else if (event.type === 'blocked_interval' && event.isBlocked === false) {
+                    // Free intervals (placeholders) are flexible and can be consumed or split
+                    // If the current gap overlaps with a free interval, we will modify/delete the free interval later.
+                    // For now, just define the gap.
+                    gapEnd = event.startInMinutes;
+                }
+                
                 const formattedGapStartTime = `${String(Math.floor(gapStart / 60)).padStart(2, '0')}:${String(Math.floor(gapStart % 60)).padStart(2, '0')}`;
                 const formattedGapEndTime = `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(Math.floor(gapEnd % 60)).padStart(2, '0')}`; 
 
+                // Create placeholder for the gap
                 if (gapStart < gapEnd) {
-                    // Only add a placeholder if its duration is greater than the buffer time
-                    // This prevents displaying tiny "free intervals available" right after a match.
-                    const bufferTimeForGap = (event.type === 'match' ? (Number(event.bufferTime) || 0) : 0);
-                    // Adjusted logic: now we only add a free interval if it is *not* a buffer and is *not* generated from a deleted match.
-                    // The actual rendering logic will decide if a free interval is visible based on buffer length.
+                    // Check if an existing free interval covers this exact gap.
+                    // If it does, we either reuse it or update it.
+                    // If it was an "originalMatchId" placeholder, it might be split.
                     const existingFreeIntervalQuery = query(
                         blockedSlotsCollectionRef,
                         where("date", "==", date),
                         where("location", "==", location),
-                        where("startTime", "==", formattedGapStartTime),
-                        where("endTime", "==", formattedGapEndTime)
+                        where("startInMinutes", ">=", gapStart),
+                        where("endInMinutes", "<=", gapEnd),
+                        where("isBlocked", "==", false)
                     );
                     const existingFreeIntervalSnapshot = await getDocs(existingFreeIntervalQuery);
-                    
-                    if (existingFreeIntervalSnapshot.empty || existingFreeIntervalSnapshot.docs[0].data().originalMatchId) {
-                        // Create a new one or if it's an existing one from deleted match, keep it.
-                        // We will add it to the batch only if it's not from a deleted match and it's a new generated one.
-                        const isExistingDeletedMatchPlaceholder = existingFreeIntervalSnapshot.docs.length > 0 && existingFreeIntervalSnapshot.docs[0].data().originalMatchId;
-                        const isGeneratedPlaceholder = !isExistingDeletedMatchPlaceholder; // If it's not a deleted match placeholder, it's a generated one
+                    let existingFreeIntervalFound = null;
 
-                        if (isGeneratedPlaceholder) {
-                            const newPlaceholderDocRef = doc(blockedSlotsCollectionRef);
-                            batch.set(newPlaceholderDocRef, {
-                                date: date,
-                                location: location,
-                                startTime: formattedGapStartTime,
-                                endTime: formattedGapEndTime,
-                                isBlocked: false,
-                                startInMinutes: gapStart,
-                                endInMinutes: gapEnd,
-                                createdAt: new Date()
-                            });
-                            console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): GENERUJEM (nový/aktualizovaný) placeholder pred udalosťou ${event.id}: Start: ${formattedGapStartTime}, End: ${formattedGapEndTime}.`);
+                    if (!existingFreeIntervalSnapshot.empty) {
+                        // Prioritize existing exact matches or larger intervals that encompass the gap
+                        existingFreeIntervalFound = existingFreeIntervalSnapshot.docs.find(doc => {
+                            const data = doc.data();
+                            return data.startInMinutes === gapStart && data.endInMinutes === gapEnd;
+                        }) || existingFreeIntervalSnapshot.docs[0]; // Take the first if exact match not found
+                    }
+
+                    if (existingFreeIntervalFound) {
+                        const originalFreeIntervalData = existingFreeIntervalFound.data();
+                        const originalFreeIntervalStart = originalFreeIntervalData.startInMinutes;
+                        const originalFreeIntervalEnd = originalFreeIntervalData.endInMinutes;
+                        const originalFreeIntervalId = existingFreeIntervalFound.id;
+
+                        // If the new match consumes part of the existing free slot
+                        if (isTheInsertedMatch && (insertedMatchInfo.startInMinutes >= originalFreeIntervalStart && (insertedMatchInfo.startInMinutes + insertedMatchInfo.duration + insertedMatchInfo.bufferTime) <= originalFreeIntervalEnd)) {
+                            // Delete the old placeholder
+                            batch.delete(doc(blockedSlotsCollectionRef, originalFreeIntervalId));
+                            console.log(`Fáza 3: Vymazaný pôvodný voľný interval ${originalFreeIntervalId} (čiastočne spotrebovaný vloženým zápasom).`);
+
+                            // Create a new placeholder for the part *before* the inserted match
+                            if (insertedMatchInfo.startInMinutes > originalFreeIntervalStart) {
+                                const newPreSlotRef = doc(blockedSlotsCollectionRef);
+                                batch.set(newPreSlotRef, {
+                                    date: date,
+                                    location: location,
+                                    startTime: `${String(Math.floor(originalFreeIntervalStart / 60)).padStart(2, '0')}:${String(originalFreeIntervalStart % 60).padStart(2, '0')}`,
+                                    endTime: `${String(Math.floor(insertedMatchInfo.startInMinutes / 60)).padStart(2, '0')}:${String(insertedMatchInfo.startInMinutes % 60).padStart(2, '0')}`,
+                                    isBlocked: false,
+                                    startInMinutes: originalFreeIntervalStart,
+                                    endInMinutes: insertedMatchInfo.startInMinutes,
+                                    originalMatchId: originalFreeIntervalData.originalMatchId,
+                                    createdAt: new Date()
+                                });
+                                console.log(`Fáza 3: Vytvorený pre-slot voľný interval: ${originalFreeIntervalStart}-${insertedMatchInfo.startInMinutes}.`);
+                            }
+
+                            // Create a new placeholder for the part *after* the inserted match
+                            const insertedMatchFootprintEnd = insertedMatchInfo.startInMinutes + insertedMatchInfo.duration + insertedMatchInfo.bufferTime;
+                            if (insertedMatchFootprintEnd < originalFreeIntervalEnd) {
+                                const newPostSlotRef = doc(blockedSlotsCollectionRef);
+                                batch.set(newPostSlotRef, {
+                                    date: date,
+                                    location: location,
+                                    startTime: `${String(Math.floor(insertedMatchFootprintEnd / 60)).padStart(2, '0')}:${String(insertedMatchFootprintEnd % 60).padStart(2, '0')}`,
+                                    endTime: `${String(Math.floor(originalFreeIntervalEnd / 60)).padStart(2, '0')}:${String(originalFreeIntervalEnd % 60).padStart(2, '0')}`,
+                                    isBlocked: false,
+                                    startInMinutes: insertedMatchFootprintEnd,
+                                    endInMinutes: originalFreeIntervalEnd,
+                                    originalMatchId: originalFreeIntervalData.originalMatchId,
+                                    createdAt: new Date()
+                                });
+                                console.log(`Fáza 3: Vytvorený post-slot voľný interval: ${insertedMatchFootprintEnd}-${originalFreeIntervalEnd}.`);
+                            }
+
                         } else {
-                            console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): Existing deleted match placeholder, not recreating: ${formattedGapStartTime}-${formattedGapEndTime}.`);
+                            // If it's an existing free interval, just ensure its times are correct based on the gap
+                            if (originalFreeIntervalStart !== gapStart || originalFreeIntervalEnd !== gapEnd) {
+                                batch.update(existingFreeIntervalFound.ref, {
+                                    startTime: formattedGapStartTime,
+                                    endTime: formattedGapEndTime,
+                                    startInMinutes: gapStart,
+                                    endInMinutes: gapEnd
+                                });
+                                console.log(`Fáza 3: Aktualizovaný existujúci voľný interval ${originalFreeIntervalId} na ${formattedGapStartTime}-${formattedGapEndTime}.`);
+                            } else {
+                                console.log(`Fáza 3: Existujúci voľný interval ${originalFreeIntervalId} je presný, žiadna akcia.`);
+                            }
                         }
                     } else {
-                         console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): Skipping gap ${formattedGapStartTime}-${formattedGapEndTime} as it is already an existing non-deleted-match free interval.`);
+                        // Create a new placeholder for the gap if no existing one exactly matches
+                        const newPlaceholderDocRef = doc(blockedSlotsCollectionRef);
+                        batch.set(newPlaceholderDocRef, {
+                            date: date,
+                            location: location,
+                            startTime: formattedGapStartTime,
+                            endTime: formattedGapEndTime,
+                            isBlocked: false,
+                            startInMinutes: gapStart,
+                            endInMinutes: gapEnd,
+                            createdAt: new Date()
+                        });
+                        console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): GENERUJEM (nový) placeholder pred udalosťou ${event.id}: Start: ${formattedGapStartTime}, End: ${formattedGapEndTime}.`);
                     }
                 } else {
-                    console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): Skipping gap ${formattedGapStartTime}-${formattedGapEndTime} as it's too short (<= bufferTime).`);
+                    console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): Žiadna medzera pred udalosťou ${event.id} (gapStart ${gapStart} >= gapEnd ${gapEnd}).`);
                 }
             }
 
             // Process the current event
+            let eventEndInMinutesWithFootprint;
             if (event.type === 'match') {
-                let newMatchStartTimeMinutes;
-
-                // Check if this is the match that was moved from another slot
-                const isTheDraggedMatch = movedMatchOriginalId && event.id === movedMatchOriginalId && date === movedMatchOriginalDate && location === movedMatchOriginalLocation;
-                
-                // If it's a dragged match and a new start time is provided, use that
-                if (isTheDraggedMatch && movedMatchNewStartTime) {
-                    const [newH, newM] = movedMatchNewStartTime.split(':').map(Number);
-                    newMatchStartTimeMinutes = newH * 60 + newM;
-                    console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): Presunutý zápas ${event.id} má nový čas: ${movedMatchNewStartTime}.`);
-                } else if (event.startInMinutes < currentTimePointer) {
-                    // This means the match *would* overlap, so we push it to the current pointer
-                    newMatchStartTimeMinutes = currentTimePointer;
-                    console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): Zápas ${event.id} koliduje, posúvam na: ${newMatchStartTimeMinutes} (z currentPointer).`);
+                let actualMatchStartInMinutes;
+                if (isTheInsertedMatch) {
+                    // For the newly inserted match, its start time is what the user provided or what was proposed.
+                    const [h, m] = insertedMatchInfo.startTime.split(':').map(Number);
+                    actualMatchStartInMinutes = h * 60 + m;
+                    // Ensure the Firestore doc has this start time
+                    if (event.startTime !== insertedMatchInfo.startTime) {
+                        batch.update(event.docRef, { startTime: insertedMatchInfo.startTime });
+                        console.log(`Fáza 3: Zápas ID: ${event.id} (vložený) aktualizovaný v batchi na pevný čas: ${insertedMatchInfo.startTime}.`);
+                    } else {
+                        console.log(`Fáza 3: Zápas ID: ${event.id} (vložený) čas sa nezmenil.`);
+                    }
                 } else {
-                    newMatchStartTimeMinutes = event.startInMinutes;
-                    console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): Zápas ${event.id} má platný čas: ${newMatchStartTimeMinutes}.`);
+                    // For existing matches, ensure they are not before currentTimePointer
+                    if (event.startInMinutes < currentTimePointer) {
+                        actualMatchStartInMinutes = currentTimePointer;
+                        const newStartTime = `${String(Math.floor(actualMatchStartInMinutes / 60)).padStart(2, '0')}:${String(actualMatchStartInMinutes % 60).padStart(2, '0')}`;
+                        batch.update(event.docRef, { startTime: newStartTime });
+                        console.log(`Fáza 3: Zápas ID: ${event.id} POSUNUTÝ v batchi na: ${newStartTime} (z dôvodu prekrývania).`);
+                    } else {
+                        actualMatchStartInMinutes = event.startInMinutes;
+                        console.log(`Fáza 3: Zápas ID: ${event.id} má platný čas: ${actualMatchStartInMinutes}.`);
+                    }
                 }
-
-                const newMatchStartTime = `${String(Math.floor(newMatchStartTimeMinutes / 60)).padStart(2, '0')}:${String(newMatchStartTimeMinutes % 60).padStart(2, '0')}`;
-                const newMatchEndInMinutes = newMatchStartTimeMinutes + event.duration + event.bufferTime;
-
-                if (event.startTime !== newMatchStartTime) {
-                    batch.update(event.docRef, { startTime: newMatchStartTime });
-                    console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): Zápas ID: ${event.id} aktualizovaný v batchi na nový čas: ${newMatchStartTime}.`);
-                } else {
-                    console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): Zápas ID: ${event.id} čas sa nezmenil, preskakujem update.`);
-                }
-                
-                currentTimePointer = newMatchEndInMinutes;
-
+                eventEndInMinutesWithFootprint = actualMatchStartInMinutes + event.duration + event.bufferTime;
             } else if (event.type === 'blocked_interval') {
-                // Blocked intervals (including 'deleted match' placeholders) are fixed and move the pointer
-                currentTimePointer = Math.max(currentTimePointer, event.endInMinutes);
-                console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): Zablokovaný interval ID: ${event.id} (isBlocked: ${event.isBlocked}) je pevný, ukazovateľ posunutý na: ${currentTimePointer}.`);
+                 // Blocked intervals are fixed, but if they are pushed into a time slot already past currentTimePointer
+                 // they will effectively be skipped and the currentTimePointer will move past them.
+                if (event.isBlocked === true) {
+                    eventEndInMinutesWithFootprint = event.endInMinutes;
+                    if (event.startInMinutes < currentTimePointer) {
+                        // This blocked interval is now being "consumed" by preceding events.
+                        // We should delete it, as it's no longer a distinct blocked slot.
+                        batch.delete(event.docRef);
+                        console.log(`Fáza 3: Zablokovaný interval ${event.id} (pevný) bol prekrývaný, pridaný do batchu na vymazanie.`);
+                        // Don't update currentTimePointer based on this deleted interval.
+                        eventEndInMinutesWithFootprint = currentTimePointer; // Effectively, it ends where current time pointer is.
+                    } else {
+                        eventEndInMinutesWithFootprint = event.endInMinutes;
+                        console.log(`Fáza 3: Zablokovaný interval ID: ${event.id} (isBlocked: ${event.isBlocked}) je pevný, ukazovateľ posunutý na: ${eventEndInMinutesWithFootprint}.`);
+                    }
+                } else { // isBlocked: false (a free interval placeholder)
+                     // If it's a free interval that we haven't already dealt with by splitting/deleting it
+                     // and it's being overlapped by a preceding event, delete it.
+                     if (event.startInMinutes < currentTimePointer) {
+                         batch.delete(event.docRef);
+                         console.log(`Fáza 3: Voľný interval ${event.id} bol prekrývaný, pridaný do batchu na vymazanie.`);
+                         eventEndInMinutesWithFootprint = currentTimePointer;
+                     } else {
+                         eventEndInMinutesWithFootprint = event.endInMinutes; // Keep its original end time.
+                         console.log(`Fáza 3: Voľný interval ID: ${event.id} (isBlocked: ${event.isBlocked}) nie je prekrývaný, ukazovateľ posunutý na: ${eventEndInMinutesWithFootprint}.`);
+                     }
+                }
             }
+            // Update the global time pointer to the end of the current event's footprint
+            currentTimePointer = Math.max(currentTimePointer, eventEndInMinutesWithFootprint);
             console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): Po spracovaní udalosti ${event.id || 'End of Day'}, currentTimePointer je teraz: ${currentTimePointer}`);
         }
 
@@ -980,30 +1129,32 @@ async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation
         const originalMatchStartTime = draggedMatchData.startTime;
 
 
-        let excludedBlockedIntervalIdFromRecalculation = null;
+        // Prepare information for the inserted match (the dragged one)
+        const insertedMatchInfo = {
+            id: draggedMatchId,
+            date: targetDate,
+            location: targetLocation,
+            startTime: droppedProposedStartTime,
+            duration: Number(draggedMatchData.duration) || 0,
+            bufferTime: Number(draggedMatchData.bufferTime) || 0
+        };
 
-        if (targetBlockedIntervalId) {
-            batch.delete(doc(blockedSlotsCollectionRef, targetBlockedIntervalId));
-            console.log(`moveAndRescheduleMatch: Pridané do batchu na vymazanie cieľového zablokovaného intervalu (ID: ${targetBlockedIntervalId}).`);
-            excludedBlockedIntervalIdFromRecalculation = targetBlockedIntervalId;
-        } else if (targetMatchIdToDisplace && draggedMatchId !== targetMatchIdToDisplace) {
-            const displacedMatchDocRef = doc(matchesCollectionRef, targetMatchIdToDisplace);
-            const displacedMatchDoc = await getDoc(displacedMatchDocRef);
-            if (displacedMatchDoc.exists()) {
-                const displacedMatchData = displacedMatchDoc.data();
-                const draggedMatchDuration = Number(draggedMatchData.duration) || 0;
-                const draggedMatchBufferTime = Number(draggedMatchData.bufferTime) || 0;
-                
-                const [displacedH, displacedM] = displacedMatchData.startTime.split(':').map(Number);
-                const displacedStartInMinutes = displacedH * 60 + displacedM;
-                const newDisplacedStartInMinutes = displacedStartInMinutes + draggedMatchDuration + draggedMatchBufferTime;
-                const newDisplacedStartTime = `${String(Math.floor(newDisplacedStartInMinutes / 60)).padStart(2, '0')}:${String(newDisplacedStartInMinutes % 60).padStart(2, '0')}`;
-
-                batch.update(displacedMatchDocRef, { startTime: newDisplacedStartTime });
-                console.log(`moveAndRescheduleMatch: Pridané do batchu na posunutie cieľového zápasu (${targetMatchIdToDisplace}) na ${newDisplacedStartTime}`);
-            }
+        // If the match is moved to a different location/date, delete its original placeholder if it was a deleted match slot
+        if (originalDate !== targetDate || originalLocation !== targetLocation) {
+            const originalFreeIntervalsQuery = query(
+                blockedSlotsCollectionRef,
+                where("date", "==", originalDate),
+                where("location", "==", originalLocation),
+                where("originalMatchId", "==", draggedMatchId)
+            );
+            const originalFreeIntervalsSnapshot = await getDocs(originalFreeIntervalsQuery);
+            originalFreeIntervalsSnapshot.docs.forEach(docToDelete => {
+                batch.delete(docToDelete.ref);
+                console.log(`moveAndRescheduleMatch: Pridané do batchu na vymazanie pôvodného voľného intervalu (po presunutom zápase): ${docToDelete.id}`);
+            });
         }
-
+        
+        // Update the dragged match's location and date
         const updatedMatchData = {
             ...draggedMatchData,
             date: targetDate,
@@ -1016,14 +1167,17 @@ async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation
         await batch.commit();
         console.log("moveAndRescheduleMatch: Batch commit successful for match move and target interval deletion (if any).");
 
+        // Recalculate original schedule first if location/date changed
         if (originalDate !== targetDate || originalLocation !== targetLocation) {
             await recalculateAndSaveScheduleForDateAndLocation(originalDate, originalLocation); 
             console.log(`moveAndRescheduleMatch: Recalculation for original location (${originalDate}, ${originalLocation}) completed.`);
         }
+        // Then recalculate the target schedule with the inserted match information
         await recalculateAndSaveScheduleForDateAndLocation(
             targetDate, 
             targetLocation, 
-            excludedBlockedIntervalIdFromRecalculation,
+            targetBlockedIntervalId, // Pass this so it's deleted during recalculation if it's a fixed free slot
+            insertedMatchInfo, // Pass the info about the dragged match as the inserted one
             draggedMatchId,
             originalDate,
             originalLocation,
@@ -1052,7 +1206,7 @@ function getEventDisplayString(event, allSettings, categoryColorsMap) {
     if (event.type === 'match') {
         const matchDuration = event.duration || (allSettings.categoryMatchSettings?.[event.categoryId]?.duration || 60);
         const displayedMatchEndTimeInMinutes = event.endOfPlayInMinutes; 
-        const formattedDisplayedEndTime = `${String(Math.floor(displayedMatchEndTimeInMinutes / 60)).padStart(2, '0')}:${String(Math.floor(displayedMatchEndTimeInMinutes % 60)).padStart(2, '0')}`;
+        const formattedDisplayedEndTime = `${String(Math.floor(displayedMatchEndTimeInMinutes / 60)).padStart(2, '0')}:${String(displayedMatchEndTimeInMinutes % 60).padStart(2, '0')}`;
         
         return `${event.startTime} - ${formattedDisplayedEndTime}|${event.team1ClubName || 'N/A'}|${event.team2ClubName || 'N/A'}|${event.team1ShortDisplayName || 'N/A'}|${event.team2ShortDisplayName || 'N/A'}`;
     } else if (event.type === 'blocked_interval') {
@@ -1060,9 +1214,9 @@ function getEventDisplayString(event, allSettings, categoryColorsMap) {
         if (event.isBlocked === true) {
             displayText = 'Zablokovaný interval';
             const blockedIntervalStartHour = String(Math.floor(event.startInMinutes / 60)).padStart(2, '0');
-            const blockedIntervalStartMinute = String(blockedInterval.startInMinutes % 60).padStart(2, '0');
+            const blockedIntervalStartMinute = String(event.startInMinutes % 60).padStart(2, '0');
             const blockedIntervalEndHour = String(Math.floor(event.endInMinutes / 60)).padStart(2, '0');
-            const blockedIntervalEndMinute = String(Math.floor(blockedInterval.endInMinutes % 60)).padStart(2, '0');
+            const blockedIntervalEndMinute = String(event.endInMinutes % 60).padStart(2, '0');
             return `${blockedIntervalStartHour}:${blockedIntervalStartMinute} - ${blockedIntervalEndHour}:${blockedIntervalEndMinute}|${displayText}`;
         } else {
             displayText = 'Voľný interval dostupný'; 
@@ -1310,8 +1464,8 @@ async function displayMatchesAsSchedule() {
                                 if (currentTimePointerInMinutes < eventStart) {
                                     const gapStart = currentTimePointerInMinutes;
                                     const gapEnd = eventStart;
-                                    const formattedGapStartTime = `${String(Math.floor(gapStart / 60)).padStart(2, '0')}:${String(Math.floor(gapStart % 60)).padStart(2, '0')}`;
-                                    const formattedGapEndTime = `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(Math.floor(gapEnd % 60)).padStart(2, '0')}`;
+                                    const formattedGapStartTime = `${String(Math.floor(gapStart / 60)).padStart(2, '0')}:${String(gapStart % 60).padStart(2, '0')}`;
+                                    const formattedGapEndTime = `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(gapEnd % 60).padStart(2, '0')}`;
                                     
                                     // Get the buffer time of the *previous* match event, if any.
                                     // It is crucial to iterate backward to find the last match to get its buffer.
@@ -1364,7 +1518,7 @@ async function displayMatchesAsSchedule() {
                             if (currentTimePointerInMinutes < 24 * 60) {
                                 const gapStart = currentTimePointerInMinutes;
                                 const gapEnd = 24 * 60;
-                                const formattedGapStartTime = `${String(Math.floor(gapStart / 60)).padStart(2, '0')}:${String(Math.floor(gapStart % 60)).padStart(2, '0')}`;
+                                const formattedGapStartTime = `${String(Math.floor(gapStart / 60)).padStart(2, '0')}:${String(gapStart % 60).padStart(2, '0')}`;
                                 const formattedGapEndTime = `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(Math.floor(gapEnd % 60)).padStart(2, '0')}`;
 
                                 if ((gapEnd - gapStart) > 0) { // Only add if duration > 0
@@ -1414,7 +1568,7 @@ async function displayMatchesAsSchedule() {
                             if (event.type === 'match') {
                                 const match = event;
                                 const displayedMatchEndTimeInMinutes = match.endOfPlayInMinutes; 
-                                const formattedDisplayedEndTime = `${String(Math.floor(displayedMatchEndTimeInMinutes / 60)).padStart(2, '0')}:${String(Math.floor(displayedMatchEndTimeInMinutes % 60)).padStart(2, '0')}`;
+                                const formattedDisplayedEndTime = `${String(Math.floor(displayedMatchEndTimeInMinutes / 60)).padStart(2, '0')}:${String(displayedMatchEndTimeInMinutes % 60).padStart(2, '0')}`;
                                 
                                 const categoryColor = categoryColorsMap.get(match.categoryId) || 'transparent';
                                 let textAlignStyle = '';
@@ -1426,7 +1580,7 @@ async function displayMatchesAsSchedule() {
                                 console.log(`displayMatchesAsSchedule: Vykresľujem zápas: ID ${match.id}, Čas: ${match.startTime}-${formattedDisplayedEndTime} (zobrazený), Miesto: ${match.location}, Dátum: ${match.date}`);
 
                                 scheduleHtml += `
-                                    <tr draggable="true" data-id="${match.id}" class="match-row" data-start-time="${match.startTime}" data-duration="${match.duration}" data-buffer-time="${match.bufferTime}" data-footprint-end-time="${String(Math.floor(match.footprintEndInMinutes / 60)).padStart(2, '0')}:${String(Math.floor(match.footprintEndInMinutes % 60)).padStart(2, '0')}">
+                                    <tr draggable="true" data-id="${match.id}" class="match-row" data-start-time="${match.startTime}" data-duration="${match.duration}" data-buffer-time="${match.bufferTime}" data-footprint-end-time="${String(Math.floor(match.footprintEndInMinutes / 60)).padStart(2, '0')}:${String(match.footprintEndInMinutes % 60).padStart(2, '0')}">
                                         <td>${match.startTime} - ${formattedDisplayedEndTime}</td>
                                         <td style="${textAlignStyle}">${match.team1ClubName || 'N/A'}</td>
                                         <td style="${textAlignStyle}">${match.team2ClubName || 'N/A'}</td>
@@ -1441,7 +1595,7 @@ async function displayMatchesAsSchedule() {
                                 const blockedIntervalStartHour = String(Math.floor(blockedInterval.startInMinutes / 60)).padStart(2, '0');
                                 const blockedIntervalStartMinute = String(blockedInterval.startInMinutes % 60).padStart(2, '0');
                                 const blockedIntervalEndHour = String(Math.floor(blockedInterval.endInMinutes / 60)).padStart(2, '0');
-                                const blockedIntervalEndMinute = String(Math.floor(blockedInterval.endInMinutes % 60)).padStart(2, '0');
+                                const blockedIntervalEndMinute = String(blockedInterval.endInMinutes % 60).padStart(2, '0');
                                 
                                 const isUserBlocked = blockedInterval.isBlocked === true; 
 
@@ -1561,7 +1715,7 @@ async function displayMatchesAsSchedule() {
                         matchesForDate.forEach(match => {
                             const matchDuration = match.duration || (allSettings.categoryMatchSettings?.[match.categoryId]?.duration || 60);
                             const displayedMatchEndTimeInMinutes = (parseInt(match.startTime.split(':')[0]) * 60 + parseInt(match.startTime.split(':')[1])) + matchDuration; 
-                            const formattedDisplayedEndTime = `${String(Math.floor(displayedMatchEndTimeInMinutes / 60)).padStart(2, '0')}:${String(Math.floor(displayedMatchEndTimeInMinutes % 60)).padStart(2, '0')}`;
+                            const formattedDisplayedEndTime = `${String(Math.floor(displayedMatchEndTimeInMinutes / 60)).padStart(2, '0')}:${String(displayedMatchEndTimeInMinutes % 60).padStart(2, '0')}`;
                             const categoryColor = categoryColorsMap.get(match.categoryId) || 'transparent';
 
                             scheduleHtml += `
@@ -2718,7 +2872,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const matchStartTime = matchStartTimeInput.value;
         const matchDuration = parseInt(matchDurationInput.value);
         const matchBufferTime = parseInt(matchBufferTimeInput.value);
-        const currentMatchId = matchIdInput.value;
+        let currentMatchId = matchIdInput.value; // Use 'let' as it might be updated for new matches
 
         // If no location is selected, set locationType to 'Nezadaná hala'
         let finalMatchLocationName = matchLocationName;
@@ -2812,106 +2966,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             await showMessage('Chyba', "Vyskytla sa chyba pri kontrole, či tímy už hrali proti sebe, alebo pri spracovaní duplicity. Skúste to znova.");
             return;
         }
+        
+        // No more strict overlap checks here, recalculateAndSaveScheduleForDateAndLocation will handle pushing
+        // This is a key change according to the new requirements.
 
-        const [newStartHour, newStartMinute] = matchStartTime.split(':').map(Number);
-        const newMatchStartInMinutes = newStartHour * 60 + newStartMinute;
-        const newMatchEndInMinutesWithBuffer = newMatchStartInMinutes + matchDuration + matchBufferTime;
-
-        // Only check for overlaps if a location is selected (i.e., not 'Nezadaná hala')
-        if (finalMatchLocationName !== 'Nezadaná hala') {
-            try {
-                let overlapFound = false;
-                let overlappingDetails = null;
-
-                // Check for overlaps with other existing *matches*
-                const existingMatchesQuery = query(
-                    matchesCollectionRef,
-                    where("date", "==", matchDate),
-                    where("location", "==", finalMatchLocationName)
-                );
-                const existingMatchesSnapshot = await getDocs(existingMatchesQuery);
-                existingMatchesSnapshot.docs.forEach(doc => {
-                    const existingMatch = doc.data();
-                    const existingMatchId = doc.id;
-
-                    if (currentMatchId && existingMatchId === currentMatchId) {
-                        return; // Skip the match being edited
-                    }
-
-                    const [existingStartHour, existingStartMinute] = existingMatch.startTime.split(':').map(Number);
-                    const existingMatchStartInMinutes = existingStartHour * 60 + existingStartMinute;
-                    const existingMatchFootprintEndInMinutes = existingMatchStartInMinutes + (Number(existingMatch.duration) || 0) + (Number(existingMatch.bufferTime) || 0);
-
-                    if (newMatchStartInMinutes < existingMatchFootprintEndInMinutes && newMatchEndInMinutesWithBuffer > existingMatchStartInMinutes) {
-                        overlapFound = true;
-                        overlappingDetails = existingMatch;
-                        return; // Stop iterating, overlap found
-                    }
-                });
-                if (overlapFound) { // If overlap with another match, immediately report and return
-                    const [existingStartHour, existingStartMinute] = overlappingDetails.startTime.split(':').map(Number);
-                    const existingEndTimeInMinutes = (existingStartHour * 60 + existingStartMinute + (Number(overlappingDetails.duration) || 0) + (Number(overlappingDetails.bufferTime) || 0));
-                    const formattedExistingEndTime = `${String(Math.floor(existingEndTimeInMinutes / 60)).padStart(2, '0')}:${String(Math.floor(existingEndTimeInMinutes % 60)).padStart(2, '0')}`;
-
-                    let errorMessage = `Zápas sa prekrýva s existujúcim zápasom v mieste "${finalMatchLocationName}" dňa ${matchDate}:\n\n` +
-                        `Existujúci časový rozsah: ${overlappingDetails.startTime} - ${formattedExistingEndTime}\n` +
-                        `Tímy: ${overlappingDetails.team1DisplayName} vs ${overlappingDetails.team2DisplayName}\n\n` +
-                        `Prosím, upravte čas začiatku alebo trvanie nového zápasu, alebo prestávku po zápase.`;
-                    await showMessage('Chyba', errorMessage);
-                    return;
-                }
-
-                // Check for overlaps with *explicitly blocked* intervals (isBlocked: true)
-                const blockedIntervalsQuery = query(
-                    blockedSlotsCollectionRef,
-                    where("date", "==", matchDate),
-                    where("location", "==", finalMatchLocationName)
-                );
-                const blockedIntervalsSnapshot = await getDocs(blockedIntervalsQuery);
-                blockedIntervalsSnapshot.docs.forEach(doc => {
-                    const blockedInterval = doc.data();
-                    if (blockedInterval.isBlocked === true) { // Only truly blocked intervals cause an error here
-                        const [blockedStartHour, blockedStartMinute] = blockedInterval.startTime.split(':').map(Number);
-                        const blockedIntervalStartInMinutes = blockedStartHour * 60 + blockedStartMinute;
-                        const [blockedEndHour, blockedEndMinute] = blockedInterval.endTime.split(':').map(Number);
-                        const blockedIntervalEndInMinutes = blockedEndHour * 60 + blockedEndMinute;
-
-                        if (newMatchStartInMinutes < blockedIntervalEndInMinutes && newMatchEndInMinutesWithBuffer > blockedIntervalStartInMinutes) {
-                            overlapFound = true;
-                            overlappingDetails = { ...blockedInterval, type: 'hard_blocked_slot_overlap' };
-                            return; // Stop iterating, overlap found
-                        }
-                    }
-                });
-                if (overlapFound) { // If overlap with a hard blocked interval, immediately report and return
-                    const [existingStartHour, existingStartMinute] = overlappingDetails.startTime.split(':').map(Number);
-                    const existingEndTimeInMinutes = (parseInt(overlappingDetails.endTime.split(':')[0]) * 60 + parseInt(overlappingDetails.endTime.split(':')[1]));
-                    const formattedExistingEndTime = `${String(Math.floor(existingEndTimeInMinutes / 60)).padStart(2, '0')}:${String(Math.floor(existingEndTimeInMinutes % 60)).padStart(2, '0')}`;
-
-                    let errorMessage = `Zápas sa prekrýva so zablokovaným intervalom v mieste "${finalMatchLocationName}" dňa ${matchDate}:\n\n` +
-                        `Existujúci časový rozsah: ${overlappingDetails.startTime} - ${formattedExistingEndTime}\n` +
-                        `(Typ intervalu: Zablokovaný)\n\n` +
-                        `Prosím, upravte čas začiatku alebo trvanie nového zápasu, alebo prestávku po zápase.`;
-                    await showMessage('Chyba', errorMessage);
-                    return;
-                }
-            } catch (error) {
-                console.error("Chyba pri kontrole prekrývania zápasov:", error);
-                await showMessage('Chyba', "Vyskytla sa chyba pri kontrole prekrývania zápasov. Skúste to znova.");
-                return;
-            }
-        }
-
-
-        // Only fetch place data if a location name is selected (not 'Nezadaná hala')
-        let selectedPlaceData = null;
-        if (finalMatchLocationName !== 'Nezadaná hala') {
-            const allPlacesSnapshot = await getDocs(placesCollectionRef);
-            const allPlaces = allPlacesSnapshot.docs.map(doc => doc.data());
-            selectedPlaceData = allPlaces.find(p => p.name === finalMatchLocationName && p.type === 'Športová hala');
-            finalMatchLocationType = selectedPlaceData ? selectedPlaceData.type : 'Športová hala';
+        let matchRef;
+        if (currentMatchId) {
+            matchRef = doc(matchesCollectionRef, currentMatchId);
+            console.log(`Saving existing match ID: ${currentMatchId}`);
         } else {
-            finalMatchLocationType = 'Nezadaná hala'; // Ensure this is set correctly for unassigned matches
+            matchRef = doc(matchesCollectionRef); // Create a new document reference for a new match
+            currentMatchId = matchRef.id; // Get the ID for the new document
+            console.log(`Adding new match with generated ID: ${currentMatchId}`);
         }
 
         const matchData = {
@@ -2941,62 +3007,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
 
         try {
-            if (currentMatchId && !existingDuplicateMatchId) {
-                console.log(`Saving existing match ID: ${currentMatchId}`, matchData);
-                await setDoc(doc(matchesCollectionRef, currentMatchId), matchData, { merge: true });
-
-                // If updating an existing match, check if it's replacing a "deleted match placeholder"
-                const blockedIntervalsAtLocationDate = (await getDocs(query(blockedSlotsCollectionRef, where("date", "==", matchDate), where("location", "==", finalMatchLocationName)))).docs;
-                const replacedFreeInterval = blockedIntervalsAtLocationDate.find(slotDoc => {
-                    const data = slotDoc.data();
-                    const [slotStartH, slotStartM] = data.startTime.split(':').map(Number);
-                    const slotStartInMinutes = slotStartH * 60 + slotStartM;
-                    const [slotEndH, slotEndM] = data.endTime.split(':').map(Number);
-                    const slotEndInMinutes = slotEndH * 60 + slotEndM;
-                    
-                    // Check if the current match perfectly fits or covers the "deleted match placeholder"
-                    return data.originalMatchId === currentMatchId ||
-                           (data.isBlocked === false &&
-                            newMatchStartInMinutes >= slotStartInMinutes &&
-                            newMatchEndInMinutesWithBuffer <= slotEndInMinutes);
-                });
-
-                if (replacedFreeInterval) {
-                    await deleteDoc(doc(blockedSlotsCollectionRef, replacedFreeInterval.id));
-                    console.log(`Vymazaný placeholder interval ID: ${replacedFreeInterval.id} po aktualizácii zápasu ${currentMatchId}.`);
-                }
-
-                await showMessage('Úspech', 'Zápas úspešne aktualizovaný!'); 
-            } else {
-                console.log(`Adding new match:`, matchData);
-                const newMatchDocRef = await addDoc(matchesCollectionRef, matchData);
-
-                // If adding a new match, check if it's filling an existing "free interval available" slot
-                const blockedIntervalsAtLocationDate = (await getDocs(query(blockedSlotsCollectionRef, where("date", "==", matchDate), where("location", "==", finalMatchLocationName)))).docs;
-                const filledFreeInterval = blockedIntervalsAtLocationDate.find(slotDoc => {
-                    const data = slotDoc.data();
-                    const [slotStartH, slotStartM] = data.startTime.split(':').map(Number);
-                    const slotStartInMinutes = slotStartH * 60 + slotStartM;
-                    const [slotEndH, slotEndM] = data.endTime.split(':').map(Number);
-                    const slotEndInMinutes = slotEndH * 60 + slotEndM;
-
-                    return data.isBlocked === false &&
-                           newMatchStartInMinutes >= slotStartInMinutes &&
-                           newMatchEndInMinutesWithBuffer <= slotEndInMinutes;
-                });
-
-                if (filledFreeInterval) {
-                    await deleteDoc(doc(blockedSlotsCollectionRef, filledFreeInterval.id));
-                    console.log(`Vymazaný placeholder interval ID: ${filledFreeInterval.id} po pridaní nového zápasu ${newMatchDocRef.id}.`);
-                }
-
-
-                await showMessage('Úspech', 'Zápas úspešne pridaný!'); 
-            }
+            await setDoc(matchRef, matchData, { merge: true });
+            await showMessage('Úspech', `Zápas úspešne ${matchIdInput.value ? 'aktualizovaný' : 'pridaný'}!`);
             closeModal(matchModal);
+
+            // Pass the details of the newly inserted/updated match to the recalculation function
+            const insertedMatchInfo = {
+                id: currentMatchId,
+                date: matchDate,
+                location: finalMatchLocationName,
+                startTime: matchStartTime,
+                duration: matchDuration,
+                bufferTime: matchBufferTime
+            };
+
             // Recalculate only if a specific location is involved
             if (finalMatchLocationName !== 'Nezadaná hala') {
-                await recalculateAndSaveScheduleForDateAndLocation(matchDate, finalMatchLocationName);
+                await recalculateAndSaveScheduleForDateAndLocation(matchDate, finalMatchLocationName, null, insertedMatchInfo);
             } else {
                 // If it's an unassigned match, just refresh the display
                 await displayMatchesAsSchedule();
