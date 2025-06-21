@@ -762,7 +762,7 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, excl
                     gapEnd = event.startInMinutes;
                 }
                 
-                const formattedGapStartTime = `${String(Math.floor(gapStart / 60)).padStart(2, '0')}:${String(Math.floor(gapStart % 60)).padStart(2, '0')}`;
+                const formattedGapStartTime = `${String(Math.floor(gapStart / 60)).padStart(2, '0')}:${String(gapStart % 60).padStart(2, '0')}`;
                 const formattedGapEndTime = `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(Math.floor(gapEnd % 60)).padStart(2, '0')}`; 
 
                 // Create placeholder for the gap
@@ -1580,10 +1580,10 @@ async function displayMatchesAsSchedule() {
                                 let textColspan = '4';
 
                                 if (blockedInterval.endInMinutes === 24 * 60 && blockedInterval.startInMinutes === 0) { // Full day interval
-                                    displayTimeHtml = `<td>00:00 - </td>`; 
+                                    displayTimeHtml = `<td>00:00 - Koniec dňa</td>`; 
                                     textColspan = '4';
                                 } else if (blockedInterval.endInMinutes === 24 * 60) { // Interval till end of day
-                                    displayTimeHtml = `<td>${blockedIntervalStartHour}:${blockedIntervalStartMinute} - </td>`;
+                                    displayTimeHtml = `<td>${blockedIntervalStartHour}:${blockedIntervalStartMinute} - Koniec dňa</td>`;
                                     textColspan = '4';
                                 } else if (blockedInterval.startInMinutes === 0) { // Interval from start of day
                                      displayTimeHtml = `<td>00:00 - ${blockedIntervalEndHour}:${blockedIntervalEndMinute}</td>`; 
@@ -2490,12 +2490,11 @@ async function blockFreeInterval(intervalId, date, location, startTime, endTime)
             const startInMinutes = (parseInt(startTime.split(':')[0]) * 60) + parseInt(startTime.split(':')[1]);
             const endInMinutes = (parseInt(endTime.split(':')[0]) * 60) + parseInt(endTime.split(':')[1]);
 
-            const matchesQuery = query(
-                matchesCollectionRef,
-                where("date", "==", date),
-                where("location", "==", location)
-            );
+            // Fetch all matches for the selected date and location
+            const matchesQuery = query(matchesCollectionRef, where("date", "==", date), where("location", "==", location));
             const matchesSnapshot = await getDocs(matchesQuery);
+            
+            // Perform overlap check in JavaScript
             const overlappingMatch = matchesSnapshot.docs.find(matchDoc => {
                 const matchData = matchDoc.data();
                 const [matchStartH, matchStartM] = matchData.startTime.split(':').map(Number);
@@ -2503,6 +2502,8 @@ async function blockFreeInterval(intervalId, date, location, startTime, endTime)
                 const matchDuration = Number(matchData.duration) || 0; 
                 const matchBufferTime = Number(matchData.bufferTime) || 0; 
                 const matchFootprintEndInMinutes = matchStartInMinutes + matchDuration + matchBufferTime; 
+                
+                // Check for overlap: interval starts before match ends AND interval ends after match starts
                 return (startInMinutes < matchFootprintEndInMinutes && endInMinutes > matchStartInMinutes);
             });
 
