@@ -266,13 +266,17 @@ async function updateMatchDurationAndBuffer() {
 
 /**
  * Finds the first available time slot for a match based on existing matches and blocked intervals.
+ * This function is designed to always suggest the earliest possible time,
+ * prioritizing explicit "Voľný slot dostupný" entries if they don't overlap with fixed events.
+ * It does NOT consider if the match "fits" into the suggested slot; `recalculateAndSaveScheduleForDateAndLocation`
+ * handles pushing subsequent events if the match overflows.
  */
 async function findFirstAvailableTime() {
     const matchDateSelect = document.getElementById('matchDateSelect');
     const matchLocationSelect = document.getElementById('matchLocationSelect');
     const matchStartTimeInput = document.getElementById('matchStartTime');
-    const matchDurationInput = document.getElementById('matchDuration'); 
-    const matchBufferTimeInput = document.getElementById('matchBufferTime'); 
+    // matchDurationInput and matchBufferTimeInput are used for overall timeline calculation,
+    // but not for determining the *earliest possible start* for the suggestion itself.
 
     console.log("findFirstAvailableTime called.");
     const selectedDate = matchDateSelect.value;
@@ -287,52 +291,19 @@ async function findFirstAvailableTime() {
         return;
     }
 
-    // Skip time finding if "Nezadaná hala" is selected
+    // Skip time finding if "Nezadaná hala" is selected, as it's unassigned
     if (selectedLocationName === 'Nezadaná hala') {
-        matchStartTimeInput.value = '00:00'; // Default to 00:00 for unassigned
-        console.log("Location is 'Nezadaná hala', skipping time finding.");
+        matchStartTimeInput.value = '00:00'; // Default to 00:00 for unassigned matches
+        console.log("Location is 'Nezadaná hala', skipping time finding logic and setting to 00:00.");
         return;
     }
 
-
     try {
-        const settingsDocRef = doc(settingsCollectionRef, SETTINGS_DOC_ID);
-        const settingsDoc = await getDoc(settingsDocRef);
-        let firstDayStartTime = '08:00';
-        let otherDaysStartTime = '08:00';
+        // Get initial start time for the day from settings
+        const initialScheduleStartMinutes = await getInitialScheduleStartMinutes(selectedDate);
+        console.log("Initial pointer minutes for selected day (from settings):", initialScheduleStartMinutes);
 
-        if (settingsDoc.exists()) {
-            const data = settingsDoc.data();
-            firstDayStartTime = data.firstDayStartTime || '08:00';
-            otherDaysStartTime = data.otherDaysStartTime || '08:00';
-        }
-        console.log("First Day Start Time (global):", firstDayStartTime);
-        console.log("Other Days Start Time (global):", otherDaysStartTime);
-
-        const playingDaysSnapshot = await getDocs(query(playingDaysCollectionRef, orderBy("date", "asc")));
-        const sortedPlayingDays = playingDaysSnapshot.docs.map(d => d.data().date).sort();
-        const isFirstPlayingDay = sortedPlayingDays.length > 0 && selectedDate === sortedPlayingDays[0];
-        console.log("Is selected day the first playing day?", isFirstPlayingDay);
-
-        const initialStartTimeForDay = isFirstPlayingDay ? firstDayStartTime : otherDaysStartTime;
-        let [initialH, initialM] = initialStartTimeForDay.split(':').map(Number);
-        let initialPointerMinutes = initialH * 60 + initialM; 
-        console.log("Initial pointer minutes for selected day:", initialPointerMinutes);
-
-        const requiredMatchDuration = parseInt(matchDurationInput.value) || 0;
-        const requiredBufferTime = parseInt(matchBufferTimeInput.value) || 0;
-        console.log("Required Match Duration (from input):", requiredMatchDuration);
-        console.log("Required Buffer Time (from input):", requiredBufferTime);
-
-        const newMatchFullFootprint = requiredMatchDuration + requiredBufferTime;
-        console.log("New Match Full Footprint (duration + buffer):", newMatchFullFootprint);
-
-        if (newMatchFullFootprint <= 0) {
-            matchStartTimeInput.value = '';
-            console.log("Required Match Full Footprint is 0 or less, clearing start time and returning.");
-            return;
-        }
-
+        // Fetch all matches for the selected date and location
         const matchesQuery = query(
             matchesCollectionRef,
             where("date", "==", selectedDate),
@@ -345,12 +316,15 @@ async function findFirstAvailableTime() {
             const duration = Number(data.duration) || 0;
             const bufferTime = Number(data.bufferTime) || 0;
             return {
+                id: doc.id,
                 start: startInMinutes,
-                end: startInMinutes + duration + bufferTime,
+                end: startInMinutes + duration + bufferTime, // Match's full footprint end
                 type: 'match'
             };
         });
+        console.log("Fetched matches for time finding:", matches.map(m => ({id: m.id, start: m.start, end: m.end})));
 
+        // Fetch all blocked intervals (both blocked and free placeholders)
         const blockedIntervalsQuery = query(
             blockedSlotsCollectionRef,
             where("date", "==", selectedDate),
@@ -362,6 +336,7 @@ async function findFirstAvailableTime() {
             const startInMinutes = (parseInt(data.startTime.split(':')[0]) * 60 + parseInt(data.startTime.split(':')[1]));
             const endInMinutes = (parseInt(data.endTime.split(':')[0]) * 60 + parseInt(data.endTime.split(':')[1]));
             return {
+                id: doc.id,
                 start: startInMinutes,
                 end: endInMinutes,
                 type: 'blocked_interval',
@@ -369,79 +344,76 @@ async function findFirstAvailableTime() {
                 originalMatchId: data.originalMatchId || null
             };
         });
+        console.log("Fetched all intervals (blocked/free) for time finding:", allIntervals.map(i => ({id: i.id, start: i.start, end: i.end, isBlocked: i.isBlocked})));
 
-        let occupiedPeriods = [];
-        matches.forEach(m => occupiedPeriods.push({ start: m.start, end: m.end }));
-        allIntervals.filter(s => s.isBlocked === true).forEach(s => occupiedPeriods.push({ start: s.start, end: s.end }));
+        // Separate fixed (truly occupied) periods from flexible (free) intervals
+        let fixedOccupiedPeriods = [];
+        matches.forEach(m => fixedOccupiedPeriods.push({ start: m.start, end: m.end }));
+        allIntervals.filter(s => s.isBlocked === true).forEach(s => fixedOccupiedPeriods.push({ start: s.start, end: s.end }));
 
-        occupiedPeriods.sort((a, b) => a.start - b.start);
-        const mergedOccupiedPeriods = [];
-        if (occupiedPeriods.length > 0) {
-            let currentMerged = { ...occupiedPeriods[0] };
-            for (let i = 1; i < occupiedPeriods.length; i++) {
-                const nextPeriod = occupiedPeriods[i];
+        // Sort and merge fixed occupied periods to get a clean timeline of blocked times
+        fixedOccupiedPeriods.sort((a, b) => a.start - b.start);
+        const mergedFixedOccupiedPeriods = [];
+        if (fixedOccupiedPeriods.length > 0) {
+            let currentMerged = { ...fixedOccupiedPeriods[0] };
+            for (let i = 1; i < fixedOccupiedPeriods.length; i++) {
+                const nextPeriod = fixedOccupiedPeriods[i];
                 if (nextPeriod.start <= currentMerged.end) {
                     currentMerged.end = Math.max(currentMerged.end, nextPeriod.end);
                 } else {
-                    mergedOccupiedPeriods.push(currentMerged);
+                    mergedFixedOccupiedPeriods.push(currentMerged);
                     currentMerged = { ...nextPeriod };
                 }
             }
-            mergedOccupiedPeriods.push(currentMerged);
+            mergedFixedOccupiedPeriods.push(currentMerged);
         }
-        console.log("Merged Occupied Periods:", mergedOccupiedPeriods);
-
+        console.log("Merged Fixed Occupied Periods (matches + isBlocked:true):", mergedFixedOccupiedPeriods);
 
         let proposedStartTimeInMinutes = -1;
 
-        // Collect all 'free interval available' slots first, including those from deleted matches
-        const existingFreeIntervals = allIntervals.filter(s => s.isBlocked === false);
-        existingFreeIntervals.sort((a, b) => a.start - b.start);
-        console.log("Existing Free Intervals (isBlocked: false, including from deleted matches):", existingFreeIntervals);
+        // Step 1: Prioritize explicit "Voľný slot dostupný" (isBlocked: false) intervals
+        const freeSlots = allIntervals.filter(s => s.isBlocked === false);
+        freeSlots.sort((a, b) => a.start - b.start);
 
-        // First, try to fit the match into an explicitly marked "free" interval (isBlocked: false)
-        // These are preferred as they are specific marked openings.
-        for (const freeInterval of existingFreeIntervals) {
-            // Check if the free interval can accommodate the full footprint of the new match
-            // Using a small tolerance (e.g., 1 minute) for comparison due to potential floating point inaccuracies
-            if (freeInterval.end - freeInterval.start >= newMatchFullFootprint - 1) { // Tolerancia 1 minúta
-                let isFreeIntervalTrulyAvailable = true;
-                const potentialMatchEndWithBuffer = freeInterval.start + newMatchFullFootprint; 
-
-                // Ensure this free interval doesn't overlap with any *merged occupied periods*
-                // This handles cases where a "free" interval might have been partially or fully covered by a newly placed match
-                // or a user-blocked interval after its creation.
-                for(const occupied of mergedOccupiedPeriods) {
-                    if (freeInterval.start < occupied.end && potentialMatchEndWithBuffer > occupied.start) {
-                        isFreeIntervalTrulyAvailable = false;
-                        console.log(`Free interval ${freeInterval.start}-${freeInterval.end} is too small or overlaps with occupied ${occupied.start}-${occupied.end} for a match ending at ${potentialMatchEndWithBuffer}. Not truly available.`);
-                        break;
-                    }
+        for (const freeSlot of freeSlots) {
+            // Check if this free slot starts at or after the day's initial start time
+            if (freeSlot.start < initialScheduleStartMinutes) {
+                // If the free slot starts before the official schedule start, it's not a valid suggestion unless
+                // the initialScheduleStartMinutes is explicitly 00:00
+                if (initialScheduleStartMinutes !== 0) {
+                    console.log(`Free slot ${freeSlot.start}-${freeSlot.end} starts before initial day start ${initialScheduleStartMinutes}. Skipping this as primary candidate.`);
+                    continue; // Skip free slots that start before the day's official schedule starts
                 }
+            }
 
-                if (isFreeIntervalTrulyAvailable) {
-                    proposedStartTimeInMinutes = freeInterval.start;
-                    console.log(`Found suitable existing free interval at: ${proposedStartTimeInMinutes}`);
+            // Ensure this free slot is truly "free" from any *fixed* obstacles (matches or user-blocked intervals)
+            let isFreeSlotTrulyAvailable = true;
+            for (const occupied of mergedFixedOccupiedPeriods) {
+                // If freeSlot overlaps with any fixed occupied period
+                if (freeSlot.start < occupied.end && freeSlot.end > occupied.start) {
+                    isFreeSlotTrulyAvailable = false;
+                    console.log(`Free slot ${freeSlot.start}-${freeSlot.end} overlaps with fixed occupied ${occupied.start}-${occupied.end}. Not truly available.`);
                     break;
                 }
             }
+
+            if (isFreeSlotTrulyAvailable) {
+                proposedStartTimeInMinutes = freeSlot.start;
+                console.log(`Step 1: Found suitable explicit "Voľný slot dostupný" at: ${proposedStartTimeInMinutes}. Prioritizing it.`);
+                break; // Found the earliest, take it
+            }
         }
 
-        // If no existing "free" interval was found, try to find a gap based on dynamic availability
+        // Step 2: If no suitable explicit free slot was found, find the first gap after fixed obstacles
         if (proposedStartTimeInMinutes === -1) {
-            let currentPointer = initialPointerMinutes; // Always start checking from the day's configured start time
+            let currentPointer = initialScheduleStartMinutes; // Start checking from the day's configured start time
 
-            // Iterate through merged occupied periods to find gaps
-            for (const occupied of mergedOccupiedPeriods) {
+            for (const occupied of mergedFixedOccupiedPeriods) {
                 // If there's a gap between currentPointer and the start of an occupied period
                 if (currentPointer < occupied.start) {
-                    if (occupied.start - currentPointer >= newMatchFullFootprint) {
-                        proposedStartTimeInMinutes = currentPointer;
-                        console.log(`No existing free interval, found gap starting at ${proposedStartTimeInMinutes} before occupied period.`);
-                        break;
-                    } else {
-                        console.log(`Gap ${currentPointer}-${occupied.start} too small (${occupied.start - currentPointer} min) for new match footprint (${newMatchFullFootprint} min). Skipping.`);
-                    }
+                    proposedStartTimeInMinutes = currentPointer;
+                    console.log(`Step 2: No explicit free slot found. Found gap starting at ${proposedStartTimeInMinutes} before fixed occupied period.`);
+                    break; // Found the first gap, take it
                 }
                 // Move the pointer past the current occupied period
                 currentPointer = Math.max(currentPointer, occupied.end);
@@ -449,41 +421,26 @@ async function findFirstAvailableTime() {
 
             // If no suitable gap was found before any occupied period, check the remaining time after the last occupied period
             if (proposedStartTimeInMinutes === -1 && currentPointer < 24 * 60) {
-                if ((24 * 60) - currentPointer >= newMatchFullFootprint) {
-                    proposedStartTimeInMinutes = currentPointer;
-                    console.log(`No existing free interval, found gap starting at ${proposedStartTimeInMinutes} at the end of the day.`);
-                } else {
-                    console.log(`Remaining time after last occupied period (${currentPointer} to 24:00) too small for new match footprint (${newMatchFullFootprint} min). Skipping.`);
-                }
+                proposedStartTimeInMinutes = currentPointer;
+                console.log(`Step 2: No explicit free slot and no earlier gap. Found gap starting at ${proposedStartTimeInMinutes} at the end of the day after fixed obstacles.`);
             }
         }
 
-
-        if (proposedStartTimeInMinutes !== -1) {
-            const formattedHour = String(Math.floor(proposedStartTimeInMinutes / 60)).padStart(2, '0');
-            const formattedMinute = String(proposedStartTimeInMinutes % 60).padStart(2, '0');
-            matchStartTimeInput.value = `${formattedHour}:${formattedMinute}`;
-            console.log("Nastavený čas začiatku zápasu:", matchStartTimeInput.value);
-        } else {
-            // If no perfect fit, still suggest the first possible time, let recalculation handle push
-            // This is the core change: always try to propose *something*
-            let earliestPossibleTime = initialPointerMinutes; // Start from the beginning of the day's schedule
-            if (mergedOccupiedPeriods.length > 0) {
-                earliestPossibleTime = Math.max(earliestPossibleTime, mergedOccupiedPeriods[mergedOccupiedPeriods.length - 1].end);
-            }
-            const formattedHour = String(Math.floor(earliestPossibleTime / 60)).padStart(2, '0');
-            const formattedMinute = String(earliestPossibleTime % 60).padStart(2, '0');
-            matchStartTimeInput.value = `${formattedHour}:${formattedMinute}`;
-            console.log("No ideal fit, but suggesting earliest possible time (might cause push):", matchStartTimeInput.value);
-
-            // Do NOT show message here, let the save handler and recalculation handle it.
-            // await showMessage('Informácia', 'Na vybranom mieste a dátume nie je dostatok priestoru pre zápas v dostupnom čase. Skúste iné nastavenia.');
-            // console.log("No available interval found, clearing start time and informing user.");
+        // Fallback: If no time was determined (e.g., entire day is theoretically blocked, or no elements)
+        // This ensures matchStartTimeInput always gets a value.
+        if (proposedStartTimeInMinutes === -1) {
+            proposedStartTimeInMinutes = initialScheduleStartMinutes;
+            console.log("Fallback: No available time found by logic, defaulting to initial day start time:", proposedStartTimeInMinutes);
         }
+
+        const formattedHour = String(Math.floor(proposedStartTimeInMinutes / 60)).padStart(2, '0');
+        const formattedMinute = String(proposedStartTimeInMinutes % 60).padStart(2, '0');
+        matchStartTimeInput.value = `${formattedHour}:${formattedMinute}`;
+        console.log("Nastavený čas začiatku zápasu:", matchStartTimeInput.value);
 
     } catch (error) {
         console.error("Chyba pri hľadaní prvého dostupného času:", error);
-        matchStartTimeInput.value = '';
+        matchStartTimeInput.value = ''; // Clear in case of error
     }
 }
 
@@ -788,14 +745,16 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, excl
                     gapEnd = event.startInMinutes; // Gap ends before this potentially pushed match
                 } else if (event.type === 'blocked_interval' && event.isBlocked === true) {
                     // Blocked intervals are fixed, but their start time might create a gap before them
+                    // If this fixed blocked interval is being overlapped by a previous event, delete it.
                     if (event.startInMinutes < currentTimePointer) {
-                        // This blocked interval is being *overlapped* by previous events.
-                        // We need to decide if we shift it or create an overlap.
-                        // For now, assume it's fixed and current time pointer will skip past it.
-                        // Or, if it's already past current pointer, it creates a gap.
-                        console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): Zablokovaný interval ${event.id} začína na ${event.startInMinutes}, ale currentTimePointer je ${currentTimePointer}.`);
+                        batch.delete(event.docRef);
+                        console.log(`Fáza 3: Zablokovaný interval ${event.id} (pevný) bol prekrývaný, pridaný do batchu na vymazanie.`);
+                        // Don't update currentTimePointer based on this deleted interval, effectively skipping it
+                        gapEnd = currentTimePointer; 
+                    } else {
+                        gapEnd = event.startInMinutes;
+                        console.log(`Fáza 3: Zablokovaný interval ${event.id} začína na ${event.startInMinutes} a vytvára medzeru pred sebou.`);
                     }
-                    gapEnd = event.startInMinutes;
                 } else if (event.type === 'blocked_interval' && event.isBlocked === false) {
                     // Free intervals (placeholders) are flexible and can be consumed or split
                     // If the current gap overlaps with a free interval, we will modify/delete the free interval later.
@@ -815,81 +774,80 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, excl
                         blockedSlotsCollectionRef,
                         where("date", "==", date),
                         where("location", "==", location),
-                        where("startInMinutes", ">=", gapStart),
-                        where("endInMinutes", "<=", gapEnd),
-                        where("isBlocked", "==", false)
+                        where("isBlocked", "==", false),
+                        where("startInMinutes", ">=", gapStart), // Check for intervals starting within or after the gap
+                        where("endInMinutes", "<=", gapEnd) // Check for intervals ending within or before the gap
                     );
                     const existingFreeIntervalSnapshot = await getDocs(existingFreeIntervalQuery);
                     let existingFreeIntervalFound = null;
 
                     if (!existingFreeIntervalSnapshot.empty) {
-                        // Prioritize existing exact matches or larger intervals that encompass the gap
+                        // Find the free interval that matches the current gap exactly, or is the first one that fits the start
                         existingFreeIntervalFound = existingFreeIntervalSnapshot.docs.find(doc => {
                             const data = doc.data();
                             return data.startInMinutes === gapStart && data.endInMinutes === gapEnd;
-                        }) || existingFreeIntervalSnapshot.docs[0]; // Take the first if exact match not found
+                        }) || existingFreeIntervalSnapshot.docs.find(doc => {
+                            const data = doc.data();
+                            return data.startInMinutes === gapStart; // Prefer one that starts at the exact point
+                        }) || existingFreeIntervalSnapshot.docs[0]; // Fallback to first if no exact match or start match
                     }
 
-                    if (existingFreeIntervalFound) {
-                        const originalFreeIntervalData = existingFreeIntervalFound.data();
-                        const originalFreeIntervalStart = originalFreeIntervalData.startInMinutes;
-                        const originalFreeIntervalEnd = originalFreeIntervalData.endInMinutes;
-                        const originalFreeIntervalId = existingFreeIntervalFound.id;
+                    // This block now handles splitting/deleting of "Voľný slot dostupný" based on the inserted match.
+                    if (isTheInsertedMatch && (insertedMatchInfo.startInMinutes >= gapStart && (insertedMatchInfo.startInMinutes + insertedMatchInfo.duration + insertedMatchInfo.bufferTime) <= gapEnd)) {
+                        // The newly inserted match is consuming part of this gap.
+                        // If there was an existing free interval that this match fully or partially replaces, delete it.
+                        if (existingFreeIntervalFound) {
+                             batch.delete(existingFreeIntervalFound.ref);
+                             console.log(`Fáza 3: Vymazaný pôvodný voľný interval ${existingFreeIntervalFound.id} (čiastočne spotrebovaný vloženým zápasom).`);
+                        }
 
-                        // If the new match consumes part of the existing free slot
-                        if (isTheInsertedMatch && (insertedMatchInfo.startInMinutes >= originalFreeIntervalStart && (insertedMatchInfo.startInMinutes + insertedMatchInfo.duration + insertedMatchInfo.bufferTime) <= originalFreeIntervalEnd)) {
-                            // Delete the old placeholder
-                            batch.delete(doc(blockedSlotsCollectionRef, originalFreeIntervalId));
-                            console.log(`Fáza 3: Vymazaný pôvodný voľný interval ${originalFreeIntervalId} (čiastočne spotrebovaný vloženým zápasom).`);
+                        // Create a new placeholder for the part *before* the inserted match
+                        if (insertedMatchInfo.startInMinutes > gapStart) {
+                            const newPreSlotRef = doc(blockedSlotsCollectionRef);
+                            batch.set(newPreSlotRef, {
+                                date: date,
+                                location: location,
+                                startTime: `${String(Math.floor(gapStart / 60)).padStart(2, '0')}:${String(gapStart % 60).padStart(2, '0')}`,
+                                endTime: `${String(Math.floor(insertedMatchInfo.startInMinutes / 60)).padStart(2, '0')}:${String(insertedMatchInfo.startInMinutes % 60).padStart(2, '0')}`,
+                                isBlocked: false,
+                                startInMinutes: gapStart,
+                                endInMinutes: insertedMatchInfo.startInMinutes,
+                                originalMatchId: existingFreeIntervalFound?.data().originalMatchId || null, // Preserve originalMatchId if present
+                                createdAt: new Date()
+                            });
+                            console.log(`Fáza 3: Vytvorený pre-slot voľný interval: ${gapStart}-${insertedMatchInfo.startInMinutes}.`);
+                        }
 
-                            // Create a new placeholder for the part *before* the inserted match
-                            if (insertedMatchInfo.startInMinutes > originalFreeIntervalStart) {
-                                const newPreSlotRef = doc(blockedSlotsCollectionRef);
-                                batch.set(newPreSlotRef, {
-                                    date: date,
-                                    location: location,
-                                    startTime: `${String(Math.floor(originalFreeIntervalStart / 60)).padStart(2, '0')}:${String(originalFreeIntervalStart % 60).padStart(2, '0')}`,
-                                    endTime: `${String(Math.floor(insertedMatchInfo.startInMinutes / 60)).padStart(2, '0')}:${String(insertedMatchInfo.startInMinutes % 60).padStart(2, '0')}`,
-                                    isBlocked: false,
-                                    startInMinutes: originalFreeIntervalStart,
-                                    endInMinutes: insertedMatchInfo.startInMinutes,
-                                    originalMatchId: originalFreeIntervalData.originalMatchId,
-                                    createdAt: new Date()
-                                });
-                                console.log(`Fáza 3: Vytvorený pre-slot voľný interval: ${originalFreeIntervalStart}-${insertedMatchInfo.startInMinutes}.`);
-                            }
+                        // Create a new placeholder for the part *after* the inserted match
+                        const insertedMatchFootprintEnd = insertedMatchInfo.startInMinutes + insertedMatchInfo.duration + insertedMatchInfo.bufferTime;
+                        if (insertedMatchFootprintEnd < gapEnd) {
+                            const newPostSlotRef = doc(blockedSlotsCollectionRef);
+                            batch.set(newPostSlotRef, {
+                                date: date,
+                                location: location,
+                                startTime: `${String(Math.floor(insertedMatchFootprintEnd / 60)).padStart(2, '0')}:${String(insertedMatchFootprintEnd % 60).padStart(2, '0')}`,
+                                endTime: `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(gapEnd % 60).padStart(2, '0')}`,
+                                isBlocked: false,
+                                startInMinutes: insertedMatchFootprintEnd,
+                                endInMinutes: gapEnd,
+                                originalMatchId: existingFreeIntervalFound?.data().originalMatchId || null, // Preserve originalMatchId if present
+                                createdAt: new Date()
+                            });
+                            console.log(`Fáza 3: Vytvorený post-slot voľný interval: ${insertedMatchFootprintEnd}-${gapEnd}.`);
+                        }
 
-                            // Create a new placeholder for the part *after* the inserted match
-                            const insertedMatchFootprintEnd = insertedMatchInfo.startInMinutes + insertedMatchInfo.duration + insertedMatchInfo.bufferTime;
-                            if (insertedMatchFootprintEnd < originalFreeIntervalEnd) {
-                                const newPostSlotRef = doc(blockedSlotsCollectionRef);
-                                batch.set(newPostSlotRef, {
-                                    date: date,
-                                    location: location,
-                                    startTime: `${String(Math.floor(insertedMatchFootprintEnd / 60)).padStart(2, '0')}:${String(insertedMatchFootprintEnd % 60).padStart(2, '0')}`,
-                                    endTime: `${String(Math.floor(originalFreeIntervalEnd / 60)).padStart(2, '0')}:${String(originalFreeIntervalEnd % 60).padStart(2, '0')}`,
-                                    isBlocked: false,
-                                    startInMinutes: insertedMatchFootprintEnd,
-                                    endInMinutes: originalFreeIntervalEnd,
-                                    originalMatchId: originalFreeIntervalData.originalMatchId,
-                                    createdAt: new Date()
-                                });
-                                console.log(`Fáza 3: Vytvorený post-slot voľný interval: ${insertedMatchFootprintEnd}-${originalFreeIntervalEnd}.`);
-                            }
-
+                    } else if (existingFreeIntervalFound) {
+                        // If it's an existing free interval, just ensure its times are correct based on the gap
+                        if (existingFreeIntervalFound.data().startInMinutes !== gapStart || existingFreeIntervalFound.data().endInMinutes !== gapEnd) {
+                            batch.update(existingFreeIntervalFound.ref, {
+                                startTime: formattedGapStartTime,
+                                endTime: formattedGapEndTime,
+                                startInMinutes: gapStart,
+                                endInMinutes: gapEnd
+                            });
+                            console.log(`Fáza 3: Aktualizovaný existujúci voľný interval ${existingFreeIntervalFound.id} na ${formattedGapStartTime}-${formattedGapEndTime}.`);
                         } else {
-                            // If it's an existing free interval, just ensure its times are correct based on the gap
-                            if (originalFreeIntervalStart !== gapStart || originalFreeIntervalEnd !== gapEnd) {
-                                batch.update(existingFreeIntervalFound.ref, {
-                                    startTime: formattedGapStartTime,
-                                    endTime: formattedGapEndTime,
-                                    startInMinutes: gapStart,
-                                    endInMinutes: gapEnd
-                                });
-                                console.log(`Fáza 3: Aktualizovaný existujúci voľný interval ${originalFreeIntervalId} na ${formattedGapStartTime}-${formattedGapEndTime}.`);
-                            } else {
-                                console.log(`Fáza 3: Existujúci voľný interval ${originalFreeIntervalId} je presný, žiadna akcia.`);
-                            }
+                            console.log(`Fáza 3: Existujúci voľný interval ${existingFreeIntervalFound.id} je presný, žiadna akcia.`);
                         }
                     } else {
                         // Create a new placeholder for the gap if no existing one exactly matches
@@ -904,7 +862,7 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, excl
                             endInMinutes: gapEnd,
                             createdAt: new Date()
                         });
-                        console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): GENERUJEM (nový) placeholder pred udalosťou ${event.id}: Start: ${formattedGapStartTime}, End: ${formattedGapEndTime}.`);
+                        console.log(`Fáza 3: GENERUJEM (nový) placeholder pred udalosťou ${event.id}: Start: ${formattedGapStartTime}, End: ${formattedGapEndTime}.`);
                     }
                 } else {
                     console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): Žiadna medzera pred udalosťou ${event.id} (gapStart ${gapStart} >= gapEnd ${gapEnd}).`);
@@ -1089,7 +1047,7 @@ async function deleteMatch(matchId) {
             closeModal(matchModal);
             
             // Recalculate schedule for the affected date and location, explicitly stating a match was deleted
-            await recalculateAndSaveScheduleForDateAndLocation(date, location, null, null, null, null, null, null, true);
+            await recalculateAndSaveScheduleForDateAndLocation(date, location, null, null, null, null, null, null, null, true);
             console.log("deleteMatch: Schedule recalculated and displayed after match deletion.");
 
         } catch (error) {
@@ -1622,10 +1580,10 @@ async function displayMatchesAsSchedule() {
                                 let textColspan = '4';
 
                                 if (blockedInterval.endInMinutes === 24 * 60 && blockedInterval.startInMinutes === 0) { // Full day interval
-                                    displayTimeHtml = `<td>00:00 - </td>`; 
+                                    displayTimeHtml = `<td>00:00 - Koniec dňa</td>`; 
                                     textColspan = '4';
                                 } else if (blockedInterval.endInMinutes === 24 * 60) { // Interval till end of day
-                                    displayTimeHtml = `<td>${blockedIntervalStartHour}:${blockedIntervalStartMinute} - </td>`;
+                                    displayTimeHtml = `<td>${blockedIntervalStartHour}:${blockedIntervalStartMinute} - Koniec dňa</td>`;
                                     textColspan = '4';
                                 } else if (blockedInterval.startInMinutes === 0) { // Interval from start of day
                                      displayTimeHtml = `<td>00:00 - ${blockedIntervalEndHour}:${blockedIntervalEndMinute}</td>`; 
