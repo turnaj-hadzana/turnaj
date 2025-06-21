@@ -349,7 +349,7 @@ async function findFirstAvailableTime() {
         // Separate fixed (truly occupied) periods from flexible (free) intervals
         let fixedOccupiedPeriods = [];
         matches.forEach(m => fixedOccupiedPeriods.push({ start: m.start, end: m.end }));
-        allIntervals.filter(s => s.isBlocked === true).forEach(s => fixedOccupiedPeriods.push({ start: s.start, end: s.end }));
+        allIntervals.filter(s => s.isBlocked === true || s.originalMatchId).forEach(s => fixedOccupiedPeriods.push({ start: s.start, end: s.end })); // Also include originalMatchId slots as "fixed" for finding gaps
 
         // Sort and merge fixed occupied periods to get a clean timeline of blocked times
         fixedOccupiedPeriods.sort((a, b) => a.start - b.start);
@@ -367,63 +367,31 @@ async function findFirstAvailableTime() {
             }
             mergedFixedOccupiedPeriods.push(currentMerged);
         }
-        console.log("Merged Fixed Occupied Periods (matches + isBlocked:true):", mergedFixedOccupiedPeriods);
+        console.log("Merged Fixed Occupied Periods (matches + isBlocked:true + originalMatchId):", mergedFixedOccupiedPeriods);
 
         let proposedStartTimeInMinutes = -1;
 
-        // Step 1: Prioritize explicit "Voľný slot dostupný" (isBlocked: false) intervals
-        const freeSlots = allIntervals.filter(s => s.isBlocked === false);
-        freeSlots.sort((a, b) => a.start - b.start);
+        // Step 1: Prioritize explicit "Voľný slot dostupný" (isBlocked: false, no originalMatchId) intervals
+        // This is where a subtle change is needed. These are now purely auto-generated.
+        // We want to find the first *actual gap* after initial day start.
 
-        for (const freeSlot of freeSlots) {
-            // Check if this free slot starts at or after the day's initial start time
-            if (freeSlot.start < initialScheduleStartMinutes) {
-                // If the free slot starts before the official schedule start, it's not a valid suggestion unless
-                // the initialScheduleStartMinutes is explicitly 00:00
-                if (initialScheduleStartMinutes !== 0) {
-                    console.log(`Free slot ${freeSlot.start}-${freeSlot.end} starts before initial day start ${initialScheduleStartMinutes}. Skipping this as primary candidate.`);
-                    continue; // Skip free slots that start before the day's official schedule starts
-                }
-            }
+        let currentPointer = initialScheduleStartMinutes; // Start checking from the day's configured start time
 
-            // Ensure this free slot is truly "free" from any *fixed* obstacles (matches or user-blocked intervals)
-            let isFreeSlotTrulyAvailable = true;
-            for (const occupied of mergedFixedOccupiedPeriods) {
-                // If freeSlot overlaps with any fixed occupied period
-                if (freeSlot.start < occupied.end && freeSlot.end > occupied.start) {
-                    isFreeSlotTrulyAvailable = false;
-                    console.log(`Free slot ${freeSlot.start}-${freeSlot.end} overlaps with fixed occupied ${occupied.start}-${occupied.end}. Not truly available.`);
-                    break;
-                }
+        for (const occupied of mergedFixedOccupiedPeriods) {
+            // If there's a gap between currentPointer and the start of an occupied period
+            if (currentPointer < occupied.start) {
+                proposedStartTimeInMinutes = currentPointer;
+                console.log(`Step 1: Found gap starting at ${proposedStartTimeInMinutes} before fixed occupied period.`);
+                break; // Found the first gap, take it
             }
-
-            if (isFreeSlotTrulyAvailable) {
-                proposedStartTimeInMinutes = freeSlot.start;
-                console.log(`Step 1: Found suitable explicit "Voľný slot dostupný" at: ${proposedStartTimeInMinutes}. Prioritizing it.`);
-                break; // Found the earliest, take it
-            }
+            // Move the pointer past the current occupied period
+            currentPointer = Math.max(currentPointer, occupied.end);
         }
 
-        // Step 2: If no suitable explicit free slot was found, find the first gap after fixed obstacles
-        if (proposedStartTimeInMinutes === -1) {
-            let currentPointer = initialScheduleStartMinutes; // Start checking from the day's configured start time
-
-            for (const occupied of mergedFixedOccupiedPeriods) {
-                // If there's a gap between currentPointer and the start of an occupied period
-                if (currentPointer < occupied.start) {
-                    proposedStartTimeInMinutes = currentPointer;
-                    console.log(`Step 2: No explicit free slot found. Found gap starting at ${proposedStartTimeInMinutes} before fixed occupied period.`);
-                    break; // Found the first gap, take it
-                }
-                // Move the pointer past the current occupied period
-                currentPointer = Math.max(currentPointer, occupied.end);
-            }
-
-            // If no suitable gap was found before any occupied period, check the remaining time after the last occupied period
-            if (proposedStartTimeInMinutes === -1 && currentPointer < 24 * 60) {
-                proposedStartTimeInMinutes = currentPointer;
-                console.log(`Step 2: No explicit free slot and no earlier gap. Found gap starting at ${proposedStartTimeInMinutes} at the end of the day after fixed obstacles.`);
-            }
+        // If no suitable gap was found before any occupied period, check the remaining time after the last occupied period
+        if (proposedStartTimeInMinutes === -1 && currentPointer < 24 * 60) {
+            proposedStartTimeInMinutes = currentPointer;
+            console.log(`Step 1: No earlier gap. Found gap starting at ${proposedStartTimeInMinutes} at the end of the day after fixed obstacles.`);
         }
 
         // Fallback: If no time was determined (e.g., entire day is theoretically blocked, or no elements)
@@ -443,30 +411,6 @@ async function findFirstAvailableTime() {
         matchStartTimeInput.value = ''; // Clear in case of error
     }
 }
-
-/**
- * Checks if an interval is available given existing matches and blocked intervals.
- * @param {number} candidateStart The start time of the candidate interval in minutes.
- * @param {number} candidateEnd The end time of the candidate interval in minutes.
- * @param {Array<object>} matches An array of existing matches.
- * @param {Array<object>} blockedIntervals An array of existing blocked intervals.
- * @returns {boolean} True if the interval is available, false otherwise.
- */
-const isIntervalAvailable = (candidateStart, candidateEnd, matches, blockedIntervals) => {
-    for (const match of matches) {
-        if (candidateStart < match.fullFootprintEnd && candidateEnd > match.start) { 
-            console.log(`Interval ${candidateStart}-${candidateEnd} overlaps with existing match ${match.start}-${match.fullFootprintEnd}`);
-            return false;
-        }
-    }
-    for (const blockedInterval of blockedIntervals) {
-        if (blockedInterval.isBlocked === true && candidateStart < blockedInterval.end && candidateEnd > blockedInterval.start) {
-            console.log(`Interval ${candidateStart}-${candidateEnd} overlaps with active blocked interval ${blockedInterval.start}-${blockedInterval.end}`);
-            return false;
-        }
-    }
-    return true;
-};
 
 /**
  * Retrieves the display name, club name, and club ID for a given team.
@@ -533,47 +477,25 @@ const getTeamName = async (categoryId, groupId, teamNumber, categoriesMap, group
 };
 
 /**
- * Calculates the next available time slot based on a previous start time, duration, and buffer time.
- * @param {string} prevStartTime The previous start time in "HH:MM" format.
- * @param {number} duration The duration of the previous event in minutes.
- * @param {number} bufferTime The buffer time after the previous event in minutes.
- * @returns {string} The calculated next available time in "HH:MM" format.
- */
-function calculateNextAvailableTime(prevStartTime, duration, bufferTime) {
-    console.log(`calculateNextAvailableTime: Vstup - prevStartTime: ${prevStartTime}, duration: ${duration}, bufferTime: ${bufferTime}`);
-    let [prevH, prevM] = prevStartTime.split(':').map(Number);
-    let totalMinutes = (prevH * 60) + prevM + duration + bufferTime;
-
-    let newH = Math.floor(totalMinutes / 60);
-    let newM = totalMinutes % 60;
-
-    const resultTime = `${String(newH).padStart(2, '0')}:${String(newM).padStart(2, '0')}`;
-    console.log(`calculateNextAvailableTime: Výstup - ${resultTime}`);
-    return resultTime;
-}
-
-/**
  * Recalculates and saves the schedule for a specific date and location, handling moved matches and deleted placeholders.
  * @param {string} date The date of the schedule.
  * @param {string} location The location of the schedule.
- * @param {string|null} excludedBlockedIntervalId ID of a blocked interval to exclude from recalculation.
  * @param {object|null} insertedMatchInfo Information about the newly inserted/updated match {id, startTime, duration, bufferTime}.
- * @param {string|null} movedMatchOriginalId ID of the match that was moved (for drag and drop scenario).
- * @param {string|null} movedMatchOriginalDate Original date of the moved match.
- * @param {string|null} movedMatchOriginalLocation Original location of the moved match.
- * @param {string|null} movedMatchOriginalStartTime Original start time of the moved match.
- * @param {string|null} movedMatchNewStartTime New start time of the moved match.
- * @param {boolean} wasDeletedMatch True if a match was deleted, which means we want to insert a permanent 'free interval available'.
+ * @param {string|null} draggedMatchOriginalLocation Original location of the moved match (for recursive cleanup).
  */
-async function recalculateAndSaveScheduleForDateAndLocation(date, location, excludedBlockedIntervalId = null, insertedMatchInfo = null, movedMatchOriginalId = null, movedMatchOriginalDate = null, movedMatchOriginalLocation = null, movedMatchOriginalStartTime = null, movedMatchNewStartTime = null, wasDeletedMatch = false) {
+async function recalculateAndSaveScheduleForDateAndLocation(
+    date,
+    location,
+    insertedMatchInfo = null,
+    draggedMatchOriginalLocation = null
+) {
     console.log(`recalculateAndSaveScheduleForDateAndLocation: === SPUSTENÉ pre Dátum: ${date}, Miesto: ${location}. ` +
-                `Vylúčený zablokovaný interval ID: ${excludedBlockedIntervalId || 'žiadny'}. ` +
                 `Vložený/Upravený zápas ID: ${insertedMatchInfo ? insertedMatchInfo.id : 'žiadny'}. ` +
-                `Presunutý zápas ID: ${movedMatchOriginalId || 'žiadny'}, Pôvodný dátum: ${movedMatchOriginalDate || 'N/A'}, Pôvodné miesto: ${movedMatchOriginalLocation || 'N/A'}, Pôvodný čas: ${movedMatchOriginalStartTime || 'N/A'}, Nový čas: ${movedMatchNewStartTime || 'N/A'}. ` +
-                `Bol vymazaný zápas: ${wasDeletedMatch}. ===`);
+                `Pôvodné miesto presunutého zápasu (ak presunutý): ${draggedMatchOriginalLocation || 'žiadny'} ===`);
     try {
         const batch = writeBatch(db); 
 
+        // 1. Fetch all existing matches and blocked/free slots for the given date and location.
         const matchesQuery = query(matchesCollectionRef, where("date", "==", date), where("location", "==", location));
         const matchesSnapshot = await getDocs(matchesQuery);
         let currentMatches = matchesSnapshot.docs.map(doc => {
@@ -581,7 +503,6 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, excl
             const startInMinutes = (parseInt(data.startTime.split(':')[0]) * 60 + parseInt(data.startTime.split(':')[1]));
             const duration = Number(data.duration) || 0;
             const bufferTime = Number(data.bufferTime) || 0;
-
             return {
                 id: doc.id,
                 type: 'match',
@@ -592,347 +513,185 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, excl
                 bufferTime: bufferTime
             };
         });
-        console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 1): Načítané ZÁPASY pre ${date}, ${location}:`, currentMatches.map(m => ({id: m.id, startTime: m.startTime})));
 
+        const blockedSlotsQuery = query(blockedSlotsCollectionRef, where("date", "==", date), where("location", "==", location));
+        const blockedSlotsSnapshot = await getDocs(blockedSlotsQuery);
+        let currentBlockedAndFreeSlots = blockedSlotsSnapshot.docs.map(doc => ({
+            id: doc.id,
+            type: 'blocked_interval',
+            isBlocked: doc.data().isBlocked === true,
+            originalMatchId: doc.data().originalMatchId || null,
+            docRef: doc.ref,
+            ...doc.data(),
+            startInMinutes: (parseInt(doc.data().startTime.split(':')[0]) * 60 + parseInt(doc.data().startTime.split(':')[1])),
+            endInMinutes: (parseInt(doc.data().endTime.split(':')[0]) * 60 + parseInt(doc.data().endTime.split(':')[1]))
+        }));
 
-        const allBlockedIntervalsQuery = query(blockedSlotsCollectionRef, where("date", "==", date), where("location", "==", location));
-        const allBlockedIntervalsSnapshot = await getDocs(allBlockedIntervalsQuery);
-        
-        console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 1): ALL blocked intervals BEFORE filter (for ${date}, ${location}):`, allBlockedIntervalsSnapshot.docs.map(doc => ({id: doc.id, isBlocked: doc.data().isBlocked, startTime: doc.data().startTime, endTime: doc.data().endTime})));
+        // 2. Separate truly fixed events (matches and user-blocked intervals, and 'deleted match' permanent free slots)
+        // from auto-generated flexible placeholders that will be re-created.
+        let fixedEvents = [];
+        let autoGeneratedPlaceholdersToDelete = [];
 
-        let allCurrentBlockedIntervals = allBlockedIntervalsSnapshot.docs
-            .map(doc => ({
-                id: doc.id,
-                type: 'blocked_interval',
-                isBlocked: doc.data().isBlocked === true,
-                docRef: doc.ref,
-                ...doc.data(),
-                startInMinutes: (parseInt(doc.data().startTime.split(':')[0]) * 60 + parseInt(doc.data().startTime.split(':')[1])),
-                endInMinutes: (parseInt(doc.data().endTime.split(':')[0]) * 60 + parseInt(doc.data().endTime.split(':')[1]))
-            }))
-            .filter(interval => interval.id !== excludedBlockedIntervalId);
+        currentMatches.forEach(match => fixedEvents.push(match));
+        currentBlockedAndFreeSlots.forEach(slot => {
+            if (slot.isBlocked === true || slot.originalMatchId) { // User-blocked or 'deleted match' permanent free slot
+                fixedEvents.push(slot);
+            } else { // Auto-generated temporary free slot (without originalMatchId)
+                autoGeneratedPlaceholdersToDelete.push(slot);
+            }
+        });
 
-        console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 1): ALL blocked intervals AFTER filter (for ${date}, ${location}, without excluded: ${excludedBlockedIntervalId}):`, allCurrentBlockedIntervals.map(e => ({id: e.id, isBlocked: e.isBlocked, startTime: e.startTime, endTime: e.endTime})));
+        // Delete all old auto-generated free slot placeholders
+        for (const placeholder of autoGeneratedPlaceholdersToDelete) {
+            batch.delete(placeholder.docRef);
+            console.log(`Fáza 1: Pridané do batchu na vymazanie starého auto-generovaného placeholder intervalu ID: ${placeholder.id}`);
+        }
 
-        let fixedEventsTimeline = [];
-        let matchesToReschedule = [];
-        let placeholderIntervalsToDelete = [];
-
-        // Separate fixed (isBlocked: true) from temporary placeholders (isBlocked: false)
-        for (const interval of allCurrentBlockedIntervals) {
-            // If this free interval was the target of a drag-and-drop, it will be deleted.
-            // If it's a "free interval available" created by a deleted match, keep it.
-            if (interval.id === excludedBlockedIntervalId) { // This is the slot where the dragged match was dropped
-                 batch.delete(interval.docRef);
-                 console.log(`Fáza 2: Pridané do batchu na vymazanie cieľového zablokovaného intervalu (z excludedBlockedIntervalId): ${interval.id}`);
-            } else if (interval.isBlocked === true) {
-                fixedEventsTimeline.push(interval);
-            } else if (interval.originalMatchId) {
-                // Keep 'free interval available' if it was created by a deleted match
-                fixedEventsTimeline.push(interval);
+        // Add the inserted match to fixedEvents if it's new/moved here and not already in `currentMatches`
+        if (insertedMatchInfo && !fixedEvents.some(e => e.id === insertedMatchInfo.id)) {
+            const newMatchDoc = await getDoc(doc(matchesCollectionRef, insertedMatchInfo.id));
+            if (newMatchDoc.exists()) {
+                 const data = newMatchDoc.data();
+                 fixedEvents.push({
+                    id: newMatchDoc.id,
+                    type: 'match',
+                    docRef: newMatchDoc.ref,
+                    ...data,
+                    startInMinutes: (parseInt(data.startTime.split(':')[0]) * 60 + parseInt(data.startTime.split(':')[1])),
+                    duration: Number(data.duration) || 0,
+                    bufferTime: Number(data.bufferTime) || 0
+                });
+                console.log(`Fáza 1: Pridaný novo vložený/presunutý zápas do fixedEvents: ${insertedMatchInfo.id}.`);
             } else {
-                // These are old, auto-generated placeholders that should be deleted if they don't represent a true gap anymore
-                placeholderIntervalsToDelete.push(interval);
+                console.warn(`Fáza 1: Vložený zápas ${insertedMatchInfo.id} sa nenašiel v DB pri opätovnom načítavaní.`)
             }
         }
-        matchesToReschedule.push(...currentMatches);
-
-        console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 2): Placeholders to DELETE (auto-generated, no originalMatchId):`, placeholderIntervalsToDelete.map(s => s.id));
-        for (const intervalToDelete of placeholderIntervalsToDelete) {
-            batch.delete(intervalToDelete.docRef);
-            console.log(`Fáza 2: Pridané do batchu na vymazanie starého auto-generovaného placeholder intervalu ID: ${intervalToDelete.id}`);
-        }
-
-        const initialScheduleStartMinutes = await getInitialScheduleStartMinutes(date);
-        let currentTimePointer = initialScheduleStartMinutes;
         
-        console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): Počiatočný ukazovateľ času (currentTimePointer): ${currentTimePointer} minút.`);
-
-        let allTimelineEvents = [
-            ...fixedEventsTimeline, // Includes permanently blocked and 'deleted match' placeholders
-            ...matchesToReschedule
-        ];
-
-        // If a new match was just inserted, ensure it's part of the timeline events
-        if (insertedMatchInfo && !allTimelineEvents.some(e => e.id === insertedMatchInfo.id)) {
-            // Find the full match data for the newly inserted match
-            const newMatchData = (await getDoc(doc(matchesCollectionRef, insertedMatchInfo.id))).data();
-            const newMatchStartInMinutes = (parseInt(newMatchData.startTime.split(':')[0]) * 60 + parseInt(newMatchData.startTime.split(':')[1]));
-            const newMatchDuration = Number(newMatchData.duration) || 0;
-            const newMatchBufferTime = Number(newMatchData.bufferTime) || 0;
-            allTimelineEvents.push({
-                id: newMatchInfo.id,
-                type: 'match',
-                docRef: doc(matchesCollectionRef, newMatchInfo.id),
-                ...newMatchData,
-                startInMinutes: newMatchStartInMinutes,
-                duration: newMatchDuration,
-                bufferTime: newMatchBufferTime
-            });
-            console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): Pridaný novo vložený zápas do timeline: ${newMatchInfo.id}.`);
+        // Ensure the inserted match's start time in the DB reflects the droppedProposedStartTime
+        // This is done BEFORE sorting and re-calculation to ensure the base data is correct.
+        if (insertedMatchInfo) {
+            const matchDocRef = doc(matchesCollectionRef, insertedMatchInfo.id);
+            // This set ensures the `startTime` is what was dropped, regardless of overlaps here.
+            // Overlaps will be handled by pushing subsequent events.
+            batch.update(matchDocRef, { startTime: insertedMatchInfo.startTime });
+            console.log(`Fáza 2: Zápas ID: ${insertedMatchInfo.id} aktualizovaný v batchi na pevný čas: ${insertedMatchInfo.startTime}.`);
         }
 
-        allTimelineEvents.sort((a, b) => {
+        // Sort all fixed events chronologically
+        fixedEvents.sort((a, b) => {
             if (a.startInMinutes !== b.startInMinutes) {
                 return a.startInMinutes - b.startInMinutes;
             }
-            // Secondary sort for stable order, crucial for logical flow
-            if (a.type === 'match' && b.type === 'blocked_interval' && !b.isBlocked) return -1; // Matches before free intervals
-            if (a.type === 'blocked_interval' && !a.isBlocked && b.type === 'match') return 1; // Free intervals after matches
-            return a.id.localeCompare(b.id);
+            // Prioritize matches over blocked intervals if they start at the same time
+            if (a.type === 'match' && b.type === 'blocked_interval') return -1;
+            if (a.type === 'blocked_interval' && b.type === 'match') return 1;
+            return 0; // Maintain original order if times and types are same
         });
+        console.log(`Fáza 2: Zoradené fixedEvents pre ${date}, ${location}:`, fixedEvents.map(e => ({id: e.id, type: e.type, startInMinutes: e.startInMinutes, isBlocked: e.isBlocked || 'N/A', originalMatchId: e.originalMatchId || 'N/A'})));
 
-        console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): Initial allTimelineEvents before loop (sorted for ${date}, ${location}):`, allTimelineEvents.map(e => ({id: e.id, type: e.type, startInMinutes: e.startInMinutes, isBlocked: e.isBlocked || 'N/A', originalMatchId: e.originalMatchId || 'N/A', duration: e.duration || 'N/A', bufferTime: e.bufferTime || 'N/A'})));
+        const initialScheduleStartMinutes = await getInitialScheduleStartMinutes(date);
+        let currentTimePointer = initialScheduleStartMinutes;
+        console.log(`Fáza 2: Počiatočný ukazovateľ času (currentTimePointer): ${currentTimePointer} minút.`);
 
-        // Add an 'end of day' marker to ensure the last gap is handled
-        allTimelineEvents.push({
-            type: 'end_of_day',
-            startInMinutes: 24 * 60,
-        });
+        // 3. Iterate through sorted fixed events to build the final timeline and create new placeholders.
+        for (const event of fixedEvents) {
+            console.log(`Fáza 3: SPRACÚVAM udalosť: ID: ${event.id || 'N/A'}, Typ: ${event.type}, Start (min): ${event.startInMinutes}, Aktuálny currentTimePointer: ${currentTimePointer}`);
 
-        for (const event of allTimelineEvents) {
-            console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): SPRACÚVAM udalosť: ID: ${event.id || 'N/A'}, Typ: ${event.type}, Start (min): ${event.startInMinutes}, Aktuálny currentTimePointer: ${currentTimePointer}`);
-
-            if (event.type === 'end_of_day') {
-                // If there's a gap between the last event and end of day, create a free interval
-                if (currentTimePointer < 24 * 60) {
-                    const gapStart = currentTimePointer;
-                    const gapEnd = 24 * 60;
-                    const formattedGapStartTime = `${String(Math.floor(gapStart / 60)).padStart(2, '0')}:${String(gapStart % 60).padStart(2, '0')}`;
-                    const formattedGapEndTime = `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(Math.floor(gapEnd % 60)).padStart(2, '0')}`;
-
-                    console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): GENERUJEM koncový placeholder: Start: ${formattedGapStartTime}, End: ${formattedGapEndTime}.`);
-
-                    const newPlaceholderDocRef = doc(blockedSlotsCollectionRef);
-                    batch.set(newPlaceholderDocRef, {
-                        date: date,
-                        location: location,
-                        startTime: formattedGapStartTime,
-                        endTime: formattedGapEndTime,
-                        isBlocked: false,
-                        startInMinutes: gapStart,
-                        endInMinutes: gapEnd,
-                        createdAt: new Date()
-                    });
-                }
-                break; // End processing events for the day
-            }
-            
-            // Check if the current event is the newly inserted/updated match, and it has a fixed user-provided start time
-            const isTheInsertedMatch = insertedMatchInfo && event.id === insertedMatchInfo.id && date === insertedMatchInfo.date && location === insertedMatchInfo.location;
-
-            // Handle gap before the current event OR if the current event is the inserted match
-            if (currentTimePointer < event.startInMinutes || isTheInsertedMatch) {
-                let gapStart = currentTimePointer;
-                let gapEnd = event.startInMinutes;
-
-                // Handle the case where the inserted match is earlier than the currentTimePointer
-                if (isTheInsertedMatch && (insertedMatchInfo.startInMinutes < currentTimePointer)) {
-                    gapEnd = insertedMatchInfo.startInMinutes; // Gap ends just before the inserted match's start
-                }
-
-                // If the current event is a match (not the inserted one, or the original position of a moved match)
-                // and it's being pushed due to an earlier event or inserted match.
-                if (event.type === 'match' && !isTheInsertedMatch) {
-                     // Check if this match *needs* to be pushed.
-                    const originalMatchStartInMinutes = (parseInt(event.startTime.split(':')[0]) * 60 + parseInt(event.startTime.split(':')[1]));
-                    if (originalMatchStartInMinutes < currentTimePointer) {
-                        event.startInMinutes = currentTimePointer; // Push the match to current pointer
-                        const newStartTime = `${String(Math.floor(event.startInMinutes / 60)).padStart(2, '0')}:${String(event.startInMinutes % 60).padStart(2, '0')}`;
-                        batch.update(event.docRef, { startTime: newStartTime });
-                        console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): Zápas ${event.id} POSUNUTÝ na: ${newStartTime} (z dôvodu prekrývania).`);
-                    }
-                    gapEnd = event.startInMinutes; // Gap ends before this potentially pushed match
-                } else if (event.type === 'blocked_interval' && event.isBlocked === true) {
-                    // Blocked intervals are fixed, but their start time might create a gap before them
-                    // If this fixed blocked interval is being overlapped by a previous event, delete it.
-                    if (event.startInMinutes < currentTimePointer) {
-                        batch.delete(event.docRef);
-                        console.log(`Fáza 3: Zablokovaný interval ${event.id} (pevný) bol prekrývaný, pridaný do batchu na vymazanie.`);
-                        // Don't update currentTimePointer based on this deleted interval, effectively skipping it
-                        gapEnd = currentTimePointer; 
-                    } else {
-                        gapEnd = event.startInMinutes;
-                        console.log(`Fáza 3: Zablokovaný interval ${event.id} začína na ${event.startInMinutes} a vytvára medzeru pred sebou.`);
-                    }
-                } else if (event.type === 'blocked_interval' && event.isBlocked === false) {
-                    // Free intervals (placeholders) are flexible and can be consumed or split
-                    // If the current gap overlaps with a free interval, we will modify/delete the free interval later.
-                    // For now, just define the gap.
-                    gapEnd = event.startInMinutes;
-                }
-                
+            // If there's a gap before the current fixed event, create a 'free interval available' placeholder
+            if (currentTimePointer < event.startInMinutes) {
+                const gapStart = currentTimePointer;
+                const gapEnd = event.startInMinutes;
                 const formattedGapStartTime = `${String(Math.floor(gapStart / 60)).padStart(2, '0')}:${String(gapStart % 60).padStart(2, '0')}`;
-                const formattedGapEndTime = `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(Math.floor(gapEnd % 60)).padStart(2, '0')}`; 
-
-                // Create placeholder for the gap
-                if (gapStart < gapEnd) {
-                    // Check if an existing free interval covers this exact gap.
-                    // If it does, we either reuse it or update it.
-                    // If it was an "originalMatchId" placeholder, it might be split.
-                    const existingFreeIntervalQuery = query(
-                        blockedSlotsCollectionRef,
-                        where("date", "==", date),
-                        where("location", "==", location),
-                        where("isBlocked", "==", false),
-                        where("startInMinutes", ">=", gapStart), // Check for intervals starting within or after the gap
-                        where("endInMinutes", "<=", gapEnd) // Check for intervals ending within or before the gap
-                    );
-                    const existingFreeIntervalSnapshot = await getDocs(existingFreeIntervalQuery);
-                    let existingFreeIntervalFound = null;
-
-                    if (!existingFreeIntervalSnapshot.empty) {
-                        // Find the free interval that matches the current gap exactly, or is the first one that fits the start
-                        existingFreeIntervalFound = existingFreeIntervalSnapshot.docs.find(doc => {
-                            const data = doc.data();
-                            return data.startInMinutes === gapStart && data.endInMinutes === gapEnd;
-                        }) || existingFreeIntervalSnapshot.docs.find(doc => {
-                            const data = doc.data();
-                            return data.startInMinutes === gapStart; // Prefer one that starts at the exact point
-                        }) || existingFreeIntervalSnapshot.docs[0]; // Fallback to first if no exact match or start match
-                    }
-
-                    // This block now handles splitting/deleting of "Voľný slot dostupný" based on the inserted match.
-                    if (isTheInsertedMatch && (insertedMatchInfo.startInMinutes >= gapStart && (insertedMatchInfo.startInMinutes + insertedMatchInfo.duration + insertedMatchInfo.bufferTime) <= gapEnd)) {
-                        // The newly inserted match is consuming part of this gap.
-                        // If there was an existing free interval that this match fully or partially replaces, delete it.
-                        if (existingFreeIntervalFound) {
-                             batch.delete(existingFreeIntervalFound.ref);
-                             console.log(`Fáza 3: Vymazaný pôvodný voľný interval ${existingFreeIntervalFound.id} (čiastočne spotrebovaný vloženým zápasom).`);
-                        }
-
-                        // Create a new placeholder for the part *before* the inserted match
-                        if (insertedMatchInfo.startInMinutes > gapStart) {
-                            const newPreSlotRef = doc(blockedSlotsCollectionRef);
-                            batch.set(newPreSlotRef, {
-                                date: date,
-                                location: location,
-                                startTime: `${String(Math.floor(gapStart / 60)).padStart(2, '0')}:${String(gapStart % 60).padStart(2, '0')}`,
-                                endTime: `${String(Math.floor(insertedMatchInfo.startInMinutes / 60)).padStart(2, '0')}:${String(insertedMatchInfo.startInMinutes % 60).padStart(2, '0')}`,
-                                isBlocked: false,
-                                startInMinutes: gapStart,
-                                endInMinutes: insertedMatchInfo.startInMinutes,
-                                originalMatchId: existingFreeIntervalFound?.data().originalMatchId || null, // Preserve originalMatchId if present
-                                createdAt: new Date()
-                            });
-                            console.log(`Fáza 3: Vytvorený pre-slot voľný interval: ${gapStart}-${insertedMatchInfo.startInMinutes}.`);
-                        }
-
-                        // Create a new placeholder for the part *after* the inserted match
-                        const insertedMatchFootprintEnd = insertedMatchInfo.startInMinutes + insertedMatchInfo.duration + insertedMatchInfo.bufferTime;
-                        if (insertedMatchFootprintEnd < gapEnd) {
-                            const newPostSlotRef = doc(blockedSlotsCollectionRef);
-                            batch.set(newPostSlotRef, {
-                                date: date,
-                                location: location,
-                                startTime: `${String(Math.floor(insertedMatchFootprintEnd / 60)).padStart(2, '0')}:${String(insertedMatchFootprintEnd % 60).padStart(2, '0')}`,
-                                endTime: `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(gapEnd % 60).padStart(2, '0')}`,
-                                isBlocked: false,
-                                startInMinutes: insertedMatchFootprintEnd,
-                                endInMinutes: gapEnd,
-                                originalMatchId: existingFreeIntervalFound?.data().originalMatchId || null, // Preserve originalMatchId if present
-                                createdAt: new Date()
-                            });
-                            console.log(`Fáza 3: Vytvorený post-slot voľný interval: ${insertedMatchFootprintEnd}-${gapEnd}.`);
-                        }
-
-                    } else if (existingFreeIntervalFound) {
-                        // If it's an existing free interval, just ensure its times are correct based on the gap
-                        if (existingFreeIntervalFound.data().startInMinutes !== gapStart || existingFreeIntervalFound.data().endInMinutes !== gapEnd) {
-                            batch.update(existingFreeIntervalFound.ref, {
-                                startTime: formattedGapStartTime,
-                                endTime: formattedGapEndTime,
-                                startInMinutes: gapStart,
-                                endInMinutes: gapEnd
-                            });
-                            console.log(`Fáza 3: Aktualizovaný existujúci voľný interval ${existingFreeIntervalFound.id} na ${formattedGapStartTime}-${formattedGapEndTime}.`);
-                        } else {
-                            console.log(`Fáza 3: Existujúci voľný interval ${existingFreeIntervalFound.id} je presný, žiadna akcia.`);
-                        }
-                    } else {
-                        // Create a new placeholder for the gap if no existing one exactly matches
-                        const newPlaceholderDocRef = doc(blockedSlotsCollectionRef);
-                        batch.set(newPlaceholderDocRef, {
-                            date: date,
-                            location: location,
-                            startTime: formattedGapStartTime,
-                            endTime: formattedGapEndTime,
-                            isBlocked: false,
-                            startInMinutes: gapStart,
-                            endInMinutes: gapEnd,
-                            createdAt: new Date()
-                        });
-                        console.log(`Fáza 3: GENERUJEM (nový) placeholder pred udalosťou ${event.id}: Start: ${formattedGapStartTime}, End: ${formattedGapEndTime}.`);
-                    }
-                } else {
-                    console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): Žiadna medzera pred udalosťou ${event.id} (gapStart ${gapStart} >= gapEnd ${gapEnd}).`);
-                }
+                const formattedGapEndTime = `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(Math.floor(gapEnd % 60)).padStart(2, '0')}`;
+                
+                const newPlaceholderRef = doc(blockedSlotsCollectionRef);
+                batch.set(newPlaceholderRef, {
+                    date: date,
+                    location: location,
+                    startTime: formattedGapStartTime,
+                    endTime: formattedGapEndTime,
+                    isBlocked: false,
+                    startInMinutes: gapStart,
+                    endInMinutes: gapEnd,
+                    originalMatchId: null, // This is a general gap, not from a deleted match
+                    createdAt: new Date()
+                });
+                console.log(`Fáza 3: VYTVORENÝ nový voľný interval (medzera): ${formattedGapStartTime}-${formattedGapEndTime}.`);
             }
 
-            // Process the current event
-            let eventEndInMinutesWithFootprint;
+            // Process the current fixed event
+            let eventFootprintEndInMinutes;
             if (event.type === 'match') {
-                let actualMatchStartInMinutes;
-                if (isTheInsertedMatch) {
-                    // For the newly inserted match, its start time is what the user provided or what was proposed.
-                    const [h, m] = insertedMatchInfo.startTime.split(':').map(Number);
-                    actualMatchStartInMinutes = h * 60 + m;
-                    // Ensure the Firestore doc has this start time
-                    if (event.startTime !== insertedMatchInfo.startTime) {
-                        batch.update(event.docRef, { startTime: insertedMatchInfo.startTime });
-                        console.log(`Fáza 3: Zápas ID: ${event.id} (vložený) aktualizovaný v batchi na pevný čas: ${insertedMatchInfo.startTime}.`);
-                    } else {
-                        console.log(`Fáza 3: Zápas ID: ${event.id} (vložený) čas sa nezmenil.`);
-                    }
-                } else {
-                    // For existing matches, ensure they are not before currentTimePointer
-                    if (event.startInMinutes < currentTimePointer) {
-                        actualMatchStartInMinutes = currentTimePointer;
-                        const newStartTime = `${String(Math.floor(actualMatchStartInMinutes / 60)).padStart(2, '0')}:${String(actualMatchStartInMinutes % 60).padStart(2, '0')}`;
-                        batch.update(event.docRef, { startTime: newStartTime });
-                        console.log(`Fáza 3: Zápas ID: ${event.id} POSUNUTÝ v batchi na: ${newStartTime} (z dôvodu prekrývania).`);
-                    } else {
-                        actualMatchStartInMinutes = event.startInMinutes;
-                        console.log(`Fáza 3: Zápas ID: ${event.id} má platný čas: ${actualMatchStartInMinutes}.`);
-                    }
+                let actualMatchStartInMinutes = event.startInMinutes;
+                // If this match needs to be pushed due to an earlier event or current pointer
+                if (actualMatchStartInMinutes < currentTimePointer) {
+                    actualMatchStartInMinutes = currentTimePointer;
+                    const newStartTime = `${String(Math.floor(actualMatchStartInMinutes / 60)).padStart(2, '0')}:${String(actualMatchStartInMinutes % 60).padStart(2, '0')}`;
+                    batch.update(event.docRef, { startTime: newStartTime });
+                    console.log(`Fáza 3: Zápas ${event.id} POSUNUTÝ na: ${newStartTime} (z dôvodu prekrývania).`);
                 }
-                eventEndInMinutesWithFootprint = actualMatchStartInMinutes + event.duration + event.bufferTime;
-            } else if (event.type === 'blocked_interval') {
-                 // Blocked intervals are fixed, but if they are pushed into a time slot already past currentTimePointer
-                 // they will effectively be skipped and the currentTimePointer will move past them.
-                if (event.isBlocked === true) {
-                    eventEndInMinutesWithFootprint = event.endInMinutes;
-                    if (event.startInMinutes < currentTimePointer) {
-                        // This blocked interval is now being "consumed" by preceding events.
-                        // We should delete it, as it's no longer a distinct blocked slot.
-                        batch.delete(event.docRef);
-                        console.log(`Fáza 3: Zablokovaný interval ${event.id} (pevný) bol prekrývaný, pridaný do batchu na vymazanie.`);
-                        // Don't update currentTimePointer based on this deleted interval.
-                        eventEndInMinutesWithFootprint = currentTimePointer; // Effectively, it ends where current time pointer is.
-                    } else {
-                        eventEndInMinutesWithFootprint = event.endInMinutes;
-                        console.log(`Fáza 3: Zablokovaný interval ID: ${event.id} (isBlocked: ${event.isBlocked}) je pevný, ukazovateľ posunutý na: ${eventEndInMinutesWithFootprint}.`);
-                    }
-                } else { // isBlocked: false (a free interval placeholder)
-                     // If it's a free interval that we haven't already dealt with by splitting/deleting it
-                     // and it's being overlapped by a preceding event, delete it.
-                     if (event.startInMinutes < currentTimePointer) {
-                         batch.delete(event.docRef);
-                         console.log(`Fáza 3: Voľný interval ${event.id} bol prekrývaný, pridaný do batchu na vymazanie.`);
-                         eventEndInMinutesWithFootprint = currentTimePointer;
-                     } else {
-                         eventEndInMinutesWithFootprint = event.endInMinutes; // Keep its original end time.
-                         console.log(`Fáza 3: Voľný interval ID: ${event.id} (isBlocked: ${event.isBlocked}) nie je prekrývaný, ukazovateľ posunutý na: ${eventEndInMinutesWithFootprint}.`);
-                     }
+                eventFootprintEndInMinutes = actualMatchStartInMinutes + event.duration + event.bufferTime;
+            } else if (event.type === 'blocked_interval' && event.isBlocked === true) { // User-blocked interval
+                // If a fixed blocked interval is now overlapped, remove it.
+                if (event.startInMinutes < currentTimePointer) {
+                    batch.delete(event.docRef);
+                    console.log(`Fáza 3: Zablokovaný interval ${event.id} (pevný) bol prekrývaný, pridaný do batchu na vymazanie.`);
+                    // This interval is effectively consumed, don't advance pointer based on it.
+                    eventFootprintEndInMinutes = currentTimePointer; // Effectively, it ends where current time pointer is.
+                } else {
+                    eventFootprintEndInMinutes = event.endInMinutes;
+                    console.log(`Fáza 3: Zablokovaný interval ID: ${event.id} je pevný, ukazovateľ posunutý na: ${eventFootprintEndInMinutes}.`);
+                }
+            } else if (event.type === 'blocked_interval' && event.originalMatchId) { // 'Deleted match' permanent free slot
+                // These are also fixed. If overlapped, delete.
+                if (event.startInMinutes < currentTimePointer) {
+                     batch.delete(event.docRef);
+                     console.log(`Fáza 3: Voľný interval ${event.id} (z vymazaného zápasu) bol prekrývaný, pridaný do batchu na vymazanie.`);
+                     eventFootprintEndInMinutes = currentTimePointer;
+                } else {
+                    eventFootprintEndInMinutes = event.endInMinutes;
+                    console.log(`Fáza 3: Voľný interval ID: ${event.id} (z vymazaného zápasu) je pevný, ukazovateľ posunutý na: ${eventFootprintEndInMinutes}.`);
                 }
             }
-            // Update the global time pointer to the end of the current event's footprint
-            currentTimePointer = Math.max(currentTimePointer, eventEndInMinutesWithFootprint);
-            console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): Po spracovaní udalosti ${event.id || 'End of Day'}, currentTimePointer je teraz: ${currentTimePointer}`);
+
+            // Advance the timeline pointer
+            currentTimePointer = Math.max(currentTimePointer, eventFootprintEndInMinutes);
+            console.log(`Fáza 3: Po spracovaní udalosti ${event.id || 'N/A'}, currentTimePointer je teraz: ${currentTimePointer}`);
         }
 
+        // 4. Create a final 'free interval available' placeholder if there's space until end of day
+        if (currentTimePointer < 24 * 60) {
+            const gapStart = currentTimePointer;
+            const gapEnd = 24 * 60;
+            const formattedGapStartTime = `${String(Math.floor(gapStart / 60)).padStart(2, '0')}:${String(gapStart % 60).padStart(2, '0')}`;
+            const formattedGapEndTime = `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(Math.floor(gapEnd % 60)).padStart(2, '0')}`;
+
+            if (gapEnd > gapStart) { // Only create if the gap has a positive duration
+                const newPlaceholderRef = doc(blockedSlotsCollectionRef);
+                batch.set(newPlaceholderRef, {
+                    date: date,
+                    location: location,
+                    startTime: formattedGapStartTime,
+                    endTime: formattedGapEndTime,
+                    isBlocked: false,
+                    startInMinutes: gapStart,
+                    endInMinutes: gapEnd,
+                    originalMatchId: null, // This is a general gap
+                    createdAt: new Date()
+                });
+                console.log(`Fáza 4: VYTVORENÝ konečný voľný interval: ${formattedGapStartTime}-${formattedGapEndTime}.`);
+            }
+        }
+        
         await batch.commit();
         console.log(`recalculateAndSaveScheduleForDateAndLocation: Batch commit successful.`);
+
+        // If the match was moved FROM another location, also recalculate that original location's schedule.
+        if (draggedMatchOriginalLocation && draggedMatchOriginalLocation !== location) {
+            console.log(`recalculateAndSaveScheduleForDateAndLocation: Rekalkulujem pôvodné miesto presunutého zápasu: ${date}, ${draggedMatchOriginalLocation}`);
+            // Call this recursively, but without insertedMatchInfo, to clean up the old location.
+            await recalculateAndSaveScheduleForDateAndLocation(date, draggedMatchOriginalLocation);
+        }
 
         await displayMatchesAsSchedule();
     } catch (error) {
@@ -1046,8 +805,8 @@ async function deleteMatch(matchId) {
             await showMessage('Úspech', 'Zápas bol úspešne vymazaný a časový interval bol označený ako voľný!');
             closeModal(matchModal);
             
-            // Recalculate schedule for the affected date and location, explicitly stating a match was deleted
-            await recalculateAndSaveScheduleForDateAndLocation(date, location, null, null, null, null, null, null, null, true);
+            // Recalculate schedule for the affected date and location
+            await recalculateAndSaveScheduleForDateAndLocation(date, location);
             console.log("deleteMatch: Schedule recalculated and displayed after match deletion.");
 
         } catch (error) {
@@ -1066,11 +825,9 @@ async function deleteMatch(matchId) {
  * @param {string} targetDate The target date for the match.
  * @param {string} targetLocation The target location for the match.
  * @param {string|null} droppedProposedStartTime The proposed start time after dropping.
- * @param {string|null} targetBlockedIntervalId The ID of the blocked interval where the match was dropped.
- * @param {string|null} targetMatchIdToDisplace The ID of the match to displace if dropped on another match.
  */
-async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation, droppedProposedStartTime = null, targetBlockedIntervalId = null, targetMatchIdToDisplace = null) {
-    console.log(`moveAndRescheduleMatch: === SPUSTENÉ pre zápas ID: ${draggedMatchId}, cieľ: ${targetDate}, ${targetLocation}, navrhovaný čas: ${droppedProposedStartTime}, cieľový zablokovaný interval ID: ${targetBlockedIntervalId}, cieľový zápas na posunutie ID: ${targetMatchIdToDisplace} ===`);
+async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation, droppedProposedStartTime = null) {
+    console.log(`moveAndRescheduleMatch: === SPUSTENÉ pre zápas ID: ${draggedMatchId}, cieľ: ${targetDate}, ${targetLocation}, navrhovaný čas: ${droppedProposedStartTime} ===`);
     try {
         const batch = writeBatch(db);
 
@@ -1097,21 +854,6 @@ async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation
             bufferTime: Number(draggedMatchData.bufferTime) || 0
         };
 
-        // If the match is moved to a different location/date, delete its original placeholder if it was a deleted match slot
-        if (originalDate !== targetDate || originalLocation !== targetLocation) {
-            const originalFreeIntervalsQuery = query(
-                blockedSlotsCollectionRef,
-                where("date", "==", originalDate),
-                where("location", "==", originalLocation),
-                where("originalMatchId", "==", draggedMatchId)
-            );
-            const originalFreeIntervalsSnapshot = await getDocs(originalFreeIntervalsQuery);
-            originalFreeIntervalsSnapshot.docs.forEach(docToDelete => {
-                batch.delete(docToDelete.ref);
-                console.log(`moveAndRescheduleMatch: Pridané do batchu na vymazanie pôvodného voľného intervalu (po presunutom zápase): ${docToDelete.id}`);
-            });
-        }
-        
         // Update the dragged match's location and date
         const updatedMatchData = {
             ...draggedMatchData,
@@ -1123,9 +865,10 @@ async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation
         console.log(`moveAndRescheduleMatch: Pridané do batchu na aktualizáciu/opätovné vloženie zápasu: ${draggedMatchId} s novými dátami:`, updatedMatchData);
 
         await batch.commit();
-        console.log("moveAndRescheduleMatch: Batch commit successful for match move and target interval deletion (if any).");
+        console.log("moveAndRescheduleMatch: Batch commit successful for match move.");
 
         // Recalculate original schedule first if location/date changed
+        // This will clean up any auto-generated free slots in the original location.
         if (originalDate !== targetDate || originalLocation !== targetLocation) {
             await recalculateAndSaveScheduleForDateAndLocation(originalDate, originalLocation); 
             console.log(`moveAndRescheduleMatch: Recalculation for original location (${originalDate}, ${originalLocation}) completed.`);
@@ -1134,13 +877,8 @@ async function moveAndRescheduleMatch(draggedMatchId, targetDate, targetLocation
         await recalculateAndSaveScheduleForDateAndLocation(
             targetDate, 
             targetLocation, 
-            targetBlockedIntervalId, // Pass this so it's deleted during recalculation if it's a fixed free slot
             insertedMatchInfo, // Pass the info about the dragged match as the inserted one
-            draggedMatchId,
-            originalDate,
-            originalLocation,
-            originalMatchStartTime,
-            droppedProposedStartTime
+            originalLocation // Pass original location for recursive cleanup (if target is different)
         ); 
         console.log(`moveAndRescheduleMatch: Recalculation for target location (${targetDate}, ${targetLocation}) completed.`);
 
@@ -1423,7 +1161,7 @@ async function displayMatchesAsSchedule() {
                                     const gapStart = currentTimePointerInMinutes;
                                     const gapEnd = eventStart;
                                     const formattedGapStartTime = `${String(Math.floor(gapStart / 60)).padStart(2, '0')}:${String(gapStart % 60).padStart(2, '0')}`;
-                                    const formattedGapEndTime = `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(gapEnd % 60).padStart(2, '0')}`;
+                                    const formattedGapEndTime = `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(Math.floor(gapEnd % 60)).padStart(2, '0')}`;
                                     
                                     // Get the buffer time of the *previous* match event, if any.
                                     // It is crucial to iterate backward to find the last match to get its buffer.
@@ -1749,8 +1487,21 @@ async function displayMatchesAsSchedule() {
                 const droppedProposedStartTime = event.currentTarget.dataset.startTime;
                 const targetBlockedIntervalId = event.currentTarget.dataset.id;
 
-                console.log(`Presunutý zápas ${draggedMatchId} na prázdny interval. Nový dátum: ${newDate}, nové miesto: ${newLocation}, navrhovaný čas začiatku: ${droppedProposedStartTime}. ID cieľového zablokovaného intervalu: ${targetBlockedIntervalId}`);
-                await moveAndRescheduleMatch(draggedMatchId, newDate, newLocation, droppedProposedStartTime, targetBlockedIntervalId, null);
+                console.log(`Presunutý zápas ${draggedMatchId} na prázdny interval. Nový dátum: ${newDate}, nové miesto: ${newLocation}, navrhovaný čas začiatku: ${droppedProposedStartTime}. ID cieľového zablokovaného intervalu (na vymazanie): ${targetBlockedIntervalId}`);
+                
+                // IMPORTANT: Delete the original free slot (targetBlockedIntervalId) here, before calling moveAndRescheduleMatch.
+                // This ensures the slot is removed before the recalculation rebuilds the timeline, preventing conflicts.
+                if (targetBlockedIntervalId) {
+                    try {
+                        await deleteDoc(doc(blockedSlotsCollectionRef, targetBlockedIntervalId));
+                        console.log(`Dropped: Original free slot ${targetBlockedIntervalId} deleted.`);
+                    } catch (error) {
+                        console.error(`Dropped: Error deleting original free slot ${targetBlockedIntervalId}:`, error);
+                        // Continue even if deletion fails, the recalculation should clean up eventually
+                    }
+                }
+                
+                await moveAndRescheduleMatch(draggedMatchId, newDate, newLocation, droppedProposedStartTime);
             });
         });
 
@@ -1765,7 +1516,7 @@ async function displayMatchesAsSchedule() {
             });
             row.addEventListener('dragover', (event) => {
                 event.preventDefault();
-                event.dataTransfer.dropEffect = 'none';
+                event.dataTransfer.dropEffect = 'none'; // Cannot drop on a truly blocked interval
                 event.currentTarget.classList.add('drop-over-forbidden');
             });
             row.addEventListener('dragleave', (event) => {
@@ -1810,11 +1561,10 @@ async function displayMatchesAsSchedule() {
                 event.dataTransfer.dropEffect = 'move';
                 
                 const targetRow = event.target.closest('tr');
-                if (targetRow && (targetRow.classList.contains('footer-spacer-row') || targetRow.classList.contains('empty-interval-row') || targetRow.classList.contains('blocked-interval-row'))) {
-                    event.dataTransfer.dropEffect = 'none';
+                // Allow dropping on footer-spacer-row, but not other explicitly forbidden rows
+                if (targetRow && (targetRow.classList.contains('blocked-interval-row') || targetRow.classList.contains('match-row') || targetRow.classList.contains('empty-interval-row') ) && !targetRow.classList.contains('footer-spacer-row')) {
+                    event.dataTransfer.dropEffect = 'none'; // Over a match or explicitly blocked interval (not footer spacer)
                     targetRow.classList.add('drop-over-forbidden');
-                } else if (targetRow && targetRow.classList.contains('match-row')) {
-                    targetRow.classList.add('drop-over-row');
                 } else {
                     dateGroupDiv.classList.add('drop-target-active');
                 }
@@ -1823,7 +1573,6 @@ async function displayMatchesAsSchedule() {
             dateGroupDiv.addEventListener('dragleave', (event) => {
                 const targetRow = event.target.closest('tr');
                 if (targetRow) {
-                    targetRow.classList.remove('drop-over-row');
                     targetRow.classList.remove('drop-over-forbidden');
                 }
                 dateGroupDiv.classList.remove('drop-target-active');
@@ -1833,7 +1582,6 @@ async function displayMatchesAsSchedule() {
                 event.preventDefault();
                 const targetRow = event.target.closest('tr');
                 if (targetRow) {
-                    targetRow.classList.remove('drop-over-row');
                     targetRow.classList.remove('drop-over-forbidden');
                 }
                 dateGroupDiv.classList.remove('drop-target-active');
@@ -1842,86 +1590,80 @@ async function displayMatchesAsSchedule() {
                 const newDate = dateGroupDiv.dataset.date;
                 const newLocation = dateGroupDiv.dataset.location;
                 let droppedProposedStartTime = null;
-                let targetBlockedIntervalId = null; 
-                let targetMatchIdToDisplace = null;
 
                 if (draggedMatchId) {
-                    // Check if dropping into the "Nezadaná hala" section
-                    const isUnassignedSection = (newLocation === 'Nezadaná hala');
-
-                    if (targetRow && (targetRow.classList.contains('blocked-interval-row') || targetRow.classList.contains('footer-spacer-row') || targetRow.classList.contains('empty-interval-row'))) {
-                        console.log(`Attempt to drag match ${draggedMatchId} onto a blocked interval, spacer row, or empty interval. Move DENIED.`);
-                        await showMessage('Upozornenie', 'Na tento časový interval nie je možné presunúť zápas.');
-                        return;
+                    // Prevent drop on specifically forbidden rows (already handled by dragover, but good to double check)
+                    if (targetRow && (targetRow.classList.contains('blocked-interval-row') || targetRow.classList.contains('match-row') || targetRow.classList.contains('empty-interval-row') ) && !targetRow.classList.contains('footer-spacer-row')) {
+                         console.log(`Attempt to drop match ${draggedMatchId} onto a forbidden row. Move DENIED.`);
+                         await showMessage('Upozornenie', 'Na tento časový interval nie je možné presunúť zápas.');
+                         return;
                     }
 
-                    const initialScheduleStartMinutesForDrop = await getInitialScheduleStartMinutes(newDate); // Ensure it's defined here for the drop context
-                    const initialScheduleStartTimeStr = `${String(Math.floor(initialScheduleStartMinutesForDrop / 60)).padStart(2, '0')}:${String(initialScheduleStartMinutesForDrop % 60).padStart(2, '0')}`;
+                    const isUnassignedSection = (newLocation === 'Nezadaná hala');
 
-                    if (targetRow && targetRow.classList.contains('match-row')) {
-                        droppedProposedStartTime = targetRow.dataset.startTime;
-                        targetMatchIdToDisplace = targetRow.dataset.id;
-                        targetBlockedIntervalId = null;
-                        console.log(`Dropped onto existing match (${targetRow.dataset.startTime}). Proposing its start time as new start, and target match identified for displacement: ${targetMatchIdToDisplace}`);
-                    } else if (targetRow && targetRow.classList.contains('empty-interval-row')) {
-                        droppedProposedStartTime = targetRow.dataset.startTime;
-                        targetBlockedIntervalId = targetRow.dataset.id;
-                        targetMatchIdToDisplace = null;
-                        console.log(`Dropped onto empty interval (${droppedProposedStartTime}). Target blocked interval ID: ${targetBlockedIntervalId} for deletion.`);
-
-                    } else if (isUnassignedSection) {
+                    if (isUnassignedSection) {
                         // For unassigned section, proposed start time is simply the current match's start time, 
                         // as there's no fixed schedule.
                         const draggedMatchData = (await getDoc(doc(matchesCollectionRef, draggedMatchId))).data();
                         droppedProposedStartTime = draggedMatchData.startTime;
-                        targetBlockedIntervalId = null;
-                        targetMatchIdToDisplace = null;
                         console.log(`Dropped onto unassigned section. Using original match start time: ${droppedProposedStartTime}`);
 
                     } else {
-                        let nextAvailableTimeAfterLastMatch = initialScheduleStartTimeStr;
-                        
-                        const currentMatchesQuery = query(
+                        // For dropping onto the general date-group area (not a specific row)
+                        // Find the earliest available time for this date/location.
+                        // This logic needs to mirror `findFirstAvailableTime` to get the *actual* first available slot.
+                        const initialScheduleStartMinutesForDrop = await getInitialScheduleStartMinutes(newDate);
+                        let currentPointerForDrop = initialScheduleStartMinutesForDrop;
+
+                        const fixedEventsQuery = query(
                             matchesCollectionRef,
                             where("date", "==", newDate),
-                            where("location", "==", newLocation),
-                            orderBy("startTime", "desc"),
-                            limit(1) 
+                            where("location", "==", newLocation)
                         );
-                        const lastMatchSnapshot = await getDocs(currentMatchesQuery);
-                        if (!lastMatchSnapshot.empty) {
-                            const lastMatch = lastMatchSnapshot.docs[0].data();
-                            const lastMatchStartInMinutes = (parseInt(lastMatch.startTime.split(':')[0]) * 60 + parseInt(lastMatch.startTime.split(':')[1]));
-                            const lastMatchFootprintEndInMinutes = lastMatchStartInMinutes + (Number(lastMatch.duration) || 0) + (Number(lastMatch.bufferTime) || 0);
-                            nextAvailableTimeAfterLastMatch = `${String(Math.floor(lastMatchFootprintEndInMinutes / 60)).padStart(2, '0')}:${String(lastMatchFootprintEndInMinutes % 60).padStart(2, '0')}`;
-                            console.log(`Found last match at ${lastMatch.startTime}, proposing time: ${nextAvailableTimeAfterLastMatch}`);
-                        } else {
-                             console.log(`No matches for ${newDate} at ${newLocation}, proposing start time of the day: ${initialScheduleStartTimeStr}`);
-                        }
-                        
-                        const allBlockedIntervalsForLocation = (await getDocs(query(blockedSlotsCollectionRef, where("date", "==", newDate), where("location", "==", newLocation), orderBy("startInMinutes", "asc")))).docs
-                            .map(doc => ({id: doc.id, ...doc.data()}));
-                        
-                        const targetEmptyInterval = allBlockedIntervalsForLocation.find(s => 
-                            s.isBlocked === false && 
-                            s.startTime === nextAvailableTimeAfterLastMatch
-                        );
+                        const fixedEventsSnapshot = await getDocs(fixedEventsQuery);
+                        const fixedEvents = fixedEventsSnapshot.docs.map(doc => {
+                            const data = doc.data();
+                            const startInMinutes = (parseInt(data.startTime.split(':')[0]) * 60 + parseInt(data.startTime.split(':')[1]));
+                            const duration = Number(data.duration) || 0;
+                            const bufferTime = Number(data.bufferTime) || 0;
+                            return {
+                                id: doc.id,
+                                start: startInMinutes,
+                                end: startInMinutes + duration + bufferTime,
+                                type: 'match'
+                            };
+                        });
 
-                        if (targetEmptyInterval) {
-                            droppedProposedStartTime = targetEmptyInterval.startTime;
-                            targetBlockedIntervalId = targetEmptyInterval.id;
-                            targetMatchIdToDisplace = null;
-                            console.log(`Dropped onto date group background. Found empty interval to target: ${droppedProposedStartTime}, ID: ${targetBlockedIntervalId}`);
-                        } else {
-                            droppedProposedStartTime = nextAvailableTimeAfterLastMatch;
-                            targetBlockedIntervalId = null;
-                            targetMatchIdToDisplace = null;
-                            console.log(`Dropped onto date group background. No specific empty interval found at the end, using: ${droppedProposedStartTime}`);
+                        const blockedIntervalsQuery = query(
+                            blockedSlotsCollectionRef,
+                            where("date", "==", newDate),
+                            where("location", "==", newLocation)
+                        );
+                        const blockedIntervalsSnapshot = await getDocs(blockedIntervalsQuery);
+                        blockedIntervalsSnapshot.docs.forEach(doc => {
+                            const data = doc.data();
+                            if (data.isBlocked === true || data.originalMatchId) { // Only fixed ones
+                                const startInMinutes = (parseInt(data.startTime.split(':')[0]) * 60 + parseInt(data.startTime.split(':')[1]));
+                                const endInMinutes = (parseInt(data.endTime.split(':')[0]) * 60 + parseInt(data.endTime.split(':')[1]));
+                                fixedEvents.push({ id: doc.id, start: startInMinutes, end: endInMinutes, type: 'blocked_interval' });
+                            }
+                        });
+
+                        fixedEvents.sort((a, b) => a.start - b.start);
+
+                        for (const event of fixedEvents) {
+                            if (currentPointerForDrop < event.start) {
+                                break; // Found a gap
+                            }
+                            currentPointerForDrop = Math.max(currentPointerForDrop, event.end);
                         }
+
+                        droppedProposedStartTime = `${String(Math.floor(currentPointerForDrop / 60)).padStart(2, '0')}:${String(currentPointerForDrop % 60).padStart(2, '0')}`;
+                        console.log(`Dropped onto date group background. Calculated earliest available time: ${droppedProposedStartTime}`);
                     }
 
-                    console.log(`Attempting to move and reschedule match ${draggedMatchId} to Date: ${newDate}, Location: ${newLocation}, Proposed Start Time: ${droppedProposedStartTime}, Target Blocked Interval ID: ${targetBlockedIntervalId}, Target Match ID to Displace: ${targetMatchIdToDisplace}`);
-                    await moveAndRescheduleMatch(draggedMatchId, newDate, newLocation, droppedProposedStartTime, targetBlockedIntervalId, targetMatchIdToDisplace);
+                    console.log(`Attempting to move and reschedule match ${draggedMatchId} to Date: ${newDate}, Location: ${newLocation}, Proposed Start Time: ${droppedProposedStartTime}.`);
+                    await moveAndRescheduleMatch(draggedMatchId, newDate, newLocation, droppedProposedStartTime);
                 }
             });
         });
@@ -2593,7 +2335,7 @@ async function unblockBlockedInterval(intervalId, date, location) {
 /**
  * Handles the deletion of a time interval (either a blocked interval or a placeholder).
  * This function is used when explicitly deleting a *user-created blocked interval* or an *auto-generated free interval*.
- * It should NOT be used for free intervals that were created by a deleted match.
+ * This should NOT be used for free intervals that were created by a deleted match (those are managed automatically).
  * @param {string} intervalId The ID of the interval to delete.
  * @param {string} date The date of the interval.
  * @param {string} location The location of the interval.
@@ -2926,9 +2668,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
         
-        // No more strict overlap checks here, recalculateAndSaveScheduleForDateAndLocation will handle pushing
-        // This is a key change according to the new requirements.
-
         let matchRef;
         if (currentMatchId) {
             matchRef = doc(matchesCollectionRef, currentMatchId);
@@ -2982,7 +2721,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             // Recalculate only if a specific location is involved
             if (finalMatchLocationName !== 'Nezadaná hala') {
-                await recalculateAndSaveScheduleForDateAndLocation(matchDate, finalMatchLocationName, null, insertedMatchInfo);
+                await recalculateAndSaveScheduleForDateAndLocation(matchDate, finalMatchLocationName, insertedMatchInfo);
             } else {
                 // If it's an unassigned match, just refresh the display
                 await displayMatchesAsSchedule();
