@@ -6,9 +6,9 @@ const SETTINGS_DOC_ID = 'matchTimeSettings';
 export const blockedSlotsCollectionRef = collection(db, 'tournamentData', 'mainTournamentData', 'blockedSlots');
 
 /**
- * Animates the given text by gradually typing it out, bolding it, and then gradually deleting it, in an infinite loop.
- * @param {string} containerId ID of the HTML element where the animated text should be displayed.
- * @param {string} text The string of text to animate.
+ * Animuje daný text tak, že ho postupne vypíše, zhrubí a potom postupne vymaže, v nekonečnej slučke.
+ * @param {string} containerId ID HTML elementu, kde sa má zobraziť animovaný text.
+ * @param {string} text Reťazec textu, ktorý sa má animovať.
  */
 async function animateLoadingText(containerId, text) {
     const container = document.getElementById(containerId);
@@ -1016,7 +1016,7 @@ function getEventDisplayString(event, allSettings, categoryColorsMap) {
             const blockedIntervalStartHour = String(Math.floor(event.startInMinutes / 60)).padStart(2, '0');
             const blockedIntervalStartMinute = String(event.startInMinutes % 60).padStart(2, '0');
             const blockedIntervalEndHour = String(Math.floor(event.endInMinutes / 60)).padStart(2, '0');
-            const blockedIntervalEndMinute = String(Math.floor(event.endInMinutes % 60)).padStart(2, '0');
+            const blockedIntervalEndMinute = String(Math.floor(event.endInMinutes % 60).padStart(2, '0');
             return `${blockedIntervalStartHour}:${blockedIntervalStartMinute} - ${blockedIntervalEndHour}:${blockedIntervalEndMinute}|${displayText}`;
         } else {
             displayText = 'Voľný interval dostupný'; 
@@ -2740,22 +2740,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Only check for overlaps if a location is selected (i.e., not 'Nezadaná hala')
         if (finalMatchLocationName !== 'Nezadaná hala') {
             try {
+                let overlapFound = false;
+                let overlappingDetails = null;
+
+                // Check for overlaps with other existing *matches*
                 const existingMatchesQuery = query(
                     matchesCollectionRef,
                     where("date", "==", matchDate),
                     where("location", "==", finalMatchLocationName)
                 );
                 const existingMatchesSnapshot = await getDocs(existingMatchesQuery);
-
-                let overlapFound = false;
-                let overlappingDetails = null; // Changed from overlappingMatchDetails to be more general
-
                 existingMatchesSnapshot.docs.forEach(doc => {
                     const existingMatch = doc.data();
                     const existingMatchId = doc.id;
 
                     if (currentMatchId && existingMatchId === currentMatchId) {
-                        return;
+                        return; // Skip the match being edited
                     }
 
                     const [existingStartHour, existingStartMinute] = existingMatch.startTime.split(':').map(Number);
@@ -2764,11 +2764,24 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                     if (newMatchStartInMinutes < existingMatchFootprintEndInMinutes && newMatchEndInMinutesWithBuffer > existingMatchStartInMinutes) {
                         overlapFound = true;
-                        overlappingDetails = existingMatch; // Assign existing match data
-                        return;
+                        overlappingDetails = existingMatch;
+                        return; // Stop iterating, overlap found
                     }
                 });
+                if (overlapFound) { // If overlap with another match, immediately report and return
+                    const [existingStartHour, existingStartMinute] = overlappingDetails.startTime.split(':').map(Number);
+                    const existingEndTimeInMinutes = (existingStartHour * 60 + existingStartMinute + (Number(overlappingDetails.duration) || 0) + (Number(overlappingDetails.bufferTime) || 0));
+                    const formattedExistingEndTime = `${String(Math.floor(existingEndTimeInMinutes / 60)).padStart(2, '0')}:${String(Math.floor(existingEndTimeInMinutes % 60)).padStart(2, '0')}`;
 
+                    let errorMessage = `Zápas sa prekrýva s existujúcim zápasom v mieste "${finalMatchLocationName}" dňa ${matchDate}:\n\n` +
+                        `Existujúci časový rozsah: ${overlappingDetails.startTime} - ${formattedExistingEndTime}\n` +
+                        `Tímy: ${overlappingDetails.team1DisplayName} vs ${overlappingDetails.team2DisplayName}\n\n` +
+                        `Prosím, upravte čas začiatku alebo trvanie nového zápasu, alebo prestávku po zápase.`;
+                    await showMessage('Chyba', errorMessage);
+                    return;
+                }
+
+                // Check for overlaps with *explicitly blocked* intervals (isBlocked: true)
                 const blockedIntervalsQuery = query(
                     blockedSlotsCollectionRef,
                     where("date", "==", matchDate),
@@ -2777,53 +2790,28 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const blockedIntervalsSnapshot = await getDocs(blockedIntervalsQuery);
                 blockedIntervalsSnapshot.docs.forEach(doc => {
                     const blockedInterval = doc.data();
-                    // We check for overlap with *any* blocked slot, regardless of isBlocked status
-                    // because even a 'free interval available' slot prevents direct overlap if it's explicitly there.
-                    const [blockedStartHour, blockedStartMinute] = blockedInterval.startTime.split(':').map(Number);
-                    const blockedIntervalStartInMinutes = blockedStartHour * 60 + blockedStartMinute;
-                    const [blockedEndHour, blockedEndMinute] = blockedInterval.endTime.split(':').map(Number);
-                    const blockedIntervalEndInMinutes = blockedEndHour * 60 + blockedEndMinute;
+                    if (blockedInterval.isBlocked === true) { // Only truly blocked intervals cause an error here
+                        const [blockedStartHour, blockedStartMinute] = blockedInterval.startTime.split(':').map(Number);
+                        const blockedIntervalStartInMinutes = blockedStartHour * 60 + blockedStartMinute;
+                        const [blockedEndHour, blockedEndMinute] = blockedInterval.endTime.split(':').map(Number);
+                        const blockedIntervalEndInMinutes = blockedEndHour * 60 + blockedEndMinute;
 
-                    if (newMatchStartInMinutes < blockedIntervalEndInMinutes && newMatchEndInMinutesWithBuffer > blockedIntervalStartInMinutes) {
-                        if (!currentMatchId || doc.id !== blockedIntervalId) { // Allow overlap if editing the same interval
+                        if (newMatchStartInMinutes < blockedIntervalEndInMinutes && newMatchEndInMinutesWithBuffer > blockedIntervalStartInMinutes) {
                             overlapFound = true;
-                            overlappingDetails = { ...blockedInterval, type: 'blocked_slot_overlap' };
-                            return;
+                            overlappingDetails = { ...blockedInterval, type: 'hard_blocked_slot_overlap' };
+                            return; // Stop iterating, overlap found
                         }
                     }
                 });
-
-
-                if (overlapFound) {
-                    let errorMessage = `Zápas sa prekrýva s existujúcim `;
-                    if (overlappingDetails.type === 'blocked_slot_overlap') {
-                        errorMessage += `intervalom `;
-                        if (overlappingDetails.isBlocked) {
-                            errorMessage += `(Zablokovaným) `;
-                        } else if (overlappingDetails.originalMatchId) {
-                            errorMessage += `(Voľným po vymazanom zápase) `;
-                        } else {
-                            errorMessage += `(Voľným) `;
-                        }
-                    } else {
-                        errorMessage += `zápasom `;
-                    }
-                    
+                if (overlapFound) { // If overlap with a hard blocked interval, immediately report and return
                     const [existingStartHour, existingStartMinute] = overlappingDetails.startTime.split(':').map(Number);
-                    const existingEndTimeInMinutes = (overlappingDetails.type === 'blocked_slot_overlap') 
-                        ? (parseInt(overlappingDetails.endTime.split(':')[0]) * 60 + parseInt(overlappingDetails.endTime.split(':')[1]))
-                        : (existingStartHour * 60 + existingStartMinute + (Number(overlappingDetails.duration) || 0) + (Number(overlappingDetails.bufferTime) || 0));
-
+                    const existingEndTimeInMinutes = (parseInt(overlappingDetails.endTime.split(':')[0]) * 60 + parseInt(overlappingDetails.endTime.split(':')[1]));
                     const formattedExistingEndTime = `${String(Math.floor(existingEndTimeInMinutes / 60)).padStart(2, '0')}:${String(Math.floor(existingEndTimeInMinutes % 60)).padStart(2, '0')}`;
 
-                    errorMessage += `v mieste "${finalMatchLocationName}" dňa ${matchDate}:\n\n` +
-                        `Existujúci časový rozsah: ${overlappingDetails.startTime} - ${formattedExistingEndTime}\n`;
-                    if (overlappingDetails.type !== 'blocked_slot_overlap') {
-                        errorMessage += `Tímy: ${overlappingDetails.team1DisplayName} vs ${overlappingDetails.team2DisplayName}\n\n`;
-                    } else {
-                        errorMessage += `(Typ intervalu: ${overlappingDetails.isBlocked ? 'Zablokovaný' : 'Voľný'})\n\n`;
-                    }
-                    errorMessage += `Prosím, upravte čas začiatku alebo trvanie nového zápasu, alebo prestávku po zápase.`;
+                    let errorMessage = `Zápas sa prekrýva so zablokovaným intervalom v mieste "${finalMatchLocationName}" dňa ${matchDate}:\n\n` +
+                        `Existujúci časový rozsah: ${overlappingDetails.startTime} - ${formattedExistingEndTime}\n` +
+                        `(Typ intervalu: Zablokovaný)\n\n` +
+                        `Prosím, upravte čas začiatku alebo trvanie nového zápasu, alebo prestávku po zápase.`;
                     await showMessage('Chyba', errorMessage);
                     return;
                 }
