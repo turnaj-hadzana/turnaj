@@ -387,15 +387,21 @@ async function findFirstAvailableTime() {
         // Initialize currentPointer with the initial start time of the day
         let currentPointer = initialPointerMinutes;
 
-        for (const occupied of mergedOccupiedPeriods) {
-            if (currentPointer < occupied.start) {
-                availableIntervals.push({ start: currentPointer, end: occupied.start });
-            }
-            currentPointer = Math.max(currentPointer, occupied.end);
-        }
-        // Add the remaining time till the end of the day as an available interval
-        if (currentPointer < 24 * 60) {
+        // If there are no occupied periods, the entire day from initialPointerMinutes is available
+        if (mergedOccupiedPeriods.length === 0) {
             availableIntervals.push({ start: currentPointer, end: 24 * 60 });
+            console.log("No occupied periods. Entire day from initial pointer is available:", availableIntervals);
+        } else {
+            for (const occupied of mergedOccupiedPeriods) {
+                if (currentPointer < occupied.start) {
+                    availableIntervals.push({ start: currentPointer, end: occupied.start });
+                }
+                currentPointer = Math.max(currentPointer, occupied.end);
+            }
+            // Add the remaining time till the end of the day as an available interval
+            if (currentPointer < 24 * 60) {
+                availableIntervals.push({ start: currentPointer, end: 24 * 60 });
+            }
         }
         console.log("Available Intervals (based on hard conflicts):", availableIntervals);
 
@@ -1043,7 +1049,7 @@ function getEventDisplayString(event, allSettings, categoryColorsMap) {
             const blockedIntervalStartHour = String(Math.floor(event.startInMinutes / 60)).padStart(2, '0');
             const blockedIntervalStartMinute = String(event.startInMinutes % 60).padStart(2, '0');
             const blockedIntervalEndHour = String(Math.floor(event.endInMinutes / 60)).padStart(2, '0');
-            const blockedIntervalEndMinute = String(Math.floor(event.endInMinutes % 60)).padStart(2, '0');
+            const blockedIntervalEndMinute = String(Math.floor(event.endInMinutes % 60).padStart(2, '0');
             return `${blockedIntervalStartHour}:${blockedIntervalStartMinute} - ${blockedIntervalEndHour}:${blockedIntervalEndMinute}|${displayText}`;
         } else {
             displayText = 'Voľný interval dostupný'; 
@@ -1260,84 +1266,16 @@ async function displayMatchesAsSchedule() {
                         const initialScheduleStartMinutes = await getInitialScheduleStartMinutes(date); 
                         let currentTimePointerInMinutes = initialScheduleStartMinutes;
                         
-                        
-                        for (let i = 0; i < currentEventsForRendering.length; i++) {
-                            const event = currentEventsForRendering[i];
-                            const eventStart = event.startInMinutes;
-                            const eventEnd = event.type === 'match' ? event.footprintEndInMinutes : event.endInMinutes;
-
-                            // Add free interval if there's a gap between the current pointer and the event's start
-                            if (currentTimePointerInMinutes < eventStart) {
-                                const gapStart = currentTimePointerInMinutes;
-                                const gapEnd = eventStart;
-                                const formattedGapStartTime = `${String(Math.floor(gapStart / 60)).padStart(2, '0')}:${String(gapStart % 60).padStart(2, '0')}`;
-                                const formattedGapEndTime = `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(Math.floor(gapEnd % 60)).padStart(2, '0')}`;
-                                
-                                // Get the buffer time of the *previous* match event, if any.
-                                // It is crucial to iterate backward to find the last match to get its buffer.
-                                let previousMatchBufferTime = 0;
-                                for(let j = i - 1; j >= 0; j--) {
-                                    if (currentEventsForRendering[j].type === 'match') {
-                                        previousMatchBufferTime = currentEventsForRendering[j].bufferTime || 0;
-                                        break; // Found the last match, get its buffer and break
-                                    }
-                                }
-
-                                // Only add a placeholder if its duration is greater than the buffer time of the previous match
-                                // OR if it's an interval created from a deleted match (which we always want to show as 'free').
-                                const existingFreeInterval = allBlockedIntervals.find(s => 
-                                    s.date === date && 
-                                    s.location === location && 
-                                    s.isBlocked === false && 
-                                    s.startInMinutes === gapStart && 
-                                    s.endInMinutes === gapEnd
-                                );
-
-                                const isFromDeletedMatch = existingFreeInterval && existingFreeInterval.originalMatchId;
-                                const isLongerThanPreviousBuffer = (gapEnd - gapStart) > previousMatchBufferTime;
-
-                                if (isFromDeletedMatch || isLongerThanPreviousBuffer) {
-                                    finalEventsToRender.push({
-                                        type: 'blocked_interval',
-                                        id: existingFreeInterval ? existingFreeInterval.id : 'generated-interval-' + Math.random().toString(36).substr(2, 9),
-                                        date: date,
-                                        location: location,
-                                        startTime: formattedGapStartTime,
-                                        endTime: formattedGapEndTime,
-                                        isBlocked: false,
-                                        startInMinutes: gapStart,
-                                        endInMinutes: gapEnd,
-                                        originalMatchId: isFromDeletedMatch ? existingFreeInterval.originalMatchId : null // Preserve if from deleted match
-                                    });
-                                    console.log(`displayMatchesAsSchedule: Adding gap placeholder (${formattedGapStartTime}-${formattedGapEndTime}). From deleted match: ${isFromDeletedMatch}, Longer than buffer: ${isLongerThanPreviousBuffer}`);
-                                } else {
-                                    console.log(`displayMatchesAsSchedule: Skipping gap ${formattedGapStartTime}-${formattedGapEndTime} as it's purely buffer time or too short.`);
-                                }
-                            }
-                            
-                            // Add the actual event
-                            finalEventsToRender.push(event);
-                            currentTimePointerInMinutes = Math.max(currentTimePointerInMinutes, eventEnd);
-                        }
-
-                        // Add a final placeholder if there's a gap between the last event and end of day
-                        if (currentTimePointerInMinutes < 24 * 60) {
-                            const gapStart = currentTimePointerInMinutes;
-                            const gapEnd = 24 * 60;
+                        // Ensure that if there are no events for the day, a placeholder from initial start to end of day is created
+                        if (currentEventsForRendering.length === 0) {
+                            const gapStart = initialScheduleStartMinutes;
+                            const gapEnd = 24 * 60; // End of day
                             const formattedGapStartTime = `${String(Math.floor(gapStart / 60)).padStart(2, '0')}:${String(gapStart % 60).padStart(2, '0')}`;
                             const formattedGapEndTime = `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(Math.floor(gapEnd % 60)).padStart(2, '0')}`;
-
-                            if ((gapEnd - gapStart) > 0) { // Only add if duration > 0
-                                const existingFinalPlaceholder = allBlockedIntervals.find(s => 
-                                    s.date === date && 
-                                    s.location === location && 
-                                    s.isBlocked === false && 
-                                    s.startInMinutes === gapStart && 
-                                    s.endInMinutes === gapEnd
-                                );
+                            if (gapEnd > gapStart) {
                                 finalEventsToRender.push({
                                     type: 'blocked_interval',
-                                    id: existingFinalPlaceholder ? existingFinalPlaceholder.id : 'generated-final-interval-' + Math.random().toString(36).substr(2, 9),
+                                    id: 'generated-initial-interval-' + Math.random().toString(36).substr(2, 9),
                                     date: date,
                                     location: location,
                                     startTime: formattedGapStartTime,
@@ -1345,11 +1283,101 @@ async function displayMatchesAsSchedule() {
                                     isBlocked: false,
                                     startInMinutes: gapStart,
                                     endInMinutes: gapEnd,
-                                    originalMatchId: null 
+                                    originalMatchId: null
                                 });
-                                console.log(`displayMatchesAsSchedule: Adding final gap placeholder: ${formattedGapStartTime}-${formattedGapEndTime}.`);
-                            } else {
-                                console.log(`displayMatchesAsSchedule: Skipping final gap ${formattedGapStartTime}-${formattedGapEndTime} as its duration is 0.`);
+                                console.log(`displayMatchesAsSchedule: No events for ${date} at ${location}. Adding initial full-day placeholder.`);
+                            }
+                        } else {
+                            for (let i = 0; i < currentEventsForRendering.length; i++) {
+                                const event = currentEventsForRendering[i];
+                                const eventStart = event.startInMinutes;
+                                const eventEnd = event.type === 'match' ? event.footprintEndInMinutes : event.endInMinutes;
+
+                                // Add free interval if there's a gap between the current pointer and the event's start
+                                if (currentTimePointerInMinutes < eventStart) {
+                                    const gapStart = currentTimePointerInMinutes;
+                                    const gapEnd = eventStart;
+                                    const formattedGapStartTime = `${String(Math.floor(gapStart / 60)).padStart(2, '0')}:${String(gapStart % 60).padStart(2, '0')}`;
+                                    const formattedGapEndTime = `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(Math.floor(gapEnd % 60)).padStart(2, '0')}`;
+                                    
+                                    // Get the buffer time of the *previous* match event, if any.
+                                    // It is crucial to iterate backward to find the last match to get its buffer.
+                                    let previousMatchBufferTime = 0;
+                                    for(let j = i - 1; j >= 0; j--) {
+                                        if (currentEventsForRendering[j].type === 'match') {
+                                            previousMatchBufferTime = currentEventsForRendering[j].bufferTime || 0;
+                                            break; // Found the last match, get its buffer and break
+                                        }
+                                    }
+
+                                    // Only add a placeholder if its duration is greater than the buffer time of the previous match
+                                    // OR if it's an interval created from a deleted match (which we always want to show as 'free').
+                                    const existingFreeInterval = allBlockedIntervals.find(s => 
+                                        s.date === date && 
+                                        s.location === location && 
+                                        s.isBlocked === false && 
+                                        s.startInMinutes === gapStart && 
+                                        s.endInMinutes === gapEnd
+                                    );
+
+                                    const isFromDeletedMatch = existingFreeInterval && existingFreeInterval.originalMatchId;
+                                    const isLongerThanPreviousBuffer = (gapEnd - gapStart) > previousMatchBufferTime;
+
+                                    if (isFromDeletedMatch || isLongerThanPreviousBuffer) {
+                                        finalEventsToRender.push({
+                                            type: 'blocked_interval',
+                                            id: existingFreeInterval ? existingFreeInterval.id : 'generated-interval-' + Math.random().toString(36).substr(2, 9),
+                                            date: date,
+                                            location: location,
+                                            startTime: formattedGapStartTime,
+                                            endTime: formattedGapEndTime,
+                                            isBlocked: false,
+                                            startInMinutes: gapStart,
+                                            endInMinutes: gapEnd,
+                                            originalMatchId: isFromDeletedMatch ? existingFreeInterval.originalMatchId : null // Preserve if from deleted match
+                                        });
+                                        console.log(`displayMatchesAsSchedule: Adding gap placeholder (${formattedGapStartTime}-${formattedGapEndTime}). From deleted match: ${isFromDeletedMatch}, Longer than buffer: ${isLongerThanPreviousBuffer}`);
+                                    } else {
+                                        console.log(`displayMatchesAsSchedule: Skipping gap ${formattedGapStartTime}-${formattedGapEndTime} as it's purely buffer time or too short.`);
+                                    }
+                                }
+                                
+                                // Add the actual event
+                                finalEventsToRender.push(event);
+                                currentTimePointerInMinutes = Math.max(currentTimePointerInMinutes, eventEnd);
+                            }
+
+                            // Add a final placeholder if there's a gap between the last event and end of day
+                            if (currentTimePointerInMinutes < 24 * 60) {
+                                const gapStart = currentTimePointerInMinutes;
+                                const gapEnd = 24 * 60;
+                                const formattedGapStartTime = `${String(Math.floor(gapStart / 60)).padStart(2, '0')}:${String(gapStart % 60).padStart(2, '0')}`;
+                                const formattedGapEndTime = `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(Math.floor(gapEnd % 60)).padStart(2, '0')}`;
+
+                                if ((gapEnd - gapStart) > 0) { // Only add if duration > 0
+                                    const existingFinalPlaceholder = allBlockedIntervals.find(s => 
+                                        s.date === date && 
+                                        s.location === location && 
+                                        s.isBlocked === false && 
+                                        s.startInMinutes === gapStart && 
+                                        s.endInMinutes === gapEnd
+                                    );
+                                    finalEventsToRender.push({
+                                        type: 'blocked_interval',
+                                        id: existingFinalPlaceholder ? existingFinalPlaceholder.id : 'generated-final-interval-' + Math.random().toString(36).substr(2, 9),
+                                        date: date,
+                                        location: location,
+                                        startTime: formattedGapStartTime,
+                                        endTime: formattedGapEndTime,
+                                        isBlocked: false,
+                                        startInMinutes: gapStart,
+                                        endInMinutes: gapEnd,
+                                        originalMatchId: null 
+                                    });
+                                    console.log(`displayMatchesAsSchedule: Adding final gap placeholder: ${formattedGapStartTime}-${formattedGapEndTime}.`);
+                                } else {
+                                    console.log(`displayMatchesAsSchedule: Skipping final gap ${formattedGapStartTime}-${formattedGapEndTime} as its duration is 0.`);
+                                }
                             }
                         }
 
@@ -1400,7 +1428,7 @@ async function displayMatchesAsSchedule() {
                                 const blockedIntervalStartHour = String(Math.floor(blockedInterval.startInMinutes / 60)).padStart(2, '0');
                                 const blockedIntervalStartMinute = String(blockedInterval.startInMinutes % 60).padStart(2, '0');
                                 const blockedIntervalEndHour = String(Math.floor(blockedInterval.endInMinutes / 60)).padStart(2, '0');
-                                const blockedIntervalEndMinute = String(Math.floor(blockedInterval.endInMinutes % 60)).padStart(2, '0');
+                                const blockedIntervalEndMinute = String(Math.floor(blockedInterval.endInMinutes % 60).padStart(2, '0');
                                 
                                 const isUserBlocked = blockedInterval.isBlocked === true; 
 
@@ -1520,7 +1548,7 @@ async function displayMatchesAsSchedule() {
                         matchesForDate.forEach(match => {
                             const matchDuration = match.duration || (allSettings.categoryMatchSettings?.[match.categoryId]?.duration || 60);
                             const displayedMatchEndTimeInMinutes = (parseInt(match.startTime.split(':')[0]) * 60 + parseInt(match.startTime.split(':')[1])) + matchDuration; 
-                            const formattedDisplayedEndTime = `${String(Math.floor(displayedMatchEndTimeInMinutes / 60)).padStart(2, '0')}:${String(displayedMatchEndTimeInMinutes % 60).padStart(2, '0')}`;
+                            const formattedDisplayedEndTime = `${String(Math.floor(displayedMatchEndTimeInMinutes / 60)).padStart(2, '0')}:${String(Math.floor(displayedMatchEndTimeInMinutes % 60).padStart(2, '0'))}`;
                             const categoryColor = categoryColorsMap.get(match.categoryId) || 'transparent';
 
                             scheduleHtml += `
