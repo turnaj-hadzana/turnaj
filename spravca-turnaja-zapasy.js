@@ -714,19 +714,26 @@ async function recalculateAndSaveScheduleForDateAndLocation(date, location, excl
                 const formattedGapEndTime = `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(Math.floor(gapEnd % 60)).padStart(2, '0')}`; 
 
                 if (gapStart < gapEnd) {
-                    console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): GENERUJEM placeholder pred udalosťou ${event.id}: Start: ${formattedGapStartTime}, End: ${formattedGapEndTime}.`);
+                    // Only add a placeholder if its duration is greater than the buffer time
+                    // This prevents displaying tiny "free intervals available" right after a match.
+                    const bufferTimeForGap = (event.type === 'match' ? (Number(event.bufferTime) || 0) : 0);
+                    if ((gapEnd - gapStart) > bufferTimeForGap) { // Changed condition
+                        console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): GENERUJEM placeholder pred udalosťou ${event.id}: Start: ${formattedGapStartTime}, End: ${formattedGapEndTime}.`);
 
-                    const newPlaceholderDocRef = doc(blockedSlotsCollectionRef);
-                    batch.set(newPlaceholderDocRef, {
-                        date: date,
-                        location: location,
-                        startTime: formattedGapStartTime,
-                        endTime: formattedGapEndTime,
-                        isBlocked: false,
-                        startInMinutes: gapStart,
-                        endInMinutes: gapEnd,
-                        createdAt: new Date()
-                    });
+                        const newPlaceholderDocRef = doc(blockedSlotsCollectionRef);
+                        batch.set(newPlaceholderDocRef, {
+                            date: date,
+                            location: location,
+                            startTime: formattedGapStartTime,
+                            endTime: formattedGapEndTime,
+                            isBlocked: false,
+                            startInMinutes: gapStart,
+                            endInMinutes: gapEnd,
+                            createdAt: new Date()
+                        });
+                    } else {
+                        console.log(`recalculateAndSaveScheduleForDateAndLocation (Fáza 3): Skipping gap ${formattedGapStartTime}-${formattedGapEndTime} as it's too short (<= bufferTime).`);
+                    }
                 }
             }
 
@@ -1240,25 +1247,36 @@ async function displayMatchesAsSchedule() {
                                 const formattedGapStartTime = `${String(Math.floor(gapStart / 60)).padStart(2, '0')}:${String(gapStart % 60).padStart(2, '0')}`;
                                 const formattedGapEndTime = `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(gapEnd % 60).padStart(2, '0')}`;
                                 
-                                const existingFreeInterval = allBlockedIntervals.find(s => 
-                                    s.date === date && 
-                                    s.location === location && 
-                                    s.isBlocked === false && 
-                                    s.startInMinutes === gapStart && 
-                                    s.endInMinutes === gapEnd
-                                );
-                                finalEventsToRender.push({
-                                    type: 'blocked_interval',
-                                    id: existingFreeInterval ? existingFreeInterval.id : 'generated-interval-' + Math.random().toString(36).substr(2, 9),
-                                    date: date,
-                                    location: location,
-                                    startTime: formattedGapStartTime,
-                                    endTime: formattedGapEndTime,
-                                    isBlocked: false,
-                                    startInMinutes: gapStart,
-                                    endInMinutes: gapEnd,
-                                    originalMatchId: null // This is an auto-generated free interval
-                                });
+                                // Get the buffer time of the *previous* event for accurate gap calculation
+                                let previousEventBufferTime = 0;
+                                if (i > 0 && currentEventsForRendering[i-1].type === 'match') {
+                                    previousEventBufferTime = currentEventsForRendering[i-1].bufferTime || 0;
+                                }
+
+                                // Only add a placeholder if its duration is greater than the buffer time of the previous match
+                                if ((gapEnd - gapStart) > previousEventBufferTime) { 
+                                    const existingFreeInterval = allBlockedIntervals.find(s => 
+                                        s.date === date && 
+                                        s.location === location && 
+                                        s.isBlocked === false && 
+                                        s.startInMinutes === gapStart && 
+                                        s.endInMinutes === gapEnd
+                                    );
+                                    finalEventsToRender.push({
+                                        type: 'blocked_interval',
+                                        id: existingFreeInterval ? existingFreeInterval.id : 'generated-interval-' + Math.random().toString(36).substr(2, 9),
+                                        date: date,
+                                        location: location,
+                                        startTime: formattedGapStartTime,
+                                        endTime: formattedGapEndTime,
+                                        isBlocked: false,
+                                        startInMinutes: gapStart,
+                                        endInMinutes: gapEnd,
+                                        originalMatchId: null // This is an auto-generated free interval
+                                    });
+                                } else {
+                                    console.log(`displayMatchesAsSchedule: Skipping gap ${formattedGapStartTime}-${formattedGapEndTime} as it's too short (<= previous event's bufferTime).`);
+                                }
                             }
                             
                             // Add the actual event
@@ -1273,25 +1291,30 @@ async function displayMatchesAsSchedule() {
                             const formattedGapStartTime = `${String(Math.floor(gapStart / 60)).padStart(2, '0')}:${String(gapStart % 60).padStart(2, '0')}`;
                             const formattedGapEndTime = `${String(Math.floor(gapEnd / 60)).padStart(2, '0')}:${String(gapEnd % 60).padStart(2, '0')}`;
 
-                            const existingFinalPlaceholder = allBlockedIntervals.find(s => 
-                                s.date === date && 
-                                s.location === location && 
-                                s.isBlocked === false && 
-                                s.startInMinutes === gapStart && 
-                                s.endInMinutes === gapEnd
-                            );
-                            finalEventsToRender.push({
-                                type: 'blocked_interval',
-                                id: existingFinalPlaceholder ? existingFinalPlaceholder.id : 'generated-final-interval-' + Math.random().toString(36).substr(2, 9),
-                                date: date,
-                                location: location,
-                                startTime: formattedGapStartTime,
-                                endTime: formattedGapEndTime,
-                                isBlocked: false,
-                                startInMinutes: gapStart,
-                                endInMinutes: gapEnd,
-                                originalMatchId: null // This is a true final placeholder
-                            });
+                            // Only add a placeholder if its duration is greater than 0
+                            if ((gapEnd - gapStart) > 0) {
+                                const existingFinalPlaceholder = allBlockedIntervals.find(s => 
+                                    s.date === date && 
+                                    s.location === location && 
+                                    s.isBlocked === false && 
+                                    s.startInMinutes === gapStart && 
+                                    s.endInMinutes === gapEnd
+                                );
+                                finalEventsToRender.push({
+                                    type: 'blocked_interval',
+                                    id: existingFinalPlaceholder ? existingFinalPlaceholder.id : 'generated-final-interval-' + Math.random().toString(36).substr(2, 9),
+                                    date: date,
+                                    location: location,
+                                    startTime: formattedGapStartTime,
+                                    endTime: formattedGapEndTime,
+                                    isBlocked: false,
+                                    startInMinutes: gapStart,
+                                    endInMinutes: gapEnd,
+                                    originalMatchId: null // This is a true final placeholder
+                                });
+                            } else {
+                                console.log(`displayMatchesAsSchedule: Skipping final gap ${formattedGapStartTime}-${formattedGapEndTime} as its duration is 0.`);
+                            }
                         }
 
                         console.log(`displayMatchesAsSchedule: FinalEventsToRender (po vložení medzier a placeholderov):`, JSON.stringify(finalEventsToRender.map(e => ({id: e.id, type: e.type, startTime: e.startTime || e.startInMinutes, endTime: e.endTime || e.endInMinutes, isBlocked: e.isBlocked, originalMatchId: e.originalMatchId, endOfPlayInMinutes: e.endOfPlayInMinutes, footprintEndInMinutes: e.footprintEndInMinutes}))));
@@ -1357,13 +1380,13 @@ async function displayMatchesAsSchedule() {
                                 let textColspan = '4';
 
                                 if (blockedInterval.endInMinutes === 24 * 60 && blockedInterval.startInMinutes === 0) { // Full day interval
-                                    displayTimeHtml = `<td>00:00 - Koniec dňa</td>`; // Changed to show actual time
+                                    displayTimeHtml = `<td>00:00 - Koniec dňa</td>`; 
                                     textColspan = '4';
                                 } else if (blockedInterval.endInMinutes === 24 * 60) { // Interval till end of day
                                     displayTimeHtml = `<td>${blockedIntervalStartHour}:${blockedIntervalStartMinute} - Koniec dňa</td>`;
                                     textColspan = '4';
                                 } else if (blockedInterval.startInMinutes === 0) { // Interval from start of day
-                                     displayTimeHtml = `<td>00:00 - ${blockedIntervalEndHour}:${blockedIntervalEndMinute}</td>`; // Changed to show actual time
+                                     displayTimeHtml = `<td>00:00 - ${blockedIntervalEndHour}:${blockedIntervalEndMinute}</td>`; 
                                      textColspan = '4';
                                 }
 
