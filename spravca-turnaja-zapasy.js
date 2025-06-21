@@ -7,7 +7,7 @@ export const blockedSlotsCollectionRef = collection(db, 'tournamentData', 'mainT
 
 /**
  * Animuje daný text tak, že ho postupne vypíše, zhrubí a potom postupne vymaže, v nekonečnej slučke.
- * @param {string} containerId ID HTML elementu, kde sa má zobraziť animovaný text.
+ * @param {string} containerId ID HTML elementu, kde sa má zobraziť animovaný text.\
  * @param {string} text Reťazec textu, ktorý sa má animovať.
  */
 async function animateLoadingText(containerId, text) {
@@ -365,7 +365,8 @@ async function findFirstAvailableTime() {
                 start: startInMinutes,
                 end: endInMinutes,
                 type: 'blocked_interval',
-                isBlocked: data.isBlocked === true
+                isBlocked: data.isBlocked === true,
+                originalMatchId: data.originalMatchId || null
             };
         });
 
@@ -391,42 +392,24 @@ async function findFirstAvailableTime() {
         console.log("Merged Occupied Periods:", mergedOccupiedPeriods);
 
 
-        const availableIntervals = [];
-        // Initialize currentPointer with the initial start time of the day
-        let currentPointer = initialPointerMinutes;
-
-        // If there are no occupied periods, the entire day from initialPointerMinutes is available
-        if (mergedOccupiedPeriods.length === 0) {
-            availableIntervals.push({ start: currentPointer, end: 24 * 60 });
-            console.log("No occupied periods. Entire day from initial pointer is available:", availableIntervals);
-        } else {
-            for (const occupied of mergedOccupiedPeriods) {
-                if (currentPointer < occupied.start) {
-                    availableIntervals.push({ start: currentPointer, end: occupied.start });
-                }
-                currentPointer = Math.max(currentPointer, occupied.end);
-            }
-            // Add the remaining time till the end of the day as an available interval
-            if (currentPointer < 24 * 60) {
-                availableIntervals.push({ start: currentPointer, end: 24 * 60 });
-            }
-        }
-        console.log("Available Intervals (based on hard conflicts):", availableIntervals);
-
         let proposedStartTimeInMinutes = -1;
 
-        const freeIntervals = allIntervals.filter(s => s.isBlocked === false);
-        freeIntervals.sort((a, b) => a.start - b.start);
-        console.log("Existing Free Intervals (isBlocked: false):", freeIntervals);
+        // Collect all 'free interval available' slots first, including those from deleted matches
+        const existingFreeIntervals = allIntervals.filter(s => s.isBlocked === false);
+        existingFreeIntervals.sort((a, b) => a.start - b.start);
+        console.log("Existing Free Intervals (isBlocked: false, including from deleted matches):", existingFreeIntervals);
 
-        // First, try to fit the match into an explicitly marked "free" interval
-        for (const freeInterval of freeIntervals) {
+        // First, try to fit the match into an explicitly marked "free" interval (isBlocked: false)
+        // These are preferred as they are specific marked openings.
+        for (const freeInterval of existingFreeIntervals) {
             // Check if the free interval can accommodate the full footprint of the new match
             if (freeInterval.end - freeInterval.start >= newMatchFullFootprint) {
                 let isFreeIntervalTrulyAvailable = true;
                 const potentialMatchEndWithBuffer = freeInterval.start + newMatchFullFootprint; 
 
                 // Ensure this free interval doesn't overlap with any *merged occupied periods*
+                // This handles cases where a "free" interval might have been partially or fully covered by a newly placed match
+                // or a user-blocked interval after its creation.
                 for(const occupied of mergedOccupiedPeriods) {
                     if (freeInterval.start < occupied.end && potentialMatchEndWithBuffer > occupied.start) {
                         isFreeIntervalTrulyAvailable = false;
@@ -443,16 +426,33 @@ async function findFirstAvailableTime() {
             }
         }
 
-        // If no existing "free" interval was found, try to find a gap in the dynamically calculated available intervals
+        // If no existing "free" interval was found, try to find a gap based on dynamic availability
         if (proposedStartTimeInMinutes === -1) {
-            for (const interval of availableIntervals) {
-                if (interval.end - interval.start >= newMatchFullFootprint) {
-                    proposedStartTimeInMinutes = interval.start;
-                    console.log(`No existing free interval, using first available calculated interval at: ${proposedStartTimeInMinutes}`);
-                    break;
+            let currentPointer = initialPointerMinutes; // Always start checking from the day's configured start time
+
+            // Iterate through merged occupied periods to find gaps
+            for (const occupied of mergedOccupiedPeriods) {
+                // If there's a gap between currentPointer and the start of an occupied period
+                if (currentPointer < occupied.start) {
+                    if (occupied.start - currentPointer >= newMatchFullFootprint) {
+                        proposedStartTimeInMinutes = currentPointer;
+                        console.log(`No existing free interval, found gap starting at ${proposedStartTimeInMinutes} before occupied period.`);
+                        break;
+                    }
+                }
+                // Move the pointer past the current occupied period
+                currentPointer = Math.max(currentPointer, occupied.end);
+            }
+
+            // If no suitable gap was found before any occupied period, check the remaining time after the last occupied period
+            if (proposedStartTimeInMinutes === -1 && currentPointer < 24 * 60) {
+                if ((24 * 60) - currentPointer >= newMatchFullFootprint) {
+                    proposedStartTimeInMinutes = currentPointer;
+                    console.log(`No existing free interval, found gap starting at ${proposedStartTimeInMinutes} at the end of the day.`);
                 }
             }
         }
+
 
         if (proposedStartTimeInMinutes !== -1) {
             const formattedHour = String(Math.floor(proposedStartTimeInMinutes / 60)).padStart(2, '0');
@@ -487,7 +487,7 @@ const isIntervalAvailable = (candidateStart, candidateEnd, matches, blockedInter
         }
     }
     for (const blockedInterval of blockedIntervals) {
-        if (candidateStart < blockedInterval.end && candidateEnd > blockedInterval.start) {
+        if (blockedInterval.isBlocked === true && candidateStart < blockedInterval.end && candidateEnd > blockedInterval.start) {
             console.log(`Interval ${candidateStart}-${candidateEnd} overlaps with active blocked interval ${blockedInterval.start}-${blockedInterval.end}`);
             return false;
         }
@@ -1057,7 +1057,7 @@ function getEventDisplayString(event, allSettings, categoryColorsMap) {
             const blockedIntervalStartHour = String(Math.floor(event.startInMinutes / 60)).padStart(2, '0');
             const blockedIntervalStartMinute = String(event.startInMinutes % 60).padStart(2, '0');
             const blockedIntervalEndHour = String(Math.floor(event.endInMinutes / 60)).padStart(2, '0');
-            const blockedIntervalEndMinute = String(Math.floor(event.endInMinutes % 60)).padStart(2, '0');
+            const blockedIntervalEndMinute = String(Math.floor(event.endInMinutes % 60).padStart(2, '0');
             return `${blockedIntervalStartHour}:${blockedIntervalStartMinute} - ${blockedIntervalEndHour}:${blockedIntervalEndMinute}|${displayText}`;
         } else {
             displayText = 'Voľný interval dostupný'; 
@@ -1318,8 +1318,8 @@ async function displayMatchesAsSchedule() {
                                         }
                                     }
 
-                                    // Only add a placeholder if its duration is greater than the buffer time of the previous match
-                                    // OR if it's an interval created from a deleted match (which we always want to show as 'free').
+                                    // Only add a placeholder if it was created from a deleted match,
+                                    // or if its duration is greater than the buffer time of the previous match.
                                     const existingFreeInterval = allBlockedIntervals.find(s => 
                                         s.date === date && 
                                         s.location === location && 
@@ -1436,7 +1436,7 @@ async function displayMatchesAsSchedule() {
                                 const blockedIntervalStartHour = String(Math.floor(blockedInterval.startInMinutes / 60)).padStart(2, '0');
                                 const blockedIntervalStartMinute = String(blockedInterval.startInMinutes % 60).padStart(2, '0');
                                 const blockedIntervalEndHour = String(Math.floor(blockedInterval.endInMinutes / 60)).padStart(2, '0');
-                                const blockedIntervalEndMinute = String(Math.floor(blockedInterval.endInMinutes % 60)).padStart(2, '0');
+                                const blockedIntervalEndMinute = String(Math.floor(blockedInterval.endInMinutes % 60).padStart(2, '0');
                                 
                                 const isUserBlocked = blockedInterval.isBlocked === true; 
 
@@ -2776,9 +2776,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (currentMatchId && existingMatchId === currentMatchId) {
                     return;
                 }
-
-                const existingTeam1Number = existingMatch.team1Number;
-                const existingTeam2Number = existingMatch.team2Number;
 
                 const condition1 = (existingTeam1Number === team1Number && existingTeam2Number === team2Number);
                 const condition2 = (existingTeam1Number === team2Number && existingTeam2Number === team1Number);
